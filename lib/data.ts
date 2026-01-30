@@ -77,6 +77,14 @@ export function getCategoryIcon(category: string): string {
   return dbQueries.getCategoryIcon(category);
 }
 
+// 포스트 검색
+export async function searchPosts(
+  query: string,
+  limit: number = 20
+): Promise<PostData[]> {
+  return dbQueries.searchPosts(query, limit);
+}
+
 // 데이터 소스 정보 (항상 database)
 export function getDataSource(): "database" {
   return "database";

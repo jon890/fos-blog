@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { posts, categories, folders } from "@/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, or, like } from "drizzle-orm";
 
 // ===== 인터페이스 정의 =====
 
@@ -325,3 +325,45 @@ export const getFolderContents = (folderPath: string) =>
 export const getAllFolderPaths = () => dbQueries.getAllFolderPaths();
 export const getCategoryIcon = (category: string) =>
   dbQueries.getCategoryIcon(category);
+
+// ===== 검색 기능 =====
+
+export async function searchPosts(
+  query: string,
+  limit: number = 20
+): Promise<PostData[]> {
+  if (!db || !query.trim()) {
+    return [];
+  }
+
+  const searchTerm = `%${query.trim()}%`;
+
+  const result = await db
+    .select({
+      title: posts.title,
+      path: posts.path,
+      slug: posts.slug,
+      category: posts.category,
+      subcategory: posts.subcategory,
+      folders: posts.folders,
+      description: posts.description,
+    })
+    .from(posts)
+    .where(
+      and(
+        eq(posts.isActive, true),
+        or(
+          like(posts.title, searchTerm),
+          like(posts.content, searchTerm),
+          like(posts.description, searchTerm)
+        )
+      )
+    )
+    .orderBy(desc(posts.updatedAt))
+    .limit(limit);
+
+  return result.map((p) => ({
+    ...p,
+    folders: p.folders || [],
+  }));
+}
