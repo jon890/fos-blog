@@ -97,7 +97,11 @@ export async function getFileContent(path: string): Promise<string> {
       return content;
     }
     return "";
-  } catch (error) {
+  } catch (error: unknown) {
+    // 404 에러는 파일이 없는 경우로 조용히 처리
+    if (error && typeof error === "object" && "status" in error && error.status === 404) {
+      return "";
+    }
     console.error(`Error fetching file content for ${path}:`, error);
     return "";
   }
