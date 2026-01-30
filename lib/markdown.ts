@@ -115,24 +115,25 @@ export interface TocItem {
 export function generateTableOfContents(content: string): TocItem[] {
   const headingRegex = /^(#{1,6})\s+(.+)$/gm;
   const toc: TocItem[] = [];
-  const slugCount: Record<string, number> = {};
+  const usedSlugs = new Set<string>();
   let match;
 
   while ((match = headingRegex.exec(content)) !== null) {
     const level = match[1].length;
     const text = match[2];
-    let slug = text
+    const baseSlug = text
       .toLowerCase()
       .replace(/[^\w\s-]/g, "")
       .replace(/\s+/g, "-");
 
-    // 중복 slug 처리
-    if (slugCount[slug] !== undefined) {
-      slugCount[slug]++;
-      slug = `${slug}-${slugCount[slug]}`;
-    } else {
-      slugCount[slug] = 0;
+    // 중복 slug 처리: 충돌이 없을 때까지 카운터 증가
+    let slug = baseSlug;
+    let counter = 1;
+    while (usedSlugs.has(slug)) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
     }
+    usedSlugs.add(slug);
 
     toc.push({ level, text, slug });
   }
