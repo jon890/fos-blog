@@ -103,7 +103,11 @@ export default function RootLayout({
             `,
           }}
         />
-        {/* Google AdSense */}
+        {/* Google AdSense - 소유권 확인용 메타태그 */}
+        {adsenseId && (
+          <meta name="google-adsense-account" content={adsenseId} />
+        )}
+        {/* Google AdSense - 스크립트 */}
         {adsenseId && (
           <Script
             async
