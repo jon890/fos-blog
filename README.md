@@ -17,6 +17,7 @@ GitHub 저장소의 마크다운 파일을 자동으로 가져와 보여주는 �
 - **스타일링**: Tailwind CSS v4
 - **마크다운 렌더링**: react-markdown + remark-gfm + rehype-highlight
 - **GitHub 연동**: Octokit (GitHub REST API)
+- **데이터베이스**: Drizzle ORM + MySQL
 - **테마**: next-themes
 - **패키지 매니저**: pnpm
 
@@ -53,7 +54,45 @@ pnpm dev
 
 http://localhost:3000에서 블로그를 확인할 수 있습니다.
 
-### 4. 프로덕션 빌드
+### 4. 데이터베이스 설정 (선택사항)
+
+MySQL을 사용하면 GitHub API 호출 없이 빠르게 페이지를 로드할 수 있습니다.
+
+#### Docker Compose로 MySQL 실행
+
+```bash
+# MySQL 컨테이너 시작
+docker compose up -d
+
+# 컨테이너 상태 확인
+docker compose ps
+
+# 로그 확인
+docker compose logs -f db
+```
+
+#### 환경 변수 설정
+
+`.env.local.example`을 `.env.local`로 복사:
+
+```bash
+cp .env.local.example .env.local
+```
+
+#### DB 스키마 적용 및 데이터 동기화
+
+```bash
+# 스키마 생성
+pnpm db:push
+
+# GitHub 데이터를 DB에 동기화
+pnpm sync
+
+# DB 관리 UI 실행 (선택사항)
+pnpm db:studio
+```
+
+### 5. 프로덕션 빌드
 
 ```bash
 pnpm build

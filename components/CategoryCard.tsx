@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Category } from "@/lib/github";
+import { CategoryData } from "@/lib/data";
 import { Folder } from "lucide-react";
 
 interface CategoryCardProps {
-  category: Category;
+  category: CategoryData;
 }
 
 export function CategoryCard({ category }: CategoryCardProps) {

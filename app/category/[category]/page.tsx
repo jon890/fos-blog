@@ -2,7 +2,7 @@ import {
   getPostsByCategory,
   getCategories,
   getCategoryIcon,
-} from "@/lib/github";
+} from "@/lib/data";
 import { PostCard } from "@/components/PostCard";
 import { notFound } from "next/navigation";
 import Link from "next/link";

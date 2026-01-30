@@ -1,8 +1,8 @@
-import { Category } from "@/lib/github";
+import { CategoryData } from "@/lib/data";
 import { CategoryCard } from "./CategoryCard";
 
 interface CategoryListProps {
-  categories: Category[];
+  categories: CategoryData[];
 }
 
 export function CategoryList({ categories }: CategoryListProps) {

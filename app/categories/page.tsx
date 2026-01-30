@@ -1,4 +1,4 @@
-import { getCategories } from "@/lib/github";
+import { getCategories } from "@/lib/data";
 import { CategoryList } from "@/components/CategoryList";
 
 export const revalidate = 3600;

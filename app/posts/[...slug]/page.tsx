@@ -1,4 +1,4 @@
-import { getPost, getCategoryIcon, getAllMarkdownFiles } from "@/lib/github";
+import { getPost, getCategoryIcon, getAllPostPaths } from "@/lib/data";
 import {
   extractTitle,
   extractDescription,
@@ -49,9 +49,9 @@ export async function generateMetadata({
 }
 
 export async function generateStaticParams() {
-  const posts = await getAllMarkdownFiles();
-  return posts.map((post) => ({
-    slug: post.path.split("/"),
+  const paths = await getAllPostPaths();
+  return paths.map((path) => ({
+    slug: path.split("/"),
   }));
 }
 

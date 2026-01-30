@@ -1,4 +1,4 @@
-import { getCategories, getRecentPosts } from "@/lib/github";
+import { getCategories, getRecentPosts } from "@/lib/data";
 import { CategoryList } from "@/components/CategoryList";
 import { PostCard } from "@/components/PostCard";
 import { ArrowRight, Sparkles } from "lucide-react";
