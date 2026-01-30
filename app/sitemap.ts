@@ -1,8 +1,13 @@
 import type { MetadataRoute } from "next";
-import { getCategories, getAllPostPaths, getAllFolderPaths } from "@/lib/data";
+import {
+  getCategories,
+  getAllPostPaths,
+  getAllFolderPaths,
+} from "@/lib/db-queries";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://fos-blog.vercel.app";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || "https://fos-blog.vercel.app";
 
   // 정적 페이지
   const staticPages: MetadataRoute.Sitemap = [
@@ -31,17 +36,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // 폴더 페이지 (n-depth)
   const folderPaths = await getAllFolderPaths();
-  const folderPages: MetadataRoute.Sitemap = folderPaths.map((pathSegments) => ({
-    url: `${baseUrl}/category/${pathSegments.map(encodeURIComponent).join("/")}`,
-    lastModified: new Date(),
-    changeFrequency: "weekly" as const,
-    priority: 0.6,
-  }));
+  const folderPages: MetadataRoute.Sitemap = folderPaths.map(
+    (pathSegments) => ({
+      url: `${baseUrl}/category/${pathSegments
+        .map(encodeURIComponent)
+        .join("/")}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    })
+  );
 
   // 포스트 페이지
   const postPaths = await getAllPostPaths();
   const postPages: MetadataRoute.Sitemap = postPaths.map((path) => ({
-    url: `${baseUrl}/posts/${path.split("/").map(encodeURIComponent).join("/")}`,
+    url: `${baseUrl}/posts/${path
+      .split("/")
+      .map(encodeURIComponent)
+      .join("/")}`,
     lastModified: new Date(),
     changeFrequency: "monthly" as const,
     priority: 0.5,

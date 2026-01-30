@@ -1,4 +1,4 @@
-import { getPost, getCategoryIcon, getAllPostPaths } from "@/lib/data";
+import { getPost, getCategoryIcon, getAllPostPaths } from "@/lib/db-queries";
 import {
   extractTitle,
   extractDescription,

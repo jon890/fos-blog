@@ -1,5 +1,5 @@
 import { getDb } from "@/db";
-import { DbQueries, categoryIcons } from "@/db/queries";
+import { DbQueries, categoryIcons, DEFAULT_CATEGORY_ICON } from "@/db/queries";
 
 // 타입 re-export
 export type {
@@ -7,7 +7,7 @@ export type {
   CategoryData,
   FolderItemData,
   FolderContentsResult,
-} from "@/db/queries";
+} from "@/db/types";
 
 // ===== 싱글톤 인스턴스 =====
 
@@ -63,7 +63,9 @@ export const getAllFolderPaths = () =>
   getDbQueries()?.getAllFolderPaths() ?? emptyFolderPaths();
 
 export const getCategoryIcon = (category: string) =>
-  getDbQueries()?.getCategoryIcon(category) ?? categoryIcons[category] ?? "📁";
+  getDbQueries()?.getCategoryIcon(category) ??
+  categoryIcons[category] ??
+  DEFAULT_CATEGORY_ICON;
 
 export const searchPosts = (query: string, limit?: number) =>
   getDbQueries()?.searchPosts(query, limit) ?? emptyPosts();

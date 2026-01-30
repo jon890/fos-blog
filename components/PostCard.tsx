@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getCategoryIcon, PostData } from "@/lib/data";
+import { getCategoryIcon } from "@/lib/db-queries";
+import type { PostData } from "@/db/types";
 import { FileText, ChevronRight } from "lucide-react";
 
 interface PostCardProps {

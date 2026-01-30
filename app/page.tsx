@@ -1,4 +1,4 @@
-import { getCategories, getRecentPosts } from "@/lib/data";
+import { getCategories, getRecentPosts } from "@/lib/db-queries";
 import { CategoryList } from "@/components/CategoryList";
 import { PostCard } from "@/components/PostCard";
 import { WebsiteJsonLd } from "@/components/JsonLd";

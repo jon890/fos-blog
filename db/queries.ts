@@ -2,65 +2,17 @@ import { MySql2Database } from "drizzle-orm/mysql2";
 import { posts, categories, folders } from "./schema";
 import { eq, desc, and, or, like, sql } from "drizzle-orm";
 import type * as schema from "./schema";
+import type {
+  PostData,
+  CategoryData,
+  FolderItemData,
+  FolderContentsResult,
+} from "./types";
+import { categoryIcons, DEFAULT_CATEGORY_ICON } from "./constants";
 
-// ===== 타입 정의 =====
-
-export interface PostData {
-  title: string;
-  path: string;
-  slug: string;
-  category: string;
-  subcategory?: string | null;
-  folders?: string[];
-  content?: string | null;
-  description?: string | null;
-}
-
-export interface FolderItemData {
-  name: string;
-  type: "folder" | "file";
-  path: string;
-  count?: number;
-}
-
-export interface CategoryData {
-  name: string;
-  slug: string;
-  icon: string | null;
-  count: number;
-}
-
-export interface FolderContentsResult {
-  folders: FolderItemData[];
-  posts: PostData[];
-  readme: string | null;
-}
-
-// ===== 카테고리 아이콘 매핑 =====
-
-export const categoryIcons: Record<string, string> = {
-  AI: "🤖",
-  algorithm: "🧮",
-  architecture: "🏗️",
-  database: "🗄️",
-  devops: "🚀",
-  finance: "💰",
-  git: "📝",
-  go: "🐹",
-  html: "🌐",
-  http: "📡",
-  internet: "🌍",
-  interview: "💼",
-  java: "☕",
-  javascript: "⚡",
-  kafka: "📨",
-  network: "🔌",
-  react: "⚛️",
-  redis: "🔴",
-  resume: "📄",
-  css: "🎨",
-  기술공유: "📢",
-};
+// 타입 re-export
+export type { PostData, CategoryData, FolderItemData, FolderContentsResult };
+export { categoryIcons, DEFAULT_CATEGORY_ICON };
 
 // ===== DbQueries 클래스 =====
 
@@ -76,7 +28,7 @@ export class DbQueries {
     return result.map((cat) => ({
       name: cat.name,
       slug: cat.slug,
-      icon: cat.icon || categoryIcons[cat.name] || "📁",
+      icon: cat.icon || categoryIcons[cat.name] || DEFAULT_CATEGORY_ICON,
       count: cat.postCount,
     }));
   }
@@ -249,7 +201,7 @@ export class DbQueries {
   }
 
   getCategoryIcon(category: string): string {
-    return categoryIcons[category] || "📁";
+    return categoryIcons[category] || DEFAULT_CATEGORY_ICON;
   }
 
   // ===== 검색 기능 =====

@@ -2,7 +2,7 @@ import {
   getFolderContents,
   getAllFolderPaths,
   getCategoryIcon,
-} from "@/lib/data";
+} from "@/lib/db-queries";
 import { PostCard } from "@/components/PostCard";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { notFound } from "next/navigation";
