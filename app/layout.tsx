@@ -98,7 +98,7 @@ export default function RootLayout({
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
-          enableSystem
+          enableSystem={false}
           disableTransitionOnChange
         >
           <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
