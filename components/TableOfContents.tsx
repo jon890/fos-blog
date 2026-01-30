@@ -42,9 +42,9 @@ export function TableOfContents({ toc }: TableOfContentsProps) {
         <span>목차</span>
       </div>
       <ul className="space-y-2 text-sm">
-        {toc.map((item) => (
+        {toc.map((item, index) => (
           <li
-            key={item.slug}
+            key={`${item.slug}-${index}`}
             style={{ paddingLeft: `${(item.level - 1) * 12}px` }}
           >
             <a

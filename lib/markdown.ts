@@ -115,15 +115,24 @@ export interface TocItem {
 export function generateTableOfContents(content: string): TocItem[] {
   const headingRegex = /^(#{1,6})\s+(.+)$/gm;
   const toc: TocItem[] = [];
+  const slugCount: Record<string, number> = {};
   let match;
 
   while ((match = headingRegex.exec(content)) !== null) {
     const level = match[1].length;
     const text = match[2];
-    const slug = text
+    let slug = text
       .toLowerCase()
       .replace(/[^\w\s-]/g, "")
       .replace(/\s+/g, "-");
+
+    // 중복 slug 처리
+    if (slugCount[slug] !== undefined) {
+      slugCount[slug]++;
+      slug = `${slug}-${slugCount[slug]}`;
+    } else {
+      slugCount[slug] = 0;
+    }
 
     toc.push({ level, text, slug });
   }
