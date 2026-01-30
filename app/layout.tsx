@@ -49,20 +49,11 @@ export const metadata: Metadata = {
     siteName: "FOS Study",
     title: "FOS Study - 개발 학습 블로그",
     description: "개발 공부 기록을 정리하는 블로그입니다.",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "FOS Study - 개발 학습 블로그",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "FOS Study - 개발 학습 블로그",
     description: "개발 공부 기록을 정리하는 블로그입니다.",
-    images: ["/og-image.png"],
   },
   robots: {
     index: true,
