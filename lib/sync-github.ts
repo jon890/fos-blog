@@ -1,11 +1,12 @@
 import { Octokit } from "@octokit/rest";
-import { db } from "@/db";
+import { getDb as getDbInstance } from "@/db";
 import { posts, categories, syncLogs, folders } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { extractDescription } from "./markdown";
 
 // DB가 설정되지 않으면 에러
 function getDb() {
+  const db = getDbInstance();
   if (!db) {
     throw new Error(
       "Database not configured. Set DATABASE_URL environment variable."

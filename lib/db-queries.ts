@@ -1,110 +1,69 @@
-import { db } from "@/db";
-import {
-  createRealDbQueries,
-  categoryIcons,
-  searchPosts as dbSearchPosts,
+import { getDb } from "@/db";
+import { DbQueries, categoryIcons } from "@/db/queries";
+
+// 타입 re-export
+export type {
+  PostData,
+  CategoryData,
+  FolderItemData,
+  FolderContentsResult,
 } from "@/db/queries";
 
-// ===== 타입 정의 =====
+// ===== 싱글톤 인스턴스 =====
 
-export interface PostData {
-  title: string;
-  path: string;
-  slug: string;
-  category: string;
-  subcategory?: string | null;
-  folders?: string[];
-  content?: string | null;
-  description?: string | null;
-}
+let cachedDbQueries: DbQueries | null = null;
 
-export interface FolderItemData {
-  name: string;
-  type: "folder" | "file";
-  path: string;
-  count?: number;
-}
-
-export interface CategoryData {
-  name: string;
-  slug: string;
-  icon: string | null;
-  count: number;
-}
-
-export interface FolderContentsResult {
-  folders: FolderItemData[];
-  posts: PostData[];
-  readme: string | null;
-}
-
-export interface DbQueries {
-  getCategories(): Promise<CategoryData[]>;
-  getPostsByCategory(category: string): Promise<PostData[]>;
-  getRecentPosts(limit?: number): Promise<PostData[]>;
-  getPost(slug: string): Promise<{ content: string; post: PostData } | null>;
-  getAllPostPaths(): Promise<string[]>;
-  getFolderContents(folderPath: string): Promise<FolderContentsResult>;
-  getAllFolderPaths(): Promise<string[][]>;
-  getCategoryIcon(category: string): string;
-}
-
-// ===== FakeDbQueries (DB 없을 때 사용) =====
-
-const fakeDbQueries: DbQueries = {
-  async getCategories() {
-    return [];
-  },
-  async getPostsByCategory() {
-    return [];
-  },
-  async getRecentPosts() {
-    return [];
-  },
-  async getPost() {
+function getDbQueries(): DbQueries | null {
+  const db = getDb();
+  if (!db) {
+    console.warn("Database not connected");
     return null;
-  },
-  async getAllPostPaths() {
-    return [];
-  },
-  async getFolderContents() {
-    return { folders: [], posts: [], readme: null };
-  },
-  async getAllFolderPaths() {
-    return [];
-  },
-  getCategoryIcon(category: string) {
-    return categoryIcons[category] || "📁";
-  },
-};
-
-// ===== 런타임 DB 선택 =====
-
-let cachedRealDbQueries: DbQueries | null = null;
-
-function getDbQueries(): DbQueries {
-  if (db) {
-    if (!cachedRealDbQueries) {
-      cachedRealDbQueries = createRealDbQueries();
-    }
-    return cachedRealDbQueries;
   }
-  console.warn("Database not connected, using fake queries");
-  return fakeDbQueries;
+
+  if (!cachedDbQueries) {
+    cachedDbQueries = new DbQueries(db);
+  }
+  return cachedDbQueries;
 }
+
+// ===== Fallback 함수들 (DB 없을 때) =====
+
+const emptyCategories = async () => [];
+const emptyPosts = async () => [];
+const emptyPost = async () => null;
+const emptyPaths = async () => [];
+const emptyFolderContents = async () => ({
+  folders: [],
+  posts: [],
+  readme: null,
+});
+const emptyFolderPaths = async () => [];
 
 // ===== Export 함수들 =====
 
-export const getCategories = () => getDbQueries().getCategories();
+export const getCategories = () =>
+  getDbQueries()?.getCategories() ?? emptyCategories();
+
 export const getPostsByCategory = (category: string) =>
-  getDbQueries().getPostsByCategory(category);
+  getDbQueries()?.getPostsByCategory(category) ?? emptyPosts();
+
 export const getRecentPosts = (limit?: number) =>
-  getDbQueries().getRecentPosts(limit);
-export const getPost = (slug: string) => getDbQueries().getPost(slug);
-export const getAllPostPaths = () => getDbQueries().getAllPostPaths();
+  getDbQueries()?.getRecentPosts(limit) ?? emptyPosts();
+
+export const getPost = (slug: string) =>
+  getDbQueries()?.getPost(slug) ?? emptyPost();
+
+export const getAllPostPaths = () =>
+  getDbQueries()?.getAllPostPaths() ?? emptyPaths();
+
 export const getFolderContents = (folderPath: string) =>
-  getDbQueries().getFolderContents(folderPath);
-export const getAllFolderPaths = () => getDbQueries().getAllFolderPaths();
+  getDbQueries()?.getFolderContents(folderPath) ?? emptyFolderContents();
+
+export const getAllFolderPaths = () =>
+  getDbQueries()?.getAllFolderPaths() ?? emptyFolderPaths();
+
 export const getCategoryIcon = (category: string) =>
-  getDbQueries().getCategoryIcon(category);
-export const searchPosts = dbSearchPosts;
+  getDbQueries()?.getCategoryIcon(category) ?? categoryIcons[category] ?? "📁";
+
+export const searchPosts = (query: string, limit?: number) =>
+  getDbQueries()?.searchPosts(query, limit) ?? emptyPosts();
