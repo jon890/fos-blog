@@ -360,8 +360,6 @@ export async function searchPosts(
           subcategory: posts.subcategory,
           folders: posts.folders,
           description: posts.description,
-          // 관련도 점수로 정렬
-          relevance: sql<number>`MATCH(title, content, description) AGAINST(${fulltextQuery} IN BOOLEAN MODE)`,
         })
         .from(posts)
         .where(
@@ -370,7 +368,8 @@ export async function searchPosts(
             sql`MATCH(title, content, description) AGAINST(${fulltextQuery} IN BOOLEAN MODE)`
           )
         )
-        .orderBy(sql`relevance DESC`)
+        // 관련도 점수로 정렬 (높은 점수가 먼저)
+        .orderBy(sql`MATCH(title, content, description) AGAINST(${fulltextQuery} IN BOOLEAN MODE) DESC`)
         .limit(limit);
 
       return result.map((p) => ({
