@@ -6,6 +6,7 @@ import {
   timestamp,
   index,
   boolean,
+  json,
 } from "drizzle-orm/mysql-core";
 
 // 카테고리 테이블
@@ -33,6 +34,7 @@ export const posts = mysqlTable(
     slug: varchar("slug", { length: 500 }).notNull(),
     category: varchar("category", { length: 255 }).notNull(),
     subcategory: varchar("subcategory", { length: 255 }),
+    folders: json("folders").$type<string[]>().default([]), // n-depth 폴더 경로 배열
     content: text("content"),
     description: text("description"),
     sha: varchar("sha", { length: 64 }), // GitHub file SHA for change detection

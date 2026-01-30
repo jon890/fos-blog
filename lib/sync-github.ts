@@ -106,6 +106,7 @@ async function collectMarkdownFiles(
     sha: string;
     category: string;
     subcategory?: string;
+    folders: string[];
   }> = []
 ): Promise<typeof files> {
   const contents = await getDirectoryContents(path);
@@ -121,7 +122,9 @@ async function collectMarkdownFiles(
     ) {
       const pathParts = item.path.split("/");
       const category = pathParts[0] || "uncategorized";
-      const subcategory = pathParts.length > 2 ? pathParts[1] : undefined;
+      // folders: 카테고리와 파일명 사이의 모든 폴더 (n-depth 지원)
+      const folders = pathParts.slice(1, -1);
+      const subcategory = folders.length > 0 ? folders[0] : undefined;
 
       files.push({
         name: item.name,
@@ -129,6 +132,7 @@ async function collectMarkdownFiles(
         sha: item.sha,
         category,
         subcategory,
+        folders,
       });
     }
   }
@@ -188,6 +192,7 @@ export async function syncGitHubToDatabase(): Promise<{
             sha: fileData.sha,
             category: file.category,
             subcategory: file.subcategory,
+            folders: file.folders,
             updatedAt: new Date(),
           })
           .where(eq(posts.id, existing.id));
@@ -201,6 +206,7 @@ export async function syncGitHubToDatabase(): Promise<{
           slug: file.path,
           category: file.category,
           subcategory: file.subcategory,
+          folders: file.folders,
           content: fileData.content,
           description,
           sha: fileData.sha,

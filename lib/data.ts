@@ -116,14 +116,18 @@ export async function getAllPostPaths(): Promise<string[]> {
 }
 
 // 폴더 콘텐츠 가져오기 (n-depth 지원)
-export async function getFolderContents(
-  folderPath: string
-): Promise<{
+export async function getFolderContents(folderPath: string): Promise<{
   folders: FolderItemData[];
   posts: PostData[];
   readme: string | null;
 }> {
-  // TODO: DB 지원 추가
+  if (useDatabase) {
+    const dbResult = await dbQueries.getFolderContents(folderPath);
+    // DB에서는 README를 가져올 수 없으므로 GitHub API로 폴백
+    const readme = await githubApi.getFolderReadme(folderPath);
+    return { ...dbResult, readme };
+  }
+
   const result = await githubApi.getFolderContents(folderPath);
 
   return {
@@ -147,7 +151,9 @@ export async function getFolderContents(
 
 // 모든 폴더 경로 가져오기 (정적 생성용)
 export async function getAllFolderPaths(): Promise<string[][]> {
-  // TODO: DB 지원 추가
+  if (useDatabase) {
+    return dbQueries.getAllFolderPaths();
+  }
   return githubApi.getAllFolderPaths();
 }
 
