@@ -13,8 +13,17 @@ export interface PostData {
   slug: string;
   category: string;
   subcategory?: string | null;
+  folders?: string[];
   content?: string | null;
   description?: string | null;
+}
+
+export interface FolderItemData {
+  name: string;
+  type: "folder" | "file";
+  path: string;
+  count?: number;
+  post?: PostData;
 }
 
 export interface CategoryData {
@@ -40,7 +49,9 @@ export async function getCategories(): Promise<CategoryData[]> {
 }
 
 // 카테고리별 포스트 가져오기
-export async function getPostsByCategory(category: string): Promise<PostData[]> {
+export async function getPostsByCategory(
+  category: string
+): Promise<PostData[]> {
   if (useDatabase) {
     return dbQueries.getPostsByCategory(category);
   }
@@ -102,6 +113,42 @@ export async function getAllPostPaths(): Promise<string[]> {
 
   const posts = await githubApi.getAllMarkdownFiles();
   return posts.map((post) => post.path);
+}
+
+// 폴더 콘텐츠 가져오기 (n-depth 지원)
+export async function getFolderContents(
+  folderPath: string
+): Promise<{
+  folders: FolderItemData[];
+  posts: PostData[];
+  readme: string | null;
+}> {
+  // TODO: DB 지원 추가
+  const result = await githubApi.getFolderContents(folderPath);
+
+  return {
+    folders: result.folders.map((f) => ({
+      name: f.name,
+      type: f.type,
+      path: f.path,
+      count: f.count,
+    })),
+    posts: result.posts.map((p) => ({
+      title: p.title,
+      path: p.path,
+      slug: p.slug,
+      category: p.category,
+      subcategory: p.subcategory,
+      folders: p.folders,
+    })),
+    readme: result.readme,
+  };
+}
+
+// 모든 폴더 경로 가져오기 (정적 생성용)
+export async function getAllFolderPaths(): Promise<string[][]> {
+  // TODO: DB 지원 추가
+  return githubApi.getAllFolderPaths();
 }
 
 // 카테고리 아이콘 가져오기

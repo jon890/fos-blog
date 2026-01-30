@@ -23,6 +23,8 @@ export interface Post {
   slug: string;
   category: string;
   subcategory?: string;
+  /** 전체 폴더 경로 (카테고리 제외) - n-depth 지원 */
+  folders: string[];
   lastModified?: string;
 }
 
@@ -89,10 +91,9 @@ export async function getFileContent(path: string): Promise<string> {
     });
 
     if (!Array.isArray(response.data) && response.data.type === "file") {
-      const content = Buffer.from(
-        response.data.content,
-        "base64"
-      ).toString("utf-8");
+      const content = Buffer.from(response.data.content, "base64").toString(
+        "utf-8"
+      );
       return content;
     }
     return "";
@@ -121,7 +122,9 @@ export async function getAllMarkdownFiles(
     ) {
       const pathParts = item.path.split("/");
       const category = pathParts[0] || "uncategorized";
-      const subcategory = pathParts.length > 2 ? pathParts[1] : undefined;
+      // folders: 카테고리와 파일명 사이의 모든 폴더 (n-depth 지원)
+      const folders = pathParts.slice(1, -1);
+      const subcategory = folders.length > 0 ? folders[0] : undefined;
 
       files.push({
         title: item.name.replace(/\.(md|mdx)$/, "").replace(/_/g, " "),
@@ -129,6 +132,7 @@ export async function getAllMarkdownFiles(
         slug: item.path, // Keep original path, encode when needed in URLs
         category,
         subcategory,
+        folders,
       });
     }
   }
@@ -168,6 +172,101 @@ export async function getPostsByCategory(category: string): Promise<Post[]> {
   return files;
 }
 
+export interface FolderItem {
+  name: string;
+  type: "folder" | "file";
+  path: string;
+  count?: number; // 폴더 내 파일 수
+  post?: Post; // 파일인 경우 Post 정보
+}
+
+// Get README content from a folder
+export async function getFolderReadme(
+  folderPath: string
+): Promise<string | null> {
+  const readmeNames = ["README.md", "readme.md", "README.MD", "Readme.md"];
+
+  for (const readmeName of readmeNames) {
+    const readmePath = folderPath ? `${folderPath}/${readmeName}` : readmeName;
+    const content = await getFileContent(readmePath);
+    if (content) {
+      return content;
+    }
+  }
+
+  return null;
+}
+
+// Get folder contents at a specific path (folders + files)
+export async function getFolderContents(
+  folderPath: string
+): Promise<{ folders: FolderItem[]; posts: Post[]; readme: string | null }> {
+  const contents = await getDirectoryContents(folderPath);
+  const folders: FolderItem[] = [];
+  const posts: Post[] = [];
+  const pathParts = folderPath.split("/").filter(Boolean);
+  const category = pathParts[0] || "uncategorized";
+
+  for (const item of contents) {
+    if (item.name.startsWith(".")) continue;
+
+    if (item.type === "dir") {
+      // 해당 폴더 내 마크다운 파일 수 계산
+      const filesInFolder = await getAllMarkdownFiles(item.path, []);
+      folders.push({
+        name: item.name,
+        type: "folder",
+        path: item.path,
+        count: filesInFolder.length,
+      });
+    } else if (
+      item.type === "file" &&
+      (item.name.endsWith(".md") || item.name.endsWith(".mdx"))
+    ) {
+      const itemPathParts = item.path.split("/");
+      const itemFolders = itemPathParts.slice(1, -1);
+
+      posts.push({
+        title: item.name.replace(/\.(md|mdx)$/, "").replace(/_/g, " "),
+        path: item.path,
+        slug: item.path,
+        category,
+        subcategory: itemFolders.length > 0 ? itemFolders[0] : undefined,
+        folders: itemFolders,
+      });
+    }
+  }
+
+  // README 내용 가져오기
+  const readme = await getFolderReadme(folderPath);
+
+  return {
+    folders: folders.sort((a, b) => a.name.localeCompare(b.name)),
+    posts: posts.sort((a, b) => a.title.localeCompare(b.title)),
+    readme,
+  };
+}
+
+// Get all folder paths for static generation
+export async function getAllFolderPaths(
+  basePath: string = "",
+  paths: string[][] = []
+): Promise<string[][]> {
+  const contents = await getDirectoryContents(basePath);
+
+  for (const item of contents) {
+    if (item.name.startsWith(".") || item.name === "node_modules") continue;
+
+    if (item.type === "dir") {
+      const pathSegments = item.path.split("/");
+      paths.push(pathSegments);
+      await getAllFolderPaths(item.path, paths);
+    }
+  }
+
+  return paths;
+}
+
 // Get single post content
 export async function getPost(
   slug: string
@@ -182,6 +281,8 @@ export async function getPost(
     const category = pathParts[0] || "uncategorized";
     const fileName = pathParts[pathParts.length - 1];
 
+    const folders = pathParts.slice(1, -1);
+
     return {
       content,
       post: {
@@ -189,7 +290,8 @@ export async function getPost(
         path,
         slug,
         category,
-        subcategory: pathParts.length > 2 ? pathParts[1] : undefined,
+        subcategory: folders.length > 0 ? folders[0] : undefined,
+        folders,
       },
     };
   } catch (error) {
