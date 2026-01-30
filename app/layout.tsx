@@ -171,10 +171,7 @@ export default function RootLayout({
                   </div>
                 </div>
                 <div className="pt-8 border-t border-gray-200 dark:border-gray-800 text-center text-sm text-gray-600 dark:text-gray-400">
-                  <p>
-                    © {new Date().getFullYear()} FOS Study. Built with Next.js &
-                    Tailwind CSS
-                  </p>
+                  <p>© 2025 FOS Study. Built with Next.js & Tailwind CSS</p>
                 </div>
               </div>
             </footer>

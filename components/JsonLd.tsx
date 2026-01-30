@@ -60,8 +60,10 @@ export function ArticleJsonLd({
     headline: title,
     description,
     image: images,
-    datePublished: datePublished || new Date().toISOString(),
-    dateModified: dateModified || datePublished || new Date().toISOString(),
+    ...(datePublished && { datePublished }),
+    ...(dateModified
+      ? { dateModified }
+      : datePublished && { dateModified: datePublished }),
     author: {
       "@type": "Person",
       name: authorName,
