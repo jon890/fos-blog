@@ -15,6 +15,9 @@ RUN pnpm install --frozen-lockfile
 # Copy source files
 COPY . .
 
+# Ensure public directory exists
+RUN mkdir -p public
+
 # Build arguments for environment variables
 ARG GITHUB_TOKEN
 ARG GITHUB_OWNER=jon890
