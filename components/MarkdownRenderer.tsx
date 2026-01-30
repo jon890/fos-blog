@@ -22,26 +22,17 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
       </h1>
     ),
     h2: ({ children, ...props }) => (
-      <h2
-        className="text-2xl md:text-3xl font-bold mt-8 mb-4"
-        {...props}
-      >
+      <h2 className="text-2xl md:text-3xl font-bold mt-8 mb-4" {...props}>
         {children}
       </h2>
     ),
     h3: ({ children, ...props }) => (
-      <h3
-        className="text-xl md:text-2xl font-bold mt-6 mb-3"
-        {...props}
-      >
+      <h3 className="text-xl md:text-2xl font-bold mt-6 mb-3" {...props}>
         {children}
       </h3>
     ),
     h4: ({ children, ...props }) => (
-      <h4
-        className="text-lg md:text-xl font-bold mt-4 mb-2"
-        {...props}
-      >
+      <h4 className="text-lg md:text-xl font-bold mt-4 mb-2" {...props}>
         {children}
       </h4>
     ),
@@ -121,10 +112,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
       </div>
     ),
     thead: ({ children, ...props }) => (
-      <thead
-        className="bg-gray-50 dark:bg-gray-900"
-        {...props}
-      >
+      <thead className="bg-gray-50 dark:bg-gray-900" {...props}>
         {children}
       </thead>
     ),
@@ -145,7 +133,6 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
       </td>
     ),
     img: ({ src, alt, ...props }) => (
-      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={src}
         alt={alt || ""}
@@ -155,10 +142,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
       />
     ),
     hr: ({ ...props }) => (
-      <hr
-        className="my-8 border-gray-200 dark:border-gray-800"
-        {...props}
-      />
+      <hr className="my-8 border-gray-200 dark:border-gray-800" {...props} />
     ),
   };
 
