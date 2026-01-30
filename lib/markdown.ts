@@ -1,4 +1,5 @@
 // Markdown utility functions
+import GithubSlugger from "github-slugger";
 
 export interface FrontMatter {
   title?: string;
@@ -115,25 +116,14 @@ export interface TocItem {
 export function generateTableOfContents(content: string): TocItem[] {
   const headingRegex = /^(#{1,6})\s+(.+)$/gm;
   const toc: TocItem[] = [];
-  const usedSlugs = new Set<string>();
+  const slugger = new GithubSlugger();
   let match;
 
   while ((match = headingRegex.exec(content)) !== null) {
     const level = match[1].length;
     const text = match[2];
-    const baseSlug = text
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/\s+/g, "-");
-
-    // 중복 slug 처리: 충돌이 없을 때까지 카운터 증가
-    let slug = baseSlug;
-    let counter = 1;
-    while (usedSlugs.has(slug)) {
-      slug = `${baseSlug}-${counter}`;
-      counter++;
-    }
-    usedSlugs.add(slug);
+    // github-slugger를 사용하여 rehype-slug와 동일한 slug 생성
+    const slug = slugger.slug(text);
 
     toc.push({ level, text, slug });
   }

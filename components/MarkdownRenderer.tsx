@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import rehypeRaw from "rehype-raw";
+import rehypeSlug from "rehype-slug";
 import { Components } from "react-markdown";
 import "highlight.js/styles/github-dark.css";
 
@@ -150,7 +151,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
     <article className="prose prose-gray dark:prose-invert max-w-none">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeHighlight, rehypeRaw]}
+        rehypePlugins={[rehypeSlug, rehypeHighlight, rehypeRaw]}
         components={components}
       >
         {content}
