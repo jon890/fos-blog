@@ -1,29 +1,85 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Header } from "@/components/Header";
 
 const inter = Inter({ subsets: ["latin"] });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://fos-blog.vercel.app";
+
 export const metadata: Metadata = {
-  title: "FOS Study - 개발 학습 블로그",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "FOS Study - 개발 학습 블로그",
+    template: "%s | FOS Study",
+  },
   description:
-    "개발 공부 기록을 정리하는 블로그입니다. AI, 알고리즘, 아키텍처, 데이터베이스, DevOps 등 다양한 주제를 다룹니다.",
+    "개발 공부 기록을 정리하는 블로그입니다. AI, 알고리즘, 아키텍처, 데이터베이스, DevOps, Java, JavaScript, React 등 다양한 주제를 다룹니다.",
   keywords: [
     "개발",
     "프로그래밍",
     "학습",
     "블로그",
     "JavaScript",
+    "TypeScript",
     "Java",
+    "Spring",
     "React",
+    "Next.js",
+    "알고리즘",
+    "자료구조",
+    "DevOps",
+    "데이터베이스",
   ],
-  authors: [{ name: "jon890" }],
+  authors: [{ name: "jon890", url: "https://github.com/jon890" }],
+  creator: "jon890",
+  publisher: "FOS Study",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   openGraph: {
+    type: "website",
+    locale: "ko_KR",
+    url: siteUrl,
+    siteName: "FOS Study",
     title: "FOS Study - 개발 학습 블로그",
     description: "개발 공부 기록을 정리하는 블로그입니다.",
-    type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "FOS Study - 개발 학습 블로그",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FOS Study - 개발 학습 블로그",
+    description: "개발 공부 기록을 정리하는 블로그입니다.",
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+  },
+  alternates: {
+    canonical: siteUrl,
   },
 };
 
@@ -32,8 +88,21 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const adsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
+
   return (
     <html lang="ko" suppressHydrationWarning>
+      <head>
+        {/* Google AdSense */}
+        {adsenseId && (
+          <Script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseId}`}
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
+          />
+        )}
+      </head>
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"
