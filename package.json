@@ -16,8 +16,9 @@
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f db",
+    "db:fulltext": "dotenv -e .env.local -- tsx scripts/add-fulltext-index.ts",
     "sync": "dotenv -e .env.local -- tsx scripts/sync.ts",
-    "setup": "docker compose up -d && sleep 5 && pnpm db:push && pnpm sync"
+    "setup": "docker compose up -d && sleep 5 && pnpm db:push && pnpm sync && pnpm db:fulltext"
   },
   "dependencies": {
     "@octokit/rest": "^21.0.0",

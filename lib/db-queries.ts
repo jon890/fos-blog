@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { posts, categories, folders } from "@/db/schema";
-import { eq, desc, and, or, like } from "drizzle-orm";
+import { eq, desc, and, or, like, sql } from "drizzle-orm";
 
 // ===== 인터페이스 정의 =====
 
@@ -328,6 +328,9 @@ export const getCategoryIcon = (category: string) =>
 
 // ===== 검색 기능 =====
 
+// FULLTEXT 검색 사용 여부 (환경변수로 제어 가능)
+const useFulltextSearch = process.env.USE_FULLTEXT_SEARCH !== "false";
+
 export async function searchPosts(
   query: string,
   limit: number = 20
@@ -336,7 +339,60 @@ export async function searchPosts(
     return [];
   }
 
-  const searchTerm = `%${query.trim()}%`;
+  const searchQuery = query.trim();
+
+  // FULLTEXT 검색 시도 (MySQL MATCH AGAINST)
+  if (useFulltextSearch) {
+    try {
+      // FULLTEXT 검색: 자연어 모드로 검색
+      // Boolean 모드로 부분 일치 지원 (+keyword*, *keyword* 등)
+      const fulltextQuery = searchQuery
+        .split(/\s+/)
+        .map((word) => `+${word}*`)
+        .join(" ");
+
+      const result = await db
+        .select({
+          title: posts.title,
+          path: posts.path,
+          slug: posts.slug,
+          category: posts.category,
+          subcategory: posts.subcategory,
+          folders: posts.folders,
+          description: posts.description,
+          // 관련도 점수로 정렬
+          relevance: sql<number>`MATCH(title, content, description) AGAINST(${fulltextQuery} IN BOOLEAN MODE)`,
+        })
+        .from(posts)
+        .where(
+          and(
+            eq(posts.isActive, true),
+            sql`MATCH(title, content, description) AGAINST(${fulltextQuery} IN BOOLEAN MODE)`
+          )
+        )
+        .orderBy(sql`relevance DESC`)
+        .limit(limit);
+
+      return result.map((p) => ({
+        title: p.title,
+        path: p.path,
+        slug: p.slug,
+        category: p.category,
+        subcategory: p.subcategory,
+        folders: p.folders || [],
+        description: p.description,
+      }));
+    } catch (error) {
+      // FULLTEXT 인덱스가 없으면 LIKE 검색으로 fallback
+      console.warn(
+        "FULLTEXT search failed, falling back to LIKE search:",
+        error
+      );
+    }
+  }
+
+  // Fallback: LIKE 검색
+  const searchTerm = `%${searchQuery}%`;
 
   const result = await db
     .select({
