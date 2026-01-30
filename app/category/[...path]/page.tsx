@@ -10,7 +10,8 @@ import Link from "next/link";
 import { ArrowLeft, Folder, ChevronRight, Home, BookOpen } from "lucide-react";
 import { Metadata } from "next";
 
-export const revalidate = 3600;
+// 동적 렌더링 - 매 요청마다 DB 조회
+export const dynamic = "force-dynamic";
 
 interface FolderPageProps {
   params: Promise<{

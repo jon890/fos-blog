@@ -10,15 +10,20 @@ let cachedDb: MySql2Database<typeof schema> | null = null;
  * 빌드 시점이 아닌 런타임에 환경변수를 확인하여 DB 연결
  */
 export function getDb(): MySql2Database<typeof schema> | null {
+  console.log("[DB] getDb() called, cachedDb:", cachedDb ? "exists" : "null");
+
   // 이미 연결되어 있으면 캐시된 인스턴스 반환
   if (cachedDb) {
+    console.log("[DB] Returning cached DB instance");
     return cachedDb;
   }
 
   // 런타임에 환경변수 확인
   const connectionString = process.env.DATABASE_URL;
+  console.log("[DB] DATABASE_URL:", connectionString ? "set" : "NOT SET");
+
   if (!connectionString) {
-    console.warn("DATABASE_URL is not set");
+    console.warn("[DB] DATABASE_URL is not set - returning null");
     return null;
   }
 

@@ -17,7 +17,8 @@ import { Metadata } from "next";
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL || "https://fos-blog.vercel.app";
 
-export const revalidate = 3600;
+// 동적 렌더링 - 매 요청마다 DB 조회
+export const dynamic = "force-dynamic";
 
 interface PostPageProps {
   params: Promise<{

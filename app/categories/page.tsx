@@ -1,7 +1,8 @@
 import { getCategories } from "@/lib/db-queries";
 import { CategoryList } from "@/components/CategoryList";
 
-export const revalidate = 3600;
+// 동적 렌더링 - 매 요청마다 DB 조회
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "카테고리 - FOS Study",

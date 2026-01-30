@@ -6,8 +6,10 @@ import {
 } from "@/lib/db-queries";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || "https://fos-blog.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (!baseUrl) {
+    throw new Error("NEXT_PUBLIC_SITE_URL is not set");
+  }
 
   // 정적 페이지
   const staticPages: MetadataRoute.Sitemap = [

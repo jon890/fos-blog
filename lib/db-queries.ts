@@ -14,13 +14,15 @@ export type {
 let cachedDbQueries: DbQueries | null = null;
 
 function getDbQueries(): DbQueries | null {
+  console.log("[DbQueries] getDbQueries() called");
   const db = getDb();
   if (!db) {
-    console.warn("Database not connected");
+    console.warn("[DbQueries] Database not connected - returning null");
     return null;
   }
 
   if (!cachedDbQueries) {
+    console.log("[DbQueries] Creating new DbQueries instance");
     cachedDbQueries = new DbQueries(db);
   }
   return cachedDbQueries;
