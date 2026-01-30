@@ -8,8 +8,8 @@ import Link from "next/link";
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL || "https://fos-blog.vercel.app";
 
-// Revalidate every hour
-export const revalidate = 3600;
+// ISR - 60초마다 페이지 재생성
+export const revalidate = 60;
 
 export default async function HomePage() {
   const [categories, recentPosts] = await Promise.all([

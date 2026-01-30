@@ -1,8 +1,8 @@
 import { getCategories } from "@/lib/db-queries";
 import { CategoryList } from "@/components/CategoryList";
 
-// 동적 렌더링 - 매 요청마다 DB 조회
-export const dynamic = "force-dynamic";
+// ISR - 60초마다 페이지 재생성
+export const revalidate = 60;
 
 export const metadata = {
   title: "카테고리 - FOS Study",

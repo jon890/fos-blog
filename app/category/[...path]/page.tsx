@@ -10,8 +10,8 @@ import Link from "next/link";
 import { ArrowLeft, Folder, ChevronRight, Home, BookOpen } from "lucide-react";
 import { Metadata } from "next";
 
-// 동적 렌더링 - 매 요청마다 DB 조회
-export const dynamic = "force-dynamic";
+// ISR - 60초마다 페이지 재생성
+export const revalidate = 60;
 
 interface FolderPageProps {
   params: Promise<{

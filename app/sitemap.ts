@@ -5,8 +5,8 @@ import {
   getAllFolderPaths,
 } from "@/lib/db-queries";
 
-// 동적 렌더링 - 런타임에 DB 조회
-export const dynamic = "force-dynamic";
+// ISR - 60초마다 재생성
+export const revalidate = 60;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl =
