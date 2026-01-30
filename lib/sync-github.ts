@@ -1,6 +1,6 @@
 import { Octokit } from "@octokit/rest";
 import { db } from "@/db";
-import { posts, categories, syncLogs } from "@/db/schema";
+import { posts, categories, syncLogs, folders } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { extractDescription } from "./markdown";
 
@@ -231,7 +231,10 @@ export async function syncGitHubToDatabase(): Promise<{
     // 5. 카테고리 업데이트
     await updateCategories();
 
-    // 6. 동기화 로그 저장
+    // 6. 폴더 README 동기화
+    await syncFolderReadmes();
+
+    // 7. 동기화 로그 저장
     await database.insert(syncLogs).values({
       status: "success",
       postsAdded: added,
@@ -280,4 +283,86 @@ async function updateCategories(): Promise<void> {
       postCount: stat.count,
     });
   }
+}
+
+// 폴더 README 동기화
+async function syncFolderReadmes(): Promise<void> {
+  const database = getDb();
+  console.log("Syncing folder READMEs...");
+
+  // 모든 활성 포스트에서 고유 폴더 경로 추출
+  const allPosts = await database
+    .select({ path: posts.path })
+    .from(posts)
+    .where(eq(posts.isActive, true));
+
+  const folderPaths = new Set<string>();
+  for (const post of allPosts) {
+    const parts = post.path.split("/");
+    // 파일명 제외한 모든 폴더 경로 추가
+    for (let i = 1; i <= parts.length - 1; i++) {
+      const folderPath = parts.slice(0, i).join("/");
+      if (folderPath) {
+        folderPaths.add(folderPath);
+      }
+    }
+  }
+
+  // 기존 폴더 정보 가져오기
+  const existingFolders = await database.select().from(folders);
+  const existingFolderMap = new Map(existingFolders.map((f) => [f.path, f]));
+
+  const readmeNames = ["README.md", "readme.md", "README.MD", "Readme.md"];
+  let synced = 0;
+
+  for (const folderPath of folderPaths) {
+    // README 파일 찾기
+    let readmeContent: { content: string; sha: string } | null = null;
+
+    for (const readmeName of readmeNames) {
+      const readmePath = `${folderPath}/${readmeName}`;
+      const result = await getFileContent(readmePath);
+      if (result) {
+        readmeContent = result;
+        break;
+      }
+    }
+
+    const existing = existingFolderMap.get(folderPath);
+
+    if (readmeContent) {
+      // SHA가 같으면 스킵
+      if (existing && existing.sha === readmeContent.sha) {
+        continue;
+      }
+
+      if (existing) {
+        await database
+          .update(folders)
+          .set({
+            readme: readmeContent.content,
+            sha: readmeContent.sha,
+            updatedAt: new Date(),
+          })
+          .where(eq(folders.id, existing.id));
+      } else {
+        await database.insert(folders).values({
+          path: folderPath,
+          readme: readmeContent.content,
+          sha: readmeContent.sha,
+        });
+      }
+      synced++;
+      console.log(`Synced README: ${folderPath}`);
+    } else if (!existing) {
+      // README가 없지만 폴더 정보는 저장
+      await database.insert(folders).values({
+        path: folderPath,
+        readme: null,
+        sha: null,
+      });
+    }
+  }
+
+  console.log(`Synced ${synced} folder READMEs`);
 }

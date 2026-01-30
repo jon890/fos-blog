@@ -48,6 +48,20 @@ export const posts = mysqlTable(
   ]
 );
 
+// 폴더 테이블 (README 저장용)
+export const folders = mysqlTable(
+  "folders",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    path: varchar("path", { length: 500 }).notNull().unique(),
+    readme: text("readme"), // README.md 내용
+    sha: varchar("sha", { length: 64 }), // README file SHA
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+  },
+  (table) => [index("path_idx").on(table.path)]
+);
+
 // 동기화 로그 테이블
 export const syncLogs = mysqlTable("sync_logs", {
   id: int("id").primaryKey().autoincrement(),
@@ -64,4 +78,6 @@ export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
 export type Post = typeof posts.$inferSelect;
 export type NewPost = typeof posts.$inferInsert;
+export type Folder = typeof folders.$inferSelect;
+export type NewFolder = typeof folders.$inferInsert;
 export type SyncLog = typeof syncLogs.$inferSelect;

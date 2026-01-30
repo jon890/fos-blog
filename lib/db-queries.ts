@@ -1,6 +1,8 @@
 import { db } from "@/db";
-import { posts, categories } from "@/db/schema";
-import { eq, desc, and } from "drizzle-orm"; // DB가 설정되지 않으면 에러
+import { posts, categories, folders } from "@/db/schema";
+import { eq, desc, and } from "drizzle-orm";
+
+// DB가 설정되지 않으면 에러
 
 function getDb() {
   if (!db) {
@@ -168,9 +170,7 @@ export async function getAllPostPaths(): Promise<string[]> {
 }
 
 // 폴더 콘텐츠 가져오기 (n-depth 지원)
-export async function getFolderContents(
-  folderPath: string
-): Promise<{
+export async function getFolderContents(folderPath: string): Promise<{
   folders: FolderItemData[];
   posts: PostData[];
   readme: string | null;
@@ -212,7 +212,7 @@ export async function getFolderContents(
     }
   }
 
-  const folders: FolderItemData[] = Array.from(subfolderMap.entries())
+  const foldersData: FolderItemData[] = Array.from(subfolderMap.entries())
     .map(([path, count]) => ({
       name: path.split("/").pop() || "",
       type: "folder" as const,
@@ -233,8 +233,16 @@ export async function getFolderContents(
     }))
     .sort((a, b) => a.title.localeCompare(b.title));
 
-  // README는 DB에서 가져올 수 없으므로 null 반환 (GitHub API로 폴백)
-  return { folders, posts: postsData, readme: null };
+  // README를 folders 테이블에서 가져오기
+  const folderRecord = await database
+    .select({ readme: folders.readme })
+    .from(folders)
+    .where(eq(folders.path, folderPath))
+    .limit(1);
+
+  const readme = folderRecord[0]?.readme || null;
+
+  return { folders: foldersData, posts: postsData, readme };
 }
 
 // 모든 폴더 경로 가져오기 (정적 생성용)
