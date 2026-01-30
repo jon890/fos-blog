@@ -44,11 +44,11 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
     }
   }, []);
 
-  // 디바운스 검색
+  // 디바운스 검색 (1초 후 검색 실행)
   useEffect(() => {
     const timer = setTimeout(() => {
       performSearch(query);
-    }, 300);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, [query, performSearch]);
