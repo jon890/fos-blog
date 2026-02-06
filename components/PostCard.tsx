@@ -1,11 +1,24 @@
 import Link from "next/link";
-import { getCategoryIcon } from "@/lib/db-queries";
+import {
+  getDbQueries,
+  categoryIcons,
+  DEFAULT_CATEGORY_ICON,
+} from "@/db/queries";
 import type { PostData } from "@/db/types";
 import { FileText, ChevronRight } from "lucide-react";
 
 interface PostCardProps {
   post: PostData;
   showCategory?: boolean;
+}
+
+function getCategoryIcon(category: string): string {
+  const dbQueries = getDbQueries();
+  return (
+    dbQueries?.getCategoryIcon(category) ??
+    categoryIcons[category] ??
+    DEFAULT_CATEGORY_ICON
+  );
 }
 
 export function PostCard({ post, showCategory = true }: PostCardProps) {

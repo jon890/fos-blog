@@ -73,6 +73,21 @@ export const syncLogs = mysqlTable("sync_logs", {
   syncedAt: timestamp("synced_at").defaultNow(),
 });
 
+// 댓글 테이블
+export const comments = mysqlTable(
+  "comments",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    postSlug: varchar("post_slug", { length: 500 }).notNull(), // 포스트 경로
+    nickname: varchar("nickname", { length: 100 }).notNull(),
+    password: varchar("password", { length: 255 }).notNull(), // bcrypt 해시
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+  },
+  (table) => [index("post_slug_idx").on(table.postSlug)]
+);
+
 // 타입 추론
 export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
@@ -81,3 +96,5 @@ export type NewPost = typeof posts.$inferInsert;
 export type Folder = typeof folders.$inferSelect;
 export type NewFolder = typeof folders.$inferInsert;
 export type SyncLog = typeof syncLogs.$inferSelect;
+export type Comment = typeof comments.$inferSelect;
+export type NewComment = typeof comments.$inferInsert;

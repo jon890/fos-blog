@@ -1,4 +1,8 @@
-import { getPost, getCategoryIcon, getAllPostPaths } from "@/lib/db-queries";
+import {
+  getDbQueries,
+  categoryIcons,
+  DEFAULT_CATEGORY_ICON,
+} from "@/db/queries";
 import {
   extractTitle,
   extractDescription,
@@ -9,6 +13,7 @@ import {
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { TableOfContents } from "@/components/TableOfContents";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
+import { Comments } from "@/components/Comments";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Clock, Folder, Github } from "lucide-react";
@@ -26,12 +31,22 @@ interface PostPageProps {
   }>;
 }
 
+function getCategoryIcon(category: string): string {
+  const dbQueries = getDbQueries();
+  return (
+    dbQueries?.getCategoryIcon(category) ??
+    categoryIcons[category] ??
+    DEFAULT_CATEGORY_ICON
+  );
+}
+
 export async function generateMetadata({
   params,
 }: PostPageProps): Promise<Metadata> {
   const resolvedParams = await params;
   const slug = resolvedParams.slug.map(decodeURIComponent).join("/");
-  const data = await getPost(slug);
+  const dbQueries = getDbQueries();
+  const data = dbQueries ? await dbQueries.getPost(slug) : null;
 
   if (!data) {
     return {
@@ -54,7 +69,8 @@ export async function generateMetadata({
 }
 
 export async function generateStaticParams() {
-  const paths = await getAllPostPaths();
+  const dbQueries = getDbQueries();
+  const paths = dbQueries ? await dbQueries.getAllPostPaths() : [];
   return paths.map((path) => ({
     slug: path.split("/"),
   }));
@@ -63,7 +79,8 @@ export async function generateStaticParams() {
 export default async function PostPage({ params }: PostPageProps) {
   const resolvedParams = await params;
   const slug = resolvedParams.slug.map(decodeURIComponent).join("/");
-  const data = await getPost(slug);
+  const dbQueries = getDbQueries();
+  const data = dbQueries ? await dbQueries.getPost(slug) : null;
 
   if (!data) {
     notFound();
@@ -189,6 +206,9 @@ export default async function PostPage({ params }: PostPageProps) {
                 </a>
               </div>
             </footer>
+
+            {/* Comments */}
+            <Comments postSlug={post.path} />
           </article>
 
           {/* Sidebar - Table of Contents */}

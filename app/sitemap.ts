@@ -1,9 +1,5 @@
 import type { MetadataRoute } from "next";
-import {
-  getCategories,
-  getAllPostPaths,
-  getAllFolderPaths,
-} from "@/lib/db-queries";
+import { getDbQueries } from "@/db/queries";
 
 // ISR - 60초마다 재생성
 export const revalidate = 60;
@@ -34,8 +30,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let postPages: MetadataRoute.Sitemap = [];
 
   try {
+    const dbQueries = getDbQueries();
+    if (!dbQueries) {
+      console.warn("Database not connected for sitemap generation");
+      return staticPages;
+    }
+
     // 카테고리 페이지
-    const categories = await getCategories();
+    const categories = await dbQueries.getCategories();
     categoryPages = categories.map((category) => ({
       url: `${baseUrl}/category/${encodeURIComponent(category.slug)}`,
       lastModified: new Date(),
@@ -44,7 +46,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
     // 폴더 페이지 (n-depth)
-    const folderPaths = await getAllFolderPaths();
+    const folderPaths = await dbQueries.getAllFolderPaths();
     folderPages = folderPaths.map((pathSegments) => ({
       url: `${baseUrl}/category/${pathSegments
         .map(encodeURIComponent)
@@ -55,7 +57,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
     // 포스트 페이지
-    const postPaths = await getAllPostPaths();
+    const postPaths = await dbQueries.getAllPostPaths();
     postPages = postPaths.map((path) => ({
       url: `${baseUrl}/posts/${path
         .split("/")

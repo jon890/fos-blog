@@ -1,4 +1,4 @@
-import { getCategories } from "@/lib/db-queries";
+import { getDbQueries } from "@/db/queries";
 import { CategoryList } from "@/components/CategoryList";
 
 // ISR - 60초마다 페이지 재생성
@@ -10,7 +10,8 @@ export const metadata = {
 };
 
 export default async function CategoriesPage() {
-  const categories = await getCategories();
+  const dbQueries = getDbQueries();
+  const categories = dbQueries ? await dbQueries.getCategories() : [];
 
   return (
     <div className="container mx-auto px-4 py-12">

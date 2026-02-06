@@ -1,8 +1,8 @@
 import {
-  getFolderContents,
-  getAllFolderPaths,
-  getCategoryIcon,
-} from "@/lib/db-queries";
+  getDbQueries,
+  categoryIcons,
+  DEFAULT_CATEGORY_ICON,
+} from "@/db/queries";
 import { PostCard } from "@/components/PostCard";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { notFound } from "next/navigation";
@@ -19,6 +19,15 @@ interface FolderPageProps {
   }>;
 }
 
+function getCategoryIcon(category: string): string {
+  const dbQueries = getDbQueries();
+  return (
+    dbQueries?.getCategoryIcon(category) ??
+    categoryIcons[category] ??
+    DEFAULT_CATEGORY_ICON
+  );
+}
+
 export async function generateMetadata({
   params,
 }: FolderPageProps): Promise<Metadata> {
@@ -33,7 +42,8 @@ export async function generateMetadata({
 }
 
 export async function generateStaticParams() {
-  const paths = await getAllFolderPaths();
+  const dbQueries = getDbQueries();
+  const paths = dbQueries ? await dbQueries.getAllFolderPaths() : [];
   return paths.map((pathSegments) => ({
     path: pathSegments,
   }));
@@ -46,7 +56,10 @@ export default async function FolderPage({ params }: FolderPageProps) {
   const category = pathSegments[0];
   const currentFolder = pathSegments[pathSegments.length - 1];
 
-  const { folders, posts, readme } = await getFolderContents(folderPath);
+  const dbQueries = getDbQueries();
+  const { folders, posts, readme } = dbQueries
+    ? await dbQueries.getFolderContents(folderPath)
+    : { folders: [], posts: [], readme: null };
 
   if (folders.length === 0 && posts.length === 0 && !readme) {
     notFound();

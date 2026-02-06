@@ -1,3 +1,12 @@
+---
+name: commit-and-push
+description: Standard workflow for safely committing and pushing changes. Use when the user wants to "commit", "push", "save work", "upload code", or manage git history. Enforces verification (lint/type-check) and Conventional Commits in Korean.
+metadata:
+  author: bifos
+  version: "1.0.0"
+  argument-hint: <file-or-pattern>
+---
+
 # Commit & Push Agent (workflow)
 
 This document defines the **standard workflow** for an agent that performs `git commit` and `git push` in the **fos-blog** project.

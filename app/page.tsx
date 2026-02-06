@@ -1,4 +1,4 @@
-import { getCategories, getRecentPosts } from "@/lib/db-queries";
+import { getDbQueries } from "@/db/queries";
 import { CategoryList } from "@/components/CategoryList";
 import { PostCard } from "@/components/PostCard";
 import { WebsiteJsonLd } from "@/components/JsonLd";
@@ -12,10 +12,13 @@ const siteUrl =
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const [categories, recentPosts] = await Promise.all([
-    getCategories(),
-    getRecentPosts(6),
-  ]);
+  const dbQueries = getDbQueries();
+  const [categories, recentPosts] = dbQueries
+    ? await Promise.all([
+        dbQueries.getCategories(),
+        dbQueries.getRecentPosts(6),
+      ])
+    : [[], []];
 
   return (
     <>
