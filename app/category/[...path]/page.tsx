@@ -61,6 +61,13 @@ export default async function FolderPage({ params }: FolderPageProps) {
     ? await dbQueries.getFolderContents(folderPath)
     : { folders: [], posts: [], readme: null };
 
+  // 포스트 조회수 일괄 조회
+  const postPaths = posts.map((p) => p.path);
+  const visitCounts =
+    dbQueries && postPaths.length > 0
+      ? await dbQueries.getPostVisitCounts(postPaths)
+      : {};
+
   if (folders.length === 0 && posts.length === 0 && !readme) {
     notFound();
   }
@@ -203,7 +210,12 @@ export default async function FolderPage({ params }: FolderPageProps) {
           </h2>
           <div className="space-y-3">
             {posts.map((post) => (
-              <PostCard key={post.path} post={post} showCategory={false} />
+              <PostCard
+                key={post.path}
+                post={post}
+                showCategory={false}
+                viewCount={visitCounts[post.path] ?? 0}
+              />
             ))}
           </div>
         </section>

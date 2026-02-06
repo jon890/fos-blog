@@ -7,3 +7,4 @@ export {
   type CommentData,
   type CreateCommentInput,
 } from "./CommentRepository";
+export { VisitRepository } from "./VisitRepository";

@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Header } from "@/components/Header";
+import { VisitorCount } from "@/components/VisitorCount";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -193,8 +194,11 @@ export default function RootLayout({
                     </ul>
                   </div>
                 </div>
-                <div className="pt-8 border-t border-gray-200 dark:border-gray-800 text-center text-sm text-gray-600 dark:text-gray-400">
-                  <p>© 2025 FOS Study. Built with Next.js & Tailwind CSS</p>
+                <div className="pt-8 border-t border-gray-200 dark:border-gray-800 text-center space-y-3">
+                  <VisitorCount />
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    © 2025 FOS Study. Built with Next.js & Tailwind CSS
+                  </p>
                 </div>
               </div>
             </footer>

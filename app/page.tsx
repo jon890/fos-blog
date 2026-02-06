@@ -20,6 +20,13 @@ export default async function HomePage() {
       ])
     : [[], []];
 
+  // 최근 글의 조회수 일괄 조회
+  const postPaths = recentPosts.map((p) => p.path);
+  const visitCounts =
+    dbQueries && postPaths.length > 0
+      ? await dbQueries.getPostVisitCounts(postPaths)
+      : {};
+
   return (
     <>
       <WebsiteJsonLd
@@ -70,7 +77,11 @@ export default async function HomePage() {
           {recentPosts.length > 0 ? (
             <div className="space-y-4">
               {recentPosts.map((post) => (
-                <PostCard key={post.path} post={post} />
+                <PostCard
+                  key={post.path}
+                  post={post}
+                  viewCount={visitCounts[post.path] ?? 0}
+                />
               ))}
             </div>
           ) : (

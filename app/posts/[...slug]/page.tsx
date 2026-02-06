@@ -14,6 +14,7 @@ import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { TableOfContents } from "@/components/TableOfContents";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 import { Comments } from "@/components/Comments";
+import { PostViewCount } from "@/components/PostViewCount";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Clock, Folder, Github } from "lucide-react";
@@ -170,6 +171,10 @@ export default async function PostPage({ params }: PostPageProps) {
                   <Clock className="w-4 h-4" />
                   <span>약 {readingTime}분</span>
                 </div>
+                <PostViewCount
+                  pagePath={post.path}
+                  className="text-gray-600 dark:text-gray-400"
+                />
                 <a
                   href={githubUrl}
                   target="_blank"

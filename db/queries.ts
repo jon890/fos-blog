@@ -1,26 +1,33 @@
 import { MySql2Database } from "drizzle-orm/mysql2";
-import type * as schema from "./schema";
-import { getDb } from "./index";
-import type {
-  PostData,
-  CategoryData,
-  FolderItemData,
-  FolderContentsResult,
-} from "./types";
 import { categoryIcons, DEFAULT_CATEGORY_ICON } from "./constants";
+import { getDb } from "./index";
 import {
   CategoryRepository,
-  PostRepository,
-  FolderRepository,
   CommentRepository,
+  FolderRepository,
+  PostRepository,
+  VisitRepository,
   type CommentData,
   type CreateCommentInput,
 } from "./repositories";
+import type * as schema from "./schema";
+import type {
+  CategoryData,
+  FolderContentsResult,
+  FolderItemData,
+  PostData,
+} from "./types";
 
 // 타입 re-export
-export type { PostData, CategoryData, FolderItemData, FolderContentsResult };
-export type { CommentData, CreateCommentInput };
 export { categoryIcons, DEFAULT_CATEGORY_ICON };
+export type {
+  CategoryData,
+  CommentData,
+  CreateCommentInput,
+  FolderContentsResult,
+  FolderItemData,
+  PostData,
+};
 
 // ===== DbQueries 파사드 클래스 =====
 
@@ -29,12 +36,14 @@ export class DbQueries {
   private postRepo: PostRepository;
   private folderRepo: FolderRepository;
   private commentRepo: CommentRepository;
+  private visitRepo: VisitRepository;
 
   constructor(db: MySql2Database<typeof schema>) {
     this.categoryRepo = new CategoryRepository(db);
     this.postRepo = new PostRepository(db);
     this.folderRepo = new FolderRepository(db);
     this.commentRepo = new CommentRepository(db);
+    this.visitRepo = new VisitRepository(db);
   }
 
   // ===== Category =====
@@ -99,6 +108,27 @@ export class DbQueries {
 
   getCommentCount(postSlug: string): Promise<number> {
     return this.commentRepo.getCommentCount(postSlug);
+  }
+
+  // ===== Visit =====
+  recordVisit(pagePath: string, ipHash: string): Promise<boolean> {
+    return this.visitRepo.recordVisit(pagePath, ipHash);
+  }
+
+  getVisitCount(pagePath: string): Promise<number> {
+    return this.visitRepo.getVisitCount(pagePath);
+  }
+
+  getTotalVisitCount(): Promise<number> {
+    return this.visitRepo.getTotalVisitCount();
+  }
+
+  getPostVisitCounts(pagePaths: string[]): Promise<Record<string, number>> {
+    return this.visitRepo.getPostVisitCounts(pagePaths);
+  }
+
+  getTodayVisitorCount(): Promise<number> {
+    return this.visitRepo.getTodayVisitorCount();
   }
 }
 

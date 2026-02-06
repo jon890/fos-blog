@@ -5,11 +5,12 @@ import {
   DEFAULT_CATEGORY_ICON,
 } from "@/db/queries";
 import type { PostData } from "@/db/types";
-import { FileText, ChevronRight } from "lucide-react";
+import { FileText, ChevronRight, Eye } from "lucide-react";
 
 interface PostCardProps {
   post: PostData;
   showCategory?: boolean;
+  viewCount?: number;
 }
 
 function getCategoryIcon(category: string): string {
@@ -21,7 +22,11 @@ function getCategoryIcon(category: string): string {
   );
 }
 
-export function PostCard({ post, showCategory = true }: PostCardProps) {
+export function PostCard({
+  post,
+  showCategory = true,
+  viewCount,
+}: PostCardProps) {
   return (
     <Link
       href={`/posts/${post.slug.split("/").map(encodeURIComponent).join("/")}`}
@@ -35,15 +40,28 @@ export function PostCard({ post, showCategory = true }: PostCardProps) {
         <h3 className="font-medium text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
           {post.title}
         </h3>
-        {showCategory && (
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-sm">{getCategoryIcon(post.category)}</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              {post.category}
-              {post.subcategory && ` / ${post.subcategory}`}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-2 mt-1">
+          {showCategory && (
+            <>
+              <span className="text-sm">{getCategoryIcon(post.category)}</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {post.category}
+                {post.subcategory && ` / ${post.subcategory}`}
+              </span>
+            </>
+          )}
+          {viewCount !== undefined && (
+            <>
+              {showCategory && (
+                <span className="text-gray-300 dark:text-gray-600">·</span>
+              )}
+              <span className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+                <Eye className="w-3.5 h-3.5" />
+                {viewCount.toLocaleString()}
+              </span>
+            </>
+          )}
+        </div>
       </div>
 
       <ChevronRight className="flex-shrink-0 w-5 h-5 text-gray-400 dark:text-gray-600 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
