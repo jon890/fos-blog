@@ -1,10 +1,10 @@
 import { NextResponse, NextRequest, NextFetchEvent } from "next/server";
 
 /**
- * 페이지 방문 시 자동으로 방문 기록 API를 호출하는 미들웨어
+ * 페이지 방문 시 자동으로 방문 기록 API를 호출하는 프록시
  * waitUntil을 사용하여 응답을 지연시키지 않고 비동기로 처리
  */
-export function middleware(request: NextRequest, event: NextFetchEvent) {
+export function proxy(request: NextRequest, event: NextFetchEvent) {
   const pathname = request.nextUrl.pathname;
 
   // 클라이언트 IP 추출
