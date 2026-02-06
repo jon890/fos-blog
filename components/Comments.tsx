@@ -79,7 +79,7 @@ export function Comments({ postSlug }: CommentsProps) {
       const data = await res.json();
 
       if (res.ok) {
-        setComments([data.comment, ...comments]);
+        setComments((prev) => [data.comment, ...prev]);
         setContent("");
         // 닉네임과 비밀번호는 유지
       } else {
@@ -107,7 +107,7 @@ export function Comments({ postSlug }: CommentsProps) {
       const data = await res.json();
 
       if (res.ok) {
-        setComments(comments.map((c) => (c.id === id ? data.comment : c)));
+        setComments((prev) => prev.map((c) => (c.id === id ? data.comment : c)));
         setEditingId(null);
         setEditContent("");
         setActionPassword("");
@@ -131,7 +131,7 @@ export function Comments({ postSlug }: CommentsProps) {
       const data = await res.json();
 
       if (res.ok) {
-        setComments(comments.filter((c) => c.id !== id));
+        setComments((prev) => prev.filter((c) => c.id !== id));
         setDeleteId(null);
         setActionPassword("");
       } else {
@@ -158,15 +158,15 @@ export function Comments({ postSlug }: CommentsProps) {
     <section className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-800">
       <h2 className="flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white mb-6">
         <MessageCircle className="w-5 h-5" />
-        댓글 {comments.length > 0 && `(${comments.length})`}
+        댓글 {comments.length > 0 ? `(${comments.length})` : null}
       </h2>
 
       {/* 에러 메시지 */}
-      {error && (
+      {error ? (
         <div className="mb-4 p-3 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm">
           {error}
         </div>
-      )}
+      ) : null}
 
       {/* 댓글 작성 폼 */}
       <form onSubmit={handleSubmit} className="mb-8 space-y-4">
