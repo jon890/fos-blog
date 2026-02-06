@@ -7,6 +7,7 @@ import rehypeRaw from "rehype-raw";
 import rehypeSlug from "rehype-slug";
 import { Components } from "react-markdown";
 import "highlight.js/styles/github-dark.css";
+import { Mermaid } from "./Mermaid";
 
 interface MarkdownRendererProps {
   content: string;
@@ -77,6 +78,13 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
       </blockquote>
     ),
     code: ({ className, children, ...props }) => {
+      const match = /language-(\w+)/.exec(className || "");
+      const language = match ? match[1] : "";
+
+      if (language === "mermaid") {
+        return <Mermaid chart={String(children).replace(/\n$/, "")} />;
+      }
+
       const isInline = !className;
       if (isInline) {
         return (
