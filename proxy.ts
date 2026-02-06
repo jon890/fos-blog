@@ -20,7 +20,8 @@ export function proxy(request: NextRequest, event: NextFetchEvent) {
     pagePath = decodeURIComponent(pathname.replace("/posts/", ""));
   }
 
-  // fire-and-forget 방식으로 방문 기록
+  // fire-and-forget 방식으로 방문 기록 (API Route 호출)
+  // Middleware는 Edge Runtime에서 동작하므로 DB에 직접 접근할 수 없음
   const origin = request.nextUrl.origin;
   const visitPromise = fetch(`${origin}/api/visit`, {
     method: "POST",
