@@ -1,7 +1,9 @@
 import { NextResponse, NextRequest, NextFetchEvent } from "next/server";
+import { createHash } from "crypto";
+import { getDbQueries } from "@/db/queries";
 
 /**
- * 페이지 방문 시 자동으로 방문 기록 API를 호출하는 프록시
+ * 페이지 방문 시 직접 DB에 방문 기록을 남기는 프록시
  * waitUntil을 사용하여 응답을 지연시키지 않고 비동기로 처리
  */
 export function proxy(request: NextRequest, event: NextFetchEvent) {
@@ -20,19 +22,18 @@ export function proxy(request: NextRequest, event: NextFetchEvent) {
     pagePath = decodeURIComponent(pathname.replace("/posts/", ""));
   }
 
-  // fire-and-forget 방식으로 방문 기록 (API Route 호출)
-  // Middleware는 Edge Runtime에서 동작하므로 DB에 직접 접근할 수 없음
-  const origin = request.nextUrl.origin;
-  const visitPromise = fetch(`${origin}/api/visit`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-visitor-ip": clientIp, // 원본 IP를 커스텀 헤더로 전달
-    },
-    body: JSON.stringify({ pagePath }),
-  }).catch(() => {
-    // 방문 기록 실패해도 페이지 응답에 영향 없음
-  });
+  // fire-and-forget 방식으로 직접 DB에 방문 기록
+  const visitPromise = (async () => {
+    try {
+      const dbQueries = getDbQueries();
+      if (!dbQueries) return;
+
+      const ipHash = createHash("sha256").update(clientIp).digest("hex");
+      await dbQueries.recordVisit(pagePath, ipHash);
+    } catch (error) {
+      console.error("[proxy] 방문 기록 실패:", error);
+    }
+  })();
 
   event.waitUntil(visitPromise);
 
