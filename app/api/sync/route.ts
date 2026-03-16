@@ -16,7 +16,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "Sync completed successfully",
+      message: result.upToDate ? "Already up to date" : "Sync completed successfully",
       ...result,
     });
   } catch (error) {

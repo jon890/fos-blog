@@ -1,10 +1,9 @@
 import { Octokit } from "@octokit/rest";
 import { getDb as getDbInstance } from "@/db";
 import { posts, categories, syncLogs, folders } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, desc } from "drizzle-orm";
 import { extractDescription } from "./markdown";
 
-// DB가 설정되지 않으면 에러
 function getDb() {
   const db = getDbInstance();
   if (!db) {
@@ -19,10 +18,10 @@ const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN,
 });
 
-const OWNER = process.env.GITHUB_OWNER || "jon890";
+const OWNER = process.env.GITHUB_OWNER || "jon889";
 const REPO = process.env.GITHUB_REPO || "fos-study";
+const BRANCH = process.env.GITHUB_BRANCH || "main";
 
-// 카테고리 아이콘 매핑
 const categoryIcons: Record<string, string> = {
   AI: "🤖",
   algorithm: "🧮",
@@ -47,34 +46,65 @@ const categoryIcons: Record<string, string> = {
   기술공유: "📢",
 };
 
-interface GitHubFile {
-  name: string;
-  path: string;
-  type: "file" | "dir";
-  sha: string;
-  download_url?: string;
+// ===== GitHub API helpers =====
+
+async function getCurrentHeadSha(): Promise<string> {
+  const response = await octokit.repos.getBranch({
+    owner: OWNER,
+    repo: REPO,
+    branch: BRANCH,
+  });
+  return response.data.commit.sha;
 }
 
-// GitHub에서 디렉토리 내용 가져오기
-async function getDirectoryContents(path: string = ""): Promise<GitHubFile[]> {
+interface ChangedFile {
+  filename: string;
+  status: "added" | "modified" | "removed" | "renamed" | "copied" | "changed" | "unchanged";
+  previous_filename?: string;
+}
+
+/**
+ * baseSha..headSha 사이의 변경 파일 목록 반환.
+ * 변경 파일이 300개 이상이면 null을 반환 → full sync 폴백.
+ */
+async function getChangedFilesSince(
+  baseSha: string,
+  headSha: string
+): Promise<ChangedFile[] | null> {
   try {
-    const response = await octokit.repos.getContent({
+    const response = await octokit.repos.compareCommitsWithBasehead({
       owner: OWNER,
       repo: REPO,
-      path,
+      basehead: `${baseSha}...${headSha}`,
     });
 
-    if (Array.isArray(response.data)) {
-      return response.data as GitHubFile[];
+    if (!response.data.files || response.data.files.length >= 300) {
+      console.log("변경 파일이 300개 이상이거나 없음 → full sync 폴백");
+      return null;
     }
-    return [];
+
+    return response.data.files.map((f) => ({
+      filename: f.filename,
+      status: f.status as ChangedFile["status"],
+      previous_filename: f.previous_filename,
+    }));
   } catch (error) {
-    console.error(`Error fetching directory contents for ${path}:`, error);
-    return [];
+    console.error("Compare API 오류 → full sync 폴백:", error);
+    return null;
   }
 }
 
-// GitHub에서 파일 내용 가져오기
+async function getLastSyncedCommitSha(): Promise<string | null> {
+  const database = getDb();
+  const result = await database
+    .select({ commitSha: syncLogs.commitSha })
+    .from(syncLogs)
+    .where(eq(syncLogs.status, "success"))
+    .orderBy(desc(syncLogs.syncedAt))
+    .limit(1);
+  return result[0]?.commitSha ?? null;
+}
+
 async function getFileContent(
   path: string
 ): Promise<{ content: string; sha: string } | null> {
@@ -84,21 +114,147 @@ async function getFileContent(
       repo: REPO,
       path,
     });
-
     if (!Array.isArray(response.data) && response.data.type === "file") {
-      const content = Buffer.from(response.data.content, "base64").toString(
-        "utf-8"
-      );
+      const content = Buffer.from(response.data.content, "base64").toString("utf-8");
       return { content, sha: response.data.sha };
     }
     return null;
-  } catch (error) {
-    console.error(`Error fetching file content for ${path}:`, error);
+  } catch (error: unknown) {
+    if (error && typeof error === "object" && "status" in error && error.status === 404) {
+      return null;
+    }
+    console.error(`파일 내용 가져오기 실패 ${path}:`, error);
     return null;
   }
 }
 
-// 재귀적으로 모든 마크다운 파일 수집
+async function getDirectoryContents(path: string = "") {
+  try {
+    const response = await octokit.repos.getContent({ owner: OWNER, repo: REPO, path });
+    if (Array.isArray(response.data)) return response.data;
+    return [];
+  } catch (error) {
+    console.error(`디렉토리 내용 가져오기 실패 ${path}:`, error);
+    return [];
+  }
+}
+
+// ===== File processing helpers =====
+
+function parsePath(filePath: string) {
+  const pathParts = filePath.split("/");
+  const category = pathParts[0] || "uncategorized";
+  const foldersList = pathParts.slice(1, -1);
+  const subcategory = foldersList.length > 0 ? foldersList[0] : undefined;
+  const title = pathParts[pathParts.length - 1]
+    .replace(/\.(md|mdx)$/, "")
+    .replace(/_/g, " ");
+  return { category, foldersList, subcategory, title };
+}
+
+function isMdFile(filename: string) {
+  return filename.endsWith(".md") || filename.endsWith(".mdx");
+}
+
+async function upsertPost(filePath: string): Promise<"added" | "updated" | "skipped"> {
+  const database = getDb();
+  const fileData = await getFileContent(filePath);
+  if (!fileData) return "skipped";
+
+  const { category, foldersList, subcategory, title } = parsePath(filePath);
+  const description = extractDescription(fileData.content, 200);
+
+  const existing = await database
+    .select({ id: posts.id })
+    .from(posts)
+    .where(eq(posts.path, filePath))
+    .limit(1);
+
+  if (existing.length > 0) {
+    await database
+      .update(posts)
+      .set({
+        title,
+        content: fileData.content,
+        description,
+        sha: fileData.sha,
+        category,
+        subcategory,
+        folders: foldersList,
+        isActive: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(posts.id, existing[0].id));
+    return "updated";
+  } else {
+    await database.insert(posts).values({
+      title,
+      path: filePath,
+      slug: filePath,
+      category,
+      subcategory,
+      folders: foldersList,
+      content: fileData.content,
+      description,
+      sha: fileData.sha,
+    });
+    return "added";
+  }
+}
+
+async function deactivatePost(filePath: string): Promise<boolean> {
+  const database = getDb();
+  const result = await database
+    .update(posts)
+    .set({ isActive: false })
+    .where(eq(posts.path, filePath));
+  return (result[0] as { affectedRows?: number }).affectedRows === 1;
+}
+
+// ===== Sync strategies =====
+
+async function performIncrementalSync(changedFiles: ChangedFile[]): Promise<{
+  added: number;
+  updated: number;
+  deleted: number;
+}> {
+  let added = 0, updated = 0, deleted = 0;
+
+  for (const file of changedFiles) {
+    if (file.status === "removed") {
+      if (isMdFile(file.filename)) {
+        const ok = await deactivatePost(file.filename);
+        if (ok) deleted++;
+        console.log(`삭제: ${file.filename}`);
+      }
+    } else if (file.status === "renamed") {
+      // 이전 경로 비활성화
+      if (file.previous_filename && isMdFile(file.previous_filename)) {
+        const ok = await deactivatePost(file.previous_filename);
+        if (ok) deleted++;
+        console.log(`이름 변경(삭제): ${file.previous_filename}`);
+      }
+      // 새 경로 upsert
+      if (isMdFile(file.filename)) {
+        const result = await upsertPost(file.filename);
+        if (result === "added") added++;
+        else if (result === "updated") updated++;
+        console.log(`이름 변경(추가): ${file.filename} → ${result}`);
+      }
+    } else {
+      // added | modified | copied | changed
+      if (isMdFile(file.filename)) {
+        const result = await upsertPost(file.filename);
+        if (result === "added") added++;
+        else if (result === "updated") updated++;
+        console.log(`${file.status}: ${file.filename} → ${result}`);
+      }
+    }
+  }
+
+  return { added, updated, deleted };
+}
+
 async function collectMarkdownFiles(
   path: string = "",
   files: Array<{
@@ -111,159 +267,104 @@ async function collectMarkdownFiles(
   }> = []
 ): Promise<typeof files> {
   const contents = await getDirectoryContents(path);
-
   for (const item of contents) {
     if (item.name.startsWith(".")) continue;
-
     if (item.type === "dir") {
       await collectMarkdownFiles(item.path, files);
-    } else if (
-      item.type === "file" &&
-      (item.name.endsWith(".md") || item.name.endsWith(".mdx"))
-    ) {
-      const pathParts = item.path.split("/");
-      const category = pathParts[0] || "uncategorized";
-      // folders: 카테고리와 파일명 사이의 모든 폴더 (n-depth 지원)
-      const folders = pathParts.slice(1, -1);
-      const subcategory = folders.length > 0 ? folders[0] : undefined;
-
+    } else if (item.type === "file" && isMdFile(item.name)) {
+      const { category, foldersList, subcategory } = parsePath(item.path);
       files.push({
         name: item.name,
         path: item.path,
         sha: item.sha,
         category,
         subcategory,
-        folders,
+        folders: foldersList,
       });
     }
   }
-
   return files;
 }
 
-// 동기화 실행
-export async function syncGitHubToDatabase(): Promise<{
+async function performFullSync(): Promise<{
   added: number;
   updated: number;
   deleted: number;
 }> {
-  console.log("Starting GitHub to Database sync...");
   const database = getDb();
+  let added = 0, updated = 0, deleted = 0;
 
-  let added = 0;
-  let updated = 0;
-  let deleted = 0;
+  const githubFiles = await collectMarkdownFiles();
+  console.log(`GitHub에서 마크다운 파일 ${githubFiles.length}개 발견`);
 
-  try {
-    // 1. GitHub에서 모든 마크다운 파일 수집
-    const githubFiles = await collectMarkdownFiles();
-    console.log(`Found ${githubFiles.length} markdown files on GitHub`);
+  const existingPosts = await database.select().from(posts);
+  const existingPathMap = new Map(existingPosts.map((p) => [p.path, p]));
+  const processedPaths = new Set<string>();
 
-    // 2. 기존 DB 포스트 가져오기
-    const existingPosts = await database.select().from(posts);
-    const existingPathMap = new Map(existingPosts.map((p) => [p.path, p]));
+  for (const file of githubFiles) {
+    processedPaths.add(file.path);
+    const existing = existingPathMap.get(file.path);
 
-    // 3. GitHub 파일들 처리
-    const processedPaths = new Set<string>();
+    if (existing && existing.sha === file.sha) continue;
 
-    for (const file of githubFiles) {
-      processedPaths.add(file.path);
-      const existing = existingPathMap.get(file.path);
+    const fileData = await getFileContent(file.path);
+    if (!fileData) continue;
 
-      // SHA가 같으면 스킵 (변경 없음)
-      if (existing && existing.sha === file.sha) {
-        continue;
-      }
+    const { title } = parsePath(file.path);
+    const description = extractDescription(fileData.content, 200);
 
-      // 파일 내용 가져오기
-      const fileData = await getFileContent(file.path);
-      if (!fileData) continue;
-
-      const title = file.name.replace(/\.(md|mdx)$/, "").replace(/_/g, " ");
-      const description = extractDescription(fileData.content, 200);
-
-      if (existing) {
-        // 업데이트
-        await database
-          .update(posts)
-          .set({
-            title,
-            content: fileData.content,
-            description,
-            sha: fileData.sha,
-            category: file.category,
-            subcategory: file.subcategory,
-            folders: file.folders,
-            updatedAt: new Date(),
-          })
-          .where(eq(posts.id, existing.id));
-        updated++;
-        console.log(`Updated: ${file.path}`);
-      } else {
-        // 새로 추가
-        await database.insert(posts).values({
+    if (existing) {
+      await database
+        .update(posts)
+        .set({
           title,
-          path: file.path,
-          slug: file.path,
-          category: file.category,
-          subcategory: file.subcategory,
-          folders: file.folders,
           content: fileData.content,
           description,
           sha: fileData.sha,
-        });
-        added++;
-        console.log(`Added: ${file.path}`);
-      }
+          category: file.category,
+          subcategory: file.subcategory,
+          folders: file.folders,
+          isActive: true,
+          updatedAt: new Date(),
+        })
+        .where(eq(posts.id, existing.id));
+      updated++;
+      console.log(`업데이트: ${file.path}`);
+    } else {
+      await database.insert(posts).values({
+        title,
+        path: file.path,
+        slug: file.path,
+        category: file.category,
+        subcategory: file.subcategory,
+        folders: file.folders,
+        content: fileData.content,
+        description,
+        sha: fileData.sha,
+      });
+      added++;
+      console.log(`추가: ${file.path}`);
     }
-
-    // 4. 삭제된 파일 처리
-    for (const existing of existingPosts) {
-      if (!processedPaths.has(existing.path)) {
-        await database
-          .update(posts)
-          .set({ isActive: false })
-          .where(eq(posts.id, existing.id));
-        deleted++;
-        console.log(`Deleted: ${existing.path}`);
-      }
-    }
-
-    // 5. 카테고리 업데이트
-    await updateCategories();
-
-    // 6. 폴더 README 동기화
-    await syncFolderReadmes();
-
-    // 7. 동기화 로그 저장
-    await database.insert(syncLogs).values({
-      status: "success",
-      postsAdded: added,
-      postsUpdated: updated,
-      postsDeleted: deleted,
-    });
-
-    console.log(
-      `Sync completed: ${added} added, ${updated} updated, ${deleted} deleted`
-    );
-
-    return { added, updated, deleted };
-  } catch (error) {
-    console.error("Sync failed:", error);
-
-    await database.insert(syncLogs).values({
-      status: "failed",
-      error: error instanceof Error ? error.message : String(error),
-    });
-
-    throw error;
   }
+
+  for (const existing of existingPosts) {
+    if (!processedPaths.has(existing.path) && existing.isActive) {
+      await database
+        .update(posts)
+        .set({ isActive: false })
+        .where(eq(posts.id, existing.id));
+      deleted++;
+      console.log(`비활성화: ${existing.path}`);
+    }
+  }
+
+  return { added, updated, deleted };
 }
 
-// 카테고리 테이블 업데이트
+// ===== Category & README sync =====
+
 async function updateCategories(): Promise<void> {
   const database = getDb();
-  // 카테고리별 포스트 수 계산
   const categoryStats = await database
     .select({
       category: posts.category,
@@ -273,7 +374,6 @@ async function updateCategories(): Promise<void> {
     .where(eq(posts.isActive, true))
     .groupBy(posts.category);
 
-  // 기존 카테고리 삭제 후 재생성
   await database.delete(categories);
 
   for (const stat of categoryStats) {
@@ -286,12 +386,10 @@ async function updateCategories(): Promise<void> {
   }
 }
 
-// 폴더 README 동기화
 async function syncFolderReadmes(): Promise<void> {
   const database = getDb();
-  console.log("Syncing folder READMEs...");
+  console.log("폴더 README 동기화 중...");
 
-  // 모든 활성 포스트에서 고유 폴더 경로 추출
   const allPosts = await database
     .select({ path: posts.path })
     .from(posts)
@@ -300,29 +398,21 @@ async function syncFolderReadmes(): Promise<void> {
   const folderPaths = new Set<string>();
   for (const post of allPosts) {
     const parts = post.path.split("/");
-    // 파일명 제외한 모든 폴더 경로 추가
     for (let i = 1; i <= parts.length - 1; i++) {
       const folderPath = parts.slice(0, i).join("/");
-      if (folderPath) {
-        folderPaths.add(folderPath);
-      }
+      if (folderPath) folderPaths.add(folderPath);
     }
   }
 
-  // 기존 폴더 정보 가져오기
   const existingFolders = await database.select().from(folders);
   const existingFolderMap = new Map(existingFolders.map((f) => [f.path, f]));
-
   const readmeNames = ["README.md", "readme.md", "README.MD", "Readme.md"];
   let synced = 0;
 
   for (const folderPath of folderPaths) {
-    // README 파일 찾기
     let readmeContent: { content: string; sha: string } | null = null;
-
     for (const readmeName of readmeNames) {
-      const readmePath = `${folderPath}/${readmeName}`;
-      const result = await getFileContent(readmePath);
+      const result = await getFileContent(`${folderPath}/${readmeName}`);
       if (result) {
         readmeContent = result;
         break;
@@ -332,19 +422,12 @@ async function syncFolderReadmes(): Promise<void> {
     const existing = existingFolderMap.get(folderPath);
 
     if (readmeContent) {
-      // SHA가 같으면 스킵
-      if (existing && existing.sha === readmeContent.sha) {
-        continue;
-      }
+      if (existing && existing.sha === readmeContent.sha) continue;
 
       if (existing) {
         await database
           .update(folders)
-          .set({
-            readme: readmeContent.content,
-            sha: readmeContent.sha,
-            updatedAt: new Date(),
-          })
+          .set({ readme: readmeContent.content, sha: readmeContent.sha, updatedAt: new Date() })
           .where(eq(folders.id, existing.id));
       } else {
         await database.insert(folders).values({
@@ -354,16 +437,76 @@ async function syncFolderReadmes(): Promise<void> {
         });
       }
       synced++;
-      console.log(`Synced README: ${folderPath}`);
+      console.log(`README 동기화: ${folderPath}`);
     } else if (!existing) {
-      // README가 없지만 폴더 정보는 저장
-      await database.insert(folders).values({
-        path: folderPath,
-        readme: null,
-        sha: null,
-      });
+      await database.insert(folders).values({ path: folderPath, readme: null, sha: null });
     }
   }
 
-  console.log(`Synced ${synced} folder READMEs`);
+  console.log(`폴더 README ${synced}개 동기화 완료`);
+}
+
+// ===== Main export =====
+
+export async function syncGitHubToDatabase(): Promise<{
+  added: number;
+  updated: number;
+  deleted: number;
+  commitSha: string;
+  upToDate?: boolean;
+}> {
+  console.log("GitHub → Database 동기화 시작...");
+  const database = getDb();
+
+  let added = 0, updated = 0, deleted = 0;
+
+  try {
+    const headSha = await getCurrentHeadSha();
+    const lastSyncedSha = await getLastSyncedCommitSha();
+
+    console.log(`현재 HEAD: ${headSha.slice(0, 7)}`);
+    console.log(`마지막 sync: ${lastSyncedSha ? lastSyncedSha.slice(0, 7) : "없음 (최초 sync)"}`);
+
+    if (lastSyncedSha === headSha) {
+      console.log("이미 최신 상태입니다.");
+      return { added: 0, updated: 0, deleted: 0, commitSha: headSha, upToDate: true };
+    }
+
+    if (!lastSyncedSha) {
+      console.log("최초 sync — 전체 동기화 수행");
+      ({ added, updated, deleted } = await performFullSync());
+    } else {
+      const changedFiles = await getChangedFilesSince(lastSyncedSha, headSha);
+      if (changedFiles === null) {
+        console.log("전체 동기화 폴백 수행");
+        ({ added, updated, deleted } = await performFullSync());
+      } else {
+        console.log(`변경 파일 ${changedFiles.length}개에 대해 증분 동기화 수행`);
+        ({ added, updated, deleted } = await performIncrementalSync(changedFiles));
+      }
+    }
+
+    await updateCategories();
+    await syncFolderReadmes();
+
+    await database.insert(syncLogs).values({
+      status: "success",
+      postsAdded: added,
+      postsUpdated: updated,
+      postsDeleted: deleted,
+      commitSha: headSha,
+    });
+
+    console.log(
+      `동기화 완료: ${added}개 추가, ${updated}개 업데이트, ${deleted}개 삭제 (commit: ${headSha.slice(0, 7)})`
+    );
+    return { added, updated, deleted, commitSha: headSha };
+  } catch (error) {
+    console.error("동기화 실패:", error);
+    await database.insert(syncLogs).values({
+      status: "failed",
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
 }

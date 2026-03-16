@@ -13,6 +13,7 @@ export const syncLogs = mysqlTable("sync_logs", {
   postsAdded: int("posts_added").default(0),
   postsUpdated: int("posts_updated").default(0),
   postsDeleted: int("posts_deleted").default(0),
+  commitSha: varchar("commit_sha", { length: 64 }), // sync된 HEAD commit SHA
   error: text("error"),
   syncedAt: timestamp("synced_at").defaultNow(),
 });
