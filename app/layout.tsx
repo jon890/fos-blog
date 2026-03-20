@@ -1,12 +1,24 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Noto_Sans_KR, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Header } from "@/components/Header";
 import { VisitorCount } from "@/components/VisitorCount";
 
-const inter = Inter({ subsets: ["latin"] });
+const notoSansKR = Noto_Sans_KR({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-sans",
+  display: "swap",
+  preload: false,
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL || "https://fosworld.co.kr";
@@ -118,7 +130,7 @@ export default function RootLayout({
           />
         )}
       </head>
-      <body className={inter.className} suppressHydrationWarning>
+      <body className={`${notoSansKR.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

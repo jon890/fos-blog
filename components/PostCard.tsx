@@ -13,6 +13,21 @@ interface PostCardProps {
   viewCount?: number;
 }
 
+const CATEGORY_DOT: Record<string, string> = {
+  java:         "bg-amber-400",
+  AI:           "bg-purple-400",
+  database:     "bg-orange-400",
+  devops:       "bg-red-400",
+  javascript:   "bg-yellow-400",
+  react:        "bg-cyan-400",
+  algorithm:    "bg-green-400",
+  architecture: "bg-blue-400",
+  interview:    "bg-pink-400",
+  network:      "bg-indigo-400",
+  kafka:        "bg-rose-400",
+  internet:     "bg-teal-400",
+};
+
 function getCategoryIcon(category: string): string {
   const dbQueries = getDbQueries();
   return (
@@ -27,6 +42,8 @@ export function PostCard({
   showCategory = true,
   viewCount,
 }: PostCardProps) {
+  const dot = CATEGORY_DOT[post.category] ?? "bg-gray-400";
+
   return (
     <Link
       href={`/posts/${post.slug.split("/").map(encodeURIComponent).join("/")}`}
@@ -43,6 +60,7 @@ export function PostCard({
         <div className="flex items-center gap-2 mt-1">
           {showCategory && (
             <>
+              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
               <span className="text-sm">{getCategoryIcon(post.category)}</span>
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {post.category}

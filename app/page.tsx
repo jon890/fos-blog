@@ -36,15 +36,22 @@ export default async function HomePage() {
       />
       <div className="container mx-auto px-4 py-12">
         {/* Hero Section */}
-        <section className="text-center mb-16 animate-fade-in">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium mb-6">
+        <section className="relative text-center mb-16 animate-fade-in py-8 overflow-hidden">
+          {/* Decorative background blobs */}
+          <div aria-hidden="true" className="absolute inset-0 -z-10 pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full bg-blue-500/5 dark:bg-blue-400/10 blur-3xl" />
+            <div className="absolute -top-4 right-1/3 w-48 h-48 rounded-full bg-purple-500/5 dark:bg-purple-400/8 blur-2xl" />
+            <div className="absolute bottom-0 left-1/4 w-32 h-32 rounded-full bg-cyan-500/5 dark:bg-cyan-400/8 blur-xl" />
+          </div>
+
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium mb-6 border border-blue-200 dark:border-blue-800/50">
             <Sparkles className="w-4 h-4" />
             <span>개발 학습 기록 블로그</span>
           </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white mb-6 tracking-tight">
             FOS Study
           </h1>
-          <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed">
             AI, 알고리즘, 아키텍처, 데이터베이스, DevOps 등<br />
             다양한 개발 주제를 학습하고 정리합니다.
           </p>
