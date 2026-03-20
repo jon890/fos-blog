@@ -61,8 +61,16 @@ pnpm type-check  # TypeScript — catches type errors
 
 ### 2) Staging plan
 
-- Group related changes into small, single-purpose commits
-- List exactly which files will be staged
+**의미 단위로 쪼개는 것이 원칙이다.** 변경된 파일들을 관심사별로 그룹화하여 각각 별도의 커밋으로 만든다.
+
+예시:
+- 기능 변경 파일들 → 커밋 1 (`fix: ...`)
+- 스킬/설정 파일 변경 → 커밋 2 (`chore: ...`)
+- 문서 변경 → 커밋 3 (`docs: ...`)
+
+하나의 커밋에 다른 관심사의 파일이 섞이지 않도록 한다. 다만 서로 강하게 연관된 파일(예: `package.json` + `pnpm-lock.yaml`)은 함께 커밋한다.
+
+각 커밋에 대해 스테이징할 파일 목록을 명시하고 순서대로 승인을 받는다.
 
 ### 3) Draft commit message
 
