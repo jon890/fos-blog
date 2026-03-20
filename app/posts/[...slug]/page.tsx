@@ -17,7 +17,7 @@ import { Comments } from "@/components/Comments";
 import { PostViewCount } from "@/components/PostViewCount";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Clock, Folder, Github } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, Folder, Github, Pencil } from "lucide-react";
 import { Metadata } from "next";
 
 const siteUrl =
@@ -190,6 +190,32 @@ export default async function PostPage({ params }: PostPageProps) {
                   <Clock className="w-4 h-4" />
                   <span>약 {readingTime}분</span>
                 </div>
+                {post.createdAt && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    <span>
+                      {post.createdAt.toLocaleDateString("ko-KR", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </span>
+                  </div>
+                )}
+                {post.updatedAt &&
+                  post.createdAt?.getTime() !== post.updatedAt.getTime() && (
+                    <div className="flex items-center gap-2">
+                      <Pencil className="w-4 h-4" />
+                      <span>
+                        {post.updatedAt.toLocaleDateString("ko-KR", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                        {"  수정"}
+                      </span>
+                    </div>
+                  )}
                 <PostViewCount
                   pagePath={post.path}
                   className="text-gray-600 dark:text-gray-400"
