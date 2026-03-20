@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-03-17 | Updated: 2026-03-17 -->
+<!-- Generated: 2026-03-17 | Updated: 2026-03-20 -->
 
 # app
 
@@ -26,7 +26,8 @@ Next.js App Router directory containing all pages, layouts, API routes, and meta
 
 | Directory | Purpose |
 |-----------|---------|
-| `api/` | API route handlers (search, sync) — see `api/AGENTS.md` |
+| `api/` | API route handlers (search, sync, comments, visit) — see `api/AGENTS.md` |
+| `ads.txt/` | Google AdSense publisher verification endpoint — see `ads.txt/AGENTS.md` |
 | `posts/` | Individual post detail pages — see `posts/AGENTS.md` |
 | `categories/` | All categories listing page — see `categories/AGENTS.md` |
 | `category/` | Category detail with folder-tree navigation — see `category/AGENTS.md` |

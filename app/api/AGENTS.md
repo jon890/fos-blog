@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-03-17 | Updated: 2026-03-17 -->
+<!-- Generated: 2026-03-17 | Updated: 2026-03-20 -->
 
 # app/api
 
@@ -12,6 +12,8 @@ Next.js API route handlers. Two endpoints: full-text post search and GitHub-to-d
 |-----------|---------|
 | `search/` | GET endpoint for post search — see `search/AGENTS.md` |
 | `sync/` | POST/GET endpoint to trigger GitHub sync — see `sync/AGENTS.md` |
+| `comments/` | CRUD endpoint for per-post comments — see `comments/AGENTS.md` |
+| `visit/` | POST endpoint for recording post view counts — see `visit/AGENTS.md` |
 
 ## For AI Agents
 
