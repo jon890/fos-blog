@@ -1,12 +1,25 @@
 import { getDbQueries } from "@/db/queries";
 import { CategoryList } from "@/components/CategoryList";
+import { Metadata } from "next";
 
 // ISR - 60초마다 페이지 재생성
 export const revalidate = 60;
 
-export const metadata = {
-  title: "카테고리 - FOS Study",
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://fosworld.co.kr";
+
+export const metadata: Metadata = {
+  title: "카테고리",
   description: "모든 카테고리 목록을 확인하세요.",
+  alternates: {
+    canonical: `${siteUrl}/categories`,
+  },
+  openGraph: {
+    title: "카테고리 | FOS Study",
+    description: "모든 카테고리 목록을 확인하세요.",
+    url: `${siteUrl}/categories`,
+    type: "website",
+  },
 };
 
 export default async function CategoriesPage() {

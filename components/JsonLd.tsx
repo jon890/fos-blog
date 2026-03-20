@@ -11,14 +11,6 @@ export function WebsiteJsonLd({ url, name, description }: WebsiteJsonLdProps) {
     url,
     name,
     description,
-    potentialAction: {
-      "@type": "SearchAction",
-      target: {
-        "@type": "EntryPoint",
-        urlTemplate: `${url}/search?q={search_term_string}`,
-      },
-      "query-input": "required name=search_term_string",
-    },
   };
 
   return (
@@ -74,7 +66,7 @@ export function ArticleJsonLd({
       name: "FOS Study",
       logo: {
         "@type": "ImageObject",
-        url: `${url.split("/").slice(0, 3).join("/")}/logo.png`,
+        url: `${url.split("/").slice(0, 3).join("/")}/icon`,
       },
     },
   };

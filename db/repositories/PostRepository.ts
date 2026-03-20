@@ -71,6 +71,8 @@ export class PostRepository extends BaseRepository {
         subcategory: post.subcategory,
         folders: post.folders || [],
         description: post.description,
+        createdAt: post.createdAt,
+        updatedAt: post.updatedAt,
       },
     };
   }
@@ -82,6 +84,15 @@ export class PostRepository extends BaseRepository {
       .where(eq(posts.isActive, true));
 
     return result.map((p) => p.path);
+  }
+
+  async getAllPostsForSitemap(): Promise<
+    { path: string; updatedAt: Date | null }[]
+  > {
+    return this.db
+      .select({ path: posts.path, updatedAt: posts.updatedAt })
+      .from(posts)
+      .where(eq(posts.isActive, true));
   }
 
   async searchPosts(query: string, limit: number = 20): Promise<PostData[]> {
