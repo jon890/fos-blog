@@ -1,0 +1,483 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1773994711578,
+  "projectRoot": "/Users/nhn/personal/fos-blog",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "next",
+        "version": "16.1.6",
+        "category": "fullstack"
+      },
+      {
+        "name": "react",
+        "version": "19.2.0",
+        "category": "frontend"
+      },
+      {
+        "name": "react-dom",
+        "version": "19.2.0",
+        "category": "frontend"
+      }
+    ],
+    "packageManager": "pnpm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "pnpm build",
+    "testCommand": "pnpm test",
+    "lintCommand": "pnpm lint",
+    "devCommand": "pnpm dev",
+    "scripts": {
+      "dev": "next dev --turbopack",
+      "build": "next build",
+      "start": "next start",
+      "lint": "eslint .",
+      "type-check": "tsc --noEmit",
+      "test": "echo \"No tests yet\" && exit 0",
+      "db:generate": "drizzle-kit generate",
+      "db:migrate": "drizzle-kit migrate",
+      "db:push": "drizzle-kit push",
+      "db:studio": "drizzle-kit studio",
+      "db:up": "docker compose up -d",
+      "db:down": "docker compose down",
+      "db:logs": "docker compose logs -f db",
+      "setup": "docker compose up -d && sleep 5 && pnpm db:push"
+    }
+  },
+  "conventions": {
+    "namingStyle": "camelCase",
+    "importStyle": "ES modules",
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "app",
+      "components",
+      "lib",
+      "public"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "app": {
+      "path": "app",
+      "purpose": "Application code",
+      "fileCount": 11,
+      "lastAccessed": 1773994711549,
+      "keyFiles": [
+        "AGENTS.md",
+        "apple-icon.tsx",
+        "globals.css",
+        "icon.tsx",
+        "layout.tsx"
+      ]
+    },
+    "components": {
+      "path": "components",
+      "purpose": "UI components",
+      "fileCount": 15,
+      "lastAccessed": 1773994711550,
+      "keyFiles": [
+        "AGENTS.md",
+        "CategoryCard.tsx",
+        "CategoryList.tsx",
+        "Comments.tsx",
+        "Header.tsx"
+      ]
+    },
+    "db": {
+      "path": "db",
+      "purpose": null,
+      "fileCount": 5,
+      "lastAccessed": 1773994711556,
+      "keyFiles": [
+        "AGENTS.md",
+        "constants.ts",
+        "index.ts",
+        "queries.ts",
+        "types.ts"
+      ]
+    },
+    "docker": {
+      "path": "docker",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1773994711557,
+      "keyFiles": [
+        "AGENTS.md"
+      ]
+    },
+    "drizzle": {
+      "path": "drizzle",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1773994711558,
+      "keyFiles": [
+        "0000_next_smiling_tiger.sql"
+      ]
+    },
+    "lib": {
+      "path": "lib",
+      "purpose": "Library code",
+      "fileCount": 4,
+      "lastAccessed": 1773994711558,
+      "keyFiles": [
+        "AGENTS.md",
+        "github.ts",
+        "markdown.ts",
+        "sync-github.ts"
+      ]
+    },
+    "public": {
+      "path": "public",
+      "purpose": "Public files",
+      "fileCount": 1,
+      "lastAccessed": 1773994711559,
+      "keyFiles": [
+        "favicon.svg"
+      ]
+    },
+    "skills": {
+      "path": "skills",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1773994711559,
+      "keyFiles": []
+    },
+    "app/api": {
+      "path": "app/api",
+      "purpose": "API routes",
+      "fileCount": 1,
+      "lastAccessed": 1773994711560,
+      "keyFiles": [
+        "AGENTS.md"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "app/posts/[...slug]/page.tsx",
+      "accessCount": 9,
+      "lastAccessed": 1773998474405,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 8,
+      "lastAccessed": 1773997981766,
+      "type": "directory"
+    },
+    {
+      "path": "app/category/[...path]/page.tsx",
+      "accessCount": 8,
+      "lastAccessed": 1773998434990,
+      "type": "file"
+    },
+    {
+      "path": "db/AGENTS.md",
+      "accessCount": 7,
+      "lastAccessed": 1773997512966,
+      "type": "file"
+    },
+    {
+      "path": "app/posts/[...slug]/AGENTS.md",
+      "accessCount": 5,
+      "lastAccessed": 1773997498992,
+      "type": "file"
+    },
+    {
+      "path": "app/api/AGENTS.md",
+      "accessCount": 5,
+      "lastAccessed": 1773997499791,
+      "type": "file"
+    },
+    {
+      "path": "app/AGENTS.md",
+      "accessCount": 5,
+      "lastAccessed": 1773997506167,
+      "type": "file"
+    },
+    {
+      "path": "components/AGENTS.md",
+      "accessCount": 4,
+      "lastAccessed": 1773996296343,
+      "type": "file"
+    },
+    {
+      "path": "app/api/search/AGENTS.md",
+      "accessCount": 4,
+      "lastAccessed": 1773997444328,
+      "type": "file"
+    },
+    {
+      "path": "components/JsonLd.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1773998301510,
+      "type": "file"
+    },
+    {
+      "path": "app/sitemap.ts",
+      "accessCount": 4,
+      "lastAccessed": 1773998352221,
+      "type": "file"
+    },
+    {
+      "path": "app/globals.css",
+      "accessCount": 3,
+      "lastAccessed": 1773996174639,
+      "type": "file"
+    },
+    {
+      "path": "app/api/comments/AGENTS.md",
+      "accessCount": 3,
+      "lastAccessed": 1773996476724,
+      "type": "file"
+    },
+    {
+      "path": "lib/AGENTS.md",
+      "accessCount": 3,
+      "lastAccessed": 1773996541770,
+      "type": "file"
+    },
+    {
+      "path": "AGENTS.md",
+      "accessCount": 3,
+      "lastAccessed": 1773996640635,
+      "type": "file"
+    },
+    {
+      "path": "app/categories/AGENTS.md",
+      "accessCount": 3,
+      "lastAccessed": 1773997439760,
+      "type": "file"
+    },
+    {
+      "path": "app/category/[...path]/AGENTS.md",
+      "accessCount": 3,
+      "lastAccessed": 1773997501165,
+      "type": "file"
+    },
+    {
+      "path": "db/repositories/PostRepository.ts",
+      "accessCount": 3,
+      "lastAccessed": 1773998316296,
+      "type": "file"
+    },
+    {
+      "path": "db/queries.ts",
+      "accessCount": 3,
+      "lastAccessed": 1773998334932,
+      "type": "file"
+    },
+    {
+      "path": "app/layout.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1773998339363,
+      "type": "file"
+    },
+    {
+      "path": "app/categories/page.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1773998400460,
+      "type": "file"
+    },
+    {
+      "path": "app/not-found.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1773998439827,
+      "type": "file"
+    },
+    {
+      "path": "components/MarkdownRenderer.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1773996169348,
+      "type": "file"
+    },
+    {
+      "path": "app/api/visit/AGENTS.md",
+      "accessCount": 2,
+      "lastAccessed": 1773996458949,
+      "type": "file"
+    },
+    {
+      "path": "app/api/sync/AGENTS.md",
+      "accessCount": 2,
+      "lastAccessed": 1773997433434,
+      "type": "file"
+    },
+    {
+      "path": "next.config.js",
+      "accessCount": 2,
+      "lastAccessed": 1773997974210,
+      "type": "file"
+    },
+    {
+      "path": "app",
+      "accessCount": 2,
+      "lastAccessed": 1773997983361,
+      "type": "directory"
+    },
+    {
+      "path": "app/opengraph-image.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1773998248144,
+      "type": "file"
+    },
+    {
+      "path": "db/types.ts",
+      "accessCount": 2,
+      "lastAccessed": 1773998299443,
+      "type": "file"
+    },
+    {
+      "path": "postcss.config.mjs",
+      "accessCount": 1,
+      "lastAccessed": 1773995095121,
+      "type": "file"
+    },
+    {
+      "path": "docker/AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1773995493113,
+      "type": "file"
+    },
+    {
+      "path": "db/repositories/AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1773995646370,
+      "type": "file"
+    },
+    {
+      "path": "db/schema/AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1773995646507,
+      "type": "file"
+    },
+    {
+      "path": "app/api/sync/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773995677623,
+      "type": "file"
+    },
+    {
+      "path": "app/category/AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1773995989455,
+      "type": "file"
+    },
+    {
+      "path": "app/posts/AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1773995990243,
+      "type": "file"
+    },
+    {
+      "path": "components/Mermaid.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773996034031,
+      "type": "file"
+    },
+    {
+      "path": "lib/github.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773996391260,
+      "type": "file"
+    },
+    {
+      "path": "lib/markdown.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773996391631,
+      "type": "file"
+    },
+    {
+      "path": "app/api/comments/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773996392020,
+      "type": "file"
+    },
+    {
+      "path": "app/api/comments/[id]/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773996392442,
+      "type": "file"
+    },
+    {
+      "path": "app/api/comments/[id]/AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1773996435472,
+      "type": "file"
+    },
+    {
+      "path": "app/api/visit/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773996443147,
+      "type": "file"
+    },
+    {
+      "path": "app/ads.txt/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773996443273,
+      "type": "file"
+    },
+    {
+      "path": "app/ads.txt/AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1773996465049,
+      "type": "file"
+    },
+    {
+      "path": "lib/sync-github.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773996516614,
+      "type": "file"
+    },
+    {
+      "path": "drizzle/AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1773996638308,
+      "type": "file"
+    },
+    {
+      "path": "db/index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773996679720,
+      "type": "file"
+    },
+    {
+      "path": "app/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773997966806,
+      "type": "file"
+    },
+    {
+      "path": "app/robots.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773997969018,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}
