@@ -36,3 +36,6 @@ drizzle/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# oh-my-claudecode state
+.omc/

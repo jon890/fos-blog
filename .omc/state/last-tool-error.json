@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"git add app/categories/page.tsx app/category/[...path]/page.tsx app/layout.tsx app/not-found.tsx app/posts/\\\\[...slug\\\\]/page.tsx \\\"app/posts/[...slug]/opengraph-image.tsx\\\" app/sitemap.ts...",
-  "error": "Exit code 1\n(eval):1: no matches found: app/category/[...path]/page.tsx",
-  "timestamp": "2026-03-20T09:25:05.963Z",
-  "retry_count": 1
-}
