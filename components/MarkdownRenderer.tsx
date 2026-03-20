@@ -11,9 +11,33 @@ import { Mermaid } from "./Mermaid";
 
 interface MarkdownRendererProps {
   content: string;
+  basePath?: string;
 }
 
-export function MarkdownRenderer({ content }: MarkdownRendererProps) {
+/**
+ * 마크다운의 상대경로 .md 링크를 블로그 URL로 변환
+ * 예: ../other.md → /posts/category/other
+ *     ./sub/post.md#section → /posts/category/sub/post#section
+ */
+function resolveMarkdownLink(href: string, basePath: string): string {
+  const hashIdx = href.indexOf("#");
+  const fragment = hashIdx !== -1 ? href.slice(hashIdx) : "";
+  const linkPath = hashIdx !== -1 ? href.slice(0, hashIdx) : href;
+
+  const pathWithoutExt = linkPath.replace(/\.mdx?$/, "");
+  const baseSegments = basePath.split("/").slice(0, -1);
+  const resolved = [...baseSegments];
+
+  for (const seg of pathWithoutExt.split("/")) {
+    if (seg === ".") continue;
+    else if (seg === "..") resolved.pop();
+    else resolved.push(seg);
+  }
+
+  return `/posts/${resolved.join("/")}${fragment}`;
+}
+
+export function MarkdownRenderer({ content, basePath }: MarkdownRendererProps) {
   const components: Partial<Components> = {
     h1: ({ children, ...props }) => (
       <h1
@@ -58,17 +82,29 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
         {children}
       </li>
     ),
-    a: ({ children, href, ...props }) => (
-      <a
-        href={href}
-        className="text-blue-600 dark:text-blue-400 hover:underline"
-        target={href?.startsWith("http") ? "_blank" : undefined}
-        rel={href?.startsWith("http") ? "noopener noreferrer" : undefined}
-        {...props}
-      >
-        {children}
-      </a>
-    ),
+    a: ({ children, href, ...props }) => {
+      const isExternal = href?.startsWith("http");
+      const isAnchor = href?.startsWith("#");
+      const isRelativeMd =
+        !isExternal && !isAnchor && /\.mdx?($|#)/.test(href ?? "");
+
+      const resolvedHref =
+        isRelativeMd && basePath
+          ? resolveMarkdownLink(href!, basePath)
+          : href;
+
+      return (
+        <a
+          href={resolvedHref}
+          className="text-blue-600 dark:text-blue-400 hover:underline"
+          target={isExternal ? "_blank" : undefined}
+          rel={isExternal ? "noopener noreferrer" : undefined}
+          {...props}
+        >
+          {children}
+        </a>
+      );
+    },
     blockquote: ({ children, ...props }) => (
       <blockquote
         className="my-4 pl-4 border-l-4 border-blue-500 bg-gray-50 dark:bg-gray-900 py-2 italic"

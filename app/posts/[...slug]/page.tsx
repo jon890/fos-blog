@@ -207,7 +207,7 @@ export default async function PostPage({ params }: PostPageProps) {
             </header>
 
             {/* Content */}
-            <MarkdownRenderer content={mainContent} />
+            <MarkdownRenderer content={mainContent} basePath={slug} />
 
             {/* Footer */}
             <footer className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-800">
