@@ -1,0 +1,27 @@
+name: Lighthouse CI
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 매주 월요일 오전 9시 (KST = UTC+9) 자동 실행
+    - cron: "0 0 * * 1"
+
+jobs:
+  lighthouse:
+    name: Lighthouse Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          urls: |
+            https://fosworld.co.kr
+            https://fosworld.co.kr/categories
+            https://fosworld.co.kr/posts/AI/RAG/embedding.md
+          configPath: ./.lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
