@@ -6,11 +6,28 @@ interface CategoryCardProps {
   category: CategoryData;
 }
 
+const CATEGORY_ACCENT: Record<string, string> = {
+  java:         "border-l-amber-400 dark:border-l-amber-500",
+  AI:           "border-l-purple-400 dark:border-l-purple-500",
+  database:     "border-l-orange-400 dark:border-l-orange-500",
+  devops:       "border-l-red-400 dark:border-l-red-500",
+  javascript:   "border-l-yellow-400 dark:border-l-yellow-500",
+  react:        "border-l-cyan-400 dark:border-l-cyan-500",
+  algorithm:    "border-l-green-400 dark:border-l-green-500",
+  architecture: "border-l-blue-400 dark:border-l-blue-500",
+  interview:    "border-l-pink-400 dark:border-l-pink-500",
+  network:      "border-l-indigo-400 dark:border-l-indigo-500",
+  kafka:        "border-l-rose-400 dark:border-l-rose-500",
+  internet:     "border-l-teal-400 dark:border-l-teal-500",
+};
+
 export function CategoryCard({ category }: CategoryCardProps) {
+  const accent = CATEGORY_ACCENT[category.slug] ?? "border-l-gray-400 dark:border-l-gray-600";
+
   return (
     <Link
       href={`/category/${encodeURIComponent(category.slug)}`}
-      className="group block p-6 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-lg transition-all duration-300"
+      className={`group block p-5 rounded-xl border border-l-4 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-300 ${accent}`}
     >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
