@@ -105,6 +105,45 @@ async function getLastSyncedCommitSha(): Promise<string | null> {
   return result[0]?.commitSha ?? null;
 }
 
+/**
+ * GitHub 커밋 히스토리에서 파일의 최초 작성일(createdAt)과 최신 수정일(updatedAt)을 가져옴
+ * per_page=100으로 최대 100개 커밋 조회 (배열 앞 = 최신, 뒤 = 오래된 순)
+ */
+async function getFileCommitDates(
+  filePath: string
+): Promise<{ createdAt: Date; updatedAt: Date } | null> {
+  try {
+    const response = await octokit.repos.listCommits({
+      owner: OWNER,
+      repo: REPO,
+      path: filePath,
+      per_page: 100,
+    });
+
+    const commits = response.data;
+    if (commits.length === 0) return null;
+
+    const latestCommit = commits[0];
+    const firstCommit = commits[commits.length - 1];
+
+    const updatedAt = new Date(
+      latestCommit.commit.committer?.date ??
+        latestCommit.commit.author?.date ??
+        new Date()
+    );
+    const createdAt = new Date(
+      firstCommit.commit.committer?.date ??
+        firstCommit.commit.author?.date ??
+        updatedAt
+    );
+
+    return { createdAt, updatedAt };
+  } catch (error) {
+    console.warn(`커밋 날짜 조회 실패 (${filePath}):`, error);
+    return null;
+  }
+}
+
 async function getFileContent(
   path: string
 ): Promise<{ content: string; sha: string } | null> {
@@ -158,7 +197,10 @@ function isMdFile(filename: string) {
 
 async function upsertPost(filePath: string): Promise<"added" | "updated" | "skipped"> {
   const database = getDb();
-  const fileData = await getFileContent(filePath);
+  const [fileData, commitDates] = await Promise.all([
+    getFileContent(filePath),
+    getFileCommitDates(filePath),
+  ]);
   if (!fileData) return "skipped";
 
   const { category, foldersList, subcategory, title } = parsePath(filePath);
@@ -182,7 +224,7 @@ async function upsertPost(filePath: string): Promise<"added" | "updated" | "skip
         subcategory,
         folders: foldersList,
         isActive: true,
-        updatedAt: new Date(),
+        updatedAt: commitDates?.updatedAt ?? new Date(),
       })
       .where(eq(posts.id, existing[0].id));
     return "updated";
@@ -197,6 +239,10 @@ async function upsertPost(filePath: string): Promise<"added" | "updated" | "skip
       content: fileData.content,
       description,
       sha: fileData.sha,
+      ...(commitDates && {
+        createdAt: commitDates.createdAt,
+        updatedAt: commitDates.updatedAt,
+      }),
     });
     return "added";
   }
@@ -307,7 +353,10 @@ async function performFullSync(): Promise<{
 
     if (existing && existing.sha === file.sha) continue;
 
-    const fileData = await getFileContent(file.path);
+    const [fileData, commitDates] = await Promise.all([
+      getFileContent(file.path),
+      getFileCommitDates(file.path),
+    ]);
     if (!fileData) continue;
 
     const { title } = parsePath(file.path);
@@ -325,7 +374,7 @@ async function performFullSync(): Promise<{
           subcategory: file.subcategory,
           folders: file.folders,
           isActive: true,
-          updatedAt: new Date(),
+          updatedAt: commitDates?.updatedAt ?? new Date(),
         })
         .where(eq(posts.id, existing.id));
       updated++;
@@ -341,6 +390,10 @@ async function performFullSync(): Promise<{
         content: fileData.content,
         description,
         sha: fileData.sha,
+        ...(commitDates && {
+          createdAt: commitDates.createdAt,
+          updatedAt: commitDates.updatedAt,
+        }),
       });
       added++;
       console.log(`추가: ${file.path}`);
