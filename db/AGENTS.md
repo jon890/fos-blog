@@ -4,7 +4,7 @@
 # db
 
 ## Purpose
-Database layer using Drizzle ORM with MySQL. Contains the schema definition, TypeScript types, query class, constants, and the database connection singleton. This is the authoritative data access layer — prefer it over `lib/db-queries.ts` for all new code.
+Database layer using Drizzle ORM with MySQL. Contains the schema definition, TypeScript types, query class, constants, and the database connection singleton. This is the authoritative data access layer for all data access.
 
 ## Key Files
 
@@ -48,7 +48,7 @@ Database layer using Drizzle ORM with MySQL. Contains the schema definition, Typ
 
 ### Common Patterns
 ```ts
-// Instantiate queries (done in lib/db-queries.ts and API routes)
+// Instantiate queries (done via getDbQueries() in API routes)
 import { db } from "@/db";
 import { DbQueries } from "@/db/queries";
 const q = new DbQueries(db);
@@ -66,7 +66,7 @@ const { folders, posts, readme } = await q.getFolderContents("ai/basics");
 ## Dependencies
 
 ### Internal
-- Used by `lib/sync-github.ts`, `lib/db-queries.ts`, and all API routes
+- Used by `lib/sync-github.ts` and all API routes via `getDbQueries()`
 
 ### External
 - `drizzle-orm` — ORM and query builder

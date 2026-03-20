@@ -41,7 +41,7 @@ params.slug (string[])
 ## Dependencies
 
 ### Internal
-- `@/lib/db-queries` → `getPost()`, `getCategoryIcon()`, `getAllPostPaths()`
+- `@/db/queries` → `getDbQueries()` → `getPost()`, `getCategoryIcon()`, `getAllPostPaths()`
 - `@/lib/markdown` → `extractTitle()`, `extractDescription()`, `getReadingTime()`, `generateTableOfContents()`, `parseFrontMatter()`
 - `@/components/MarkdownRenderer`
 - `@/components/TableOfContents`
