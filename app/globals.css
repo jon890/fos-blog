@@ -32,7 +32,7 @@ body {
 
 /* Markdown content styles */
 .prose pre {
-  @apply bg-gray-900 dark:bg-gray-950 rounded-lg overflow-x-auto;
+  @apply bg-gray-900 dark:bg-gray-800 rounded-lg overflow-x-auto border border-gray-700;
 }
 
 .prose code {

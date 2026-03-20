@@ -1,16 +1,16 @@
 ---
 name: commit-and-push
-description: Standard workflow for safely committing and pushing changes. Use when the user wants to "commit", "push", "save work", "upload code", or manage git history. Enforces verification (lint/type-check) and Conventional Commits in Korean.
+description: Standard workflow for safely committing, pushing, and creating PRs in fos-blog. ALWAYS use this skill when the user says "커밋", "푸시", "올려줘", "반영해줘", "PR 만들어줘", "PR 생성", "작업 저장", "commit", "push", "save work", or any git workflow request — even if they don't mention all three steps. Enforces pnpm lint/type-check, Conventional Commits in Korean, and guides through commit → push → PR as a single unified flow.
 metadata:
   author: bifos
-  version: "1.0.0"
+  version: "2.1.0"
   argument-hint: <file-or-pattern>
 ---
 
-# Commit & Push Agent (workflow)
+# Commit, Push & PR Agent (workflow)
 
-This document defines the **standard workflow** for an agent that performs `git commit` and `git push` in the **fos-blog** project.
-Primary goals: **safety** (no leaks, no destructive ops) and **user control** (explicit approvals).
+This skill handles the full `git commit → git push → gh pr create` flow for fos-blog.
+Primary goals: **safety** (no leaks, no destructive ops) and **efficiency** (minimize roundtrips while keeping user in control).
 
 ## Project Stack
 
@@ -20,128 +20,171 @@ Primary goals: **safety** (no leaks, no destructive ops) and **user control** (e
 - **Database**: MySQL + Drizzle ORM
 - **Styling**: Tailwind CSS
 
-## Commands (signals to inspect first)
-
-```bash
-git status --porcelain
-git diff
-git diff --staged
-git log -5 --oneline
-```
-
-Before committing, run verification commands:
-
-```bash
-pnpm lint        # ESLint check (fast)
-pnpm type-check  # TypeScript type check
-pnpm build       # Production build (optional, for large changes)
-```
-
 ## Expected user input (if available)
 
-- **Scope**: what should be included/excluded
+- **Scope**: what files to include/exclude
 - **Skip verification**: `--skip-lint`, `--skip-build`, etc.
-- **Push target**: remote + branch (default: `origin main`)
-- **Commit style**: Conventional Commits recommended (e.g., `feat:`, `fix:`, `docs:`, `refactor:`)
-
-If missing, infer from repo defaults, but keep actions conservative.
+- **Fast path**: if user says "다 진행해줘" / "전부 처리해줘" / "그냥 다 해줘" → use **batch approval mode** (ask all 3 approvals in one message)
+- **Commit style**: Conventional Commits in Korean (e.g., `feat:`, `fix:`, `docs:`, `refactor:`)
 
 ## Standard workflow
 
 ### 0) Safety precheck
 
-- Inspect changes (`git status`, `git diff`, `git diff --staged`)
-- Check recent history (`git log -5 --oneline`) to match message style
-- Flag risky files:
-  - `.env`, `.env.local`, `.env*.local` (environment variables)
-  - `*.pem`, `id_rsa`, `credentials.*`, `secrets.*` (authentication)
-  - `drizzle/` (generated migration files)
-  - `.next/`, `node_modules/` (build artifacts)
-  - If suspicious: **stop** and ask the user what to do (do not commit/push).
+Run in parallel:
+```bash
+git status --porcelain
+git branch --show-current
+git log -5 --oneline
+```
+
+If `pnpm-lock.yaml` is modified (e.g., after `pnpm add`), **always include it in the same commit** as the package.json change. Failing to do so breaks `--frozen-lockfile` CI.
+
+Flag and **stop** (do not proceed) if any of these appear:
+- `.env`, `.env.local`, `.env*.local` (environment secrets)
+- `*.pem`, `id_rsa`, `credentials.*`, `secrets.*` (keys/credentials)
+- `.next/`, `node_modules/` (build artifacts)
+- `.omc/` (OMC internal state — should be gitignored)
+- `drizzle/` migrations — **except** `drizzle/AGENTS.md` which is allowed
+
+If suspicious: stop and ask the user before proceeding.
 
 ### 1) Verify (lint + type-check gate)
 
-- Run ESLint first: `pnpm lint` - fast, catches style issues
-- Run TypeScript check: `pnpm type-check` - catches type errors
-- (Optional) For large changes: `pnpm build` - verify production build
-- If any verification fails: summarize failure + propose a fix; do not proceed to commit.
+```bash
+pnpm lint        # ESLint — fast, run first
+pnpm type-check  # TypeScript — catches type errors
+```
 
-### 2) Propose a staging plan
+- For large changes, optionally run `pnpm build`
+- If verification fails: explain the error, propose a fix, do **not** proceed to commit
 
-- Prefer **small, single-purpose** commits (split by concern: feature/fix/docs/config).
-- List exactly what will be staged.
+### 2) Staging plan
 
-### 3) Draft a commit message
+**의미 단위로 쪼개는 것이 원칙이다.** 변경된 파일들을 관심사별로 그룹화하여 각각 별도의 커밋으로 만든다.
 
-- Use Conventional Commits format:
-  - `feat:` new feature
-  - `fix:` bug fix
-  - `docs:` documentation changes
-  - `refactor:` code refactoring
-  - `style:` code style changes
-  - `chore:` miscellaneous changes
-- 1–2 sentences, focus on _why_.
-- **Write commit messages in Korean** (project convention)
+예시:
+- 기능 변경 파일들 → 커밋 1 (`fix: ...`)
+- 스킬/설정 파일 변경 → 커밋 2 (`chore: ...`)
+- 문서 변경 → 커밋 3 (`docs: ...`)
 
-### 4) Ask for explicit commit approval (required)
+하나의 커밋에 다른 관심사의 파일이 섞이지 않도록 한다. 다만 서로 강하게 연관된 파일(예: `package.json` + `pnpm-lock.yaml`)은 함께 커밋한다.
 
-Share:
+각 커밋에 대해 스테이징할 파일 목록을 명시하고 순서대로 승인을 받는다.
 
-- staged file list (planned)
-- final commit message
-- exact commands you will run (`git add ...`, `git commit ...`)
+### 3) Draft commit message
 
-Do not run `git commit` until the user approves.
+Use Conventional Commits format, **written in Korean**:
+- `feat:` 새 기능
+- `fix:` 버그 수정
+- `docs:` 문서 변경
+- `refactor:` 코드 리팩토링
+- `style:` 스타일/포맷
+- `chore:` 기타
 
-### 5) Commit
+Focus on *why*, not *what*. 1–2 sentences.
 
-- Stage only the approved files
-- Commit with the approved message
-- Show `git status --porcelain` after commit
+### 4–8) Approval flow
 
-### 6) Ask for explicit push approval (required)
+**Choose based on user intent:**
 
-Share:
+#### Standard mode (default)
+Ask for approval at each step separately → commit → push → PR
 
-- remote + branch
-- exact command (`git push` / `git push -u origin <branch>`)
+#### Batch approval mode
+When user pre-approves everything ("응 다 진행해줘", "다 처리해줘", "전부 해줘"), present all 3 actions in ONE message and ask once:
 
-Do not run `git push` until the user approves.
+```
+다음 세 가지를 순서대로 실행할게요:
 
-### 7) Push
+1. 커밋
+   - 스테이징: <files>
+   - 메시지: `feat: …`
 
-- Push only to the approved remote/branch
-- Show final `git status --porcelain`
+2. 푸시
+   - git push -u origin <branch>
+
+3. PR 생성 (if applicable)
+   - 제목: …
+   - base: main
+
+OK?
+```
+
+Then execute all three in sequence after one confirmation.
+
+### PR creation (step 8)
+
+**Skip PR if:**
+- Current branch is `main` or `master`
+- User explicitly said no PR
+
+**Before creating PR, check for existing PR:**
+```bash
+gh pr list --head <branch> --state open
+```
+If one exists, show the URL instead of creating a new one.
+
+**PR creation:**
+```bash
+gh pr create \
+  --title "…" \
+  --base main \
+  --body "$(cat <<'EOF'
+## Summary
+- …
+
+## Test plan
+- [ ] …
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+EOF
+)"
+```
+
+After creation, show the PR URL.
 
 ## Boundaries (hard rules)
 
-- Never commit or push without **explicit user approval**.
-- Never force push (`--force`, `--force-with-lease`) unless explicitly requested.
-- Never disable hooks (`--no-verify`) unless explicitly requested.
-- Avoid interactive git commands (`git add -i`, `git rebase -i`) in non-interactive environments.
+- Never commit, push, or create PR without explicit user approval
+- Never force push (`--force`, `--force-with-lease`) unless explicitly requested
+- Never disable hooks (`--no-verify`) unless explicitly requested
+- Avoid interactive git commands in non-interactive environments
 - Do not commit:
-  - `.env`, `.env.local` (secrets)
-  - `node_modules/`, `.next/`, `drizzle/` (generated files)
+  - `.env`, `.env.local` and variants (secrets)
+  - `node_modules/`, `.next/`, `.omc/` (generated/state files)
+  - `drizzle/` migrations (except `drizzle/AGENTS.md`)
   - `*.pem`, credentials
 
 ## Approval request templates
 
 ### Commit approval
 
-- Summary:
-  - …
-- Will stage:
-  - …
-- Commit message:
-  - `feat: …` / `fix: …` / etc.
-- OK to run?
-  - `git add …`
-  - `git commit -m "…"`
+```
+커밋 승인 요청:
+- 스테이징: <files>
+- 메시지: `feat: …`
+OK?
+  git add …
+  git commit -m "…"
+```
 
 ### Push approval
 
-- Push target:
-  - remote: `origin`
-  - branch: `main` (or feature branch)
-- OK to run?
-  - `git push origin main`
+```
+푸시 승인 요청:
+- origin/<branch>
+OK?
+  git push -u origin <branch>
+```
+
+### PR approval
+
+```
+PR 생성 승인 요청:
+- 제목: …
+- base: main ← <branch>
+- Summary: …
+OK?
+  gh pr create --title "…" --base main --body "…"
+```
