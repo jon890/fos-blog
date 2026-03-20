@@ -9,6 +9,8 @@ export interface PostData {
   folders?: string[];
   content?: string | null;
   description?: string | null;
+  createdAt?: Date | null;
+  updatedAt?: Date | null;
 }
 
 export interface FolderItemData {

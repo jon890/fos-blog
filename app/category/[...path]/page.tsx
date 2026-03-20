@@ -5,10 +5,14 @@ import {
 } from "@/db/queries";
 import { PostCard } from "@/components/PostCard";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { BreadcrumbJsonLd } from "@/components/JsonLd";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Folder, ChevronRight, Home, BookOpen } from "lucide-react";
 import { Metadata } from "next";
+
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://fosworld.co.kr";
 
 // ISR - 60초마다 페이지 재생성
 export const revalidate = 60;
@@ -34,10 +38,23 @@ export async function generateMetadata({
   const resolvedParams = await params;
   const pathSegments = resolvedParams.path.map(decodeURIComponent);
   const currentFolder = pathSegments[pathSegments.length - 1];
+  const canonicalUrl = `${siteUrl}/category/${pathSegments
+    .map(encodeURIComponent)
+    .join("/")}`;
+  const description = `${pathSegments.join(" > ")} 폴더의 모든 글을 확인하세요.`;
 
   return {
-    title: `${currentFolder} - FOS Study`,
-    description: `${pathSegments.join(" > ")} 폴더의 모든 글을 확인하세요.`,
+    title: currentFolder,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title: `${currentFolder} | FOS Study`,
+      description,
+      url: canonicalUrl,
+      type: "website",
+    },
   };
 }
 
@@ -84,7 +101,20 @@ export default async function FolderPage({ params }: FolderPageProps) {
     isLast: index === pathSegments.length - 1,
   }));
 
+  const breadcrumbJsonLdItems = [
+    { name: "홈", url: siteUrl },
+    ...pathSegments.map((segment, index) => ({
+      name: segment,
+      url: `${siteUrl}/category/${pathSegments
+        .slice(0, index + 1)
+        .map(encodeURIComponent)
+        .join("/")}`,
+    })),
+  ];
+
   return (
+    <>
+      <BreadcrumbJsonLd items={breadcrumbJsonLdItems} />
     <div className="container mx-auto px-4 py-12">
       {/* Back button */}
       {pathSegments.length > 1 ? (
@@ -221,5 +251,6 @@ export default async function FolderPage({ params }: FolderPageProps) {
         </section>
       )}
     </div>
+    </>
   );
 }

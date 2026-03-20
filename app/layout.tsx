@@ -9,7 +9,7 @@ import { VisitorCount } from "@/components/VisitorCount";
 const inter = Inter({ subsets: ["latin"] });
 
 const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://fos-blog.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://fosworld.co.kr";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

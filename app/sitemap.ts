@@ -6,7 +6,7 @@ export const revalidate = 60;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || "https://fos-blog.vercel.app";
+    process.env.NEXT_PUBLIC_SITE_URL || "https://fosworld.co.kr";
 
   // 정적 페이지
   const staticPages: MetadataRoute.Sitemap = [
@@ -42,7 +42,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${baseUrl}/category/${encodeURIComponent(category.slug)}`,
       lastModified: new Date(),
       changeFrequency: "weekly" as const,
-      priority: 0.7,
+      priority: 0.6,
     }));
 
     // 폴더 페이지 (n-depth)
@@ -56,16 +56,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
 
-    // 포스트 페이지
-    const postPaths = await dbQueries.getAllPostPaths();
-    postPages = postPaths.map((path) => ({
+    // 포스트 페이지 (실제 수정일 사용)
+    const postsData = await dbQueries.getAllPostsForSitemap();
+    postPages = postsData.map(({ path, updatedAt }) => ({
       url: `${baseUrl}/posts/${path
         .split("/")
         .map(encodeURIComponent)
         .join("/")}`,
-      lastModified: new Date(),
+      lastModified: updatedAt ?? new Date(),
       changeFrequency: "monthly" as const,
-      priority: 0.5,
+      priority: 0.8,
     }));
   } catch (error) {
     console.warn("Failed to fetch dynamic sitemap data:", error);

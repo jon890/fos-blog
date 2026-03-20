@@ -21,7 +21,7 @@ import { ArrowLeft, Clock, Folder, Github } from "lucide-react";
 import { Metadata } from "next";
 
 const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://fos-blog.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://fosworld.co.kr";
 
 // ISR - 60초마다 페이지 재생성
 export const revalidate = 60;
@@ -51,20 +51,37 @@ export async function generateMetadata({
 
   if (!data) {
     return {
-      title: "글을 찾을 수 없습니다 - FOS Study",
+      title: "글을 찾을 수 없습니다",
     };
   }
 
   const title = extractTitle(data.content) || data.post.title;
   const description = extractDescription(data.content);
+  const postUrl = `${siteUrl}/posts/${slug
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/")}`;
+  const publishedTime = data.post.createdAt?.toISOString();
+  const modifiedTime = data.post.updatedAt?.toISOString();
 
   return {
-    title: `${title} - FOS Study`,
+    title,
     description,
+    alternates: {
+      canonical: postUrl,
+    },
     openGraph: {
       title,
       description,
       type: "article",
+      url: postUrl,
+      ...(publishedTime && { publishedTime }),
+      ...(modifiedTime && { modifiedTime }),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
     },
   };
 }
@@ -127,6 +144,8 @@ export default async function PostPage({ params }: PostPageProps) {
         url={postUrl}
         title={title}
         description={description}
+        datePublished={post.createdAt?.toISOString()}
+        dateModified={post.updatedAt?.toISOString()}
         authorName="jon890"
         authorUrl="https://github.com/jon890"
       />
