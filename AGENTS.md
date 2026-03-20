@@ -1,3 +1,5 @@
+<!-- Generated: 2026-03-17 | Updated: 2026-03-20 -->
+
 # fos-blog
 
 ## Project Overview
@@ -9,15 +11,17 @@
 *   **GitHub Sync:** Fetches Markdown files from a remote repository via GitHub API.
 *   **Database Caching:** Caches content in a MySQL database using Drizzle ORM for faster access and search.
 *   **Categorization:** Automatically categorizes posts based on the directory structure of the source repository.
-*   **Markdown Rendering:** Renders GFM (GitHub Flavored Markdown) with syntax highlighting.
+*   **Markdown Rendering:** Renders GFM (GitHub Flavored Markdown) with syntax highlighting (highlight.js github-dark theme) and Mermaid diagram support.
+*   **Comments:** Per-post comment system stored in MySQL.
+*   **Visit Tracking:** Records and aggregates post view counts.
 *   **Responsive Design:** Built with Tailwind CSS v4 and fully responsive.
-*   **Dark/Light Mode:** Integrated theme switching.
+*   **Dark/Light Mode:** Integrated theme switching (defaults to dark).
 
 ### Tech Stack
 
-*   **Framework:** Next.js 16 (App Router)
+*   **Framework:** Next.js 16 (App Router, Turbopack)
 *   **Language:** TypeScript
-*   **Styling:** Tailwind CSS v4
+*   **Styling:** Tailwind CSS v4 + `@tailwindcss/typography`
 *   **Database:** MySQL 8.4 (running via Docker)
 *   **ORM:** Drizzle ORM
 *   **GitHub Integration:** Octokit
@@ -27,7 +31,7 @@
 
 ### Prerequisites
 
-*   Node.js (v20+ recommended)
+*   Node.js (v20+ recommended, see `.tool-versions`)
 *   pnpm
 *   Docker & Docker Compose (for the database)
 
@@ -39,31 +43,35 @@
     ```
 
 2.  **Environment Configuration:**
-    Copy `.env.example` to `.env.local` and configure your GitHub credentials.
+    Copy `.env.example` to `.env` and configure:
     ```bash
-    cp .env.example .env.local
+    cp .env.example .env
     ```
     Required variables:
-    *   `GITHUB_TOKEN`: GitHub Personal Access Token (for API rate limits)
+    *   `GITHUB_TOKEN`: GitHub Personal Access Token
     *   `GITHUB_OWNER`: Owner of the content repo (default: `jon890`)
     *   `GITHUB_REPO`: Name of the content repo (default: `fos-study`)
     *   `DATABASE_URL`: Connection string for MySQL (e.g., `mysql://fos_user:fos_password@localhost:13307/fos_blog`)
+    *   `SYNC_API_KEY`: API key to protect the `/api/sync` endpoint
 
 3.  **Start Database:**
     ```bash
     docker compose up -d
+    # or
+    pnpm db:up
     ```
 
-4.  **Database Migration & Sync:**
-    Initialize the database schema and sync content from GitHub.
+4.  **Database Migration:**
     ```bash
     pnpm db:push
-    pnpm sync
+    ```
+
+5.  **Sync Content from GitHub:**
+    ```bash
+    curl -X GET http://localhost:3000/api/sync -H "Authorization: Bearer <SYNC_API_KEY>"
     ```
 
 ### Development Server
-
-Start the Next.js development server:
 
 ```bash
 pnpm dev
@@ -73,31 +81,45 @@ The application will be available at `http://localhost:3000`.
 
 ### Database Management
 
-*   **Studio (GUI):** View and manage data via Drizzle Studio.
-    ```bash
-    pnpm db:studio
-    ```
-*   **Push Schema:** Update database schema after modifying `db/schema.ts`.
-    ```bash
-    pnpm db:push
-    ```
+```bash
+pnpm db:studio    # Drizzle Studio GUI
+pnpm db:push      # Apply schema changes
+pnpm db:generate  # Generate migration files
+pnpm db:up        # Start MySQL container
+pnpm db:down      # Stop MySQL container
+```
 
 ## Project Structure
 
-*   `app/`: Next.js App Router pages and layouts.
-    *   `api/`: API routes (e.g., search, sync triggers).
-    *   `categories/`, `category/`, `posts/`: Page routes for different views.
-*   `components/`: Reusable React components (UI, Markdown renderer, etc.).
-*   `db/`: Database configuration and schema definitions (`schema.ts`).
-*   `drizzle/`: Drizzle migration artifacts.
-*   `lib/`: Utility functions, including GitHub API logic (`github.ts`) and syncing logic (`sync-github.ts`).
+*   `app/`: Next.js App Router pages, layouts, and API routes.
+    *   `api/comments/`: Comment CRUD API
+    *   `api/search/`: Full-text post search API
+    *   `api/sync/`: GitHub→DB sync trigger API
+    *   `api/visit/`: Post view count tracking API
+    *   `categories/`, `category/`, `posts/`: Page routes
+    *   `globals.css`: Global Tailwind CSS — **must include `@source` for both `app/` and `components/`**
+*   `components/`: Reusable React components (MarkdownRenderer, TableOfContents, Comments, etc.).
+*   `db/`: Database layer — Drizzle connection, schema definitions (`db/schema/`), and repository classes (`db/repositories/`).
+*   `drizzle/`: Drizzle migration artifacts (auto-generated, do not edit).
+*   `lib/`: Utility functions — GitHub API client, markdown processing, sync orchestration.
+*   `docker/`: MySQL Docker initialization scripts.
 *   `public/`: Static assets.
-*   `scripts/`: Standalone scripts (e.g., `sync.ts` for CLI synchronization).
 
 ## Development Conventions
 
-*   **Routing:** Uses Next.js App Router file-system based routing.
-*   **Data Fetching:** Prefers server-side fetching where possible. Content is primarily served from the MySQL database, which is populated via the sync process.
-*   **Styling:** Utility-first CSS using Tailwind.
-*   **Type Safety:** Strict TypeScript usage. Drizzle schema definitions provide type inference for database models.
-*   **Sync Logic:** The `sync` command is the source of truth for content. Changes should be made in the source GitHub repository, then synced to this application.
+*   **Routing:** Next.js App Router file-system based routing.
+*   **Data Fetching:** Server-side fetching preferred. Content served from MySQL, populated via sync.
+*   **Styling:** Utility-first CSS using Tailwind v4. **Important:** `app/globals.css` must have `@source` directives for all directories containing Tailwind classes (currently `app/` and `components/`).
+*   **Type Safety:** Strict TypeScript. Drizzle schema provides type inference.
+*   **Content Updates:** Modify source files in `jon890/fos-study` GitHub repo, then trigger `/api/sync`.
+
+## Subdirectories
+
+| Directory | Purpose |
+|-----------|---------|
+| `proxy.ts` | Next.js middleware — records page visits to DB via `waitUntil` (fire-and-forget); runs on Edge Runtime |
+| `app/` | Next.js pages and API routes (see `app/AGENTS.md`) |
+| `components/` | Reusable React UI components (see `components/AGENTS.md`) |
+| `db/` | Database schema and repositories (see `db/AGENTS.md`) |
+| `lib/` | Shared utilities and GitHub sync (see `lib/AGENTS.md`) |
+| `docker/` | Docker MySQL config (see `docker/AGENTS.md`) |

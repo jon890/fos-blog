@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-03-17 | Updated: 2026-03-17 -->
+<!-- Generated: 2026-03-17 | Updated: 2026-03-20 -->
 
 # app/posts/[...slug]
 
@@ -45,6 +45,8 @@ params.slug (string[])
 - `@/lib/markdown` → `extractTitle()`, `extractDescription()`, `getReadingTime()`, `generateTableOfContents()`, `parseFrontMatter()`
 - `@/components/MarkdownRenderer`
 - `@/components/TableOfContents`
+- `@/components/Comments` — client-side comment section rendered below post body
+- `@/components/PostViewCount` — records and displays view count on page load
 - `@/components/JsonLd` → `ArticleJsonLd`, `BreadcrumbJsonLd`
 
 <!-- MANUAL: -->

@@ -85,7 +85,8 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
         return <Mermaid chart={String(children).replace(/\n$/, "")} />;
       }
 
-      const isInline = !className;
+      // 인라인 코드: className 없고 개행 없음 (fenced block without language는 children에 \n 포함)
+      const isInline = !className && !String(children).includes("\n");
       if (isInline) {
         return (
           <code

@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @source "./app/**/*.{ts,tsx}";
+@source "../components/**/*.{ts,tsx}";
 
 /* Custom theme configuration for Tailwind v4 */
 @theme {
@@ -39,7 +40,7 @@ body {
 }
 
 .prose pre code {
-  @apply text-gray-100;
+  @apply text-gray-100 bg-transparent p-0;
 }
 
 .prose img {

@@ -29,6 +29,7 @@ yarn-error.log*
 
 # drizzle
 drizzle/
+!drizzle/AGENTS.md
 
 # vercel
 .vercel
@@ -37,5 +38,6 @@ drizzle/
 *.tsbuildinfo
 next-env.d.ts
 
-# oh-my-claudecode state
-.omc/
+# claude code, oh-my-claude-code
+.claude/settings.local.json
+.omc

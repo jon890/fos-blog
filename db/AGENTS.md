@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-03-17 | Updated: 2026-03-17 -->
+<!-- Generated: 2026-03-17 | Updated: 2026-03-20 -->
 
 # db
 
@@ -15,6 +15,13 @@ Database layer using Drizzle ORM with MySQL. Contains the schema definition, Typ
 | `index.ts` | Database connection singleton — creates and exports the `db` Drizzle instance |
 | `queries.ts` | `DbQueries` class with all query methods; instantiated with the `db` connection |
 | `constants.ts` | `categoryIcons` map (category name → emoji) and `DEFAULT_CATEGORY_ICON` fallback |
+
+## Subdirectories
+
+| Directory | Purpose |
+|-----------|---------|
+| `schema/` | Drizzle table definitions, one file per entity (see `schema/AGENTS.md`) |
+| `repositories/` | Repository classes for data access patterns (see `repositories/AGENTS.md`) |
 
 ## Schema Overview
 
