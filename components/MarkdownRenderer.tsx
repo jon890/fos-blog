@@ -8,33 +8,11 @@ import rehypeSlug from "rehype-slug";
 import { Components } from "react-markdown";
 import "highlight.js/styles/github-dark.css";
 import { Mermaid } from "./Mermaid";
+import { resolveMarkdownLink } from "@/lib/resolve-markdown-link";
 
 interface MarkdownRendererProps {
   content: string;
   basePath?: string;
-}
-
-/**
- * 마크다운의 상대경로 .md 링크를 블로그 URL로 변환
- * 예: ../other.md → /posts/category/other
- *     ./sub/post.md#section → /posts/category/sub/post#section
- */
-function resolveMarkdownLink(href: string, basePath: string): string {
-  const hashIdx = href.indexOf("#");
-  const fragment = hashIdx !== -1 ? href.slice(hashIdx) : "";
-  const linkPath = hashIdx !== -1 ? href.slice(0, hashIdx) : href;
-
-  const pathWithoutExt = linkPath.replace(/\.mdx?$/, "");
-  const baseSegments = basePath.split("/").slice(0, -1);
-  const resolved = [...baseSegments];
-
-  for (const seg of pathWithoutExt.split("/")) {
-    if (seg === ".") continue;
-    else if (seg === "..") resolved.pop();
-    else resolved.push(seg);
-  }
-
-  return `/posts/${resolved.join("/")}${fragment}`;
 }
 
 export function MarkdownRenderer({ content, basePath }: MarkdownRendererProps) {

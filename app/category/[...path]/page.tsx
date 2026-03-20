@@ -190,7 +190,7 @@ export default async function FolderPage({ params }: FolderPageProps) {
             <span>README.md</span>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 md:p-8">
-            <MarkdownRenderer content={readme} />
+            <MarkdownRenderer content={readme} basePath={`${folderPath}/README`} />
           </div>
         </section>
       )}
