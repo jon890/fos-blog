@@ -10,7 +10,7 @@ GET API endpoint for full-text post search. Accepts a query string and returns m
 
 | File | Description |
 |------|-------------|
-| `route.ts` | `GET /api/search?q=<query>&limit=<n>` — delegates to `searchPosts()` in `lib/db-queries` |
+| `route.ts` | `GET /api/search?q=<query>&limit=<n>` — delegates to `searchPosts()` via `getDbQueries()` |
 
 ## For AI Agents
 
@@ -34,6 +34,6 @@ Response 500:
 ## Dependencies
 
 ### Internal
-- `@/lib/db-queries` → `searchPosts(query, limit)`
+- `@/db/queries` → `getDbQueries()` → `searchPosts(query, limit)`
 
 <!-- MANUAL: -->

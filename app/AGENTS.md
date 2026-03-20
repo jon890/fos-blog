@@ -61,8 +61,7 @@ export async function generateStaticParams() { ... }
 
 ### Internal
 - `@/components/` — UI components (Header, PostCard, CategoryList, etc.)
-- `@/lib/db-queries` — legacy query wrapper (still used in `page.tsx`)
-- `@/db/queries` — preferred Drizzle query class
+- `@/db/queries` — Drizzle query class via `getDbQueries()` factory
 
 ### External
 - `next/font/google` — Inter font loading

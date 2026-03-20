@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 ## Dependencies
 
 ### Internal
-- `@/lib/db-queries` — database query functions
+- `@/db/queries` — database query functions via `getDbQueries()`
 - `@/lib/sync-github` — sync orchestration
 
 <!-- MANUAL: -->
