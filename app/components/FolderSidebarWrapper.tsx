@@ -6,11 +6,15 @@ export async function FolderSidebarWrapper() {
   const dbQueries = getDbQueries();
   if (!dbQueries) return null;
 
-  const folderPaths = await dbQueries.getAllFolderPaths();
+  const [folderPaths, posts] = await Promise.all([
+    dbQueries.getAllFolderPaths(),
+    dbQueries.getAllPostsForSidebar(),
+  ]);
 
   return (
     <FolderSidebar
       folderPaths={folderPaths}
+      posts={posts}
       categoryIcons={categoryIcons}
     />
   );
