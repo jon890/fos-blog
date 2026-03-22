@@ -76,6 +76,10 @@ export class DbQueries {
     return this.postRepo.getAllPostsForSitemap();
   }
 
+  getAllPostsForSidebar(): Promise<{ path: string; title: string }[]> {
+    return this.postRepo.getAllPostsForSidebar();
+  }
+
   searchPosts(query: string, limit?: number): Promise<PostData[]> {
     return this.postRepo.searchPosts(query, limit);
   }
