@@ -4,11 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./ThemeToggle";
 import { SearchDialog } from "./SearchDialog";
-import { Book, Github, Home, Menu, X, Search } from "lucide-react";
+import { Book, Github, Home, Menu, X, Search, PanelLeft } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useSidebar } from "./SidebarContext";
 
 export function Header() {
   const pathname = usePathname();
+  const { toggle: toggleSidebar } = useSidebar();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -73,6 +75,15 @@ export function Header() {
 
           {/* Right side */}
           <div className="flex items-center gap-2">
+            {/* Sidebar Toggle */}
+            <button
+              onClick={toggleSidebar}
+              className="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="폴더 사이드바 열기"
+            >
+              <PanelLeft className="w-5 h-5" />
+            </button>
+
             {/* Search Button */}
             <button
               onClick={() => setSearchOpen(true)}

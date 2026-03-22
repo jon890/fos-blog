@@ -112,6 +112,15 @@ export class PostRepository extends BaseRepository {
     return result.map(p => ({ ...p, folders: p.folders || [] }));
   }
 
+  async getAllPostsForSidebar(): Promise<{ path: string; title: string }[]> {
+    const result = await this.db
+      .select({ path: posts.path, title: posts.title })
+      .from(posts)
+      .where(eq(posts.isActive, true))
+      .orderBy(posts.path);
+    return result;
+  }
+
   async searchPosts(query: string, limit: number = 20): Promise<PostData[]> {
     if (!query.trim()) {
       return [];
