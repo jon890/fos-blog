@@ -565,3 +565,37 @@ export async function syncGitHubToDatabase(): Promise<{
     throw error;
   }
 }
+
+// DB에 저장된 content에서 h1 제목을 재추출하여 title 일괄 업데이트
+// GitHub API 호출 없이 로컬 DB만 사용
+export async function retitleExistingPosts(): Promise<{
+  total: number;
+  updated: number;
+  skipped: number;
+}> {
+  const database = getDb();
+
+  const allPosts = await database
+    .select({ path: posts.path, title: posts.title, content: posts.content })
+    .from(posts);
+
+  let updated = 0;
+  let skipped = 0;
+
+  for (const post of allPosts) {
+    if (!post.content) { skipped++; continue; }
+
+    const extractedTitle = extractTitle(post.content);
+    if (!extractedTitle || extractedTitle === post.title) { skipped++; continue; }
+
+    await database
+      .update(posts)
+      .set({ title: extractedTitle })
+      .where(eq(posts.path, post.path));
+
+    updated++;
+    console.log(`제목 업데이트: ${post.path} → ${extractedTitle}`);
+  }
+
+  return { total: allPosts.length, updated, skipped };
+}
