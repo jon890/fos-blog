@@ -2,7 +2,7 @@ import { getDbQueries } from "@/db/queries";
 import { CategoryList } from "@/components/CategoryList";
 import { PostCard } from "@/components/PostCard";
 import { WebsiteJsonLd } from "@/components/JsonLd";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, Flame } from "lucide-react";
 import Link from "next/link";
 
 const siteUrl =
@@ -13,12 +13,13 @@ export const revalidate = 60;
 
 export default async function HomePage() {
   const dbQueries = getDbQueries();
-  const [categories, recentPosts] = dbQueries
+  const [categories, recentPosts, popularPosts] = dbQueries
     ? await Promise.all([
         dbQueries.getCategories(),
         dbQueries.getRecentPosts(6),
+        dbQueries.getPopularPosts(6),
       ])
-    : [[], []];
+    : [[], [], []];
 
   // 최근 글의 조회수 일괄 조회
   const postPaths = recentPosts.map((p) => p.path);
@@ -73,6 +74,27 @@ export default async function HomePage() {
           </div>
           <CategoryList categories={categories.slice(0, 6)} />
         </section>
+
+        {/* Popular Posts Section */}
+        {popularPosts.length > 0 && (
+          <section className="mb-16">
+            <div className="flex items-center gap-2 mb-8">
+              <Flame className="w-6 h-6 text-orange-500" />
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                인기 글
+              </h2>
+            </div>
+            <div className="space-y-4">
+              {popularPosts.map((post) => (
+                <PostCard
+                  key={post.path}
+                  post={post}
+                  viewCount={post.visitCount}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Recent Posts Section */}
         <section>
