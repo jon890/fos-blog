@@ -115,7 +115,7 @@ export default async function FolderPage({ params }: FolderPageProps) {
   return (
     <>
       <BreadcrumbJsonLd items={breadcrumbJsonLdItems} />
-    <div className="container mx-auto px-4 py-12">
+    <div className="container mx-auto px-4 py-6 md:py-12">
       {/* Back button */}
       {pathSegments.length > 1 ? (
         <Link
