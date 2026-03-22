@@ -2,7 +2,7 @@ import { Octokit } from "@octokit/rest";
 import { getDb as getDbInstance } from "@/db";
 import { posts, categories, syncLogs, folders } from "@/db/schema";
 import { eq, sql, desc } from "drizzle-orm";
-import { extractDescription } from "./markdown";
+import { extractDescription, extractTitle } from "./markdown";
 
 function getDb() {
   const db = getDbInstance();
@@ -203,7 +203,8 @@ async function upsertPost(filePath: string): Promise<"added" | "updated" | "skip
   ]);
   if (!fileData) return "skipped";
 
-  const { category, foldersList, subcategory, title } = parsePath(filePath);
+  const { category, foldersList, subcategory, title: filenameTitle } = parsePath(filePath);
+  const title = extractTitle(fileData.content) || filenameTitle;
   const description = extractDescription(fileData.content, 200);
 
   const existing = await database
@@ -359,7 +360,8 @@ async function performFullSync(): Promise<{
     ]);
     if (!fileData) continue;
 
-    const { title } = parsePath(file.path);
+    const { title: filenameTitle } = parsePath(file.path);
+    const title = extractTitle(fileData.content) || filenameTitle;
     const description = extractDescription(fileData.content, 200);
 
     if (existing) {

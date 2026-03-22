@@ -1,4 +1,4 @@
-import { eq, and, sql, inArray } from "drizzle-orm";
+import { eq, and, sql, inArray, desc } from "drizzle-orm";
 import { visitLogs, visitStats } from "../schema";
 import { BaseRepository } from "./BaseRepository";
 
@@ -114,6 +114,20 @@ export class VisitRepository extends BaseRepository {
     } catch {
       return {};
     }
+  }
+
+  /**
+   * 방문수 기준 인기 포스트 경로 목록 반환
+   */
+  async getPopularPostPaths(limit: number = 6): Promise<{ path: string; visitCount: number }[]> {
+    try {
+      const results = await this.db
+        .select({ pagePath: visitStats.pagePath, visitCount: visitStats.visitCount })
+        .from(visitStats)
+        .orderBy(desc(visitStats.visitCount))
+        .limit(limit);
+      return results.map(r => ({ path: r.pagePath, visitCount: r.visitCount }));
+    } catch { return []; }
   }
 
   /**

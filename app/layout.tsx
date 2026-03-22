@@ -5,6 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Header } from "@/components/Header";
 import { VisitorCount } from "@/components/VisitorCount";
+import { FolderSidebarWrapper } from "@/app/components/FolderSidebarWrapper";
 
 const notoSansKR = Noto_Sans_KR({
   subsets: ["latin"],
@@ -139,7 +140,12 @@ export default function RootLayout({
         >
           <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
             <Header />
-            <main>{children}</main>
+            <div className="flex">
+              <div className="hidden lg:block">
+                <FolderSidebarWrapper />
+              </div>
+              <main className="flex-1 min-w-0">{children}</main>
+            </div>
             <footer className="border-t border-gray-200 dark:border-gray-800 py-12 mt-16">
               <div className="container mx-auto px-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">

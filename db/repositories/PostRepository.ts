@@ -1,4 +1,4 @@
-import { eq, desc, and, or, like, sql } from "drizzle-orm";
+import { eq, desc, and, or, like, sql, inArray } from "drizzle-orm";
 import { posts } from "../schema";
 import type { PostData } from "../types";
 import { BaseRepository } from "./BaseRepository";
@@ -93,6 +93,23 @@ export class PostRepository extends BaseRepository {
       .select({ path: posts.path, updatedAt: posts.updatedAt })
       .from(posts)
       .where(eq(posts.isActive, true));
+  }
+
+  async getPostsByPaths(paths: string[]): Promise<PostData[]> {
+    if (paths.length === 0) return [];
+    const result = await this.db
+      .select({
+        title: posts.title,
+        path: posts.path,
+        slug: posts.slug,
+        category: posts.category,
+        subcategory: posts.subcategory,
+        folders: posts.folders,
+        description: posts.description,
+      })
+      .from(posts)
+      .where(and(inArray(posts.path, paths), eq(posts.isActive, true)));
+    return result.map(p => ({ ...p, folders: p.folders || [] }));
   }
 
   async searchPosts(query: string, limit: number = 20): Promise<PostData[]> {
