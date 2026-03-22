@@ -119,7 +119,7 @@ export function MarkdownRenderer({ content, basePath }: MarkdownRendererProps) {
     },
     pre: ({ children, ...props }) => (
       <pre
-        className="my-4 p-4 rounded-lg bg-gray-900 dark:bg-gray-800 overflow-x-auto text-sm border border-gray-700 dark:border-gray-700"
+        className="my-4 p-4 rounded-lg bg-gray-900 dark:bg-gray-800 text-gray-100 overflow-x-auto text-sm border border-gray-700 dark:border-gray-700"
         {...props}
       >
         {children}
