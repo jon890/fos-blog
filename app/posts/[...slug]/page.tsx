@@ -151,7 +151,7 @@ export default async function PostPage({ params }: PostPageProps) {
       />
       <BreadcrumbJsonLd items={breadcrumbItems} />
 
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-6 md:py-12">
         {/* Back button */}
         <Link
           href={`/category/${encodeURIComponent(post.category)}`}
@@ -181,7 +181,7 @@ export default async function PostPage({ params }: PostPageProps) {
                 )}
               </div>
 
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+              <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4">
                 {title}
               </h1>
 

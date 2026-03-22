@@ -27,16 +27,16 @@ export function CategoryCard({ category }: CategoryCardProps) {
   return (
     <Link
       href={`/category/${encodeURIComponent(category.slug)}`}
-      className={`group block p-5 rounded-xl border border-l-4 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-300 ${accent}`}
+      className={`group block p-3 md:p-5 rounded-xl border border-l-4 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-300 ${accent}`}
     >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-3xl">{category.icon}</span>
+          <span className="text-2xl md:text-3xl">{category.icon}</span>
           <div>
-            <h3 className="font-semibold text-lg text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            <h3 className="font-semibold text-base md:text-lg text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
               {category.name}
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
               {category.count}개의 글
             </p>
           </div>
