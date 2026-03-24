@@ -191,9 +191,20 @@ function parsePath(filePath: string) {
   return { category, foldersList, subcategory, title };
 }
 
+// AI 에이전트 컨텍스트 파일 — 블로그 포스트로 동기화하지 않음
+const EXCLUDED_FILENAMES = new Set([
+  "AGENTS.MD",
+  "CLAUDE.MD",
+  "GEMINI.MD",
+  "COPILOT.MD",
+  "CURSOR.MD",
+  "CODERABBIT.MD",
+  "CODY.MD",
+]);
+
 function isMdFile(filename: string) {
-  const basename = filename.split("/").pop() ?? "";
-  if (basename.toUpperCase() === "AGENTS.MD") return false;
+  const basename = (filename.split("/").pop() ?? "").toUpperCase();
+  if (EXCLUDED_FILENAMES.has(basename)) return false;
   return filename.endsWith(".md") || filename.endsWith(".mdx");
 }
 
