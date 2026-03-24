@@ -192,6 +192,8 @@ function parsePath(filePath: string) {
 }
 
 function isMdFile(filename: string) {
+  const basename = filename.split("/").pop() ?? "";
+  if (basename.toUpperCase() === "AGENTS.MD") return false;
   return filename.endsWith(".md") || filename.endsWith(".mdx");
 }
 

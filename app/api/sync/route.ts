@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { syncGitHubToDatabase, retitleExistingPosts } from "@/lib/sync-github";
 
 // 동기화 API - 수동 호출 또는 cron job에서 사용
-// ?retitle=true : GitHub 호출 없이 DB content에서 h1 제목 재추출
+// 파일 동기화 + 제목 재추출을 항상 함께 수행
 export async function POST(request: Request) {
   // API 키 검증 (선택사항)
   const authHeader = request.headers.get("authorization");
@@ -12,25 +12,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { searchParams } = new URL(request.url);
-  const retitle = searchParams.get("retitle") === "true";
-
   try {
-    if (retitle) {
-      const result = await retitleExistingPosts();
-      return NextResponse.json({
-        success: true,
-        message: `제목 재적용 완료: ${result.updated}개 업데이트`,
-        ...result,
-      });
-    }
-
-    const result = await syncGitHubToDatabase();
+    const syncResult = await syncGitHubToDatabase();
+    const retitleResult = await retitleExistingPosts();
 
     return NextResponse.json({
       success: true,
-      message: result.upToDate ? "Already up to date" : "Sync completed successfully",
-      ...result,
+      message: syncResult.upToDate ? "Already up to date" : "Sync completed successfully",
+      commitSha: syncResult.commitSha,
+      files: {
+        added: syncResult.added,
+        updated: syncResult.updated,
+        deleted: syncResult.deleted,
+      },
+      titles: {
+        updated: retitleResult.updated,
+        skipped: retitleResult.skipped,
+        total: retitleResult.total,
+      },
     });
   } catch (error) {
     console.error("Sync error:", error);
