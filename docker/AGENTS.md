@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-03-17 | Updated: 2026-03-17 -->
+<!-- Generated: 2026-03-17 | Updated: 2026-03-30 -->
 
 # docker
 
@@ -10,7 +10,7 @@ Docker configuration for local development database. Contains MySQL initializati
 
 | Directory | Purpose |
 |-----------|---------|
-| `mysql/` | MySQL-specific init scripts run on first container startup |
+| `mysql/` | MySQL-specific init scripts run on first container startup (see `mysql/AGENTS.md`) |
 
 ## Key Files
 
