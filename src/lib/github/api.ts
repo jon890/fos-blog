@@ -35,11 +35,14 @@ export async function getChangedFilesSince(
       return null;
     }
 
-    return response.data.files.map((f) => ({
-      filename: f.filename,
-      status: f.status as ChangedFile["status"],
-      previous_filename: f.previous_filename,
-    }));
+    const VALID_STATUSES = new Set<string>(["added", "modified", "removed", "renamed", "copied", "changed", "unchanged"]);
+    return response.data.files
+      .filter((f) => VALID_STATUSES.has(f.status))
+      .map((f) => ({
+        filename: f.filename,
+        status: f.status as ChangedFile["status"],
+        previous_filename: f.previous_filename,
+      }));
   } catch (error) {
     console.error("Compare API 오류 → full sync 폴백:", error);
     return null;

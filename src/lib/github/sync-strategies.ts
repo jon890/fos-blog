@@ -1,9 +1,8 @@
 import { eq } from "drizzle-orm";
 import { posts } from "@/db/schema";
-import { extractDescription, extractTitle } from "@/lib/markdown";
 import { getDb } from "./client";
 import { getFileContent, getFileCommitDates, getDirectoryContents, type ChangedFile } from "./api";
-import { isMdFile } from "./file-filter";
+import { shouldSyncFile } from "./file-filter";
 import { rewriteImagePaths } from "./image-rewrite";
 import { parsePath, upsertPost, deactivatePost } from "./post-sync";
 
@@ -16,20 +15,20 @@ export async function performIncrementalSync(changedFiles: ChangedFile[]): Promi
 
   for (const file of changedFiles) {
     if (file.status === "removed") {
-      if (isMdFile(file.filename)) {
+      if (shouldSyncFile(file.filename)) {
         const ok = await deactivatePost(file.filename);
         if (ok) deleted++;
         console.log(`삭제: ${file.filename}`);
       }
     } else if (file.status === "renamed") {
       // 이전 경로 비활성화
-      if (file.previous_filename && isMdFile(file.previous_filename)) {
+      if (file.previous_filename && shouldSyncFile(file.previous_filename)) {
         const ok = await deactivatePost(file.previous_filename);
         if (ok) deleted++;
         console.log(`이름 변경(삭제): ${file.previous_filename}`);
       }
       // 새 경로 upsert
-      if (isMdFile(file.filename)) {
+      if (shouldSyncFile(file.filename)) {
         const result = await upsertPost(file.filename);
         if (result === "added") added++;
         else if (result === "updated") updated++;
@@ -37,7 +36,7 @@ export async function performIncrementalSync(changedFiles: ChangedFile[]): Promi
       }
     } else {
       // added | modified | copied | changed
-      if (isMdFile(file.filename)) {
+      if (shouldSyncFile(file.filename)) {
         const result = await upsertPost(file.filename);
         if (result === "added") added++;
         else if (result === "updated") updated++;
@@ -65,7 +64,7 @@ export async function collectMarkdownFiles(
     if (item.name.startsWith(".")) continue;
     if (item.type === "dir") {
       await collectMarkdownFiles(item.path, files);
-    } else if (item.type === "file" && isMdFile(item.name)) {
+    } else if (item.type === "file" && shouldSyncFile(item.name)) {
       const { category, foldersList, subcategory } = parsePath(item.path);
       files.push({
         name: item.name,

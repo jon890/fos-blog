@@ -38,16 +38,17 @@ export async function updateCategories(): Promise<void> {
     .where(eq(posts.isActive, true))
     .groupBy(posts.category);
 
-  await database.delete(categories);
-
-  for (const stat of categoryStats) {
-    await database.insert(categories).values({
-      name: stat.category,
-      slug: stat.category,
-      icon: categoryIcons[stat.category] || "📁",
-      postCount: stat.count,
-    });
-  }
+  await database.transaction(async (tx) => {
+    await tx.delete(categories);
+    for (const stat of categoryStats) {
+      await tx.insert(categories).values({
+        name: stat.category,
+        slug: stat.category,
+        icon: categoryIcons[stat.category] || "📁",
+        postCount: stat.count,
+      });
+    }
+  });
 }
 
 export async function syncFolderReadmes(): Promise<void> {

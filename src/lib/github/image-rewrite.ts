@@ -11,7 +11,7 @@ export function rewriteImagePaths(content: string, filePath: string): string {
   const resolve = (relativePath: string): string => {
     const parts = dir ? dir.split("/") : [];
     for (const part of relativePath.split("/")) {
-      if (part === "..") parts.pop();
+      if (part === ".." && parts.length > 0) parts.pop();
       else if (part !== ".") parts.push(part);
     }
     return `${baseUrl}/${parts.join("/")}`;

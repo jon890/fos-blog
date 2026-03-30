@@ -24,6 +24,3 @@ export function shouldSyncFile(filename: string): boolean {
   return true;
 }
 
-export function isMdFile(filename: string) {
-  return shouldSyncFile(filename);
-}

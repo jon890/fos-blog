@@ -1,3 +1,4 @@
+import type { ResultSetHeader } from "mysql2";
 import { eq } from "drizzle-orm";
 import { posts } from "@/db/schema";
 import { extractDescription, extractTitle } from "@/lib/markdown";
@@ -77,5 +78,5 @@ export async function deactivatePost(filePath: string): Promise<boolean> {
     .update(posts)
     .set({ isActive: false })
     .where(eq(posts.path, filePath));
-  return (result[0] as { affectedRows?: number }).affectedRows === 1;
+  return (result[0] as ResultSetHeader).affectedRows === 1;
 }
