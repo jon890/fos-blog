@@ -105,7 +105,7 @@ export class DbQueries {
   updateComment(
     id: number,
     password: string,
-    content: string
+    content: string,
   ): Promise<CommentData | null> {
     return this.commentRepo.updateComment(id, password, content);
   }
@@ -118,17 +118,26 @@ export class DbQueries {
     return this.commentRepo.getCommentCount(postSlug);
   }
 
-  getPopularPosts(limit?: number): Promise<Array<PostData & { visitCount: number }>> {
-    return this.visitRepo.getPopularPostPaths((limit ?? 6) * 3).then(async (popularPaths) => {
-      if (popularPaths.length === 0) return [];
-      const paths = popularPaths.map(p => p.path);
-      const postDataList = await this.postRepo.getPostsByPaths(paths);
-      const visitMap = new Map(popularPaths.map(p => [p.path, p.visitCount]));
-      return postDataList
-        .map(post => ({ ...post, visitCount: visitMap.get(post.path) ?? 0 }))
-        .sort((a, b) => b.visitCount - a.visitCount)
-        .slice(0, limit ?? 6);
-    });
+  getPopularPosts(
+    limit?: number,
+  ): Promise<Array<PostData & { visitCount: number }>> {
+    return this.visitRepo
+      .getPopularPostPaths((limit ?? 6) * 3)
+      .then(async (popularPaths) => {
+        if (popularPaths.length === 0) return [];
+        const paths = popularPaths.map((p) => p.path);
+        const postDataList = await this.postRepo.getPostsByPaths(paths);
+        const visitMap = new Map(
+          popularPaths.map((p) => [p.path, p.visitCount]),
+        );
+        return postDataList
+          .map((post) => ({
+            ...post,
+            visitCount: visitMap.get(post.path) ?? 0,
+          }))
+          .sort((a, b) => b.visitCount - a.visitCount)
+          .slice(0, limit ?? 6);
+      });
   }
 
   // ===== Visit =====

@@ -17,7 +17,14 @@ import { Comments } from "@/components/Comments";
 import { PostViewCount } from "@/components/PostViewCount";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Clock, Folder, Github, Pencil } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  Folder,
+  Github,
+  Pencil,
+} from "lucide-react";
 import { Metadata } from "next";
 import { env } from "@/env";
 
@@ -87,11 +94,15 @@ export async function generateMetadata({
 }
 
 export async function generateStaticParams() {
-  const dbQueries = getDbQueries();
-  const paths = dbQueries ? await dbQueries.getAllPostPaths() : [];
-  return paths.map((path) => ({
-    slug: path.split("/"),
-  }));
+  try {
+    const dbQueries = getDbQueries();
+    const paths = dbQueries ? await dbQueries.getAllPostPaths() : [];
+    return paths.map((path) => ({
+      slug: path.split("/"),
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export default async function PostPage({ params }: PostPageProps) {
@@ -129,7 +140,7 @@ export default async function PostPage({ params }: PostPageProps) {
           {
             name: post.subcategory,
             url: `${siteUrl}/category/${encodeURIComponent(
-              post.category
+              post.category,
             )}/${encodeURIComponent(post.subcategory)}`,
           },
         ]
@@ -163,7 +174,7 @@ export default async function PostPage({ params }: PostPageProps) {
 
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Main content */}
-          <article className="flex-grow min-w-0">
+          <article className="grow min-w-0">
             {/* Header */}
             <header className="mb-8 pb-8 border-b border-gray-200 dark:border-gray-800">
               <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -263,7 +274,7 @@ export default async function PostPage({ params }: PostPageProps) {
 
           {/* Sidebar - Table of Contents */}
           {toc.length > 0 && (
-            <aside className="hidden lg:block w-64 flex-shrink-0">
+            <aside className="hidden lg:block w-64 shrink-0">
               <TableOfContents toc={toc} />
             </aside>
           )}
