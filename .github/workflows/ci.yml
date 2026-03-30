@@ -45,4 +45,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           GITHUB_OWNER: jon890
           GITHUB_REPO: fos-study
-          SKIP_ENV_VALIDATION: "1"
+          DATABASE_URL: "mysql://fos_user:fos_password@localhost:3306/fos_blog"
+          SYNC_API_KEY: "ci-dummy-sync-key"
