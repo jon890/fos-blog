@@ -1,5 +1,5 @@
-import { getRepositories } from "@/db/repositories";
-import { categoryIcons } from "@/db/constants";
+import { getRepositories } from "@/infra/db/repositories";
+import { categoryIcons } from "@/infra/db/constants";
 import { FolderSidebar } from "@/components/FolderSidebar";
 
 export async function FolderSidebarWrapper() {

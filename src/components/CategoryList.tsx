@@ -1,4 +1,4 @@
-import type { CategoryData } from "@/db/types";
+import type { CategoryData } from "@/infra/db/types";
 import { CategoryCard } from "./CategoryCard";
 
 interface CategoryListProps {

@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { getDb } from "@/db";
+import { getDb } from "@/infra/db";
 import { CategoryRepository } from "./CategoryRepository";
 import { CommentRepository } from "./CommentRepository";
 import { FolderRepository } from "./FolderRepository";

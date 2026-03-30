@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getRepositories } from "@/db/repositories";
+import { getRepositories } from "@/infra/db/repositories";
 
 // ISR - 60초마다 재생성
 export const revalidate = 60;

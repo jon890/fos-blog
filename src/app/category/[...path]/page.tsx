@@ -1,5 +1,5 @@
-import { getRepositories } from "@/db/repositories";
-import { categoryIcons, DEFAULT_CATEGORY_ICON } from "@/db/constants";
+import { getRepositories } from "@/infra/db/repositories";
+import { categoryIcons, DEFAULT_CATEGORY_ICON } from "@/infra/db/constants";
 import { PostCard } from "@/components/PostCard";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
