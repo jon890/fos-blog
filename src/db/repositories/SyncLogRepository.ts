@@ -1,7 +1,7 @@
-import { eq, and, sql, inArray, desc } from "drizzle-orm";
-import { SyncLog, syncLogs, visitLogs, visitStats } from "../schema";
-import { BaseRepository } from "./BaseRepository";
+import { desc, eq } from "drizzle-orm";
+import { syncLogs } from "../schema";
 import { CreateSyncLog } from "../schema/syncLogs";
+import { BaseRepository } from "./BaseRepository";
 
 export class SyncLogRepository extends BaseRepository {
   async getLatest() {
