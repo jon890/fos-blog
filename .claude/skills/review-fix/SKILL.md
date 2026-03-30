@@ -1,10 +1,10 @@
 ---
 name: review-fix
 description: |
-  PR 코드 리뷰 댓글을 읽고 수정 사항을 자동으로 반영하는 스킬.
+  PR에 코드 리뷰 댓글이 달린 후, 그 내용을 분석해 코드를 자동으로 수정하고 commit & push까지 완료하는 스킬.
   "/review-fix", "review-fix", "PR 리뷰 수정", "코드 리뷰 반영", "리뷰 댓글 처리", "봇 코멘트 반영",
-  "review comment 수정", "리뷰 코멘트 확인해서 수정" 같은 표현이 나오면 반드시 이 스킬을 사용한다.
-  PR 번호가 주어지면 해당 PR의 리뷰 댓글을, 없으면 현재 브랜치의 PR 댓글을 읽고
+  "review comment 수정", "리뷰 코멘트 확인해서 수정", "리뷰 반영해줘", "리뷰 처리해줘" 같은 표현이 나오면
+  반드시 이 스킬을 사용한다. PR 번호가 주어지면 해당 PR의 리뷰 댓글을, 없으면 현재 브랜치의 PR 댓글을 읽고
   🔴 필수 수정 → 🟡 권장 사항 순으로 코드를 고친 뒤 commit & push까지 완료한다.
 ---
 
@@ -106,14 +106,7 @@ claude bot 외에도 GitHub formal review, 인라인 코드 댓글(`gh api .../p
 
 1. 대상 파일을 **반드시 읽는다** — 리뷰 댓글의 라인 번호와 현재 파일이 다를 수 있다
 2. 변경 범위를 파악하고 최소한의 수정만 적용한다
-3. 리뷰가 제안하는 패턴이 프로젝트 컨벤션에 맞는지 확인한다
-
-이 프로젝트의 주요 컨벤션 (CLAUDE.md 기준):
-
-- TypeScript strict mode, `any` 금지
-- Tailwind v4 시맨틱 클래스 사용 (하드코딩 색상 금지)
-- `alert()` 대신 `toast` (sonner)
-- Server/Client Component 경계 준수
+3. 리뷰가 제안하는 패턴이 프로젝트 컨벤션에 맞는지 확인한다 — CLAUDE.md의 컨벤션을 따른다
 
 ---
 
@@ -122,13 +115,13 @@ claude bot 외에도 GitHub formal review, 인라인 코드 댓글(`gh api .../p
 코드 수정 전에 테스트 파일 목록을 미리 저장해 둔다:
 
 ```bash
-TESTS_BEFORE=$(find lib -name "*.test.*" 2>/dev/null | sort)
+TESTS_BEFORE=$(find . -name "*.test.*" -not -path "*/node_modules/*" -not -path "*/.next/*" 2>/dev/null | sort)
 ```
 
 수정 후 테스트 파일 목록을 비교하여 기존 테스트가 삭제되지 않았는지 확인한다:
 
 ```bash
-TESTS_AFTER=$(find lib -name "*.test.*" 2>/dev/null | sort)
+TESTS_AFTER=$(find . -name "*.test.*" -not -path "*/node_modules/*" -not -path "*/.next/*" 2>/dev/null | sort)
 if [ "$TESTS_BEFORE" != "$TESTS_AFTER" ]; then
   echo "⚠️ 경고: 테스트 파일이 추가/삭제되었습니다. 의도적인 변경인지 확인하세요."
   diff <(echo "$TESTS_BEFORE") <(echo "$TESTS_AFTER")
@@ -148,16 +141,17 @@ pnpm lint && pnpm tsc --noEmit && pnpm test --passWithNoTests
 
 ## 5단계: Commit & Push
 
-commit 메시지는 이 프로젝트의 컨벤션을 따른다 (commit-convention 스킬 참조):
+commit 메시지는 이 프로젝트의 컨벤션을 따른다 (commit-and-push 스킬 참조):
 
 ```
-fix(<scope>): <변경 내용 요약>
+🩹 Fix(<scope>): <변경 내용 요약>
 
 <선택적 본문: 왜 이 변경이 필요한지>
 
 Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 ```
 
+이모지 prefix 기준: `🩹` 버그/리뷰 수정, `♻️` 리팩토링, `✨` 새 기능. 수정 내용에 맞게 선택한다.
 `<scope>`는 수정된 파일/기능 영역으로 결정한다.
 여러 파일을 수정했다면 가장 대표적인 scope를 사용하거나 `review` scope를 쓴다.
 
@@ -229,7 +223,6 @@ reply 본문 작성 원칙:
 ISSUE_URL=$(gh issue create \
   --title "<이슈 제목>" \
   --body "<리뷰 내용 요약 및 배경>" \
-  --label "enhancement" \
   --repo <owner>/<repo> \
   --json url --jq '.url')
 
