@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-03-17 | Updated: 2026-03-20 -->
+<!-- Generated: 2026-03-17 | Updated: 2026-03-30 -->
 
 # lib
 
@@ -12,7 +12,8 @@ Shared utility functions and service clients. Contains the GitHub API integratio
 |------|-------------|
 | `github.ts` | Octokit-based GitHub REST API client — fetches repo tree, file contents, folder structures, and derives category/post metadata; also exports `getCategoryIcon()` and `getCategoryColorClass()` |
 | `markdown.ts` | Markdown utilities — `parseFrontMatter()`, `extractTitle()`, `extractDescription()`, `getReadingTime()`, `generateTableOfContents()` (uses `github-slugger` for slug parity with `rehype-slug`) |
-| `sync-github.ts` | Sync orchestration — commit-based incremental sync (compares HEAD SHA to last synced commit); falls back to full sync when >300 files changed or on first run; also updates categories and folder READMEs |
+| `sync-github.ts` | Sync orchestration — commit-based incremental sync (compares HEAD SHA to last synced commit); falls back to full sync when >300 files changed or on first run; also updates categories and folder READMEs. Exports `shouldSyncFile()` and `rewriteImagePaths()` |
+| `sync-github.test.ts` | Vitest 단위 테스트 — `shouldSyncFile`, `rewriteImagePaths` 커버 |
 
 ## For AI Agents
 
@@ -20,6 +21,7 @@ Shared utility functions and service clients. Contains the GitHub API integratio
 - `github.ts` requires `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO` environment variables
 - `github.ts` is a **dual-purpose** file: it serves both as a GitHub API client AND contains legacy direct-fetch helpers (`getPost`, `getCategories`) that were used before the DB layer existed — prefer the DB layer for production reads
 - `sync-github.ts` writes to the database — do not call it directly from page rendering paths
+- **이미지 처리**: `sync-github.ts`의 `rewriteImagePaths(content, filePath)`는 마크다운 내 상대경로 이미지를 GitHub raw URL로 변환한다. content를 DB에 저장하기 전에 반드시 호출해야 한다
 - `generateTableOfContents()` in `markdown.ts` uses `github-slugger` to produce slugs identical to `rehype-slug` — keep them in sync if changing heading ID logic
 - All functions are side-effect-free except `sync-github.ts`
 

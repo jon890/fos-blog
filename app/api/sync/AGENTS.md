@@ -1,16 +1,16 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-03-17 | Updated: 2026-03-17 -->
+<!-- Generated: 2026-03-17 | Updated: 2026-03-30 -->
 
 # app/api/sync
 
 ## Purpose
-POST/GET endpoint that triggers a full GitHub-to-database sync. Pulls all markdown files from the configured GitHub repository and upserts them into MySQL. Intended for manual calls or cron jobs.
+POST/GET endpoint that triggers a full GitHub-to-database sync. GitHub 저장소에서 마크다운 파일을 가져와 MySQL에 upsert하고, 이미지 상대경로를 GitHub raw URL로 변환하여 저장한다. 수동 호출 또는 cron job 용도.
 
 ## Key Files
 
 | File | Description |
 |------|-------------|
-| `route.ts` | `POST /api/sync` (and `GET` for dev convenience) — validates Bearer token then calls `syncGitHubToDatabase()` |
+| `route.ts` | `POST /api/sync` (and `GET` for dev convenience) — validates Bearer token then calls `syncGitHubToDatabase()` + `retitleExistingPosts()` |
 
 ## For AI Agents
 
@@ -19,6 +19,7 @@ POST/GET endpoint that triggers a full GitHub-to-database sync. Pulls all markdo
 - `GET` is an alias for `POST` for development convenience; keep this in mind when testing
 - Returns sync statistics: `postsAdded`, `postsUpdated`, `postsDeleted`
 - Sync uses SHA-based change detection — unchanged files are skipped
+- **이미지 처리**: sync 과정에서 `rewriteImagePaths()`가 자동 호출되어 `./images/foo.png` 형태의 상대경로가 GitHub raw URL로 변환된 후 DB에 저장됨
 
 ### API Contract
 ```
@@ -38,9 +39,9 @@ Response 500:
 ## Dependencies
 
 ### Internal
-- `@/lib/sync-github` → `syncGitHubToDatabase()`
+- `@/lib/sync-github` → `syncGitHubToDatabase()`, `retitleExistingPosts()`
 
 ### External
-- Requires `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO` env vars (consumed by `lib/github.ts`)
+- Requires `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO` env vars (consumed by `lib/sync-github.ts`)
 
 <!-- MANUAL: -->
