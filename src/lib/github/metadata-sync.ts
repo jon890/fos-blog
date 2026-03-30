@@ -1,53 +1,34 @@
-import { eq, sql } from "drizzle-orm";
-import { posts, categories, folders } from "@/db/schema";
-import { getDb } from "./client";
+import { getDb } from "@/db";
+import { CategoryRepository } from "@/db/repositories/CategoryRepository";
+import { FolderRepository } from "@/db/repositories/FolderRepository";
+import { PostRepository } from "@/db/repositories/PostRepository";
 import { getFileContent } from "./api";
-import { categoryIcons } from "@/db/constants";
 
 export async function updateCategories(): Promise<void> {
-  const database = getDb();
-  const categoryStats = await database
-    .select({
-      category: posts.category,
-      count: sql<number>`count(*)`.as("count"),
-    })
-    .from(posts)
-    .where(eq(posts.isActive, true))
-    .groupBy(posts.category);
-
-  await database.transaction(async (tx) => {
-    await tx.delete(categories);
-    for (const stat of categoryStats) {
-      await tx.insert(categories).values({
-        name: stat.category,
-        slug: stat.category,
-        icon: categoryIcons[stat.category] || "📁",
-        postCount: Number(stat.count),
-      });
-    }
-  });
+  const db = getDb();
+  const categoryRepo = new CategoryRepository(db);
+  await categoryRepo.rebuild();
 }
 
 export async function syncFolderReadmes(): Promise<void> {
-  const database = getDb();
+  const db = getDb();
+  const postRepo = new PostRepository(db);
+  const folderRepo = new FolderRepository(db);
+
   console.log("폴더 README 동기화 중...");
 
-  const allPosts = await database
-    .select({ path: posts.path })
-    .from(posts)
-    .where(eq(posts.isActive, true));
+  const postPaths = await postRepo.getAllPostPaths();
 
   const folderPaths = new Set<string>();
-  for (const post of allPosts) {
-    const parts = post.path.split("/");
+  for (const path of postPaths) {
+    const parts = path.split("/");
     for (let i = 1; i <= parts.length - 1; i++) {
       const folderPath = parts.slice(0, i).join("/");
       if (folderPath) folderPaths.add(folderPath);
     }
   }
 
-  const existingFolders = await database.select().from(folders);
-  const existingFolderMap = new Map(existingFolders.map((f) => [f.path, f]));
+  const existingFolderMap = await folderRepo.getAll();
   const readmeNames = ["README.md", "readme.md", "README.MD", "Readme.md"];
   let synced = 0;
 
@@ -65,29 +46,11 @@ export async function syncFolderReadmes(): Promise<void> {
 
     if (readmeContent) {
       if (existing && existing.sha === readmeContent.sha) continue;
-
-      if (existing) {
-        await database
-          .update(folders)
-          .set({
-            readme: readmeContent.content,
-            sha: readmeContent.sha,
-            updatedAt: new Date(),
-          })
-          .where(eq(folders.id, existing.id));
-      } else {
-        await database.insert(folders).values({
-          path: folderPath,
-          readme: readmeContent.content,
-          sha: readmeContent.sha,
-        });
-      }
+      await folderRepo.upsert(folderPath, readmeContent.content, readmeContent.sha);
       synced++;
       console.log(`README 동기화: ${folderPath}`);
-    } else if (!existing) {
-      await database
-        .insert(folders)
-        .values({ path: folderPath, readme: null, sha: null });
+    } else {
+      await folderRepo.ensureFolder(folderPath);
     }
   }
 
