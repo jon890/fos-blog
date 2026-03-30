@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { shouldSyncFile, rewriteImagePaths } from "./sync-github";
+import { shouldSyncFile } from "./github/file-filter";
+import { rewriteImagePaths } from "./github/image-rewrite";
 
 describe("shouldSyncFile", () => {
   // ===== 정상 동기화 대상 =====
