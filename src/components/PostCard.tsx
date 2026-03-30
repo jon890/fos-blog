@@ -1,9 +1,5 @@
 import Link from "next/link";
-import {
-  getDbQueries,
-  categoryIcons,
-  DEFAULT_CATEGORY_ICON,
-} from "@/db/queries";
+import { categoryIcons, DEFAULT_CATEGORY_ICON } from "@/db/constants";
 import type { PostData } from "@/db/types";
 import { FileText, ChevronRight, Eye } from "lucide-react";
 
@@ -29,12 +25,7 @@ const CATEGORY_DOT: Record<string, string> = {
 };
 
 function getCategoryIcon(category: string): string {
-  const dbQueries = getDbQueries();
-  return (
-    dbQueries?.getCategoryIcon(category) ??
-    categoryIcons[category] ??
-    DEFAULT_CATEGORY_ICON
-  );
+  return categoryIcons[category] || DEFAULT_CATEGORY_ICON;
 }
 
 export function PostCard({

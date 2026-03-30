@@ -1,14 +1,12 @@
 import { SyncLogRepository } from "@/db/repositories/SyncLogRepository";
-import { posts } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { PostRepository } from "@/db/repositories/PostRepository";
+import { getDb } from "@/db";
 import { getChangedFilesSince, getCurrentHeadSha } from "./github/api";
-import { getDb } from "./github/client";
 import { syncFolderReadmes, updateCategories } from "./github/metadata-sync";
 import {
   performFullSync,
   performIncrementalSync,
 } from "./github/sync-strategies";
-import { extractTitle } from "./markdown";
 
 export async function syncGitHubToDatabase(): Promise<{
   added: number;
@@ -18,7 +16,8 @@ export async function syncGitHubToDatabase(): Promise<{
   upToDate?: boolean;
 }> {
   console.log("GitHub → Database 동기화 시작...");
-  const syncLogRepository = new SyncLogRepository(getDb());
+  const db = getDb();
+  const syncLogRepository = new SyncLogRepository(db);
 
   let added = 0,
     updated = 0,
@@ -88,42 +87,11 @@ export async function syncGitHubToDatabase(): Promise<{
   }
 }
 
-// DB에 저장된 content에서 h1 제목을 재추출하여 title 일괄 업데이트
-// GitHub API 호출 없이 로컬 DB만 사용
 export async function retitleExistingPosts(): Promise<{
   total: number;
   updated: number;
   skipped: number;
 }> {
-  const database = getDb();
-
-  const allPosts = await database
-    .select({ path: posts.path, title: posts.title, content: posts.content })
-    .from(posts);
-
-  let updated = 0;
-  let skipped = 0;
-
-  for (const post of allPosts) {
-    if (!post.content) {
-      skipped++;
-      continue;
-    }
-
-    const extractedTitle = extractTitle(post.content);
-    if (!extractedTitle || extractedTitle === post.title) {
-      skipped++;
-      continue;
-    }
-
-    await database
-      .update(posts)
-      .set({ title: extractedTitle })
-      .where(eq(posts.path, post.path));
-
-    updated++;
-    console.log(`제목 업데이트: ${post.path} → ${extractedTitle}`);
-  }
-
-  return { total: allPosts.length, updated, skipped };
+  const postRepository = new PostRepository(getDb());
+  return postRepository.retitleAll();
 }

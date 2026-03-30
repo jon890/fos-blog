@@ -1,7 +1,7 @@
 import { PostRepository } from "@/db/repositories";
 import { extractDescription, extractTitle } from "@/lib/markdown";
 import { getFileCommitDates, getFileContent } from "./api";
-import { getDb } from "./client";
+import { getDb } from "@/db";
 import { rewriteImagePaths } from "./image-rewrite";
 
 export function parsePath(filePath: string) {

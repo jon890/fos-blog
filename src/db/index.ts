@@ -6,10 +6,10 @@ import * as schema from "./schema";
 let cachedDb: MySql2Database<typeof schema> | null = null;
 
 /**
- * 런타임에 DB 연결을 시도하는 getter
- * 빌드 시점이 아닌 런타임에 환경변수를 확인하여 DB 연결
+ * DB 연결 시도 — 연결 불가 시 null 반환
+ * DB 없이도 동작해야 하는 곳(queries.ts 등)에서 사용
  */
-export function getDb(): MySql2Database<typeof schema> | null {
+export function tryGetDb(): MySql2Database<typeof schema> | null {
   // 이미 연결되어 있으면 캐시된 인스턴스 반환
   if (cachedDb) {
     return cachedDb;
@@ -40,6 +40,20 @@ export function getDb(): MySql2Database<typeof schema> | null {
 
   console.log("Database connected successfully");
   return cachedDb;
+}
+
+/**
+ * DB 연결 — 연결 불가 시 에러 throw
+ * sync 등 DB가 반드시 필요한 서비스 레이어에서 사용
+ */
+export function getDb(): MySql2Database<typeof schema> {
+  const db = tryGetDb();
+  if (!db) {
+    throw new Error(
+      "Database not configured. Set DATABASE_URL environment variable."
+    );
+  }
+  return db;
 }
 
 export { schema };

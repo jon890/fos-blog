@@ -1,14 +1,12 @@
 import { PostRepository } from "@/db/repositories";
-import { posts } from "@/db/schema";
 import { extractDescription, extractTitle } from "@/lib/markdown";
-import { eq } from "drizzle-orm";
 import {
   getDirectoryContents,
   getFileCommitDates,
   getFileContent,
   type ChangedFile,
 } from "./api";
-import { getDb } from "./client";
+import { getDb } from "@/db";
 import { shouldSyncFile } from "./file-filter";
 import { rewriteImagePaths } from "./image-rewrite";
 import { parsePath, upsertPost } from "./post-sync";
@@ -34,13 +32,11 @@ export async function performIncrementalSync(
         console.log(`삭제: ${file.filename}`);
       }
     } else if (file.status === "renamed") {
-      // 이전 경로 비활성화
       if (file.previous_filename && shouldSyncFile(file.previous_filename)) {
         const ok = await postRepository.deactive(file.filename);
         if (ok) deleted++;
         console.log(`이름 변경(삭제): ${file.previous_filename}`);
       }
-      // 새 경로 upsert
       if (shouldSyncFile(file.filename)) {
         const result = await upsertPost(file.filename);
         if (result === "added") added++;
@@ -48,7 +44,6 @@ export async function performIncrementalSync(
         console.log(`이름 변경(추가): ${file.filename} → ${result}`);
       }
     } else {
-      // added | modified | copied | changed
       if (shouldSyncFile(file.filename)) {
         const result = await upsertPost(file.filename);
         if (result === "added") added++;
@@ -97,7 +92,7 @@ export async function performFullSync(): Promise<{
   updated: number;
   deleted: number;
 }> {
-  const database = getDb();
+  const postRepository = new PostRepository(getDb());
   let added = 0,
     updated = 0,
     deleted = 0;
@@ -105,7 +100,7 @@ export async function performFullSync(): Promise<{
   const githubFiles = await collectMarkdownFiles();
   console.log(`GitHub에서 마크다운 파일 ${githubFiles.length}개 발견`);
 
-  const existingPosts = await database.select().from(posts);
+  const existingPosts = await postRepository.getAllForSync();
   const existingPathMap = new Map(existingPosts.map((p) => [p.path, p]));
   const processedPaths = new Set<string>();
 
@@ -127,24 +122,21 @@ export async function performFullSync(): Promise<{
     const description = extractDescription(content, 200);
 
     if (existing) {
-      await database
-        .update(posts)
-        .set({
-          title,
-          content,
-          description,
-          sha: fileData.sha,
-          category: file.category,
-          subcategory: file.subcategory,
-          folders: file.folders,
-          isActive: true,
-          updatedAt: commitDates?.updatedAt ?? new Date(),
-        })
-        .where(eq(posts.id, existing.id));
+      await postRepository.update(existing.id, {
+        title,
+        content,
+        description,
+        sha: fileData.sha,
+        category: file.category,
+        subcategory: file.subcategory,
+        folders: file.folders,
+        isActive: true,
+        updatedAt: commitDates?.updatedAt ?? new Date(),
+      });
       updated++;
       console.log(`업데이트: ${file.path}`);
     } else {
-      await database.insert(posts).values({
+      await postRepository.create({
         title,
         path: file.path,
         slug: file.path,
@@ -164,16 +156,8 @@ export async function performFullSync(): Promise<{
     }
   }
 
-  for (const existing of existingPosts) {
-    if (!processedPaths.has(existing.path) && existing.isActive) {
-      await database
-        .update(posts)
-        .set({ isActive: false })
-        .where(eq(posts.id, existing.id));
-      deleted++;
-      console.log(`비활성화: ${existing.path}`);
-    }
-  }
+  deleted = await postRepository.deactivateMissing(processedPaths);
+  if (deleted > 0) console.log(`비활성화 완료: ${deleted}개`);
 
   return { added, updated, deleted };
 }

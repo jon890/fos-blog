@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getDbQueries } from "@/db/queries";
+import { getRepositories } from "@/db/repositories";
 
 // ISR - 60초마다 재생성
 export const revalidate = 60;
@@ -8,7 +8,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl =
     process.env.NEXT_PUBLIC_SITE_URL || "https://fosworld.co.kr";
 
-  // 정적 페이지
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
@@ -24,29 +23,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // DB에서 동적 데이터 조회 (실패 시 빈 배열)
   let categoryPages: MetadataRoute.Sitemap = [];
   let folderPages: MetadataRoute.Sitemap = [];
   let postPages: MetadataRoute.Sitemap = [];
 
   try {
-    const dbQueries = getDbQueries();
-    if (!dbQueries) {
-      console.warn("Database not connected for sitemap generation");
-      return staticPages;
-    }
+    const { category, folder, post } = getRepositories();
 
-    // 카테고리 페이지
-    const categories = await dbQueries.getCategories();
-    categoryPages = categories.map((category) => ({
-      url: `${baseUrl}/category/${encodeURIComponent(category.slug)}`,
+    const [categories, folderPaths, postsData] = await Promise.all([
+      category.getCategories(),
+      folder.getAllFolderPaths(),
+      post.getAllPostsForSitemap(),
+    ]);
+
+    categoryPages = categories.map((cat) => ({
+      url: `${baseUrl}/category/${encodeURIComponent(cat.slug)}`,
       lastModified: new Date(),
       changeFrequency: "weekly" as const,
       priority: 0.6,
     }));
 
-    // 폴더 페이지 (n-depth)
-    const folderPaths = await dbQueries.getAllFolderPaths();
     folderPages = folderPaths.map((pathSegments) => ({
       url: `${baseUrl}/category/${pathSegments
         .map(encodeURIComponent)
@@ -56,8 +52,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
 
-    // 포스트 페이지 (실제 수정일 사용)
-    const postsData = await dbQueries.getAllPostsForSitemap();
     postPages = postsData.map(({ path, updatedAt }) => ({
       url: `${baseUrl}/posts/${path
         .split("/")

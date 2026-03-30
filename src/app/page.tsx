@@ -1,4 +1,5 @@
-import { getDbQueries } from "@/db/queries";
+import { getRepositories } from "@/db/repositories";
+import type { CategoryData, PostData } from "@/db/types";
 import { CategoryList } from "@/components/CategoryList";
 import { PostCard } from "@/components/PostCard";
 import { WebsiteJsonLd } from "@/components/JsonLd";
@@ -11,22 +12,42 @@ const siteUrl =
 // ISR - 60초마다 페이지 재생성
 export const revalidate = 60;
 
-export default async function HomePage() {
-  const dbQueries = getDbQueries();
-  const [categories, recentPosts, popularPosts] = dbQueries
-    ? await Promise.all([
-        dbQueries.getCategories(),
-        dbQueries.getRecentPosts(6),
-        dbQueries.getPopularPosts(6),
-      ])
-    : [[], [], []];
+async function getPopularPosts(
+  limit: number
+): Promise<Array<PostData & { visitCount: number }>> {
+  const { visit, post } = getRepositories();
+  const popularPaths = await visit.getPopularPostPaths(limit * 3);
+  if (popularPaths.length === 0) return [];
+  const paths = popularPaths.map((p) => p.path);
+  const postDataList = await post.getPostsByPaths(paths);
+  const visitMap = new Map(popularPaths.map((p) => [p.path, p.visitCount]));
+  return postDataList
+    .map((p) => ({ ...p, visitCount: visitMap.get(p.path) ?? 0 }))
+    .sort((a, b) => b.visitCount - a.visitCount)
+    .slice(0, limit);
+}
 
-  // 최근 글의 조회수 일괄 조회
-  const postPaths = recentPosts.map((p) => p.path);
-  const visitCounts =
-    dbQueries && postPaths.length > 0
-      ? await dbQueries.getPostVisitCounts(postPaths)
-      : {};
+export default async function HomePage() {
+  let categories: CategoryData[] = [];
+  let recentPosts: PostData[] = [];
+  let popularPosts: Array<PostData & { visitCount: number }> = [];
+  let visitCounts: Record<string, number> = {};
+
+  try {
+    const { category, post, visit } = getRepositories();
+    [categories, recentPosts, popularPosts] = await Promise.all([
+      category.getCategories(),
+      post.getRecentPosts(6),
+      getPopularPosts(6),
+    ]);
+
+    const postPaths = recentPosts.map((p) => p.path);
+    if (postPaths.length > 0) {
+      visitCounts = await visit.getPostVisitCounts(postPaths);
+    }
+  } catch (error) {
+    console.warn("Database not available:", error);
+  }
 
   return (
     <>
