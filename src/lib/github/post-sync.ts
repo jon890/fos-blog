@@ -1,9 +1,7 @@
-import type { ResultSetHeader } from "mysql2";
-import { eq } from "drizzle-orm";
-import { posts } from "@/db/schema";
+import { PostRepository } from "@/db/repositories";
 import { extractDescription, extractTitle } from "@/lib/markdown";
+import { getFileCommitDates, getFileContent } from "./api";
 import { getDb } from "./client";
-import { getFileContent, getFileCommitDates } from "./api";
 import { rewriteImagePaths } from "./image-rewrite";
 
 export function parsePath(filePath: string) {
@@ -20,7 +18,8 @@ export function parsePath(filePath: string) {
 export async function upsertPost(
   filePath: string,
 ): Promise<"added" | "updated" | "skipped"> {
-  const database = getDb();
+  const postRepository = new PostRepository(getDb());
+
   const [fileData, commitDates] = await Promise.all([
     getFileContent(filePath),
     getFileCommitDates(filePath),
@@ -37,30 +36,23 @@ export async function upsertPost(
   const title = extractTitle(content) || filenameTitle;
   const description = extractDescription(content, 200);
 
-  const existing = await database
-    .select({ id: posts.id })
-    .from(posts)
-    .where(eq(posts.path, filePath))
-    .limit(1);
+  const existingPostId = await postRepository.getPostId(filePath);
 
-  if (existing.length > 0) {
-    await database
-      .update(posts)
-      .set({
-        title,
-        content,
-        description,
-        sha: fileData.sha,
-        category,
-        subcategory,
-        folders: foldersList,
-        isActive: true,
-        updatedAt: commitDates?.updatedAt ?? new Date(),
-      })
-      .where(eq(posts.id, existing[0].id));
+  if (existingPostId != null) {
+    await postRepository.update(existingPostId, {
+      title,
+      content,
+      description,
+      sha: fileData.sha,
+      category,
+      subcategory,
+      folders: foldersList,
+      isActive: true,
+      updatedAt: commitDates?.updatedAt ?? new Date(),
+    });
     return "updated";
   } else {
-    await database.insert(posts).values({
+    await postRepository.create({
       title,
       path: filePath,
       slug: filePath,
@@ -75,6 +67,7 @@ export async function upsertPost(
         updatedAt: commitDates.updatedAt,
       }),
     });
+
     return "added";
   }
 }

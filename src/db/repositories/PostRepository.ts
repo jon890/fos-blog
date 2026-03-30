@@ -1,5 +1,6 @@
-import { eq, desc, and, or, like, sql, inArray } from "drizzle-orm";
-import { posts } from "../schema";
+import { and, desc, eq, inArray, like, or, sql } from "drizzle-orm";
+import { NewPost, posts } from "../schema";
+import { UpdatePost } from "../schema/posts";
 import type { PostData } from "../types";
 import { BaseRepository } from "./BaseRepository";
 
@@ -45,6 +46,20 @@ export class PostRepository extends BaseRepository {
       ...p,
       folders: p.folders || [],
     }));
+  }
+
+  async getPostId(slug: string) {
+    const exists = await this.db
+      .select({ id: posts.id })
+      .from(posts)
+      .where(eq(posts.path, slug))
+      .limit(1);
+
+    if (exists.length === 0) {
+      return null;
+    }
+
+    return exists[0].id;
   }
 
   async getPost(
@@ -217,5 +232,13 @@ export class PostRepository extends BaseRepository {
 
     const success = Boolean(result[0].affectedRows === 1);
     return success;
+  }
+
+  async create(newPost: NewPost) {
+    await this.db.insert(posts).values(newPost);
+  }
+
+  async update(postId: number, newPost: UpdatePost) {
+    await this.db.update(posts).set(newPost).where(eq(posts.id, postId));
   }
 }

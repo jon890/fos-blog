@@ -30,8 +30,9 @@ export const posts = mysqlTable(
   (table) => [
     index("category_idx").on(table.category),
     index("slug_idx").on(table.slug),
-  ]
+  ],
 );
 
 export type Post = typeof posts.$inferSelect;
 export type NewPost = typeof posts.$inferInsert;
+export type UpdatePost = Partial<typeof posts.$inferInsert>;
