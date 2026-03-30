@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-03-17 | Updated: 2026-03-20 -->
+<!-- Generated: 2026-03-17 | Updated: 2026-03-30 -->
 
 # components
 
@@ -14,7 +14,7 @@ Reusable React UI components used across the application. All components are **C
 | `PostCard.tsx` | Card for post listings — displays title, category, description |
 | `CategoryCard.tsx` | Card for a single category — icon, name, post count |
 | `CategoryList.tsx` | Responsive grid of `CategoryCard` components |
-| `MarkdownRenderer.tsx` | Converts markdown string → styled React output with syntax highlighting, GFM, raw HTML, and slug-based heading IDs |
+| `MarkdownRenderer.tsx` | Converts markdown string → styled React output with syntax highlighting, GFM, raw HTML, slug-based heading IDs. 이미지는 `next/image`로 렌더링 (WebP 변환, lazy loading 자동 적용) |
 | `TableOfContents.tsx` | Auto-generates a clickable TOC from post heading structure (uses rehype-slug IDs) |
 | `SearchDialog.tsx` | Modal full-text search UI — calls `/api/search?q=` and displays results; requires `"use client"` |
 | `ThemeProvider.tsx` | Wraps children with `next-themes` Provider; `enableSystem=false`, `defaultTheme="dark"` |
@@ -31,6 +31,7 @@ Reusable React UI components used across the application. All components are **C
 - Keep components **pure presentational** — no direct DB calls or fetch inside components
 - `SearchDialog.tsx` and `ThemeToggle.tsx` are Client Components (`"use client"`) — they interact with browser APIs
 - `MarkdownRenderer.tsx` uses a plugin pipeline: `remark-gfm` → `rehype-slug` → `rehype-highlight` → `rehype-raw`; modify the plugin array carefully as order matters
+- **이미지 렌더링**: `img` 컴포넌트는 `next/image`를 사용한다. 외부 이미지 도메인은 `next.config.js`의 `remotePatterns`에 등록해야 한다 (현재 `raw.githubusercontent.com`, `github.com` 허용)
 - **Code block inline detection:** `isInline = !className && !String(children).includes("\n")` — fenced blocks without a language have no className, so newline check prevents them from being styled as inline code
 - `Mermaid.tsx` renders via `dangerouslySetInnerHTML` with `mermaid.render()` — it re-renders on theme change
 - `JsonLd.tsx` structured data affects SEO — update schema types only when the content type changes
