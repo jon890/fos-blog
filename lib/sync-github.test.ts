@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shouldSyncFile } from "./sync-github";
+import { shouldSyncFile, rewriteImagePaths } from "./sync-github";
 
 describe("shouldSyncFile", () => {
   // ===== 정상 동기화 대상 =====
@@ -75,5 +75,78 @@ describe("shouldSyncFile", () => {
     expect(shouldSyncFile("Agents.md")).toBe(false);
     expect(shouldSyncFile("claude.md")).toBe(false);
     expect(shouldSyncFile("Claude.MD")).toBe(false);
+  });
+});
+
+describe("rewriteImagePaths", () => {
+  const BASE = "https://raw.githubusercontent.com/jon889/fos-study/main";
+
+  // ===== 마크다운 이미지 문법 =====
+  it("./images/ 상대경로를 GitHub raw URL로 변환한다", () => {
+    const content = "![alt](./images/foo.png)";
+    const result = rewriteImagePaths(content, "AI/RAG/storm-parse.md");
+    expect(result).toBe(`![alt](${BASE}/AI/RAG/images/foo.png)`);
+  });
+
+  it("images/ 접두사 없는 상대경로도 변환한다", () => {
+    const content = "![실록](fe-silok.png)";
+    const result = rewriteImagePaths(content, "AI/RAG/toss-parkssi.md");
+    expect(result).toBe(`![실록](${BASE}/AI/RAG/fe-silok.png)`);
+  });
+
+  it("../ 상위 디렉토리 상대경로를 올바르게 변환한다", () => {
+    const content = "![alt](../shared/banner.png)";
+    const result = rewriteImagePaths(content, "devops/k8s/pods.md");
+    expect(result).toBe(`![alt](${BASE}/devops/shared/banner.png)`);
+  });
+
+  it("루트 레벨 파일의 상대경로를 변환한다", () => {
+    const content = "![alt](./images/intro.png)";
+    const result = rewriteImagePaths(content, "intro.md");
+    expect(result).toBe(`![alt](${BASE}/images/intro.png)`);
+  });
+
+  it("이미 절대 URL인 이미지는 변환하지 않는다", () => {
+    const content = "![alt](https://example.com/image.png)";
+    const result = rewriteImagePaths(content, "AI/RAG/doc.md");
+    expect(result).toBe(content);
+  });
+
+  it("http:// URL도 변환하지 않는다", () => {
+    const content = "![alt](http://example.com/image.png)";
+    const result = rewriteImagePaths(content, "AI/RAG/doc.md");
+    expect(result).toBe(content);
+  });
+
+  it("이미지가 없는 콘텐츠는 그대로 반환한다", () => {
+    const content = "# 제목\n\n일반 텍스트입니다.";
+    const result = rewriteImagePaths(content, "java/spring.md");
+    expect(result).toBe(content);
+  });
+
+  it("본문에 여러 이미지가 있으면 모두 변환한다", () => {
+    const content = [
+      "![img1](./images/a.png)",
+      "텍스트",
+      "![img2](./images/b.webp)",
+    ].join("\n");
+    const result = rewriteImagePaths(content, "devops/k8s-in-action/pods.md");
+    expect(result).toContain(`${BASE}/devops/k8s-in-action/images/a.png`);
+    expect(result).toContain(`${BASE}/devops/k8s-in-action/images/b.webp`);
+  });
+
+  // ===== HTML img 태그 =====
+  it("HTML img 태그의 상대경로도 변환한다", () => {
+    const content = `<img src="./images/diagram.png" alt="diagram">`;
+    const result = rewriteImagePaths(content, "database/design/erd.md");
+    expect(result).toBe(
+      `<img src="${BASE}/database/design/images/diagram.png" alt="diagram">`
+    );
+  });
+
+  it("HTML img 태그의 절대 URL은 변환하지 않는다", () => {
+    const content = `<img src="https://example.com/img.png" alt="x">`;
+    const result = rewriteImagePaths(content, "database/design/erd.md");
+    expect(result).toBe(content);
   });
 });
