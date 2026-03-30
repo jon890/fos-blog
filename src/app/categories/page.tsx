@@ -1,12 +1,12 @@
 import { getDbQueries } from "@/db/queries";
 import { CategoryList } from "@/components/CategoryList";
 import { Metadata } from "next";
+import { env } from "@/env";
 
 // ISR - 60초마다 페이지 재생성
 export const revalidate = 60;
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://fosworld.co.kr";
+const siteUrl = env.NEXT_PUBLIC_SITE_URL;
 
 export const metadata: Metadata = {
   title: "카테고리",

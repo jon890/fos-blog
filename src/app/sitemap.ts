@@ -1,12 +1,12 @@
 import type { MetadataRoute } from "next";
 import { getDbQueries } from "@/db/queries";
+import { env } from "@/env";
 
 // ISR - 60초마다 재생성
 export const revalidate = 60;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || "https://fosworld.co.kr";
+  const baseUrl = env.NEXT_PUBLIC_SITE_URL;
 
   // 정적 페이지
   const staticPages: MetadataRoute.Sitemap = [

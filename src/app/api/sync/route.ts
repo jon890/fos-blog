@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { syncGitHubToDatabase, retitleExistingPosts } from "@/lib/sync-github";
+import { env } from "@/env";
 
 // 동기화 API - 수동 호출 또는 cron job에서 사용
 // 파일 동기화 + 제목 재추출을 항상 함께 수행
 export async function POST(request: Request) {
   // API 키 검증 (선택사항)
   const authHeader = request.headers.get("authorization");
-  const apiKey = process.env.SYNC_API_KEY;
+  const apiKey = env.SYNC_API_KEY;
 
   if (apiKey && authHeader !== `Bearer ${apiKey}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

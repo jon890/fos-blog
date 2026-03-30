@@ -19,9 +19,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Clock, Folder, Github, Pencil } from "lucide-react";
 import { Metadata } from "next";
+import { env } from "@/env";
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://fosworld.co.kr";
+const siteUrl = env.NEXT_PUBLIC_SITE_URL;
 
 // ISR - 60초마다 페이지 재생성
 export const revalidate = 60;

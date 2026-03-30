@@ -1,11 +1,12 @@
 import { Octokit } from "@octokit/rest";
+import { env } from "@/env";
 
 const octokit = new Octokit({
-  auth: process.env.GITHUB_TOKEN,
+  auth: env.GITHUB_TOKEN,
 });
 
-const OWNER = process.env.GITHUB_OWNER || "jon890";
-const REPO = process.env.GITHUB_REPO || "fos-study";
+const OWNER = env.GITHUB_OWNER;
+const REPO = env.GITHUB_REPO;
 
 export interface GitHubFile {
   name: string;

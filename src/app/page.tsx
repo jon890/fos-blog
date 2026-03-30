@@ -4,9 +4,9 @@ import { PostCard } from "@/components/PostCard";
 import { WebsiteJsonLd } from "@/components/JsonLd";
 import { ArrowRight, Sparkles, Flame } from "lucide-react";
 import Link from "next/link";
+import { env } from "@/env";
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://fos-blog.vercel.app";
+const siteUrl = env.NEXT_PUBLIC_SITE_URL;
 
 // ISR - 60초마다 페이지 재생성
 export const revalidate = 60;
