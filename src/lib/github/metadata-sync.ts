@@ -45,7 +45,7 @@ export async function updateCategories(): Promise<void> {
         name: stat.category,
         slug: stat.category,
         icon: categoryIcons[stat.category] || "📁",
-        postCount: stat.count,
+        postCount: Number(stat.count),
       });
     }
   });

@@ -78,5 +78,8 @@ export async function deactivatePost(filePath: string): Promise<boolean> {
     .update(posts)
     .set({ isActive: false })
     .where(eq(posts.path, filePath));
-  return (result[0] as ResultSetHeader).affectedRows === 1;
+  const header = result[0];
+  return typeof header === "object" && header !== null && "affectedRows" in header
+    ? (header as ResultSetHeader).affectedRows === 1
+    : false;
 }

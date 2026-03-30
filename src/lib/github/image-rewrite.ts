@@ -24,9 +24,9 @@ export function rewriteImagePaths(content: string, filePath: string): string {
   });
 
   // <img src="relative/path">
-  result = result.replace(/<img([^>]+)src="([^"]+)"/g, (match, attrs, src) => {
+  result = result.replace(/<img([^>]+)src="([^"]+)"/g, (match, _attrs, src) => {
     if (src.startsWith("http://") || src.startsWith("https://")) return match;
-    return `<img${attrs}src="${resolve(src)}"`;
+    return `<img src="${resolve(src)}"`;
   });
 
   return result;

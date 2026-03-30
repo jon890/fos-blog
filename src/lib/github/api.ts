@@ -1,5 +1,7 @@
 import { octokit, OWNER, REPO, BRANCH } from "./client";
 
+const VALID_STATUSES = new Set<string>(["added", "modified", "removed", "renamed", "copied", "changed", "unchanged"]);
+
 export interface ChangedFile {
   filename: string;
   status: "added" | "modified" | "removed" | "renamed" | "copied" | "changed" | "unchanged";
@@ -35,7 +37,6 @@ export async function getChangedFilesSince(
       return null;
     }
 
-    const VALID_STATUSES = new Set<string>(["added", "modified", "removed", "renamed", "copied", "changed", "unchanged"]);
     return response.data.files
       .filter((f) => VALID_STATUSES.has(f.status))
       .map((f) => ({
