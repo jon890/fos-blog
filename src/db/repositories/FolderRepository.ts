@@ -68,6 +68,40 @@ export class FolderRepository extends BaseRepository {
     return { folders: foldersData, posts: postsData, readme };
   }
 
+  async getAll(): Promise<Map<string, { id: number; sha: string | null }>> {
+    const result = await this.db
+      .select({ id: folders.id, path: folders.path, sha: folders.sha })
+      .from(folders);
+    return new Map(result.map((f) => [f.path, { id: f.id, sha: f.sha }]));
+  }
+
+  async upsert(folderPath: string, readme: string, sha: string): Promise<void> {
+    const existing = await this.db
+      .select({ id: folders.id })
+      .from(folders)
+      .where(eq(folders.path, folderPath))
+      .limit(1);
+    if (existing[0]) {
+      await this.db
+        .update(folders)
+        .set({ readme, sha, updatedAt: new Date() })
+        .where(eq(folders.id, existing[0].id));
+    } else {
+      await this.db.insert(folders).values({ path: folderPath, readme, sha });
+    }
+  }
+
+  async ensureFolder(folderPath: string): Promise<void> {
+    const existing = await this.db
+      .select({ id: folders.id })
+      .from(folders)
+      .where(eq(folders.path, folderPath))
+      .limit(1);
+    if (!existing[0]) {
+      await this.db.insert(folders).values({ path: folderPath, readme: null, sha: null });
+    }
+  }
+
   async getAllFolderPaths(): Promise<string[][]> {
     const allPosts = await this.db
       .select({ path: posts.path })

@@ -241,4 +241,53 @@ export class PostRepository extends BaseRepository {
   async update(postId: number, newPost: UpdatePost) {
     await this.db.update(posts).set(newPost).where(eq(posts.id, postId));
   }
+
+  async getAllForSync(): Promise<
+    Array<{ id: number; path: string; sha: string | null; isActive: boolean | null }>
+  > {
+    return this.db
+      .select({ id: posts.id, path: posts.path, sha: posts.sha, isActive: posts.isActive })
+      .from(posts);
+  }
+
+  async deactivateMissing(processedPaths: Set<string>): Promise<number> {
+    const allPosts = await this.db
+      .select({ id: posts.id, path: posts.path, isActive: posts.isActive })
+      .from(posts);
+    let count = 0;
+    for (const post of allPosts) {
+      if (!processedPaths.has(post.path) && post.isActive) {
+        await this.db.update(posts).set({ isActive: false }).where(eq(posts.id, post.id));
+        count++;
+        console.log(`비활성화: ${post.path}`);
+      }
+    }
+    return count;
+  }
+
+  async retitleAll(): Promise<{ total: number; updated: number; skipped: number }> {
+    const { extractTitle } = await import("@/lib/markdown");
+    const allPosts = await this.db
+      .select({ path: posts.path, title: posts.title, content: posts.content })
+      .from(posts);
+
+    let updated = 0;
+    let skipped = 0;
+
+    for (const post of allPosts) {
+      if (!post.content) {
+        skipped++;
+        continue;
+      }
+      const extractedTitle = extractTitle(post.content);
+      if (!extractedTitle || extractedTitle === post.title) {
+        skipped++;
+        continue;
+      }
+      await this.db.update(posts).set({ title: extractedTitle }).where(eq(posts.path, post.path));
+      updated++;
+      console.log(`제목 업데이트: ${post.path} → ${extractedTitle}`);
+    }
+    return { total: allPosts.length, updated, skipped };
+  }
 }
