@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDbQueries } from "@/db/queries";
+import { getRepositories } from "@/db/repositories";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -11,15 +11,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const dbQueries = getDbQueries();
-    if (!dbQueries) {
-      return NextResponse.json(
-        { results: [], error: "Database not connected" },
-        { status: 503 }
-      );
-    }
-
-    const results = await dbQueries.searchPosts(query, limit);
+    const { post } = getRepositories();
+    const results = await post.searchPosts(query, limit);
     return NextResponse.json({ results });
   } catch (error) {
     console.error("Search error:", error);

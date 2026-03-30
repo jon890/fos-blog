@@ -1,4 +1,5 @@
-import { getDbQueries } from "@/db/queries";
+import { getRepositories } from "@/db/repositories";
+import type { CategoryData } from "@/db/types";
 import { CategoryList } from "@/components/CategoryList";
 import { Metadata } from "next";
 
@@ -23,8 +24,13 @@ export const metadata: Metadata = {
 };
 
 export default async function CategoriesPage() {
-  const dbQueries = getDbQueries();
-  const categories = dbQueries ? await dbQueries.getCategories() : [];
+  let categories: CategoryData[] = [];
+  try {
+    const { category } = getRepositories();
+    categories = await category.getCategories();
+  } catch (error) {
+    console.warn("Database not available:", error);
+  }
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-12">

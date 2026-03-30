@@ -1,21 +1,23 @@
-import { getDbQueries } from "@/db/queries";
+import { getRepositories } from "@/db/repositories";
 import { categoryIcons } from "@/db/constants";
 import { FolderSidebar } from "@/components/FolderSidebar";
 
 export async function FolderSidebarWrapper() {
-  const dbQueries = getDbQueries();
-  if (!dbQueries) return null;
+  try {
+    const { folder, post } = getRepositories();
+    const [folderPaths, posts] = await Promise.all([
+      folder.getAllFolderPaths(),
+      post.getAllPostsForSidebar(),
+    ]);
 
-  const [folderPaths, posts] = await Promise.all([
-    dbQueries.getAllFolderPaths(),
-    dbQueries.getAllPostsForSidebar(),
-  ]);
-
-  return (
-    <FolderSidebar
-      folderPaths={folderPaths}
-      posts={posts}
-      categoryIcons={categoryIcons}
-    />
-  );
+    return (
+      <FolderSidebar
+        folderPaths={folderPaths}
+        posts={posts}
+        categoryIcons={categoryIcons}
+      />
+    );
+  } catch {
+    return null;
+  }
 }

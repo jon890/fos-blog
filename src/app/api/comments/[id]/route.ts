@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDbQueries } from "@/db/queries";
+import { getRepositories } from "@/db/repositories";
 
 type RouteParams = {
   params: Promise<{ id: string }>;
@@ -8,14 +8,6 @@ type RouteParams = {
 // PUT /api/comments/[id] - 댓글 수정
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const dbQueries = getDbQueries();
-    if (!dbQueries) {
-      return NextResponse.json(
-        { error: "데이터베이스에 연결할 수 없습니다." },
-        { status: 503 }
-      );
-    }
-
     const { id } = await params;
     const commentId = parseInt(id, 10);
 
@@ -43,22 +35,20 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const comment = await dbQueries.updateComment(commentId, password, content);
+    const { comment } = getRepositories();
+    const updatedComment = await comment.updateComment(commentId, password, content);
 
-    if (!comment) {
+    if (!updatedComment) {
       return NextResponse.json(
         { error: "댓글을 찾을 수 없습니다." },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ comment });
+    return NextResponse.json({ comment: updatedComment });
   } catch (error) {
     if (error instanceof Error && error.message === "비밀번호가 일치하지 않습니다.") {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 403 });
     }
     console.error("Failed to update comment:", error);
     return NextResponse.json(
@@ -71,14 +61,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/comments/[id] - 댓글 삭제
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const dbQueries = getDbQueries();
-    if (!dbQueries) {
-      return NextResponse.json(
-        { error: "데이터베이스에 연결할 수 없습니다." },
-        { status: 503 }
-      );
-    }
-
     const { id } = await params;
     const commentId = parseInt(id, 10);
 
@@ -99,7 +81,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const deleted = await dbQueries.deleteComment(commentId, password);
+    const { comment } = getRepositories();
+    const deleted = await comment.deleteComment(commentId, password);
 
     if (!deleted) {
       return NextResponse.json(
@@ -111,10 +94,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof Error && error.message === "비밀번호가 일치하지 않습니다.") {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 403 });
     }
     console.error("Failed to delete comment:", error);
     return NextResponse.json(

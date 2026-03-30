@@ -1,8 +1,5 @@
-import {
-  getDbQueries,
-  categoryIcons,
-  DEFAULT_CATEGORY_ICON,
-} from "@/db/queries";
+import { getRepositories } from "@/db/repositories";
+import { categoryIcons, DEFAULT_CATEGORY_ICON } from "@/db/constants";
 import {
   extractTitle,
   extractDescription,
@@ -33,12 +30,7 @@ interface PostPageProps {
 }
 
 function getCategoryIcon(category: string): string {
-  const dbQueries = getDbQueries();
-  return (
-    dbQueries?.getCategoryIcon(category) ??
-    categoryIcons[category] ??
-    DEFAULT_CATEGORY_ICON
-  );
+  return categoryIcons[category] || DEFAULT_CATEGORY_ICON;
 }
 
 export async function generateMetadata({
@@ -46,91 +38,90 @@ export async function generateMetadata({
 }: PostPageProps): Promise<Metadata> {
   const resolvedParams = await params;
   const slug = resolvedParams.slug.map(decodeURIComponent).join("/");
-  const dbQueries = getDbQueries();
-  const data = dbQueries ? await dbQueries.getPost(slug) : null;
 
-  if (!data) {
+  try {
+    const { post } = getRepositories();
+    const data = await post.getPost(slug);
+
+    if (!data) {
+      return { title: "글을 찾을 수 없습니다" };
+    }
+
+    const title = extractTitle(data.content) || data.post.title;
+    const description = extractDescription(data.content);
+    const postUrl = `${siteUrl}/posts/${slug
+      .split("/")
+      .map(encodeURIComponent)
+      .join("/")}`;
+    const publishedTime = data.post.createdAt?.toISOString();
+    const modifiedTime = data.post.updatedAt?.toISOString();
+
     return {
-      title: "글을 찾을 수 없습니다",
+      title,
+      description,
+      alternates: { canonical: postUrl },
+      openGraph: {
+        title,
+        description,
+        type: "article",
+        url: postUrl,
+        ...(publishedTime && { publishedTime }),
+        ...(modifiedTime && { modifiedTime }),
+      },
+      twitter: { card: "summary_large_image", title, description },
     };
+  } catch {
+    return { title: "글을 찾을 수 없습니다" };
   }
-
-  const title = extractTitle(data.content) || data.post.title;
-  const description = extractDescription(data.content);
-  const postUrl = `${siteUrl}/posts/${slug
-    .split("/")
-    .map(encodeURIComponent)
-    .join("/")}`;
-  const publishedTime = data.post.createdAt?.toISOString();
-  const modifiedTime = data.post.updatedAt?.toISOString();
-
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: postUrl,
-    },
-    openGraph: {
-      title,
-      description,
-      type: "article",
-      url: postUrl,
-      ...(publishedTime && { publishedTime }),
-      ...(modifiedTime && { modifiedTime }),
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-    },
-  };
 }
 
 export async function generateStaticParams() {
-  const dbQueries = getDbQueries();
-  const paths = dbQueries ? await dbQueries.getAllPostPaths() : [];
-  return paths.map((path) => ({
-    slug: path.split("/"),
-  }));
+  try {
+    const { post } = getRepositories();
+    const paths = await post.getAllPostPaths();
+    return paths.map((path) => ({ slug: path.split("/") }));
+  } catch {
+    return [];
+  }
 }
 
 export default async function PostPage({ params }: PostPageProps) {
   const resolvedParams = await params;
   const slug = resolvedParams.slug.map(decodeURIComponent).join("/");
-  const dbQueries = getDbQueries();
-  const data = dbQueries ? await dbQueries.getPost(slug) : null;
+
+  const { post } = getRepositories();
+  const data = await post.getPost(slug);
 
   if (!data) {
     notFound();
   }
 
-  const { content, post } = data;
+  const { content, post: postData } = data;
   const { content: mainContent } = parseFrontMatter(content);
-  const title = extractTitle(content) || post.title;
+  const title = extractTitle(content) || postData.title;
   const readingTime = getReadingTime(content);
   const toc = generateTableOfContents(mainContent);
 
-  const githubUrl = `https://github.com/jon890/fos-study/blob/main/${post.path}`;
-  const postUrl = `${siteUrl}/posts/${post.path
+  const githubUrl = `https://github.com/jon890/fos-study/blob/main/${postData.path}`;
+  const postUrl = `${siteUrl}/posts/${postData.path
     .split("/")
     .map(encodeURIComponent)
     .join("/")}`;
   const description = extractDescription(content);
 
-  // Breadcrumb 데이터
   const breadcrumbItems = [
     { name: "홈", url: siteUrl },
     {
-      name: post.category,
-      url: `${siteUrl}/category/${encodeURIComponent(post.category)}`,
+      name: postData.category,
+      url: `${siteUrl}/category/${encodeURIComponent(postData.category)}`,
     },
-    ...(post.subcategory
+    ...(postData.subcategory
       ? [
           {
-            name: post.subcategory,
+            name: postData.subcategory,
             url: `${siteUrl}/category/${encodeURIComponent(
-              post.category
-            )}/${encodeURIComponent(post.subcategory)}`,
+              postData.category
+            )}/${encodeURIComponent(postData.subcategory)}`,
           },
         ]
       : []),
@@ -139,22 +130,20 @@ export default async function PostPage({ params }: PostPageProps) {
 
   return (
     <>
-      {/* JSON-LD 구조화 데이터 */}
       <ArticleJsonLd
         url={postUrl}
         title={title}
         description={description}
-        datePublished={post.createdAt?.toISOString()}
-        dateModified={post.updatedAt?.toISOString()}
+        datePublished={postData.createdAt?.toISOString()}
+        dateModified={postData.updatedAt?.toISOString()}
         authorName="jon890"
         authorUrl="https://github.com/jon890"
       />
       <BreadcrumbJsonLd items={breadcrumbItems} />
 
       <div className="container mx-auto px-4 py-6 md:py-12">
-        {/* Back button */}
         <Link
-          href={`/category/${encodeURIComponent(post.category)}`}
+          href={`/category/${encodeURIComponent(postData.category)}`}
           className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-8"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -162,21 +151,19 @@ export default async function PostPage({ params }: PostPageProps) {
         </Link>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Main content */}
           <article className="flex-grow min-w-0">
-            {/* Header */}
             <header className="mb-8 pb-8 border-b border-gray-200 dark:border-gray-800">
               <div className="flex flex-wrap items-center gap-3 mb-4">
                 <Link
-                  href={`/category/${encodeURIComponent(post.category)}`}
+                  href={`/category/${encodeURIComponent(postData.category)}`}
                   className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
                 >
-                  <span>{getCategoryIcon(post.category)}</span>
-                  <span>{post.category}</span>
+                  <span>{getCategoryIcon(postData.category)}</span>
+                  <span>{postData.category}</span>
                 </Link>
-                {post.subcategory && (
+                {postData.subcategory && (
                   <span className="text-sm text-gray-500 dark:text-gray-400">
-                    / {post.subcategory}
+                    / {postData.subcategory}
                   </span>
                 )}
               </div>
@@ -190,11 +177,11 @@ export default async function PostPage({ params }: PostPageProps) {
                   <Clock className="w-4 h-4" />
                   <span>약 {readingTime}분</span>
                 </div>
-                {post.createdAt && (
+                {postData.createdAt && (
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
                     <span>
-                      {post.createdAt.toLocaleDateString("ko-KR", {
+                      {postData.createdAt.toLocaleDateString("ko-KR", {
                         year: "numeric",
                         month: "long",
                         day: "numeric",
@@ -202,12 +189,12 @@ export default async function PostPage({ params }: PostPageProps) {
                     </span>
                   </div>
                 )}
-                {post.updatedAt &&
-                  post.createdAt?.getTime() !== post.updatedAt.getTime() && (
+                {postData.updatedAt &&
+                  postData.createdAt?.getTime() !== postData.updatedAt.getTime() && (
                     <div className="flex items-center gap-2">
                       <Pencil className="w-4 h-4" />
                       <span>
-                        {post.updatedAt.toLocaleDateString("ko-KR", {
+                        {postData.updatedAt.toLocaleDateString("ko-KR", {
                           year: "numeric",
                           month: "long",
                           day: "numeric",
@@ -217,7 +204,7 @@ export default async function PostPage({ params }: PostPageProps) {
                     </div>
                   )}
                 <PostViewCount
-                  pagePath={post.path}
+                  pagePath={postData.path}
                   className="text-gray-600 dark:text-gray-400"
                 />
                 <a
@@ -232,18 +219,16 @@ export default async function PostPage({ params }: PostPageProps) {
               </div>
             </header>
 
-            {/* Content */}
             <MarkdownRenderer content={mainContent} basePath={slug} />
 
-            {/* Footer */}
             <footer className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-800">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <Link
-                  href={`/category/${encodeURIComponent(post.category)}`}
+                  href={`/category/${encodeURIComponent(postData.category)}`}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                 >
                   <Folder className="w-4 h-4" />
-                  <span>{post.category} 카테고리의 다른 글 보기</span>
+                  <span>{postData.category} 카테고리의 다른 글 보기</span>
                 </Link>
                 <a
                   href={githubUrl}
@@ -257,11 +242,9 @@ export default async function PostPage({ params }: PostPageProps) {
               </div>
             </footer>
 
-            {/* Comments */}
-            <Comments postSlug={post.path} />
+            <Comments postSlug={postData.path} />
           </article>
 
-          {/* Sidebar - Table of Contents */}
           {toc.length > 0 && (
             <aside className="hidden lg:block w-64 flex-shrink-0">
               <TableOfContents toc={toc} />

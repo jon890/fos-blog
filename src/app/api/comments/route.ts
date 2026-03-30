@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDbQueries } from "@/db/queries";
+import { getRepositories } from "@/db/repositories";
 
 // GET /api/comments?slug=xxx - 댓글 목록 조회
 export async function GET(request: NextRequest) {
@@ -14,15 +14,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const dbQueries = getDbQueries();
-    if (!dbQueries) {
-      return NextResponse.json(
-        { error: "데이터베이스에 연결할 수 없습니다." },
-        { status: 503 }
-      );
-    }
-
-    const comments = await dbQueries.getCommentsByPostSlug(slug);
+    const { comment } = getRepositories();
+    const comments = await comment.getCommentsByPostSlug(slug);
     return NextResponse.json({ comments });
   } catch (error) {
     console.error("Failed to get comments:", error);
@@ -36,18 +29,9 @@ export async function GET(request: NextRequest) {
 // POST /api/comments - 댓글 작성
 export async function POST(request: NextRequest) {
   try {
-    const dbQueries = getDbQueries();
-    if (!dbQueries) {
-      return NextResponse.json(
-        { error: "데이터베이스에 연결할 수 없습니다." },
-        { status: 503 }
-      );
-    }
-
     const body = await request.json();
     const { postSlug, nickname, password, content } = body;
 
-    // 유효성 검사
     if (!postSlug || !nickname || !password || !content) {
       return NextResponse.json(
         { error: "모든 필드를 입력해주세요." },
@@ -76,14 +60,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const comment = await dbQueries.createComment({
+    const { comment } = getRepositories();
+    const createdComment = await comment.createComment({
       postSlug,
       nickname,
       password,
       content,
     });
 
-    return NextResponse.json({ comment }, { status: 201 });
+    return NextResponse.json({ comment: createdComment }, { status: 201 });
   } catch (error) {
     console.error("Failed to create comment:", error);
     return NextResponse.json(
