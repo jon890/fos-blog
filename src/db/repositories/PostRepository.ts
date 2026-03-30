@@ -259,7 +259,6 @@ export class PostRepository extends BaseRepository {
       if (!processedPaths.has(post.path) && post.isActive) {
         await this.db.update(posts).set({ isActive: false }).where(eq(posts.id, post.id));
         count++;
-        console.log(`비활성화: ${post.path}`);
       }
     }
     return count;
@@ -286,7 +285,6 @@ export class PostRepository extends BaseRepository {
       }
       await this.db.update(posts).set({ title: extractedTitle }).where(eq(posts.path, post.path));
       updated++;
-      console.log(`제목 업데이트: ${post.path} → ${extractedTitle}`);
     }
     return { total: allPosts.length, updated, skipped };
   }

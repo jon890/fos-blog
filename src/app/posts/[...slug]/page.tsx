@@ -1,5 +1,6 @@
 import { getRepositories } from "@/db/repositories";
 import { categoryIcons, DEFAULT_CATEGORY_ICON } from "@/db/constants";
+import type { PostData } from "@/db/types";
 import {
   extractTitle,
   extractDescription,
@@ -89,8 +90,13 @@ export default async function PostPage({ params }: PostPageProps) {
   const resolvedParams = await params;
   const slug = resolvedParams.slug.map(decodeURIComponent).join("/");
 
-  const { post } = getRepositories();
-  const data = await post.getPost(slug);
+  let data: { content: string; post: PostData } | null = null;
+  try {
+    const { post } = getRepositories();
+    data = await post.getPost(slug);
+  } catch {
+    notFound();
+  }
 
   if (!data) {
     notFound();

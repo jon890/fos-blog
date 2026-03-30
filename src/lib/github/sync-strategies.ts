@@ -157,6 +157,7 @@ export async function performFullSync(): Promise<{
   }
 
   deleted = await postRepository.deactivateMissing(processedPaths);
+  if (deleted > 0) console.log(`비활성화 완료: ${deleted}개`);
 
   return { added, updated, deleted };
 }
