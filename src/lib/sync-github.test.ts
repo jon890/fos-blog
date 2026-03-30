@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { shouldSyncFile, rewriteImagePaths } from "./sync-github";
+import { shouldSyncFile } from "./github/file-filter";
+import { rewriteImagePaths } from "./github/image-rewrite";
 
 describe("shouldSyncFile", () => {
   // ===== 정상 동기화 대상 =====
@@ -79,7 +80,7 @@ describe("shouldSyncFile", () => {
 });
 
 describe("rewriteImagePaths", () => {
-  const BASE = "https://raw.githubusercontent.com/jon889/fos-study/main";
+  const BASE = "https://raw.githubusercontent.com/jon890/fos-study/main";
 
   // ===== 마크다운 이미지 문법 =====
   it("./images/ 상대경로를 GitHub raw URL로 변환한다", () => {
