@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { posts } from "@/db/schema";
+import { extractDescription, extractTitle } from "@/lib/markdown";
 import { getDb } from "./client";
 import { getFileContent, getFileCommitDates, getDirectoryContents, type ChangedFile } from "./api";
 import { shouldSyncFile } from "./file-filter";
