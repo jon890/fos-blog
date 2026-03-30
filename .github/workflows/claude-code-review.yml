@@ -6,6 +6,7 @@ on:
 
 jobs:
   claude-review:
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     # 같은 PR에 대해 동시에 실행 중인 이전 리뷰 run을 취소하여 중복 코멘트 방지
     concurrency:
@@ -19,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
@@ -60,16 +61,19 @@ jobs:
 
             ## Step 1: Fetch PR Data
 
-            Run these two commands first:
+            Run these commands first (lock files and snapshots are excluded from diff to reduce noise):
             ```
-            gh pr diff ${{ github.event.pull_request.number }} --repo ${{ github.repository }}
-            gh pr view ${{ github.event.pull_request.number }} --repo ${{ github.repository }}
+            gh pr diff ${{ github.event.pull_request.number }} --repo ${{ github.repository }} -- ':!pnpm-lock.yaml' ':!*.lock' ':!*.snap'
+            gh pr view ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --json title,body,additions,deletions
             ```
+
+            If the diff is empty after filtering, post a short positive comment and stop.
 
             ## Step 2: Spawn 4 Parallel Specialist Agents
 
-            Launch all 4 agents simultaneously using the Agent tool.
-            Pass the full diff content in each agent's prompt so they can work independently.
+            Launch all 4 agents **simultaneously** using the Agent tool.
+            **Each agent MUST use `model: "haiku"`** to minimize token usage.
+            Pass the full filtered diff in each agent's prompt.
 
             Each agent MUST format their findings using this EXACT structure (parse-friendly):
 
@@ -100,9 +104,9 @@ jobs:
 
             ---
 
-            **Agent 1 — TypeScript & Type Safety**
+            **Agent 1 — TypeScript & Type Safety** (`model: "haiku"`)
 
-            Prompt template:
+            Prompt:
             ```
             You are a TypeScript specialist reviewer. Analyze this PR diff for type safety issues only.
 
@@ -132,9 +136,9 @@ jobs:
 
             ---
 
-            **Agent 2 — Project Conventions**
+            **Agent 2 — Project Conventions** (`model: "haiku"`)
 
-            Prompt template:
+            Prompt:
             ```
             You are a code convention specialist. Analyze this PR diff for convention violations only.
 
@@ -170,9 +174,9 @@ jobs:
 
             ---
 
-            **Agent 3 — Security**
+            **Agent 3 — Security** (`model: "haiku"`)
 
-            Prompt template:
+            Prompt:
             ```
             You are a security specialist. Analyze this PR diff for security issues only.
 
@@ -207,9 +211,9 @@ jobs:
 
             ---
 
-            **Agent 4 — Architecture & Next.js Patterns**
+            **Agent 4 — Architecture & Next.js Patterns** (`model: "haiku"`)
 
-            Prompt template:
+            Prompt:
             ```
             You are a Next.js architecture specialist. Analyze this PR diff for architectural issues only.
 
@@ -329,4 +333,4 @@ jobs:
             - **Be specific** — reference exact file names and line numbers
             - **If zero issues found**, skip Step 3 and write a short positive review with 🟢 section only in Step 4
 
-          claude_args: '--allowedTools "Agent,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*)" --disallowedTools "Read,Write,Edit,Glob,Grep,LS"'
+          claude_args: '--model claude-sonnet-4-6 --allowedTools "Agent,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*)" --disallowedTools "Read,Write,Edit,Glob,Grep,LS"'
