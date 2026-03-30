@@ -114,8 +114,7 @@ fos-blog/
 │       ├── commentRepository.ts
 │       └── ...
 ├── lib/                          # Shared utilities
-│   ├── github.ts                 # GitHub API client + utilities
-│   ├── sync-github.ts            # Core sync logic (fetch + cache + reconciliation)
+│   ├── sync-github.ts            # GitHub API client + core sync logic (fetch + cache + reconciliation)
 │   ├── markdown.ts               # Markdown parsing (frontmatter, title, TOC)
 │   ├── resolve-markdown-link.ts  # Markdown link resolver (GitHub → blog URLs)
 │   ├── markdown.test.ts          # Unit tests for markdown utilities
@@ -263,15 +262,15 @@ NEXT_PUBLIC_GOOGLE_ADSENSE_ID=ca-pub-xxx               # Google AdSense
 
 - `id` (INT): Primary key
 - `commitSha` (VARCHAR): GitHub commit SHA
-- `filesAdded`, `filesUpdated`, `filesDeleted` (INT): Change counts
+- `postsAdded`, `postsUpdated`, `postsDeleted` (INT): Change counts
 - `createdAt` (TIMESTAMP)
 
-**folders** — Category/folder hierarchy (optional)
+**folders** — Directory nodes with optional README content
 
 - `id` (INT): Primary key
-- `name` (VARCHAR): Folder name
-- `path` (VARCHAR): Full path
-- `parentId` (INT): Parent folder (for nesting)
+- `path` (VARCHAR): Full folder path, unique (e.g. `AI/RAG`)
+- `readme` (TEXT): README.md content if present
+- `sha` (VARCHAR 64): GitHub SHA for change detection
 
 ---
 
