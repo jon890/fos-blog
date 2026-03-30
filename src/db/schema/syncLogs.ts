@@ -19,3 +19,5 @@ export const syncLogs = mysqlTable("sync_logs", {
 });
 
 export type SyncLog = typeof syncLogs.$inferSelect;
+export type CreateSyncLog = typeof syncLogs.$inferInsert;
+export type UpdateSyncLog = Partial<typeof syncLogs.$inferInsert>;
