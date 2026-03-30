@@ -243,7 +243,7 @@ export class PostRepository extends BaseRepository {
   }
 
   async getAllForSync(): Promise<
-    Array<{ id: number; path: string; sha: string | null; isActive: boolean | null }>
+    Array<{ id: number; path: string; sha: string | null; isActive: boolean }>
   > {
     return this.db
       .select({ id: posts.id, path: posts.path, sha: posts.sha, isActive: posts.isActive })

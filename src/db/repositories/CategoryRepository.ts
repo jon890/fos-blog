@@ -27,7 +27,7 @@ export class CategoryRepository extends BaseRepository {
     const categoryStats = await this.db
       .select({
         category: posts.category,
-        count: sql<string>`count(*)`.as("count"),
+        count: sql<number>`count(*)`.as("count"),
       })
       .from(posts)
       .where(eq(posts.isActive, true))
