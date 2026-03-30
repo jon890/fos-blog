@@ -2,30 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { posts, categories, folders } from "@/db/schema";
 import { getDb } from "./client";
 import { getFileContent } from "./api";
-
-const categoryIcons: Record<string, string> = {
-  AI: "🤖",
-  algorithm: "🧮",
-  architecture: "🏗️",
-  database: "🗄️",
-  devops: "🚀",
-  finance: "💰",
-  git: "📝",
-  go: "🐹",
-  html: "🌐",
-  http: "📡",
-  internet: "🌍",
-  interview: "💼",
-  java: "☕",
-  javascript: "⚡",
-  kafka: "📨",
-  network: "🔌",
-  react: "⚛️",
-  redis: "🔴",
-  resume: "📄",
-  css: "🎨",
-  기술공유: "📢",
-};
+import { categoryIcons } from "@/db/constants";
 
 export async function updateCategories(): Promise<void> {
   const database = getDb();
@@ -92,7 +69,11 @@ export async function syncFolderReadmes(): Promise<void> {
       if (existing) {
         await database
           .update(folders)
-          .set({ readme: readmeContent.content, sha: readmeContent.sha, updatedAt: new Date() })
+          .set({
+            readme: readmeContent.content,
+            sha: readmeContent.sha,
+            updatedAt: new Date(),
+          })
           .where(eq(folders.id, existing.id));
       } else {
         await database.insert(folders).values({
@@ -104,7 +85,9 @@ export async function syncFolderReadmes(): Promise<void> {
       synced++;
       console.log(`README 동기화: ${folderPath}`);
     } else if (!existing) {
-      await database.insert(folders).values({ path: folderPath, readme: null, sha: null });
+      await database
+        .insert(folders)
+        .values({ path: folderPath, readme: null, sha: null });
     }
   }
 
