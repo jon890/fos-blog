@@ -2,15 +2,25 @@ name: Claude Code Review
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened]
+  issue_comment:
+    types: [created]
 
 jobs:
   claude-review:
-    if: github.actor != 'dependabot[bot]'
+    if: |
+      github.actor != 'dependabot[bot]' && (
+        github.event_name == 'pull_request' ||
+        (github.event_name == 'issue_comment' &&
+         github.event.issue.pull_request != null &&
+         contains(github.event.comment.body, '/review'))
+      )
     runs-on: ubuntu-latest
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
     # 같은 PR에 대해 동시에 실행 중인 이전 리뷰 run을 취소하여 중복 코멘트 방지
     concurrency:
-      group: claude-review-${{ github.event.pull_request.number }}
+      group: claude-review-${{ github.event.pull_request.number || github.event.issue.number }}
       cancel-in-progress: true
     permissions:
       contents: read
@@ -29,7 +39,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           REPO="${{ github.repository }}"
-          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_NUMBER="${{ env.PR_NUMBER }}"
 
           # 이전 일반 코멘트 숨기기
           gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
@@ -63,8 +73,8 @@ jobs:
 
             Run these commands first (lock files and snapshots are excluded from diff to reduce noise):
             ```
-            gh pr diff ${{ github.event.pull_request.number }} --repo ${{ github.repository }} -- ':!pnpm-lock.yaml' ':!*.lock' ':!*.snap'
-            gh pr view ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --json title,body,additions,deletions
+            gh pr diff ${{ env.PR_NUMBER }} --repo ${{ github.repository }} -- ':!pnpm-lock.yaml' ':!*.lock' ':!*.snap'
+            gh pr view ${{ env.PR_NUMBER }} --repo ${{ github.repository }} --json title,body,additions,deletions
             ```
 
             If the diff is empty after filtering, post a short positive comment and stop.
@@ -256,7 +266,7 @@ jobs:
             Construct the JSON and run this command (replace the comments array with the actual parsed findings):
 
             ```bash
-            gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
+            gh api repos/${{ github.repository }}/pulls/${{ env.PR_NUMBER }}/reviews \
               --method POST \
               --header "Content-Type: application/json" \
               --input - <<'REVIEW_EOF'
@@ -289,7 +299,7 @@ jobs:
             Post exactly ONE general summary comment containing ALL findings (both INLINE and GENERAL):
 
             ```
-            gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --body "..."
+            gh pr comment ${{ env.PR_NUMBER }} --repo ${{ github.repository }} --body "..."
             ```
 
             ## Summary Comment Format
