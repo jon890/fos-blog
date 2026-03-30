@@ -221,6 +221,38 @@ function isMdFile(filename: string) {
   return shouldSyncFile(filename);
 }
 
+/**
+ * 마크다운 content 내 상대경로 이미지를 GitHub raw URL로 변환한다.
+ * ./images/foo.png → https://raw.githubusercontent.com/OWNER/REPO/BRANCH/dir/images/foo.png
+ */
+export function rewriteImagePaths(content: string, filePath: string): string {
+  const dir = filePath.split("/").slice(0, -1).join("/");
+  const baseUrl = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}`;
+
+  const resolve = (relativePath: string): string => {
+    const parts = dir ? dir.split("/") : [];
+    for (const part of relativePath.split("/")) {
+      if (part === "..") parts.pop();
+      else if (part !== ".") parts.push(part);
+    }
+    return `${baseUrl}/${parts.join("/")}`;
+  };
+
+  // ![alt](relative/path)
+  let result = content.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
+    if (src.startsWith("http://") || src.startsWith("https://")) return match;
+    return `![${alt}](${resolve(src)})`;
+  });
+
+  // <img src="relative/path">
+  result = result.replace(/<img([^>]+)src="([^"]+)"/g, (match, attrs, src) => {
+    if (src.startsWith("http://") || src.startsWith("https://")) return match;
+    return `<img${attrs}src="${resolve(src)}"`;
+  });
+
+  return result;
+}
+
 async function upsertPost(filePath: string): Promise<"added" | "updated" | "skipped"> {
   const database = getDb();
   const [fileData, commitDates] = await Promise.all([
@@ -230,8 +262,9 @@ async function upsertPost(filePath: string): Promise<"added" | "updated" | "skip
   if (!fileData) return "skipped";
 
   const { category, foldersList, subcategory, title: filenameTitle } = parsePath(filePath);
-  const title = extractTitle(fileData.content) || filenameTitle;
-  const description = extractDescription(fileData.content, 200);
+  const content = rewriteImagePaths(fileData.content, filePath);
+  const title = extractTitle(content) || filenameTitle;
+  const description = extractDescription(content, 200);
 
   const existing = await database
     .select({ id: posts.id })
@@ -244,7 +277,7 @@ async function upsertPost(filePath: string): Promise<"added" | "updated" | "skip
       .update(posts)
       .set({
         title,
-        content: fileData.content,
+        content,
         description,
         sha: fileData.sha,
         category,
@@ -263,7 +296,7 @@ async function upsertPost(filePath: string): Promise<"added" | "updated" | "skip
       category,
       subcategory,
       folders: foldersList,
-      content: fileData.content,
+      content,
       description,
       sha: fileData.sha,
       ...(commitDates && {
@@ -387,15 +420,16 @@ async function performFullSync(): Promise<{
     if (!fileData) continue;
 
     const { title: filenameTitle } = parsePath(file.path);
-    const title = extractTitle(fileData.content) || filenameTitle;
-    const description = extractDescription(fileData.content, 200);
+    const content = rewriteImagePaths(fileData.content, file.path);
+    const title = extractTitle(content) || filenameTitle;
+    const description = extractDescription(content, 200);
 
     if (existing) {
       await database
         .update(posts)
         .set({
           title,
-          content: fileData.content,
+          content,
           description,
           sha: fileData.sha,
           category: file.category,
@@ -415,7 +449,7 @@ async function performFullSync(): Promise<{
         category: file.category,
         subcategory: file.subcategory,
         folders: file.folders,
-        content: fileData.content,
+        content,
         description,
         sha: fileData.sha,
         ...(commitDates && {

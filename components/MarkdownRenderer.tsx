@@ -7,6 +7,7 @@ import rehypeRaw from "rehype-raw";
 import rehypeSlug from "rehype-slug";
 import { Components } from "react-markdown";
 import "highlight.js/styles/github-dark.css";
+import Image from "next/image";
 import { Mermaid } from "./Mermaid";
 import { resolveMarkdownLink } from "@/lib/resolve-markdown-link";
 
@@ -156,13 +157,15 @@ export function MarkdownRenderer({ content, basePath }: MarkdownRendererProps) {
         {children}
       </td>
     ),
-    img: ({ src, alt, ...props }) => (
-      <img
-        src={src}
+    img: ({ src, alt }) => (
+      <Image
+        src={typeof src === "string" ? src : ""}
         alt={alt || ""}
+        width={0}
+        height={0}
+        sizes="100vw"
         className="my-4 rounded-lg shadow-lg max-w-full h-auto"
-        loading="lazy"
-        {...props}
+        style={{ width: "100%", height: "auto" }}
       />
     ),
     hr: ({ ...props }) => (
