@@ -1,4 +1,4 @@
-<!-- Generated: 2026-03-17 | Updated: 2026-03-20 -->
+<!-- Generated: 2026-03-17 | Updated: 2026-03-30 -->
 
 # fos-blog
 
@@ -120,11 +120,12 @@ pnpm db:down      # Stop MySQL container
 
 ## Subdirectories
 
-| Directory     | Purpose                                                                                                |
-| ------------- | ------------------------------------------------------------------------------------------------------ |
-| `proxy.ts`    | Next.js middleware — records page visits to DB via `waitUntil` (fire-and-forget); runs on Edge Runtime |
-| `app/`        | Next.js pages and API routes (see `app/AGENTS.md`)                                                     |
-| `components/` | Reusable React UI components (see `components/AGENTS.md`)                                              |
-| `db/`         | Database schema and repositories (see `db/AGENTS.md`)                                                  |
-| `lib/`        | Shared utilities and GitHub sync (see `lib/AGENTS.md`)                                                 |
-| `docker/`     | Docker MySQL config (see `docker/AGENTS.md`)                                                           |
+| Directory / File | Purpose                                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------------------ |
+| `CLAUDE.md`      | AI 에이전트용 프로젝트 컨텍스트 문서 — 기술 스택, 디렉토리 구조, 컨벤션, 환경변수 상세 정리          |
+| `proxy.ts`       | Next.js middleware — records page visits to DB via `waitUntil` (fire-and-forget); runs on Edge Runtime |
+| `app/`           | Next.js pages and API routes (see `app/AGENTS.md`)                                                     |
+| `components/`    | Reusable React UI components (see `components/AGENTS.md`)                                              |
+| `db/`            | Database schema and repositories (see `db/AGENTS.md`)                                                  |
+| `lib/`           | Shared utilities and GitHub sync (see `lib/AGENTS.md`)                                                 |
+| `docker/`        | Docker MySQL config (see `docker/AGENTS.md`)                                                           |
