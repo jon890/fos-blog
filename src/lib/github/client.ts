@@ -3,13 +3,7 @@ import { getDb as getDbInstance } from "@/db";
 import { env } from "@/env";
 
 export function getDb() {
-  const db = getDbInstance();
-  if (!db) {
-    throw new Error(
-      "Database not configured. Set DATABASE_URL environment variable."
-    );
-  }
-  return db;
+  return getDbInstance();
 }
 
 export const octokit = new Octokit({

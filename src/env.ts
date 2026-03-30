@@ -39,6 +39,8 @@ export const env = createEnv({
     NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION:
       process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
   },
-  skipValidation: !!process.env.SKIP_ENV_VALIDATION,
+  skipValidation:
+    !!process.env.SKIP_ENV_VALIDATION &&
+    process.env.NODE_ENV !== "production",
   emptyStringAsUndefined: true,
 });

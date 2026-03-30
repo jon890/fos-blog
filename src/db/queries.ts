@@ -167,10 +167,6 @@ export function getDbQueries(): DbQueries | null {
   }
 
   const db = getDb();
-  if (!db) {
-    return null;
-  }
-
   cachedInstance = new DbQueries(db);
   return cachedInstance;
 }

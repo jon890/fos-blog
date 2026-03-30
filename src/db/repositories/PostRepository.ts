@@ -128,7 +128,7 @@ export class PostRepository extends BaseRepository {
     }
 
     const searchQuery = query.trim();
-    const useFulltextSearch = env.USE_FULLTEXT_SEARCH !== "false";
+    const useFulltextSearch = (env.USE_FULLTEXT_SEARCH ?? "true") !== "false";
 
     // FULLTEXT 검색 시도 (MySQL MATCH AGAINST)
     if (useFulltextSearch) {

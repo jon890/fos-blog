@@ -10,7 +10,7 @@ let cachedDb: MySql2Database<typeof schema> | null = null;
  * 런타임에 DB 연결을 시도하는 getter
  * 빌드 시점이 아닌 런타임에 환경변수를 확인하여 DB 연결
  */
-export function getDb(): MySql2Database<typeof schema> | null {
+export function getDb(): MySql2Database<typeof schema> {
   // 이미 연결되어 있으면 캐시된 인스턴스 반환
   if (cachedDb) {
     return cachedDb;

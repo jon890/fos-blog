@@ -82,7 +82,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    google: env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ?? undefined,
   },
   alternates: {
     canonical: siteUrl,
