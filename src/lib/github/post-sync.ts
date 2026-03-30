@@ -17,7 +17,9 @@ export function parsePath(filePath: string) {
   return { category, foldersList, subcategory, title };
 }
 
-export async function upsertPost(filePath: string): Promise<"added" | "updated" | "skipped"> {
+export async function upsertPost(
+  filePath: string,
+): Promise<"added" | "updated" | "skipped"> {
   const database = getDb();
   const [fileData, commitDates] = await Promise.all([
     getFileContent(filePath),
@@ -25,7 +27,12 @@ export async function upsertPost(filePath: string): Promise<"added" | "updated" 
   ]);
   if (!fileData) return "skipped";
 
-  const { category, foldersList, subcategory, title: filenameTitle } = parsePath(filePath);
+  const {
+    category,
+    foldersList,
+    subcategory,
+    title: filenameTitle,
+  } = parsePath(filePath);
   const content = rewriteImagePaths(fileData.content, filePath);
   const title = extractTitle(content) || filenameTitle;
   const description = extractDescription(content, 200);
@@ -70,16 +77,4 @@ export async function upsertPost(filePath: string): Promise<"added" | "updated" 
     });
     return "added";
   }
-}
-
-export async function deactivatePost(filePath: string): Promise<boolean> {
-  const database = getDb();
-  const result = await database
-    .update(posts)
-    .set({ isActive: false })
-    .where(eq(posts.path, filePath));
-  const header = result[0];
-  return typeof header === "object" && header !== null && "affectedRows" in header
-    ? (header as ResultSetHeader).affectedRows === 1
-    : false;
 }

@@ -1,30 +1,42 @@
-import { eq } from "drizzle-orm";
+import { PostRepository } from "@/db/repositories";
 import { posts } from "@/db/schema";
 import { extractDescription, extractTitle } from "@/lib/markdown";
+import { eq } from "drizzle-orm";
+import {
+  getDirectoryContents,
+  getFileCommitDates,
+  getFileContent,
+  type ChangedFile,
+} from "./api";
 import { getDb } from "./client";
-import { getFileContent, getFileCommitDates, getDirectoryContents, type ChangedFile } from "./api";
 import { shouldSyncFile } from "./file-filter";
 import { rewriteImagePaths } from "./image-rewrite";
-import { parsePath, upsertPost, deactivatePost } from "./post-sync";
+import { parsePath, upsertPost } from "./post-sync";
 
-export async function performIncrementalSync(changedFiles: ChangedFile[]): Promise<{
+export async function performIncrementalSync(
+  changedFiles: ChangedFile[],
+): Promise<{
   added: number;
   updated: number;
   deleted: number;
 }> {
-  let added = 0, updated = 0, deleted = 0;
+  let added = 0,
+    updated = 0,
+    deleted = 0;
+
+  const postRepository = new PostRepository(getDb());
 
   for (const file of changedFiles) {
     if (file.status === "removed") {
       if (shouldSyncFile(file.filename)) {
-        const ok = await deactivatePost(file.filename);
+        const ok = await postRepository.deactive(file.filename);
         if (ok) deleted++;
         console.log(`삭제: ${file.filename}`);
       }
     } else if (file.status === "renamed") {
       // 이전 경로 비활성화
       if (file.previous_filename && shouldSyncFile(file.previous_filename)) {
-        const ok = await deactivatePost(file.previous_filename);
+        const ok = await postRepository.deactive(file.filename);
         if (ok) deleted++;
         console.log(`이름 변경(삭제): ${file.previous_filename}`);
       }
@@ -58,7 +70,7 @@ export async function collectMarkdownFiles(
     category: string;
     subcategory?: string;
     folders: string[];
-  }> = []
+  }> = [],
 ): Promise<typeof files> {
   const contents = await getDirectoryContents(path);
   for (const item of contents) {
@@ -86,7 +98,9 @@ export async function performFullSync(): Promise<{
   deleted: number;
 }> {
   const database = getDb();
-  let added = 0, updated = 0, deleted = 0;
+  let added = 0,
+    updated = 0,
+    deleted = 0;
 
   const githubFiles = await collectMarkdownFiles();
   console.log(`GitHub에서 마크다운 파일 ${githubFiles.length}개 발견`);

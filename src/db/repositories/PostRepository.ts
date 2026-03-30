@@ -48,7 +48,7 @@ export class PostRepository extends BaseRepository {
   }
 
   async getPost(
-    slug: string
+    slug: string,
   ): Promise<{ content: string; post: PostData } | null> {
     const result = await this.db
       .select()
@@ -109,7 +109,7 @@ export class PostRepository extends BaseRepository {
       })
       .from(posts)
       .where(and(inArray(posts.path, paths), eq(posts.isActive, true)));
-    return result.map(p => ({ ...p, folders: p.folders || [] }));
+    return result.map((p) => ({ ...p, folders: p.folders || [] }));
   }
 
   async getAllPostsForSidebar(): Promise<{ path: string; title: string }[]> {
@@ -151,11 +151,11 @@ export class PostRepository extends BaseRepository {
           .where(
             and(
               eq(posts.isActive, true),
-              sql`MATCH(title, content, description) AGAINST(${fulltextQuery} IN BOOLEAN MODE)`
-            )
+              sql`MATCH(title, content, description) AGAINST(${fulltextQuery} IN BOOLEAN MODE)`,
+            ),
           )
           .orderBy(
-            sql`MATCH(title, content, description) AGAINST(${fulltextQuery} IN BOOLEAN MODE) DESC`
+            sql`MATCH(title, content, description) AGAINST(${fulltextQuery} IN BOOLEAN MODE) DESC`,
           )
           .limit(limit);
 
@@ -171,7 +171,7 @@ export class PostRepository extends BaseRepository {
       } catch (error) {
         console.warn(
           "FULLTEXT search failed, falling back to LIKE search:",
-          error
+          error,
         );
       }
     }
@@ -196,9 +196,9 @@ export class PostRepository extends BaseRepository {
           or(
             like(posts.title, searchTerm),
             like(posts.content, searchTerm),
-            like(posts.description, searchTerm)
-          )
-        )
+            like(posts.description, searchTerm),
+          ),
+        ),
       )
       .orderBy(desc(posts.updatedAt))
       .limit(limit);
@@ -207,5 +207,15 @@ export class PostRepository extends BaseRepository {
       ...p,
       folders: p.folders || [],
     }));
+  }
+
+  async deactive(filePath: string): Promise<boolean> {
+    const result = await this.db
+      .update(posts)
+      .set({ isActive: false })
+      .where(eq(posts.path, filePath));
+
+    const success = Boolean(result[0].affectedRows === 1);
+    return success;
   }
 }
