@@ -42,7 +42,7 @@ jobs:
       - name: Run build
         run: pnpm build
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT || 'ci-dummy-github-token' }}
           GITHUB_OWNER: jon890
           GITHUB_REPO: fos-study
           DATABASE_URL: "mysql://fos_user:fos_password@localhost:3306/fos_blog"

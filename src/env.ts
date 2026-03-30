@@ -5,7 +5,7 @@ export const env = createEnv({
   server: {
     // 필수 — 없으면 서버 시작 시 throw
     GITHUB_TOKEN: z.string().min(1),
-    DATABASE_URL: z.string().url(),
+    DATABASE_URL: z.url(),
     SYNC_API_KEY: z.string().min(1),
 
     // 선택 (기본값 있음)
@@ -19,7 +19,7 @@ export const env = createEnv({
   },
   client: {
     // 선택 (기본값 있음)
-    NEXT_PUBLIC_SITE_URL: z.string().url().default("https://fosworld.co.kr"),
+    NEXT_PUBLIC_SITE_URL: z.url().default("https://fosworld.co.kr"),
 
     // 선택
     NEXT_PUBLIC_GOOGLE_ADSENSE_ID: z.string().optional(),
