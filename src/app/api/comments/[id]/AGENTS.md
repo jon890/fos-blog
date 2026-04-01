@@ -28,6 +28,6 @@ const commentId = parseInt(id, 10);
 ## Dependencies
 
 ### Internal
-- `@/db/queries` → `getDbQueries()`, `updateComment(id, password, content)`, `deleteComment(id, password)`
+- `@/infra/db/repositories/CommentRepository` → `updateComment(id, password, content)`, `deleteComment(id, password)`
 
 <!-- MANUAL: -->

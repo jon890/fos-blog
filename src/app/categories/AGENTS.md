@@ -23,7 +23,7 @@ Static listing page for all post categories. Displays every category as a card g
 ## Dependencies
 
 ### Internal
-- `@/db/queries` → `getDbQueries()` → `getCategories()`
+- `@/services/PostService` → `getCategories()`
 - `@/components/CategoryList`
 
 <!-- MANUAL: -->

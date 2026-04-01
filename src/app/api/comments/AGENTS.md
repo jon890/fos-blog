@@ -24,7 +24,7 @@ API routes for blog post comments — list, create, update, and delete. Comments
 ### Working In This Directory
 - Comments use `postSlug` (the post's URL path, e.g. `devops/monitoring/foo.md`), **not** `postId`
 - Password verification is done in the repository layer via bcrypt — `403` is returned on mismatch
-- Uses `getDbQueries()` from `@/db/queries` — returns `null` if DB is unavailable (returns `503`)
+- DB 접근은 `@/services/` 또는 repository를 통해 수행한다
 - No authentication required for reading; write operations require the user's own comment password
 
 ### API Contract
@@ -51,6 +51,6 @@ DELETE /api/comments/:id
 ## Dependencies
 
 ### Internal
-- `@/db/queries` → `getDbQueries()`, `getCommentsByPostSlug()`, `createComment()`, `updateComment()`, `deleteComment()`
+- `@/infra/db/repositories/CommentRepository` → `getCommentsByPostSlug()`, `createComment()`, `updateComment()`, `deleteComment()`
 
 <!-- MANUAL: -->
