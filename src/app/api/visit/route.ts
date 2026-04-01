@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRepositories } from "@/infra/db/repositories";
+import logger from "@/lib/logger";
+
+const log = logger.child({ module: "app/api/visit" });
 
 // 방문 기록은 proxy.ts 미들웨어에서 처리됨
 
@@ -34,7 +37,7 @@ export async function GET(request: NextRequest) {
     const totalCount = await visit.getTotalVisitCount();
     return NextResponse.json({ totalCount });
   } catch (error) {
-    console.error("조회수 조회 실패:", error);
+    log.error({ err: error instanceof Error ? error : new Error(String(error)) }, "조회수 조회 실패");
     return NextResponse.json(
       { error: "조회수 조회에 실패했습니다." },
       { status: 500 }

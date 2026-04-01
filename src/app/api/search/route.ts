@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRepositories } from "@/infra/db/repositories";
+import logger from "@/lib/logger";
+
+const log = logger.child({ module: "app/api/search" });
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -15,7 +18,7 @@ export async function GET(request: NextRequest) {
     const results = await post.searchPosts(query, limit);
     return NextResponse.json({ results });
   } catch (error) {
-    console.error("Search error:", error);
+    log.error({ err: error instanceof Error ? error : new Error(String(error)) }, "Search error");
     return NextResponse.json(
       { results: [], error: "Search failed" },
       { status: 500 }

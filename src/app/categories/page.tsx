@@ -3,6 +3,9 @@ import type { CategoryData } from "@/infra/db/types";
 import { CategoryList } from "@/components/CategoryList";
 import { Metadata } from "next";
 import { env } from "@/env";
+import logger from "@/lib/logger";
+
+const log = logger.child({ module: "app/categories" });
 
 // ISR - 60초마다 페이지 재생성
 export const revalidate = 60;
@@ -29,7 +32,7 @@ export default async function CategoriesPage() {
     const { category } = getRepositories();
     categories = await category.getCategories();
   } catch (error) {
-    console.warn("Database not available:", error);
+    log.warn({ err: error instanceof Error ? error : new Error(String(error)) }, "Database not available");
   }
 
   return (

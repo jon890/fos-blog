@@ -4,6 +4,9 @@ import { UpdatePost } from "../schema/posts";
 import type { PostData } from "../types";
 import { BaseRepository } from "./BaseRepository";
 import { env } from "@/env";
+import logger from "@/lib/logger";
+
+const log = logger.child({ module: "infra/db/repositories/PostRepository" });
 
 export class PostRepository extends BaseRepository {
   async getPostsByCategory(category: string): Promise<PostData[]> {
@@ -185,10 +188,7 @@ export class PostRepository extends BaseRepository {
           description: p.description,
         }));
       } catch (error) {
-        console.warn(
-          "FULLTEXT search failed, falling back to LIKE search:",
-          error,
-        );
+        log.warn({ err: error instanceof Error ? error : new Error(String(error)) }, "FULLTEXT search failed, falling back to LIKE search");
       }
     }
 

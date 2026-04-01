@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRepositories } from "@/infra/db/repositories";
+import logger from "@/lib/logger";
+
+const log = logger.child({ module: "app/api/comments/[id]" });
 
 type RouteParams = {
   params: Promise<{ id: string }>;
@@ -50,7 +53,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (error instanceof Error && error.message === "비밀번호가 일치하지 않습니다.") {
       return NextResponse.json({ error: error.message }, { status: 403 });
     }
-    console.error("Failed to update comment:", error);
+    log.error({ err: error instanceof Error ? error : new Error(String(error)) }, "Failed to update comment");
     return NextResponse.json(
       { error: "댓글 수정에 실패했습니다." },
       { status: 500 }
@@ -96,7 +99,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (error instanceof Error && error.message === "비밀번호가 일치하지 않습니다.") {
       return NextResponse.json({ error: error.message }, { status: 403 });
     }
-    console.error("Failed to delete comment:", error);
+    log.error({ err: error instanceof Error ? error : new Error(String(error)) }, "Failed to delete comment");
     return NextResponse.json(
       { error: "댓글 삭제에 실패했습니다." },
       { status: 500 }

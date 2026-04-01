@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRepositories } from "@/infra/db/repositories";
+import logger from "@/lib/logger";
+
+const log = logger.child({ module: "app/api/comments" });
 
 // GET /api/comments?slug=xxx - 댓글 목록 조회
 export async function GET(request: NextRequest) {
@@ -18,7 +21,7 @@ export async function GET(request: NextRequest) {
     const comments = await comment.getCommentsByPostSlug(slug);
     return NextResponse.json({ comments });
   } catch (error) {
-    console.error("Failed to get comments:", error);
+    log.error({ err: error instanceof Error ? error : new Error(String(error)) }, "Failed to get comments");
     return NextResponse.json(
       { error: "댓글을 불러오는데 실패했습니다." },
       { status: 500 }
@@ -70,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ comment: createdComment }, { status: 201 });
   } catch (error) {
-    console.error("Failed to create comment:", error);
+    log.error({ err: error instanceof Error ? error : new Error(String(error)) }, "Failed to create comment");
     return NextResponse.json(
       { error: "댓글 작성에 실패했습니다." },
       { status: 500 }

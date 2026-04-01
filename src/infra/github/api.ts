@@ -1,10 +1,28 @@
 import { octokit, OWNER, REPO, BRANCH } from "./client";
+import logger from "@/lib/logger";
 
-const VALID_STATUSES = new Set<string>(["added", "modified", "removed", "renamed", "copied", "changed", "unchanged"]);
+const log = logger.child({ module: "infra/github/api" });
+
+const VALID_STATUSES = new Set<string>([
+  "added",
+  "modified",
+  "removed",
+  "renamed",
+  "copied",
+  "changed",
+  "unchanged",
+]);
 
 export interface ChangedFile {
   filename: string;
-  status: "added" | "modified" | "removed" | "renamed" | "copied" | "changed" | "unchanged";
+  status:
+    | "added"
+    | "modified"
+    | "removed"
+    | "renamed"
+    | "copied"
+    | "changed"
+    | "unchanged";
   previous_filename?: string;
 }
 
@@ -23,7 +41,7 @@ export async function getCurrentHeadSha(): Promise<string> {
  */
 export async function getChangedFilesSince(
   baseSha: string,
-  headSha: string
+  headSha: string,
 ): Promise<ChangedFile[] | null> {
   try {
     const response = await octokit.repos.compareCommitsWithBasehead({
@@ -33,7 +51,7 @@ export async function getChangedFilesSince(
     });
 
     if (!response.data.files || response.data.files.length >= 300) {
-      console.log("변경 파일이 300개 이상이거나 없음 → full sync 폴백");
+      log.info("변경 파일이 300개 이상이거나 없음 → full sync 폴백");
       return null;
     }
 
@@ -45,7 +63,10 @@ export async function getChangedFilesSince(
         previous_filename: f.previous_filename,
       }));
   } catch (error) {
-    console.error("Compare API 오류 → full sync 폴백:", error);
+    log.error(
+      { err: error instanceof Error ? error : new Error(String(error)) },
+      "Compare API 오류 → full sync 폴백",
+    );
     return null;
   }
 }
@@ -55,7 +76,7 @@ export async function getChangedFilesSince(
  * per_page=100으로 최대 100개 커밋 조회 (배열 앞 = 최신, 뒤 = 오래된 순)
  */
 export async function getFileCommitDates(
-  filePath: string
+  filePath: string,
 ): Promise<{ createdAt: Date; updatedAt: Date } | null> {
   try {
     const response = await octokit.repos.listCommits({
@@ -74,23 +95,29 @@ export async function getFileCommitDates(
     const updatedAt = new Date(
       latestCommit.commit.committer?.date ??
         latestCommit.commit.author?.date ??
-        new Date()
+        new Date(),
     );
     const createdAt = new Date(
       firstCommit.commit.committer?.date ??
         firstCommit.commit.author?.date ??
-        updatedAt
+        updatedAt,
     );
 
     return { createdAt, updatedAt };
   } catch (error) {
-    console.warn(`커밋 날짜 조회 실패 (${filePath}):`, error);
+    log.error(
+      {
+        err: error instanceof Error ? error : new Error(String(error)),
+        filePath,
+      },
+      "커밋 날짜 조회 실패",
+    );
     return null;
   }
 }
 
 export async function getFileContent(
-  path: string
+  path: string,
 ): Promise<{ content: string; sha: string } | null> {
   try {
     const response = await octokit.repos.getContent({
@@ -99,26 +126,43 @@ export async function getFileContent(
       path,
     });
     if (!Array.isArray(response.data) && response.data.type === "file") {
-      const content = Buffer.from(response.data.content, "base64").toString("utf-8");
+      const content = Buffer.from(response.data.content, "base64").toString(
+        "utf-8",
+      );
       return { content, sha: response.data.sha };
     }
     return null;
   } catch (error: unknown) {
-    if (error && typeof error === "object" && "status" in error && error.status === 404) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "status" in error &&
+      error.status === 404
+    ) {
       return null;
     }
-    console.error(`파일 내용 가져오기 실패 ${path}:`, error);
+    log.error(
+      { err: error instanceof Error ? error : new Error(String(error)), path },
+      "파일 내용 가져오기 실패",
+    );
     return null;
   }
 }
 
 export async function getDirectoryContents(path: string = "") {
   try {
-    const response = await octokit.repos.getContent({ owner: OWNER, repo: REPO, path });
+    const response = await octokit.repos.getContent({
+      owner: OWNER,
+      repo: REPO,
+      path,
+    });
     if (Array.isArray(response.data)) return response.data;
     return [];
   } catch (error) {
-    console.error(`디렉토리 내용 가져오기 실패 ${path}:`, error);
+    log.error(
+      { err: error instanceof Error ? error : new Error(String(error)), path },
+      "디렉토리 내용 가져오기 실패",
+    );
     return [];
   }
 }

@@ -1,6 +1,9 @@
 import { eq, and, sql, inArray, desc } from "drizzle-orm";
 import { visitLogs, visitStats } from "../schema";
 import { BaseRepository } from "./BaseRepository";
+import logger from "@/lib/logger";
+
+const log = logger.child({ module: "infra/db/repositories/VisitRepository" });
 
 export class VisitRepository extends BaseRepository {
   /**
@@ -50,7 +53,7 @@ export class VisitRepository extends BaseRepository {
 
       return true;
     } catch (error) {
-      console.error("방문 기록 실패:", error);
+      log.error({ err: error instanceof Error ? error : new Error(String(error)) }, "방문 기록 실패");
       return false;
     }
   }

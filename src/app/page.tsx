@@ -1,6 +1,9 @@
 import { getRepositories } from "@/infra/db/repositories";
 import type { CategoryData, PostData } from "@/infra/db/types";
 import { env } from "@/env";
+import logger from "@/lib/logger";
+
+const log = logger.child({ module: "app/page" });
 import { CategoryList } from "@/components/CategoryList";
 import { PostCard } from "@/components/PostCard";
 import { WebsiteJsonLd } from "@/components/JsonLd";
@@ -46,7 +49,7 @@ export default async function HomePage() {
       visitCounts = await visit.getPostVisitCounts(postPaths);
     }
   } catch (error) {
-    console.warn("Database not available:", error);
+    log.warn({ err: error instanceof Error ? error : new Error(String(error)) }, "Database not available");
   }
 
   return (
