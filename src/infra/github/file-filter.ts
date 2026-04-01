@@ -7,6 +7,7 @@ export const EXCLUDED_FILENAMES = new Set([
   "CURSOR.MD",
   "CODERABBIT.MD",
   "CODY.MD",
+  "README.MD",
 ]);
 
 /**
