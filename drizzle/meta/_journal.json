@@ -8,6 +8,13 @@
       "when": 1773701762851,
       "tag": "0000_next_smiling_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1775017659512,
+      "tag": "0001_add_comments_visit_logs_visit_stats",
+      "breakpoints": true
     }
   ]
 }
