@@ -1,13 +1,14 @@
 {
   "hooks": {
-    "postEdit": [
+    "PostToolUse": [
       {
-        "matcher": "**/*.ts",
-        "command": "cd /Users/nhn/personal/fos-blog && pnpm lint && pnpm type-check && pnpm test 2>&1 | tail -20"
-      },
-      {
-        "matcher": "**/*.tsx",
-        "command": "cd /Users/nhn/personal/fos-blog && pnpm lint && pnpm type-check && pnpm test 2>&1 | tail -20"
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/nhn/personal/fos-blog && pnpm lint && pnpm type-check && pnpm test 2>&1 | tail -20"
+          }
+        ]
       }
     ]
   }
