@@ -106,7 +106,7 @@ export class SyncService {
       );
       return { added, updated, deleted, commitSha: headSha };
     } catch (error) {
-      log.error({ err: error }, "동기화 실패");
+      log.error({ err: error instanceof Error ? error : new Error(String(error)) }, "동기화 실패");
 
       await this.syncLogRepo.create({
         status: "failed",

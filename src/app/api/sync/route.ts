@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    log.error({ err: error }, "Sync error");
+    log.error({ err: error instanceof Error ? error : new Error(String(error)) }, "Sync error");
     return NextResponse.json(
       {
         success: false,
