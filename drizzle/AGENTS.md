@@ -17,8 +17,8 @@ Auto-generated Drizzle ORM migration artifacts. **Do not edit manually** — the
 ## For AI Agents
 
 ### Working In This Directory
-- **Never edit these files directly** — always modify `db/schema/` files and regenerate
-- To add a migration: modify `db/schema/*.ts` → `pnpm db:generate` → `pnpm db:push`
+- **Never edit these files directly** — always modify `src/infra/db/schema/` files and regenerate
+- To add a migration: modify `src/infra/db/schema/*.ts` → `pnpm db:generate` → `pnpm db:push`
 - The `meta/` folder is used internally by drizzle-kit for schema diffing
 
 ### Common Patterns
