@@ -23,7 +23,8 @@ export function Mermaid({ chart }: MermaidProps) {
       startOnLoad: false,
       theme: mermaidTheme,
       securityLevel: "loose",
-      fontFamily: "inherit",
+      // fontFamily를 지정하지 않아 Mermaid 기본값(trebuchet ms)을 사용한다.
+      // "inherit"으로 설정하면 Noto Sans KR의 글자 크기 계산이 달라 노드 내 텍스트가 잘린다.
     });
 
     const renderChart = async () => {
