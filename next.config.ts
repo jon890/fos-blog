@@ -1,5 +1,7 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import type { NextConfig } from "next";
+import "./src/env"; // 빌드 시 환경변수 검증
+
+const nextConfig: NextConfig = {
   output: 'standalone',
   images: {
     remotePatterns: [
@@ -18,4 +20,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;

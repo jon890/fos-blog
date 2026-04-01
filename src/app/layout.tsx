@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Sans_KR, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import { env } from "@/env";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Header } from "@/components/Header";
 import { VisitorCount } from "@/components/VisitorCount";
@@ -22,8 +23,7 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://fosworld.co.kr";
+const siteUrl = env.NEXT_PUBLIC_SITE_URL;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -82,7 +82,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    google: env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
   },
   alternates: {
     canonical: siteUrl,
@@ -94,7 +94,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const adsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
+  const adsenseId = env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
 
   return (
     <html lang="ko" suppressHydrationWarning>

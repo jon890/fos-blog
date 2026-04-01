@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { syncGitHubToDatabase, retitleExistingPosts } from "@/lib/sync-github";
 import logger from "@/lib/logger";
+import { env } from "@/env";
 
 const log = logger.child({ module: "api/sync" });
 
@@ -9,7 +10,7 @@ const log = logger.child({ module: "api/sync" });
 export async function POST(request: Request) {
   // API 키 검증 (선택사항)
   const authHeader = request.headers.get("authorization");
-  const apiKey = process.env.SYNC_API_KEY;
+  const apiKey = env.SYNC_API_KEY;
 
   if (apiKey && authHeader !== `Bearer ${apiKey}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

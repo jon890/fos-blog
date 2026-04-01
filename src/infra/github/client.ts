@@ -1,9 +1,10 @@
 import { Octokit } from "@octokit/rest";
+import { env } from "@/env";
 
 export const octokit = new Octokit({
-  auth: process.env.GITHUB_TOKEN,
+  auth: env.GITHUB_TOKEN,
 });
 
-export const OWNER = process.env.GITHUB_OWNER || "jon890";
-export const REPO = process.env.GITHUB_REPO || "fos-study";
-export const BRANCH = process.env.GITHUB_BRANCH || "main";
+export const OWNER = env.GITHUB_OWNER;
+export const REPO = env.GITHUB_REPO;
+export const BRANCH = env.GITHUB_BRANCH;
