@@ -190,9 +190,7 @@ export class SyncService {
     return { added, updated, deleted };
   }
 
-  private async performIncrementalSync(
-    changedFiles: ChangedFile[],
-  ): Promise<{
+  private async performIncrementalSync(changedFiles: ChangedFile[]): Promise<{
     added: number;
     updated: number;
     deleted: number;
@@ -210,7 +208,7 @@ export class SyncService {
         }
       } else if (file.status === "renamed") {
         if (file.previous_filename && shouldSyncFile(file.previous_filename)) {
-          const ok = await this.postRepo.deactive(file.filename);
+          const ok = await this.postRepo.deactive(file.previous_filename);
           if (ok) deleted++;
           console.log(`이름 변경(삭제): ${file.previous_filename}`);
         }

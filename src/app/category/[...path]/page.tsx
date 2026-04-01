@@ -1,4 +1,5 @@
 import { getRepositories } from "@/infra/db/repositories";
+import { computeFolderPaths } from "@/lib/path-utils";
 import { categoryIcons, DEFAULT_CATEGORY_ICON } from "@/infra/db/constants";
 import { PostCard } from "@/components/PostCard";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
@@ -52,16 +53,7 @@ export async function generateStaticParams() {
   try {
     const { post } = getRepositories();
     const postPaths = await post.getAllPostPaths();
-    const folderPathSet = new Set<string>();
-    for (const p of postPaths) {
-      const parts = p.split("/");
-      for (let i = 1; i < parts.length; i++) {
-        folderPathSet.add(parts.slice(0, i).join("/"));
-      }
-    }
-    return Array.from(folderPathSet)
-      .sort()
-      .map((p) => ({ path: p.split("/") }));
+    return computeFolderPaths(postPaths).map((segments) => ({ path: segments }));
   } catch {
     return [];
   }

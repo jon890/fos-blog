@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getRepositories } from "@/infra/db/repositories";
+import { computeFolderPaths } from "@/lib/path-utils";
 
 // ISR - 60초마다 재생성
 export const revalidate = 60;
@@ -35,16 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       post.getAllPostsForSitemap(),
     ]);
 
-    const folderPathSet = new Set<string>();
-    for (const { path } of postsData) {
-      const parts = path.split("/");
-      for (let i = 1; i < parts.length; i++) {
-        folderPathSet.add(parts.slice(0, i).join("/"));
-      }
-    }
-    const folderPaths = Array.from(folderPathSet)
-      .sort()
-      .map((p) => p.split("/"));
+    const folderPaths = computeFolderPaths(postsData.map(({ path }) => path));
 
     categoryPages = categories.map((cat) => ({
       url: `${baseUrl}/category/${encodeURIComponent(cat.slug)}`,
