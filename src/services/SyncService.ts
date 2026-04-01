@@ -179,7 +179,12 @@ export class SyncService {
       }
     }
 
-    deleted = await this.postRepo.deactivateMissing(processedPaths);
+    for (const post of existingPosts) {
+      if (!processedPaths.has(post.path) && post.isActive) {
+        await this.postRepo.deactive(post.path);
+        deleted++;
+      }
+    }
     if (deleted > 0) console.log(`비활성화 완료: ${deleted}개`);
 
     return { added, updated, deleted };

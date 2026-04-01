@@ -7,6 +7,7 @@ import { SyncLogRepository } from "@/infra/db/repositories/SyncLogRepository";
 import { PostSyncService } from "./PostSyncService";
 import { MetadataSyncService } from "./MetadataSyncService";
 import { SyncService } from "./SyncService";
+import { PostService } from "./PostService";
 
 export function createSyncService(): SyncService {
   const db = getDb();
@@ -24,6 +25,12 @@ export function createSyncService(): SyncService {
   );
 }
 
+export function createPostService(): PostService {
+  const db = getDb();
+  return new PostService(new PostRepository(db));
+}
+
 export { PostSyncService } from "./PostSyncService";
 export { MetadataSyncService } from "./MetadataSyncService";
 export { SyncService } from "./SyncService";
+export { PostService } from "./PostService";

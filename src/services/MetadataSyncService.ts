@@ -1,6 +1,7 @@
 import { CategoryRepository } from "@/infra/db/repositories/CategoryRepository";
 import { FolderRepository } from "@/infra/db/repositories/FolderRepository";
 import { PostRepository } from "@/infra/db/repositories/PostRepository";
+import { categoryIcons } from "@/infra/db/constants";
 import type { getFileContent } from "@/infra/github/api";
 
 type GithubApi = {
@@ -16,7 +17,15 @@ export class MetadataSyncService {
   ) {}
 
   async updateCategories(): Promise<void> {
-    await this.categoryRepo.rebuild();
+    const stats = await this.postRepo.getCategoryStats();
+    await this.categoryRepo.replaceAll(
+      stats.map((s) => ({
+        name: s.category,
+        slug: s.category,
+        icon: categoryIcons[s.category] || "📁",
+        postCount: s.count,
+      })),
+    );
   }
 
   async syncFolderReadmes(): Promise<void> {
