@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { syncGitHubToDatabase, retitleExistingPosts } from "@/lib/sync-github";
+import logger from "@/lib/logger";
+
+const log = logger.child({ module: "api/sync" });
 
 // 동기화 API - 수동 호출 또는 cron job에서 사용
 // 파일 동기화 + 제목 재추출을 항상 함께 수행
@@ -32,7 +35,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Sync error:", error);
+    log.error({ err: error }, "Sync error");
     return NextResponse.json(
       {
         success: false,
