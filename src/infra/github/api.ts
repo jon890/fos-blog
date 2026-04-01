@@ -1,4 +1,7 @@
 import { octokit, OWNER, REPO, BRANCH } from "./client";
+import logger from "@/lib/logger";
+
+const log = logger.child({ module: "infra/github/api" });
 
 const VALID_STATUSES = new Set<string>(["added", "modified", "removed", "renamed", "copied", "changed", "unchanged"]);
 
@@ -33,7 +36,7 @@ export async function getChangedFilesSince(
     });
 
     if (!response.data.files || response.data.files.length >= 300) {
-      console.log("변경 파일이 300개 이상이거나 없음 → full sync 폴백");
+      log.info("변경 파일이 300개 이상이거나 없음 → full sync 폴백");
       return null;
     }
 
@@ -45,7 +48,7 @@ export async function getChangedFilesSince(
         previous_filename: f.previous_filename,
       }));
   } catch (error) {
-    console.error("Compare API 오류 → full sync 폴백:", error);
+    log.error({ err: error instanceof Error ? error : new Error(String(error)) }, "Compare API 오류 → full sync 폴백");
     return null;
   }
 }
@@ -84,7 +87,7 @@ export async function getFileCommitDates(
 
     return { createdAt, updatedAt };
   } catch (error) {
-    console.warn(`커밋 날짜 조회 실패 (${filePath}):`, error);
+    log.warn({ err: error instanceof Error ? error : new Error(String(error)), filePath }, "커밋 날짜 조회 실패");
     return null;
   }
 }
@@ -107,7 +110,7 @@ export async function getFileContent(
     if (error && typeof error === "object" && "status" in error && error.status === 404) {
       return null;
     }
-    console.error(`파일 내용 가져오기 실패 ${path}:`, error);
+    log.warn({ err: error instanceof Error ? error : new Error(String(error)), path }, "파일 내용 가져오기 실패");
     return null;
   }
 }
@@ -118,7 +121,7 @@ export async function getDirectoryContents(path: string = "") {
     if (Array.isArray(response.data)) return response.data;
     return [];
   } catch (error) {
-    console.error(`디렉토리 내용 가져오기 실패 ${path}:`, error);
+    log.error({ err: error instanceof Error ? error : new Error(String(error)), path }, "디렉토리 내용 가져오기 실패");
     return [];
   }
 }

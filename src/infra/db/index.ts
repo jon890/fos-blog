@@ -2,6 +2,9 @@ import { drizzle, MySql2Database } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import * as schema from "./schema";
 import { env } from "@/env";
+import logger from "@/lib/logger";
+
+const log = logger.child({ module: "infra/db" });
 
 // 캐시된 DB 인스턴스
 let cachedDb: MySql2Database<typeof schema> | null = null;
@@ -19,7 +22,7 @@ export function tryGetDb(): MySql2Database<typeof schema> | null {
   // 런타임에 환경변수 확인
   const connectionString = env.DATABASE_URL;
   if (!connectionString) {
-    console.warn("[DB] DATABASE_URL is not set");
+    log.warn("DATABASE_URL이 설정되지 않음 — DB 연결 스킵");
     return null;
   }
 
@@ -39,7 +42,7 @@ export function tryGetDb(): MySql2Database<typeof schema> | null {
     logger: enableLogging,
   });
 
-  console.log("Database connected successfully");
+  log.info("Database connected successfully");
   return cachedDb;
 }
 

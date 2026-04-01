@@ -1,6 +1,9 @@
 import type { MetadataRoute } from "next";
 import { getRepositories } from "@/infra/db/repositories";
 import { env } from "@/env";
+import logger from "@/lib/logger";
+
+const log = logger.child({ module: "app/sitemap" });
 import { computeFolderPaths } from "@/lib/path-utils";
 
 // ISR - 60초마다 재생성
@@ -64,7 +67,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }));
   } catch (error) {
-    console.warn("Failed to fetch dynamic sitemap data:", error);
+    log.warn({ err: error instanceof Error ? error : new Error(String(error)) }, "Failed to fetch dynamic sitemap data");
   }
 
   return [...staticPages, ...categoryPages, ...folderPages, ...postPages];

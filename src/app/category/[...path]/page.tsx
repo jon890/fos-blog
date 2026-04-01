@@ -9,7 +9,9 @@ import Link from "next/link";
 import { ArrowLeft, Folder, ChevronRight, Home, BookOpen } from "lucide-react";
 import { Metadata } from "next";
 import { env } from "@/env";
+import logger from "@/lib/logger";
 
+const log = logger.child({ module: "app/category/[...path]" });
 const siteUrl = env.NEXT_PUBLIC_SITE_URL;
 
 // ISR - 60초마다 페이지 재생성
@@ -80,7 +82,7 @@ export default async function FolderPage({ params }: FolderPageProps) {
       visitCounts = await visit.getPostVisitCounts(postPaths);
     }
   } catch (error) {
-    console.warn("Database not available:", error);
+    log.warn({ err: error instanceof Error ? error : new Error(String(error)) }, "Database not available");
   }
 
   const { folders, posts, readme } = folderContents;
