@@ -26,12 +26,12 @@ Repository classes implementing data access patterns for each entity. Each repos
 - Always filter `posts` with `eq(posts.isActive, true)` — soft-deleted posts must be excluded
 - `PostRepository` uses MySQL `FULLTEXT` index for search; falls back to `LIKE` on failure
 - Extend `BaseRepository` when adding new repositories — do not create standalone query functions
-- Import from `@/db/repositories` (the barrel) rather than individual files
+- Import from `@/infra/db/repositories` (the barrel) rather than individual files
 
 ### Common Patterns
 
 ```ts
-import { PostRepository } from "@/db/repositories";
+import { PostRepository } from "@/infra/db/repositories";
 const repo = new PostRepository(db);
 const post = await repo.findBySlug("prometheus-k8s-remote-write");
 ```

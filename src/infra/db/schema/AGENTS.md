@@ -26,11 +26,11 @@ Drizzle ORM table definitions. Each file defines one or more related tables and 
 - `posts.sha` stores GitHub blob SHA — used for incremental sync; do not reset without understanding sync logic
 - `posts.isActive` is a soft-delete flag — always filter by it in queries
 - `posts.folders` is a JSON column storing breadcrumb path segments
-- Import all schema via `@/db/schema` (the barrel index)
+- Import all schema via `@/infra/db/schema` (the barrel index)
 
 ### Common Patterns
 ```ts
-import { posts, categories } from "@/db/schema";
+import { posts, categories } from "@/infra/db/schema";
 import { eq } from "drizzle-orm";
 const result = await db.select().from(posts).where(eq(posts.isActive, true));
 ```
