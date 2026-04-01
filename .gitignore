@@ -27,10 +27,6 @@ yarn-error.log*
 .env*.local
 .env
 
-# drizzle
-drizzle/
-!drizzle/AGENTS.md
-
 # vercel
 .vercel
 
