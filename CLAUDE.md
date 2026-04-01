@@ -488,17 +488,52 @@ pnpm test -- lib/markdown   # Specific file
 
 ---
 
-## Vercel Deployment
+## Home Server Deployment
 
-Recommended production platform.
+This project runs on a **self-hosted home server** (not Vercel). The Next.js app is built as a standalone output and runs inside Docker.
 
-### Steps
+### Build & Run
 
-1. Push repo to GitHub
-2. Connect repo in Vercel dashboard
-3. Set environment variables (GITHUB_TOKEN, DATABASE_URL, SYNC_API_KEY, etc.)
-4. Deploy!
-5. Configure cron job: **Vercel Cron** → POST `/api/sync` hourly
+```bash
+# Build Docker image
+docker build -t fos-blog .
+
+# Run container (adjust env vars as needed)
+docker run -d \
+  --name fos-blog \
+  -p 3000:3000 \
+  --env-file .env \
+  fos-blog
+```
+
+### Environment Variables
+
+Set these in your `.env` file or pass via `--env-file`:
+
+```env
+GITHUB_TOKEN=...
+GITHUB_OWNER=jon890
+GITHUB_REPO=fos-study
+DATABASE_URL=mysql://...
+SYNC_API_KEY=...
+NEXT_PUBLIC_SITE_URL=https://fosworld.co.kr
+```
+
+### Content Sync Cron
+
+Configure a system cron job (or `crontab`) to POST `/api/sync` periodically:
+
+```bash
+# crontab -e
+0 * * * * curl -s -X POST http://localhost:3000/api/sync \
+  -H "Authorization: Bearer $SYNC_API_KEY" > /dev/null
+```
+
+### Notes for Agents
+
+- **Do NOT suggest Vercel-specific features** (Vercel Cron, Edge Functions, ISR via Vercel API, etc.)
+- `pino.transport()` worker thread usage is fine — home server runs Node.js, not serverless
+- `next.config.js` uses `output: "standalone"` for Docker builds
 
 ---
 
@@ -534,7 +569,7 @@ See these files for detailed agent responsibilities.
 - **Primary concern:** Content sync consistency, markdown edge cases, performance
 - **Key files to touch:** `lib/sync-github.ts`, `app/api/sync/route.ts`, `components/MarkdownRenderer.tsx`, `db/schema/posts.ts`
 - **Testing:** Vitest + co-located test files
-- **Deployment:** Vercel + MySQL (external) + GitHub Actions (cron)
+- **Deployment:** Home server (Docker + standalone Next.js) + MySQL (Docker Compose)
 
 **Agents should prioritize:**
 

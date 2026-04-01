@@ -3,6 +3,9 @@ import { FolderRepository } from "@/infra/db/repositories/FolderRepository";
 import { PostRepository } from "@/infra/db/repositories/PostRepository";
 import { categoryIcons } from "@/infra/db/constants";
 import type { getFileContent } from "@/infra/github/api";
+import logger from "@/lib/logger";
+
+const log = logger.child({ module: "MetadataSyncService" });
 
 type GithubApi = {
   getFileContent: typeof getFileContent;
@@ -29,7 +32,7 @@ export class MetadataSyncService {
   }
 
   async syncFolderReadmes(): Promise<void> {
-    console.log("폴더 README 동기화 중...");
+    log.info("폴더 README 동기화 중...");
 
     const postPaths = await this.postRepo.getAllPostPaths();
 
@@ -68,12 +71,12 @@ export class MetadataSyncService {
           readmeContent.sha,
         );
         synced++;
-        console.log(`README 동기화: ${folderPath}`);
+        log.info({ folderPath }, `README 동기화: ${folderPath}`);
       } else {
         await this.folderRepo.ensureFolder(folderPath);
       }
     }
 
-    console.log(`폴더 README ${synced}개 동기화 완료`);
+    log.info({ synced }, `폴더 README ${synced}개 동기화 완료`);
   }
 }

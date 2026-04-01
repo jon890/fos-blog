@@ -13,6 +13,9 @@ import { shouldSyncFile } from "@/infra/github/file-filter";
 import { rewriteImagePaths } from "@/infra/github/image-rewrite";
 import { PostSyncService, parsePath } from "./PostSyncService";
 import { MetadataSyncService } from "./MetadataSyncService";
+import logger from "@/lib/logger";
+
+const log = logger.child({ module: "SyncService" });
 
 type GithubApi = {
   getCurrentHeadSha: typeof getCurrentHeadSha;
@@ -38,7 +41,7 @@ export class SyncService {
     commitSha: string;
     upToDate?: boolean;
   }> {
-    console.log("GitHub → Database 동기화 시작...");
+    log.info("GitHub → Database 동기화 시작...");
 
     let added = 0,
       updated = 0,
@@ -48,13 +51,14 @@ export class SyncService {
       const headSha = await this.githubApi.getCurrentHeadSha();
       const lastSyncedSha = (await this.syncLogRepo.getLatest())?.commitSha;
 
-      console.log(`현재 HEAD: ${headSha.slice(0, 7)}`);
-      console.log(
+      log.info({ headSha: headSha.slice(0, 7) }, `현재 HEAD: ${headSha.slice(0, 7)}`);
+      log.info(
+        { lastSyncedSha: lastSyncedSha?.slice(0, 7) ?? null },
         `마지막 sync: ${lastSyncedSha ? lastSyncedSha.slice(0, 7) : "없음 (최초 sync)"}`,
       );
 
       if (lastSyncedSha === headSha) {
-        console.log("이미 최신 상태입니다.");
+        log.info("이미 최신 상태입니다.");
         return {
           added: 0,
           updated: 0,
@@ -65,7 +69,7 @@ export class SyncService {
       }
 
       if (!lastSyncedSha) {
-        console.log("최초 sync — 전체 동기화 수행");
+        log.info("최초 sync — 전체 동기화 수행");
         ({ added, updated, deleted } = await this.performFullSync());
       } else {
         const changedFiles = await this.githubApi.getChangedFilesSince(
@@ -73,10 +77,11 @@ export class SyncService {
           headSha,
         );
         if (changedFiles === null) {
-          console.log("전체 동기화 폴백 수행");
+          log.info("전체 동기화 폴백 수행");
           ({ added, updated, deleted } = await this.performFullSync());
         } else {
-          console.log(
+          log.info(
+            { changedCount: changedFiles.length },
             `변경 파일 ${changedFiles.length}개에 대해 증분 동기화 수행`,
           );
           ({ added, updated, deleted } =
@@ -95,12 +100,13 @@ export class SyncService {
         commitSha: headSha,
       });
 
-      console.log(
+      log.info(
+        { added, updated, deleted, commitSha: headSha.slice(0, 7) },
         `동기화 완료: ${added}개 추가, ${updated}개 업데이트, ${deleted}개 삭제 (commit: ${headSha.slice(0, 7)})`,
       );
       return { added, updated, deleted, commitSha: headSha };
     } catch (error) {
-      console.error("동기화 실패:", error);
+      log.error({ err: error instanceof Error ? error : new Error(String(error)) }, "동기화 실패");
 
       await this.syncLogRepo.create({
         status: "failed",
@@ -121,7 +127,7 @@ export class SyncService {
       deleted = 0;
 
     const githubFiles = await this.collectMarkdownFiles();
-    console.log(`GitHub에서 마크다운 파일 ${githubFiles.length}개 발견`);
+    log.info({ count: githubFiles.length }, `GitHub에서 마크다운 파일 ${githubFiles.length}개 발견`);
 
     const existingPosts = await this.postRepo.getAllForSync();
     const existingPathMap = new Map(existingPosts.map((p) => [p.path, p]));
@@ -157,7 +163,7 @@ export class SyncService {
           updatedAt: commitDates?.updatedAt ?? new Date(),
         });
         updated++;
-        console.log(`업데이트: ${file.path}`);
+        log.info({ path: file.path }, `업데이트: ${file.path}`);
       } else {
         await this.postRepo.create({
           title,
@@ -175,7 +181,7 @@ export class SyncService {
           }),
         });
         added++;
-        console.log(`추가: ${file.path}`);
+        log.info({ path: file.path }, `추가: ${file.path}`);
       }
     }
 
@@ -183,7 +189,7 @@ export class SyncService {
       .filter((p) => !processedPaths.has(p.path) && p.isActive)
       .map((p) => p.id);
     deleted = await this.postRepo.deactivateByIds(idsToDeactivate);
-    if (deleted > 0) console.log(`비활성화 완료: ${deleted}개`);
+    if (deleted > 0) log.info({ deleted }, `비활성화 완료: ${deleted}개`);
 
     return { added, updated, deleted };
   }
@@ -202,26 +208,26 @@ export class SyncService {
         if (shouldSyncFile(file.filename)) {
           const ok = await this.postRepo.deactive(file.filename);
           if (ok) deleted++;
-          console.log(`삭제: ${file.filename}`);
+          log.info({ filename: file.filename }, `삭제: ${file.filename}`);
         }
       } else if (file.status === "renamed") {
         if (file.previous_filename && shouldSyncFile(file.previous_filename)) {
           const ok = await this.postRepo.deactive(file.previous_filename);
           if (ok) deleted++;
-          console.log(`이름 변경(삭제): ${file.previous_filename}`);
+          log.info({ filename: file.previous_filename }, `이름 변경(삭제): ${file.previous_filename}`);
         }
         if (shouldSyncFile(file.filename)) {
           const result = await this.postSyncService.upsert(file.filename);
           if (result === "added") added++;
           else if (result === "updated") updated++;
-          console.log(`이름 변경(추가): ${file.filename} → ${result}`);
+          log.info({ filename: file.filename, result }, `이름 변경(추가): ${file.filename} → ${result}`);
         }
       } else {
         if (shouldSyncFile(file.filename)) {
           const result = await this.postSyncService.upsert(file.filename);
           if (result === "added") added++;
           else if (result === "updated") updated++;
-          console.log(`${file.status}: ${file.filename} → ${result}`);
+          log.info({ status: file.status, filename: file.filename, result }, `${file.status}: ${file.filename} → ${result}`);
         }
       }
     }
