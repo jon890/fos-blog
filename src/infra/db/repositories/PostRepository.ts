@@ -234,6 +234,14 @@ export class PostRepository extends BaseRepository {
     return success;
   }
 
+  async deactivateByIds(ids: number[]): Promise<void> {
+    if (ids.length === 0) return;
+    await this.db
+      .update(posts)
+      .set({ isActive: false })
+      .where(inArray(posts.id, ids));
+  }
+
   async create(newPost: NewPost) {
     await this.db.insert(posts).values(newPost);
   }

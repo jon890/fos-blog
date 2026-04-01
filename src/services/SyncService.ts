@@ -179,12 +179,11 @@ export class SyncService {
       }
     }
 
-    for (const post of existingPosts) {
-      if (!processedPaths.has(post.path) && post.isActive) {
-        await this.postRepo.deactive(post.path);
-        deleted++;
-      }
-    }
+    const idsToDeactivate = existingPosts
+      .filter((p) => !processedPaths.has(p.path) && p.isActive)
+      .map((p) => p.id);
+    await this.postRepo.deactivateByIds(idsToDeactivate);
+    deleted = idsToDeactivate.length;
     if (deleted > 0) console.log(`비활성화 완료: ${deleted}개`);
 
     return { added, updated, deleted };
