@@ -66,6 +66,7 @@ PRD에서 아래 항목을 파악한다:
 변경 파일:
 1. src/app/<route>/page.tsx — 페이지 메인
 2. src/components/<Name>.tsx — (신규 컴포넌트 필요 시만)
+3. src/services/<Name>Service.ts — (복잡한 비즈니스 로직이 필요 시만)
 
 재사용 컴포넌트: PostCard, CategoryList, ...
 데이터: getRepositories() → post.getXxx()
@@ -73,6 +74,11 @@ PRD에서 아래 항목을 파악한다:
 
 진행할까요?
 ```
+
+**아키텍처 레이어 결정 기준:**
+- **단순 조회** (1~2개 repository 메서드): 페이지에서 `getRepositories()` 직접 호출
+- **복잡한 비즈니스 로직** (여러 repository 조합, 변환 로직): `src/services/` 에 Service 클래스 작성 후 페이지에서 호출
+- 프로젝트 아키텍처: `app/ → services/ → infra/db+github/`
 
 ---
 
@@ -82,13 +88,30 @@ PRD에서 아래 항목을 파악한다:
 
 **기존 컴포넌트 우선**: 신규 작성 전에 `src/components/` 를 확인한다.
 
-**에러 처리 패턴** — 프로젝트 전체 일관성 유지:
+**Server / Client Component 결정 기준:**
+- **Server Component (기본)**: 데이터 페칭, DB 접근, `getRepositories()` 호출 — `"use client"` 없음
+- **Client Component** (`"use client"` 필수): `useState`, `useEffect`, 이벤트 핸들러(`onClick` 등) 사용 시. 반드시 파일 첫 줄에 위치.
+- 원칙: Server Component를 기본으로, 인터랙티브한 부분만 Client Component로 분리한다.
+
+**에러 처리 패턴** — DB 에러 후 fallback을 반드시 명시한다:
 ```typescript
 const log = logger.child({ module: "app/<route>" });
 
+// 패턴 A — 데이터 없으면 404 (단일 리소스 조회)
+let data = null;
+try {
+  const { post } = getRepositories();
+  data = await post.getPost(slug);
+} catch {
+  notFound();
+}
+if (!data) notFound();
+
+// 패턴 B — DB 없어도 빈 화면으로 폴백 (목록 페이지)
+let items: ItemType[] = [];
 try {
   const { xxx } = getRepositories();
-  data = await xxx.getXxx();
+  items = await xxx.getXxx();
 } catch (error) {
   log.warn(
     { err: error instanceof Error ? error : new Error(String(error)) },
@@ -96,6 +119,8 @@ try {
   );
 }
 ```
+
+PRD의 페이지 성격에 따라 패턴 A(상세 페이지) 또는 패턴 B(목록 페이지)를 선택한다.
 
 **필수 적용 항목:**
 - ISR: PRD의 revalidate 값으로 `export const revalidate = N`
