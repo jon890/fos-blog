@@ -4,11 +4,25 @@ import type { PostRepository } from "@/infra/db/repositories/PostRepository";
 
 function makePostRepo(
   posts: Array<{ id: number; path: string; title: string; content: string | null }>,
-): Pick<PostRepository, "getAllWithContent" | "update"> {
+): PostRepository {
   return {
-    getAllWithContent: vi.fn().mockResolvedValue(posts),
+    getPostsByCategory: vi.fn(),
+    getRecentPosts: vi.fn(),
+    getPostId: vi.fn(),
+    getPost: vi.fn(),
+    getAllPostPaths: vi.fn(),
+    getAllPostsForSitemap: vi.fn(),
+    getPostsByPaths: vi.fn(),
+    getAllPostsForSidebar: vi.fn(),
+    searchPosts: vi.fn(),
+    deactive: vi.fn(),
+    deactivateByIds: vi.fn(),
+    create: vi.fn(),
     update: vi.fn().mockResolvedValue(undefined),
-  };
+    getAllForSync: vi.fn(),
+    getAllWithContent: vi.fn().mockResolvedValue(posts),
+    getCategoryStats: vi.fn(),
+  } as unknown as PostRepository;
 }
 
 describe("PostService.retitleAll", () => {
@@ -20,7 +34,7 @@ describe("PostService.retitleAll", () => {
     const repo = makePostRepo([
       { id: 1, path: "AI/intro.md", title: "intro", content: null },
     ]);
-    const service = new PostService(repo as unknown as PostRepository);
+    const service = new PostService(repo);
 
     const result = await service.retitleAll();
 
@@ -37,7 +51,7 @@ describe("PostService.retitleAll", () => {
         content: "# 같은 제목\n\n본문",
       },
     ]);
-    const service = new PostService(repo as unknown as PostRepository);
+    const service = new PostService(repo);
 
     const result = await service.retitleAll();
 
@@ -54,7 +68,7 @@ describe("PostService.retitleAll", () => {
         content: "# 새로운 제목\n\n본문",
       },
     ]);
-    const service = new PostService(repo as unknown as PostRepository);
+    const service = new PostService(repo);
 
     const result = await service.retitleAll();
 
@@ -68,7 +82,7 @@ describe("PostService.retitleAll", () => {
       { id: 2, path: "b.md", title: "구 제목", content: "# 새 제목\n본문" }, // 변경 → update
       { id: 3, path: "c.md", title: "없음", content: null },                 // null → skip
     ]);
-    const service = new PostService(repo as unknown as PostRepository);
+    const service = new PostService(repo);
 
     const result = await service.retitleAll();
 

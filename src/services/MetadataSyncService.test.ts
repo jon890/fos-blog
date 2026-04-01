@@ -3,6 +3,7 @@ import { MetadataSyncService } from "./MetadataSyncService";
 import type { CategoryRepository } from "@/infra/db/repositories/CategoryRepository";
 import type { FolderRepository } from "@/infra/db/repositories/FolderRepository";
 import type { PostRepository } from "@/infra/db/repositories/PostRepository";
+import type { getFileContent } from "@/infra/github/api";
 
 function makeMocks() {
   const postRepo = {
@@ -15,14 +16,14 @@ function makeMocks() {
   } as unknown as CategoryRepository;
 
   const folderRepo = {
-    getAll: vi.fn(),
+    getAll: vi.fn().mockResolvedValue(new Map()),
     upsert: vi.fn().mockResolvedValue(undefined),
     ensureFolder: vi.fn().mockResolvedValue(undefined),
   } as unknown as FolderRepository;
 
   const githubApi = {
     getFileContent: vi.fn(),
-  };
+  } as unknown as { getFileContent: typeof getFileContent };
 
   return { postRepo, categoryRepo, folderRepo, githubApi };
 }
