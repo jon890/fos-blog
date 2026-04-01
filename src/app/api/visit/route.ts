@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
-import { getRepositories } from "@/db/repositories";
+import { getRepositories } from "@/infra/db/repositories";
 
 function hashIp(ip: string): string {
   return createHash("sha256").update(ip).digest("hex");

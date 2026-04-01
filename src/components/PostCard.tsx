@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { categoryIcons, DEFAULT_CATEGORY_ICON } from "@/db/constants";
-import type { PostData } from "@/db/types";
+import { categoryIcons, DEFAULT_CATEGORY_ICON } from "@/infra/db/constants";
+import type { PostData } from "@/infra/db/types";
 import { FileText, ChevronRight, Eye } from "lucide-react";
 
 interface PostCardProps {

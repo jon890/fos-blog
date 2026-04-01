@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRepositories } from "@/db/repositories";
+import { getRepositories } from "@/infra/db/repositories";
 
 // GET /api/comments?slug=xxx - 댓글 목록 조회
 export async function GET(request: NextRequest) {

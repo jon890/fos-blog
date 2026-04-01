@@ -1,7 +1,7 @@
 import { NextResponse, NextRequest, NextFetchEvent } from "next/server";
 import { createHash } from "crypto";
-import { getDb } from "@/db";
-import { VisitRepository } from "@/db/repositories";
+import { getDb } from "@/infra/db";
+import { VisitRepository } from "@/infra/db/repositories";
 
 /**
  * 페이지 방문 시 직접 DB에 방문 기록을 남기는 프록시

@@ -1,6 +1,6 @@
-import { getRepositories } from "@/db/repositories";
-import { categoryIcons, DEFAULT_CATEGORY_ICON } from "@/db/constants";
-import type { PostData } from "@/db/types";
+import { getRepositories } from "@/infra/db/repositories";
+import { categoryIcons, DEFAULT_CATEGORY_ICON } from "@/infra/db/constants";
+import type { PostData } from "@/infra/db/types";
 import {
   extractTitle,
   extractDescription,

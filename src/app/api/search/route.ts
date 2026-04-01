@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRepositories } from "@/db/repositories";
+import { getRepositories } from "@/infra/db/repositories";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;

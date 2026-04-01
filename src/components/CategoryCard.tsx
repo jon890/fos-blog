@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { CategoryData } from "@/db/types";
+import type { CategoryData } from "@/infra/db/types";
 import { Folder } from "lucide-react";
 
 interface CategoryCardProps {

@@ -1,5 +1,5 @@
-import { getRepositories } from "@/db/repositories";
-import type { CategoryData, PostData } from "@/db/types";
+import { getRepositories } from "@/infra/db/repositories";
+import type { CategoryData, PostData } from "@/infra/db/types";
 import { CategoryList } from "@/components/CategoryList";
 import { PostCard } from "@/components/PostCard";
 import { WebsiteJsonLd } from "@/components/JsonLd";
