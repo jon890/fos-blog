@@ -1,7 +1,7 @@
 <!-- Parent: ../AGENTS.md -->
 <!-- Generated: 2026-03-30 | Updated: 2026-03-30 -->
 
-# docker/mysql
+# local/mysql
 
 ## Purpose
 
