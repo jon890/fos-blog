@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-03-17 | Updated: 2026-03-17 -->
+<!-- Generated: 2026-03-17 | Updated: 2026-04-01 -->
 
 # app/categories
 
