@@ -1,6 +1,6 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 import { categoryIcons, DEFAULT_CATEGORY_ICON } from "../constants";
-import { categories, posts } from "../schema";
+import { categories } from "../schema";
 import type { CategoryData } from "../types";
 import { BaseRepository } from "./BaseRepository";
 
@@ -23,25 +23,13 @@ export class CategoryRepository extends BaseRepository {
     return categoryIcons[category] || DEFAULT_CATEGORY_ICON;
   }
 
-  async rebuild(): Promise<void> {
-    const categoryStats = await this.db
-      .select({
-        category: posts.category,
-        count: sql<number>`count(*)`.as("count"),
-      })
-      .from(posts)
-      .where(eq(posts.isActive, true))
-      .groupBy(posts.category);
-
+  async replaceAll(
+    stats: Array<{ name: string; slug: string; icon: string; postCount: number }>,
+  ): Promise<void> {
     await this.db.transaction(async (tx) => {
       await tx.delete(categories);
-      for (const stat of categoryStats) {
-        await tx.insert(categories).values({
-          name: stat.category,
-          slug: stat.category,
-          icon: categoryIcons[stat.category] || "📁",
-          postCount: Number(stat.count),
-        });
+      for (const stat of stats) {
+        await tx.insert(categories).values(stat);
       }
     });
   }

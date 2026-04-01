@@ -102,26 +102,4 @@ export class FolderRepository extends BaseRepository {
     }
   }
 
-  async getAllFolderPaths(): Promise<string[][]> {
-    const allPosts = await this.db
-      .select({ path: posts.path })
-      .from(posts)
-      .where(eq(posts.isActive, true));
-
-    const folderPaths = new Set<string>();
-
-    for (const post of allPosts) {
-      const parts = post.path.split("/");
-      for (let i = 1; i <= parts.length - 1; i++) {
-        const folderPath = parts.slice(0, i).join("/");
-        if (folderPath) {
-          folderPaths.add(folderPath);
-        }
-      }
-    }
-
-    return Array.from(folderPaths)
-      .sort()
-      .map((path) => path.split("/"));
-  }
 }
