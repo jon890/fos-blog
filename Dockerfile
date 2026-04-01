@@ -22,12 +22,16 @@ RUN mkdir -p public
 ARG GITHUB_TOKEN
 ARG GITHUB_OWNER=jon890
 ARG GITHUB_REPO=fos-study
+ARG NEXT_PUBLIC_SITE_URL=https://fosworld.co.kr
 
 # Set environment variables for build
 ENV GITHUB_TOKEN=${GITHUB_TOKEN}
 ENV GITHUB_OWNER=${GITHUB_OWNER}
 ENV GITHUB_REPO=${GITHUB_REPO}
+ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 ENV NEXT_TELEMETRY_DISABLED=1
+# 빌드 시 env 검증 스킵 — 런타임에 실제 env로 검증됨
+ENV SKIP_ENV_VALIDATION=true
 
 # Build the application
 RUN pnpm build
