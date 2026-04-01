@@ -50,9 +50,18 @@ export async function generateMetadata({
 
 export async function generateStaticParams() {
   try {
-    const { folder } = getRepositories();
-    const paths = await folder.getAllFolderPaths();
-    return paths.map((pathSegments) => ({ path: pathSegments }));
+    const { post } = getRepositories();
+    const postPaths = await post.getAllPostPaths();
+    const folderPathSet = new Set<string>();
+    for (const p of postPaths) {
+      const parts = p.split("/");
+      for (let i = 1; i < parts.length; i++) {
+        folderPathSet.add(parts.slice(0, i).join("/"));
+      }
+    }
+    return Array.from(folderPathSet)
+      .sort()
+      .map((p) => ({ path: p.split("/") }));
   } catch {
     return [];
   }

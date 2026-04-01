@@ -28,13 +28,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let postPages: MetadataRoute.Sitemap = [];
 
   try {
-    const { category, folder, post } = getRepositories();
+    const { category, post } = getRepositories();
 
-    const [categories, folderPaths, postsData] = await Promise.all([
+    const [categories, postsData] = await Promise.all([
       category.getCategories(),
-      folder.getAllFolderPaths(),
       post.getAllPostsForSitemap(),
     ]);
+
+    const folderPathSet = new Set<string>();
+    for (const { path } of postsData) {
+      const parts = path.split("/");
+      for (let i = 1; i < parts.length; i++) {
+        folderPathSet.add(parts.slice(0, i).join("/"));
+      }
+    }
+    const folderPaths = Array.from(folderPathSet)
+      .sort()
+      .map((p) => p.split("/"));
 
     categoryPages = categories.map((cat) => ({
       url: `${baseUrl}/category/${encodeURIComponent(cat.slug)}`,

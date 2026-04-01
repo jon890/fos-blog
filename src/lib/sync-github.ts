@@ -1,13 +1,9 @@
-import { createSyncService } from "@/services";
-import { PostRepository } from "@/infra/db/repositories/PostRepository";
-import { getDb } from "@/infra/db";
+import { createSyncService, createPostService } from "@/services";
 
 export async function syncGitHubToDatabase() {
-  const syncService = createSyncService();
-  return syncService.sync();
+  return createSyncService().sync();
 }
 
 export async function retitleExistingPosts() {
-  const postRepository = new PostRepository(getDb());
-  return postRepository.retitleAll();
+  return createPostService().retitleAll();
 }
