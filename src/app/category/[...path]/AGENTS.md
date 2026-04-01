@@ -35,7 +35,7 @@ params.path (string[])
 ## Dependencies
 
 ### Internal
-- `@/db/queries` → `getDbQueries()` → `getFolderContents()`, `getAllFolderPaths()`, `getCategoryIcon()`
+- `@/services/PostService` → `getFolderContents()`, `getAllFolderPaths()`, `getCategoryIcon()`
 - `@/components/PostCard`
 - `@/components/MarkdownRenderer` (for README rendering)
 

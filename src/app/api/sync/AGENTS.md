@@ -39,9 +39,9 @@ Response 500:
 ## Dependencies
 
 ### Internal
-- `@/lib/sync-github` → `syncGitHubToDatabase()`, `retitleExistingPosts()`
+- `@/services/SyncService` → 동기화 오케스트레이션
 
 ### External
-- Requires `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO` env vars (consumed by `lib/sync-github.ts`)
+- Requires `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO` env vars (`src/infra/github/client.ts`에서 소비)
 
 <!-- MANUAL: -->

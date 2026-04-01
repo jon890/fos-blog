@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 ## Dependencies
 
 ### Internal
-- `@/db/queries` — database query functions via `getDbQueries()`
-- `@/lib/sync-github` — sync orchestration
+- `@/services/` — 비즈니스 로직 (PostService, SyncService 등)
+- `@/infra/db/` — Drizzle 연결 (services를 통해 간접 접근 권장)
 
 <!-- MANUAL: -->

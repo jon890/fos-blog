@@ -34,6 +34,6 @@ Response 500:
 ## Dependencies
 
 ### Internal
-- `@/db/queries` → `getDbQueries()` → `searchPosts(query, limit)`
+- `@/services/PostService` → `searchPosts(query, limit)`
 
 <!-- MANUAL: -->
