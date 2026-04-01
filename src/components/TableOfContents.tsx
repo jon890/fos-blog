@@ -15,6 +15,7 @@ export function TableOfContents({ toc }: TableOfContentsProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     if (localStorage.getItem(STORAGE_KEY) === "true") {
       setIsCollapsed(true);
     }
