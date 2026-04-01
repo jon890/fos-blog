@@ -61,7 +61,8 @@ export async function generateStaticParams() { ... }
 
 ### Internal
 - `@/components/` — UI components (Header, PostCard, CategoryList, etc.)
-- `@/db/queries` — Drizzle query class via `getDbQueries()` factory
+- `@/services/` — 비즈니스 로직 (PostService, SyncService 등)
+- `@/infra/db/` — Drizzle 연결 및 레포지토리 (services를 통해 간접 접근 권장)
 
 ### External
 - `next/font/google` — Inter font loading

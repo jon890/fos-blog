@@ -1,45 +1,49 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-03-17 | Updated: 2026-03-30 -->
+<!-- Generated: 2026-03-17 | Updated: 2026-04-01 -->
 
-# docker
+# local
 
 ## Purpose
-Docker configuration for local development database. Contains MySQL initialization scripts used when starting the database container via `docker-compose.yml` at the project root.
+
+로컬 개발 환경 설정. MySQL 8.4 컨테이너를 Docker Compose로 실행하는 설정과 초기화 스크립트를 포함한다.
 
 ## Subdirectories
 
 | Directory | Purpose |
 |-----------|---------|
-| `mysql/` | MySQL-specific init scripts run on first container startup (see `mysql/AGENTS.md`) |
+| `mysql/` | MySQL 초기화 SQL 스크립트 (see `mysql/AGENTS.md`) |
 
 ## Key Files
 
 | File | Description |
 |------|-------------|
-| `mysql/init.sql` | SQL script that creates the `posts`, `categories`, `folders`, and `sync_logs` tables, adds indexes, and inserts sample category data |
+| `docker-compose.yml` | MySQL 8.4 컨테이너 설정 — 포트 13307, 볼륨 마운트, health check |
+| `mysql/init.sql` | 최초 컨테이너 시작 시 실행되는 초기화 SQL — DB, 사용자, 권한 설정 |
 
 ## For AI Agents
 
 ### Working In This Directory
-- `init.sql` runs **only on first container startup** (when the data volume is empty) — changes require `pnpm db:down && docker volume prune` to take effect
-- The canonical schema source of truth is `db/schema.ts` (Drizzle) — keep `init.sql` in sync when making schema changes
-- To apply schema changes in development, prefer `pnpm db:push` over editing `init.sql` directly
+
+- `init.sql`은 **볼륨이 비어있을 때만** 실행된다 — 변경 시 `pnpm db:down && docker volume prune` 필요
+- 스키마의 canonical source는 `src/infra/db/schema/` (Drizzle) — `init.sql`은 초기 구조만 반영
+- 개발 중 스키마 변경은 `pnpm db:push`로 적용한다 (`init.sql` 수정보다 권장)
 
 ### Common Patterns
+
 ```bash
-# Start the MySQL container
+# MySQL 컨테이너 시작
 pnpm db:up
 
-# Stop and remove (data persists in Docker volume)
+# 컨테이너 중지 (데이터 유지)
 pnpm db:down
 
-# Nuke data and reinitialize from init.sql
-docker-compose down -v && pnpm db:up
+# 데이터 초기화 (init.sql부터 재시작)
+docker compose -f local/docker-compose.yml down -v && pnpm db:up
 ```
 
 ## Dependencies
 
 ### External
-- Docker and Docker Compose must be installed locally
+- Docker와 Docker Compose가 로컬에 설치되어 있어야 한다
 
 <!-- MANUAL: -->
