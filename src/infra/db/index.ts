@@ -17,8 +17,7 @@ export function tryGetDb(): MySql2Database<typeof schema> | null {
   }
 
   // 런타임에 환경변수 확인
-  // skipValidation 모드(CI 등)에서는 undefined일 수 있음
-  const connectionString = env.DATABASE_URL as string | undefined;
+  const connectionString = env.DATABASE_URL;
   if (!connectionString) {
     console.warn("[DB] DATABASE_URL is not set");
     return null;

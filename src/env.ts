@@ -5,7 +5,7 @@ export const env = createEnv({
   server: {
     // 필수 — 없으면 startup에서 throw
     GITHUB_TOKEN: z.string().min(1),
-    DATABASE_URL: z.string().url(),
+    DATABASE_URL: z.string().url().optional(),
     SYNC_API_KEY: z.string().min(1),
 
     // 선택 (기본값 있음)
