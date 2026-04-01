@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { env } from "@/env";
 
 export async function GET() {
-  const adsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
+  const adsenseId = env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
 
   if (!adsenseId) {
     return new NextResponse("# ads.txt not configured", {

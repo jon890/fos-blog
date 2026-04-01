@@ -3,6 +3,7 @@ import { NewPost, posts } from "../schema";
 import { UpdatePost } from "../schema/posts";
 import type { PostData } from "../types";
 import { BaseRepository } from "./BaseRepository";
+import { env } from "@/env";
 
 export class PostRepository extends BaseRepository {
   async getPostsByCategory(category: string): Promise<PostData[]> {
@@ -142,7 +143,7 @@ export class PostRepository extends BaseRepository {
     }
 
     const searchQuery = query.trim();
-    const useFulltextSearch = process.env.USE_FULLTEXT_SEARCH !== "false";
+    const useFulltextSearch = env.USE_FULLTEXT_SEARCH !== "false";
 
     // FULLTEXT 검색 시도 (MySQL MATCH AGAINST)
     if (useFulltextSearch) {

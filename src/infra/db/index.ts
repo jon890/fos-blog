@@ -1,6 +1,7 @@
 import { drizzle, MySql2Database } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import * as schema from "./schema";
+import { env } from "@/env";
 
 // 캐시된 DB 인스턴스
 let cachedDb: MySql2Database<typeof schema> | null = null;
@@ -16,14 +17,15 @@ export function tryGetDb(): MySql2Database<typeof schema> | null {
   }
 
   // 런타임에 환경변수 확인
-  const connectionString = process.env.DATABASE_URL;
+  // skipValidation 모드(CI 등)에서는 undefined일 수 있음
+  const connectionString = env.DATABASE_URL as string | undefined;
   if (!connectionString) {
     console.warn("[DB] DATABASE_URL is not set");
     return null;
   }
 
   // 개발 환경에서 쿼리 로깅 활성화
-  const enableLogging = process.env.NODE_ENV === "development";
+  const enableLogging = env.NODE_ENV === "development";
 
   const pool = mysql.createPool({
     uri: connectionString,
