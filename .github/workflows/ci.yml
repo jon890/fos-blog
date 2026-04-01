@@ -45,3 +45,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           GITHUB_OWNER: jon890
           GITHUB_REPO: fos-study
+          NEXT_PUBLIC_SITE_URL: https://fosworld.co.kr
+          SKIP_ENV_VALIDATION: "true"
