@@ -11,6 +11,23 @@ import Image from "next/image";
 import { Mermaid } from "./Mermaid";
 import { resolveMarkdownLink } from "@/lib/resolve-markdown-link";
 
+type HastChild = {
+  type: string;
+  properties?: { className?: string[] };
+};
+
+export function isMermaidPreNode(node: {
+  children?: HastChild[];
+}): boolean {
+  return (
+    node?.children?.some(
+      (child) =>
+        child.type === "element" &&
+        child.properties?.className?.includes("language-mermaid")
+    ) ?? false
+  );
+}
+
 interface MarkdownRendererProps {
   content: string;
   basePath?: string;
@@ -118,14 +135,19 @@ export function MarkdownRenderer({ content, basePath }: MarkdownRendererProps) {
         </code>
       );
     },
-    pre: ({ children, ...props }) => (
-      <pre
-        className="my-4 p-4 rounded-lg bg-gray-900 dark:bg-gray-800 text-gray-100 overflow-x-auto text-sm border border-gray-700 dark:border-gray-700"
-        {...props}
-      >
-        {children}
-      </pre>
-    ),
+    pre: ({ children, node, ...props }) => {
+      if (isMermaidPreNode(node as { children?: HastChild[] })) {
+        return <>{children}</>;
+      }
+      return (
+        <pre
+          className="my-4 p-4 rounded-lg bg-gray-900 dark:bg-gray-800 text-gray-100 overflow-x-auto text-sm border border-gray-700 dark:border-gray-700"
+          {...props}
+        >
+          {children}
+        </pre>
+      );
+    },
     table: ({ children, ...props }) => (
       <div className="my-4 overflow-x-auto">
         <table
