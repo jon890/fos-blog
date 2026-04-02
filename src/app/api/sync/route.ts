@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { syncGitHubToDatabase, retitleExistingPosts } from "@/lib/sync-github";
+import { syncGitHubToDatabase } from "@/lib/sync-github";
 import logger from "@/lib/logger";
 import { env } from "@/env";
 
@@ -18,7 +18,6 @@ export async function POST(request: Request) {
 
   try {
     const syncResult = await syncGitHubToDatabase();
-    const retitleResult = await retitleExistingPosts();
 
     return NextResponse.json({
       success: true,
@@ -29,11 +28,7 @@ export async function POST(request: Request) {
         updated: syncResult.updated,
         deleted: syncResult.deleted,
       },
-      titles: {
-        updated: retitleResult.updated,
-        skipped: retitleResult.skipped,
-        total: retitleResult.total,
-      },
+      titles: syncResult.titles,
     });
   } catch (error) {
     log.error({ err: error instanceof Error ? error : new Error(String(error)) }, "Sync error");

@@ -13,6 +13,7 @@ import { shouldSyncFile } from "@/infra/github/file-filter";
 import { rewriteImagePaths } from "@/infra/github/image-rewrite";
 import { PostSyncService, parsePath } from "./PostSyncService";
 import { MetadataSyncService } from "./MetadataSyncService";
+import { PostService } from "./PostService";
 import logger from "@/lib/logger";
 
 const log = logger.child({ module: "SyncService" });
@@ -29,6 +30,7 @@ export class SyncService {
   constructor(
     private postSyncService: PostSyncService,
     private metadataSyncService: MetadataSyncService,
+    private postService: PostService,
     private postRepo: PostRepository,
     private syncLogRepo: SyncLogRepository,
     private githubApi: GithubApi,
@@ -40,6 +42,7 @@ export class SyncService {
     deleted: number;
     commitSha: string;
     upToDate?: boolean;
+    titles: { total: number; updated: number; skipped: number };
   }> {
     log.info("GitHub → Database 동기화 시작...");
 
@@ -59,12 +62,14 @@ export class SyncService {
 
       if (lastSyncedSha === headSha) {
         log.info("이미 최신 상태입니다.");
+        const titles = await this.postService.retitleAll();
         return {
           added: 0,
           updated: 0,
           deleted: 0,
           commitSha: headSha,
           upToDate: true,
+          titles,
         };
       }
 
@@ -91,6 +96,7 @@ export class SyncService {
 
       await this.metadataSyncService.updateCategories();
       await this.metadataSyncService.syncFolderReadmes();
+      const titles = await this.postService.retitleAll();
 
       await this.syncLogRepo.create({
         status: "success",
@@ -104,7 +110,7 @@ export class SyncService {
         { added, updated, deleted, commitSha: headSha.slice(0, 7) },
         `동기화 완료: ${added}개 추가, ${updated}개 업데이트, ${deleted}개 삭제 (commit: ${headSha.slice(0, 7)})`,
       );
-      return { added, updated, deleted, commitSha: headSha };
+      return { added, updated, deleted, commitSha: headSha, titles };
     } catch (error) {
       log.error({ err: error instanceof Error ? error : new Error(String(error)) }, "동기화 실패");
 

@@ -19,6 +19,7 @@ export function createSyncService(): SyncService {
   return new SyncService(
     new PostSyncService(postRepo, githubApi),
     new MetadataSyncService(categoryRepo, folderRepo, postRepo, githubApi),
+    new PostService(postRepo), // postRepo 공유 — PostService는 스테이트리스이므로 createPostService()와 인스턴스 분리 무방
     postRepo,
     syncLogRepo,
     githubApi,

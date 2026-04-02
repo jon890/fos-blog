@@ -1,9 +1,6 @@
-import { createSyncService, createPostService } from "@/services";
+import type { SyncService } from "@/services";
+import { createSyncService } from "@/services";
 
-export async function syncGitHubToDatabase() {
+export async function syncGitHubToDatabase(): ReturnType<SyncService["sync"]> {
   return createSyncService().sync();
-}
-
-export async function retitleExistingPosts() {
-  return createPostService().retitleAll();
 }
