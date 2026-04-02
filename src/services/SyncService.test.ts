@@ -3,6 +3,7 @@ import { SyncService } from "./SyncService";
 import type { SyncLog } from "@/infra/db/schema/syncLogs";
 import type { PostSyncService } from "./PostSyncService";
 import type { MetadataSyncService } from "./MetadataSyncService";
+import type { PostService } from "./PostService";
 import type { PostRepository } from "@/infra/db/repositories/PostRepository";
 import type { SyncLogRepository } from "@/infra/db/repositories/SyncLogRepository";
 import type {
@@ -31,6 +32,10 @@ function makeMocks() {
     syncFolderReadmes: vi.fn().mockResolvedValue(undefined),
   } as unknown as MetadataSyncService;
 
+  const postService = {
+    retitleAll: vi.fn().mockResolvedValue({ total: 0, updated: 0, skipped: 0 }),
+  } as unknown as PostService;
+
   const postRepo = {
     getAllForSync: vi.fn().mockResolvedValue([]),
     deactivateByIds: vi.fn().mockResolvedValue(0),
@@ -49,7 +54,7 @@ function makeMocks() {
     getFileCommitDates: vi.fn(),
   } as unknown as GithubApi;
 
-  return { postSyncService, metadataSyncService, postRepo, syncLogRepo, githubApi };
+  return { postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi };
 }
 
 describe("SyncService.sync", () => {
@@ -58,13 +63,13 @@ describe("SyncService.sync", () => {
   });
 
   it("lastSyncedSha === headSha 이면 upToDate: true를 반환한다", async () => {
-    const { postSyncService, metadataSyncService, postRepo, syncLogRepo, githubApi } = makeMocks();
+    const { postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi } = makeMocks();
     const sha = "abc1234";
 
     vi.mocked(githubApi.getCurrentHeadSha).mockResolvedValue(sha);
     vi.mocked(syncLogRepo.getLatest).mockResolvedValue({ commitSha: sha } as SyncLog);
 
-    const service = new SyncService(postSyncService, metadataSyncService, postRepo, syncLogRepo, githubApi);
+    const service = new SyncService(postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi);
     const result = await service.sync();
 
     expect(result.upToDate).toBe(true);
@@ -73,13 +78,13 @@ describe("SyncService.sync", () => {
   });
 
   it("lastSyncedSha가 없으면 performFullSync를 호출한다", async () => {
-    const { postSyncService, metadataSyncService, postRepo, syncLogRepo, githubApi } = makeMocks();
+    const { postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi } = makeMocks();
     const headSha = "def5678";
 
     vi.mocked(githubApi.getCurrentHeadSha).mockResolvedValue(headSha);
     vi.mocked(syncLogRepo.getLatest).mockResolvedValue(null);
 
-    const service = new SyncService(postSyncService, metadataSyncService, postRepo, syncLogRepo, githubApi);
+    const service = new SyncService(postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi);
     const result = await service.sync();
 
     // getDirectoryContents가 호출됐으면 performFullSync가 실행된 것
@@ -91,7 +96,7 @@ describe("SyncService.sync", () => {
   });
 
   it("getChangedFilesSince가 null을 반환하면 performFullSync로 폴백한다", async () => {
-    const { postSyncService, metadataSyncService, postRepo, syncLogRepo, githubApi } = makeMocks();
+    const { postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi } = makeMocks();
     const headSha = "ghi9012";
     const lastSha = "oldsha";
 
@@ -99,7 +104,7 @@ describe("SyncService.sync", () => {
     vi.mocked(syncLogRepo.getLatest).mockResolvedValue({ commitSha: lastSha } as SyncLog);
     vi.mocked(githubApi.getChangedFilesSince).mockResolvedValue(null);
 
-    const service = new SyncService(postSyncService, metadataSyncService, postRepo, syncLogRepo, githubApi);
+    const service = new SyncService(postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi);
     await service.sync();
 
     // getDirectoryContents가 호출됐으면 performFullSync 폴백이 실행된 것
@@ -110,12 +115,12 @@ describe("SyncService.sync", () => {
   });
 
   it("에러 발생 시 syncLogRepo.create({ status: 'failed' })를 호출하고 에러를 다시 던진다", async () => {
-    const { postSyncService, metadataSyncService, postRepo, syncLogRepo, githubApi } = makeMocks();
+    const { postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi } = makeMocks();
     const error = new Error("GitHub API 오류");
 
     vi.mocked(githubApi.getCurrentHeadSha).mockRejectedValue(error);
 
-    const service = new SyncService(postSyncService, metadataSyncService, postRepo, syncLogRepo, githubApi);
+    const service = new SyncService(postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi);
 
     await expect(service.sync()).rejects.toThrow("GitHub API 오류");
     expect(syncLogRepo.create).toHaveBeenCalledWith(
