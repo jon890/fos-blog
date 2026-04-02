@@ -1,0 +1,11 @@
+# fos-blog 콘텐츠 동기화 cron 설정
+# 설치 방법:
+#   crontab local/crontab.example
+#
+# 주의: SYNC_API_KEY는 .env 파일의 값과 동일해야 한다.
+#       YOUR_SYNC_API_KEY를 실제 키로 교체한 후 설치할 것.
+
+# 콘텐츠 동기화: 매 시간 정각 (GitHub → MySQL)
+0 * * * * curl -s -X POST http://localhost:3000/api/sync \
+  -H "Authorization: Bearer YOUR_SYNC_API_KEY" \
+  >> /var/log/fos-blog-sync.log 2>&1
