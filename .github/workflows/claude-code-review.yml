@@ -9,7 +9,8 @@ on:
 jobs:
   claude-review:
     if: |
-      github.actor != 'dependabot[bot]' && (
+      github.actor != 'dependabot[bot]' &&
+      github.actor != 'claude[bot]' && (
         github.event_name == 'pull_request' ||
         (github.event_name == 'issue_comment' &&
          github.event.issue.pull_request != null &&
@@ -34,27 +35,30 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Dismiss old Claude bot comments
+      - name: Delete old Claude bot comments
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           REPO="${{ github.repository }}"
           PR_NUMBER="${{ env.PR_NUMBER }}"
 
-          # 이전 일반 코멘트 숨기기
+          # 이전 일반 PR 코멘트 삭제 (claude[bot] 작성)
           gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
-            --jq '.[] | select(.user.login == "claude[bot]") | .node_id' \
-            | while read -r comment_node_id; do
-              if [ -n "$comment_node_id" ]; then
-                echo "Hiding outdated Claude comment: $comment_node_id"
-                gh api graphql -f query='
-                  mutation($id: ID!) {
-                    minimizeComment(input: {subjectId: $id, classifier: OUTDATED}) {
-                      minimizedComment {
-                        isMinimized
-                      }
-                    }
-                  }' -f id="$comment_node_id"
+            --jq '.[] | select(.user.login == "claude[bot]") | .id' \
+            | while read -r comment_id; do
+              if [ -n "$comment_id" ]; then
+                echo "Deleting outdated Claude general comment: $comment_id"
+                gh api "repos/$REPO/issues/comments/$comment_id" --method DELETE || true
+              fi
+            done
+
+          # 이전 인라인 리뷰 코멘트 삭제 (claude[bot] 작성)
+          gh api "repos/$REPO/pulls/$PR_NUMBER/comments" \
+            --jq '.[] | select(.user.login == "claude[bot]") | .id' \
+            | while read -r comment_id; do
+              if [ -n "$comment_id" ]; then
+                echo "Deleting outdated Claude inline comment: $comment_id"
+                gh api "repos/$REPO/pulls/comments/$comment_id" --method DELETE || true
               fi
             done
 
