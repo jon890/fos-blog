@@ -19,6 +19,7 @@
 |------|-------------|
 | `docker-compose.yml` | MySQL 8.4 컨테이너 설정 — 포트 13307, 볼륨 마운트, health check |
 | `mysql/init.sql` | 최초 컨테이너 시작 시 실행되는 초기화 SQL — DB, 사용자, 권한 설정 |
+| `crontab.example` | 콘텐츠 동기화 cron 예시 — 매 시간 `/api/sync` 호출, `crontab` 명령으로 설치 |
 
 ## For AI Agents
 
