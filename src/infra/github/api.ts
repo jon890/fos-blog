@@ -3,6 +3,28 @@ import logger from "@/lib/logger";
 
 const log = logger.child({ module: "infra/github/api" });
 
+function isRetryable(error: unknown): boolean {
+  if (error && typeof error === "object" && "status" in error) {
+    const status = (error as { status: number }).status;
+    return status === 429 || status >= 500;
+  }
+  return false;
+}
+
+async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt === maxAttempts || !isRetryable(err)) throw err;
+      const delay = Math.pow(2, attempt) * 1000;
+      log.warn({ attempt, maxAttempts, delay }, `GitHub API 재시도 (${attempt}/${maxAttempts})...`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw new Error("unreachable");
+}
+
 const VALID_STATUSES = new Set<string>([
   "added",
   "modified",
@@ -27,11 +49,9 @@ export interface ChangedFile {
 }
 
 export async function getCurrentHeadSha(): Promise<string> {
-  const response = await octokit.repos.getBranch({
-    owner: OWNER,
-    repo: REPO,
-    branch: BRANCH,
-  });
+  const response = await withRetry(() =>
+    octokit.repos.getBranch({ owner: OWNER, repo: REPO, branch: BRANCH }),
+  );
   return response.data.commit.sha;
 }
 
@@ -44,11 +64,13 @@ export async function getChangedFilesSince(
   headSha: string,
 ): Promise<ChangedFile[] | null> {
   try {
-    const response = await octokit.repos.compareCommitsWithBasehead({
-      owner: OWNER,
-      repo: REPO,
-      basehead: `${baseSha}...${headSha}`,
-    });
+    const response = await withRetry(() =>
+      octokit.repos.compareCommitsWithBasehead({
+        owner: OWNER,
+        repo: REPO,
+        basehead: `${baseSha}...${headSha}`,
+      }),
+    );
 
     if (!response.data.files || response.data.files.length >= 300) {
       log.info("변경 파일이 300개 이상이거나 없음 → full sync 폴백");
@@ -79,12 +101,14 @@ export async function getFileCommitDates(
   filePath: string,
 ): Promise<{ createdAt: Date; updatedAt: Date } | null> {
   try {
-    const response = await octokit.repos.listCommits({
-      owner: OWNER,
-      repo: REPO,
-      path: filePath,
-      per_page: 100,
-    });
+    const response = await withRetry(() =>
+      octokit.repos.listCommits({
+        owner: OWNER,
+        repo: REPO,
+        path: filePath,
+        per_page: 100,
+      }),
+    );
 
     const commits = response.data;
     if (commits.length === 0) return null;
@@ -120,11 +144,9 @@ export async function getFileContent(
   path: string,
 ): Promise<{ content: string; sha: string } | null> {
   try {
-    const response = await octokit.repos.getContent({
-      owner: OWNER,
-      repo: REPO,
-      path,
-    });
+    const response = await withRetry(() =>
+      octokit.repos.getContent({ owner: OWNER, repo: REPO, path }),
+    );
     if (!Array.isArray(response.data) && response.data.type === "file") {
       const content = Buffer.from(response.data.content, "base64").toString(
         "utf-8",
@@ -151,11 +173,9 @@ export async function getFileContent(
 
 export async function getDirectoryContents(path: string = "") {
   try {
-    const response = await octokit.repos.getContent({
-      owner: OWNER,
-      repo: REPO,
-      path,
-    });
+    const response = await withRetry(() =>
+      octokit.repos.getContent({ owner: OWNER, repo: REPO, path }),
+    );
     if (Array.isArray(response.data)) return response.data;
     return [];
   } catch (error) {
