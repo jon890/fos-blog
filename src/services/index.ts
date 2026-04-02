@@ -19,6 +19,7 @@ export function createSyncService(): SyncService {
   return new SyncService(
     new PostSyncService(postRepo, githubApi),
     new MetadataSyncService(categoryRepo, folderRepo, postRepo, githubApi),
+    new PostService(postRepo),
     postRepo,
     syncLogRepo,
     githubApi,
