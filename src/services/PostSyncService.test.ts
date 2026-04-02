@@ -87,7 +87,7 @@ describe("PostSyncService.upsert", () => {
 
   it("기존 포스트가 없으면 postRepo.create를 호출하고 'added'를 반환한다", async () => {
     const { postRepo, githubApi } = makeMocks();
-    vi.mocked(githubApi.getFileContent).mockResolvedValue({ content: "# Hello", sha: "sha123" } as never);
+    vi.mocked(githubApi.getFileContent).mockResolvedValue({ content: "# Hello", sha: "sha123" });
     vi.mocked(postRepo.getPostId).mockResolvedValue(null);
 
     const service = new PostSyncService(postRepo, githubApi);
@@ -100,7 +100,7 @@ describe("PostSyncService.upsert", () => {
 
   it("기존 포스트가 있으면 postRepo.update를 호출하고 'updated'를 반환한다", async () => {
     const { postRepo, githubApi } = makeMocks();
-    vi.mocked(githubApi.getFileContent).mockResolvedValue({ content: "# Hello", sha: "sha456" } as never);
+    vi.mocked(githubApi.getFileContent).mockResolvedValue({ content: "# Hello", sha: "sha456" });
     vi.mocked(postRepo.getPostId).mockResolvedValue(42);
 
     const service = new PostSyncService(postRepo, githubApi);

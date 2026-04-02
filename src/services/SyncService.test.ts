@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { SyncService } from "./SyncService";
+import type { SyncLog } from "@/infra/db/schema/syncLogs";
 import type { PostSyncService } from "./PostSyncService";
 import type { MetadataSyncService } from "./MetadataSyncService";
 import type { PostRepository } from "@/infra/db/repositories/PostRepository";
@@ -61,7 +62,7 @@ describe("SyncService.sync", () => {
     const sha = "abc1234";
 
     vi.mocked(githubApi.getCurrentHeadSha).mockResolvedValue(sha);
-    vi.mocked(syncLogRepo.getLatest).mockResolvedValue({ commitSha: sha } as never);
+    vi.mocked(syncLogRepo.getLatest).mockResolvedValue({ commitSha: sha } as SyncLog);
 
     const service = new SyncService(postSyncService, metadataSyncService, postRepo, syncLogRepo, githubApi);
     const result = await service.sync();
@@ -95,7 +96,7 @@ describe("SyncService.sync", () => {
     const lastSha = "oldsha";
 
     vi.mocked(githubApi.getCurrentHeadSha).mockResolvedValue(headSha);
-    vi.mocked(syncLogRepo.getLatest).mockResolvedValue({ commitSha: lastSha } as never);
+    vi.mocked(syncLogRepo.getLatest).mockResolvedValue({ commitSha: lastSha } as SyncLog);
     vi.mocked(githubApi.getChangedFilesSince).mockResolvedValue(null);
 
     const service = new SyncService(postSyncService, metadataSyncService, postRepo, syncLogRepo, githubApi);
