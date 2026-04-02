@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { parsePath } from "./PostSyncService";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { parsePath, PostSyncService } from "./PostSyncService";
+import type { PostRepository } from "@/infra/db/repositories/PostRepository";
+import type { getFileContent, getFileCommitDates } from "@/infra/github/api";
 
 describe("parsePath", () => {
   it("루트 경로 파일 — category는 확장자 포함 파일명, title은 확장자 제거", () => {
@@ -48,5 +50,64 @@ describe("parsePath", () => {
     const result = parsePath("");
     expect(result.category).toBe("uncategorized");
     expect(result.foldersList).toEqual([]);
+  });
+});
+
+describe("PostSyncService.upsert", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function makeMocks() {
+    const postRepo = {
+      getPostId: vi.fn(),
+      create: vi.fn().mockResolvedValue(undefined),
+      update: vi.fn().mockResolvedValue(undefined),
+    } as unknown as PostRepository;
+
+    const githubApi = {
+      getFileContent: vi.fn(),
+      getFileCommitDates: vi.fn().mockResolvedValue(null),
+    } as unknown as { getFileContent: typeof getFileContent; getFileCommitDates: typeof getFileCommitDates };
+
+    return { postRepo, githubApi };
+  }
+
+  it("getFileContent가 null을 반환하면 'skipped'를 반환한다", async () => {
+    const { postRepo, githubApi } = makeMocks();
+    vi.mocked(githubApi.getFileContent).mockResolvedValue(null);
+
+    const service = new PostSyncService(postRepo, githubApi);
+    const result = await service.upsert("AI/intro.md");
+
+    expect(result).toBe("skipped");
+    expect(postRepo.create).not.toHaveBeenCalled();
+    expect(postRepo.update).not.toHaveBeenCalled();
+  });
+
+  it("기존 포스트가 없으면 postRepo.create를 호출하고 'added'를 반환한다", async () => {
+    const { postRepo, githubApi } = makeMocks();
+    vi.mocked(githubApi.getFileContent).mockResolvedValue({ content: "# Hello", sha: "sha123" });
+    vi.mocked(postRepo.getPostId).mockResolvedValue(null);
+
+    const service = new PostSyncService(postRepo, githubApi);
+    const result = await service.upsert("AI/intro.md");
+
+    expect(result).toBe("added");
+    expect(postRepo.create).toHaveBeenCalledOnce();
+    expect(postRepo.update).not.toHaveBeenCalled();
+  });
+
+  it("기존 포스트가 있으면 postRepo.update를 호출하고 'updated'를 반환한다", async () => {
+    const { postRepo, githubApi } = makeMocks();
+    vi.mocked(githubApi.getFileContent).mockResolvedValue({ content: "# Hello", sha: "sha456" });
+    vi.mocked(postRepo.getPostId).mockResolvedValue(42);
+
+    const service = new PostSyncService(postRepo, githubApi);
+    const result = await service.upsert("AI/intro.md");
+
+    expect(result).toBe("updated");
+    expect(postRepo.update).toHaveBeenCalledWith(42, expect.objectContaining({ sha: "sha456" }));
+    expect(postRepo.create).not.toHaveBeenCalled();
   });
 });
