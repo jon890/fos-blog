@@ -36,7 +36,7 @@
 | `MarkdownRenderer` | 마크다운 본문 렌더링 (GFM, mermaid, syntax highlight) |
 | `TableOfContents` | 사이드바 목차 (lg 이상에서만 표시, `hidden lg:block`) |
 | `Comments` | 댓글 섹션 (postSlug 전달) |
-| `PostViewCount` | 조회수 표시 (클라이언트 사이드 카운트 증가 포함) |
+| `PostViewCount` | 조회수 표시 (클라이언트에서 `/api/visit?path=...` GET으로 fetch) |
 | `ArticleJsonLd` | JSON-LD 아티클 구조화 데이터 |
 | `BreadcrumbJsonLd` | JSON-LD 브레드크럼 |
 
@@ -57,7 +57,7 @@
 | State | Component | Description |
 |-------|-----------|-------------|
 | `activeSlug` | `TableOfContents` | IntersectionObserver로 현재 뷰포트 내 헤딩 추적 |
-| `isCollapsed` | `TableOfContents` | 목차 접기/펼치기 상태 (localStorage 유지) — `feat/toc-collapsible` 브랜치에서 추가됨 |
+| `isCollapsed` | `TableOfContents` | 목차 접기/펼치기 상태 (localStorage 유지) |
 
 ---
 
@@ -118,3 +118,4 @@
 - `TableOfContents`는 `toc.length > 0` 일 때만 렌더링
 - GitHub URL은 `jon890/fos-study` 레포 고정
 - 모바일에서 TOC 미노출 — 별도 모바일 TOC 구현 시 이 문서 업데이트 필요
+- **조회수 증가**는 `src/proxy.ts`(Edge middleware)에서 처리 — `PostViewCount`는 표시만 담당
