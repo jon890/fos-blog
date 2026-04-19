@@ -10,6 +10,7 @@ import { ArrowLeft, Folder, ChevronRight, Home, BookOpen } from "lucide-react";
 import { Metadata } from "next";
 import { env } from "@/env";
 import logger from "@/lib/logger";
+import { parseFrontMatter, stripLeadingH1 } from "@/lib/markdown";
 
 const log = logger.child({ module: "app/category/[...path]" });
 const siteUrl = env.NEXT_PUBLIC_SITE_URL;
@@ -195,7 +196,7 @@ export default async function FolderPage({ params }: FolderPageProps) {
               <span>README.md</span>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 md:p-8">
-              <MarkdownRenderer content={readme} basePath={`${folderPath}/README`} />
+              <MarkdownRenderer content={stripLeadingH1(parseFrontMatter(readme).content)} basePath={`${folderPath}/README`} />
             </div>
           </section>
         )}
