@@ -169,14 +169,15 @@
 
 **Context**: `ImageResponse` 로 한글 렌더 시 폰트 지정 필수. 외부 CDN(Google Fonts) fetch는 홈서버에서 네트워크 의존성 + 실패 시 렌더 불가.
 
-**Decision**: **Noto Sans KR Bold** 를 한글 완성형 2350자 + ASCII 로 **subset 한 woff2 파일을 `public/fonts/` 에 번들**.
+**Decision**: **Noto Sans KR Bold** 를 Unicode Hangul Syllables 블록 전체(`U+AC00-D7A3`, 11,172자) + ASCII 로 **subset 한 woff2 파일을 `public/fonts/` 에 번들**.
 - subset 스크립트: `scripts/build-og-fonts.py` (pyftsubset 기반) — 재현 가능
-- 결과물: `public/fonts/NotoSansKR-Bold-subset.woff2` (~200KB 목표)
+- 결과물: `public/fonts/NotoSansKR-Bold-subset.woff2` (목표 ~500KB, 한도 800KB)
 - `ImageResponse` 는 Node `fs.readFile` 로 로컬 파일 로드 후 `fonts` 옵션에 전달
 
 **Drivers**:
 - 홈서버 외부의존성 제거 (네트워크 장애 시에도 OG 이미지 정상 생성)
-- 원본 1.2MB → subset 200KB 로 번들 경량화
+- **모든 한글 렌더 보장** — KS X 1001 2350자로 제한하면 최신 합성 음절(ㅆ, ㅎ 이중받침 조합 등) 누락 위험. Unicode 한글 음절 블록 전체로 풀 렌더
+- 원본 1.2MB → subset ~500KB 로 번들 경량화 (여전히 절반 이상 절감)
 - 스크립트로 재생성 가능 → Noto 업데이트 시 커맨드 1회 실행
 
 **Alternatives Considered**:
