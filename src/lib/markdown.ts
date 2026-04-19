@@ -113,6 +113,21 @@ export interface TocItem {
   slug: string;
 }
 
+/**
+ * Markdown 본문의 선두 H1 라인 + 뒤이은 공백 라인을 제거한다.
+ * ADR-010 참조.
+ */
+export function stripLeadingH1(content: string): string {
+  const lines = content.split("\n");
+  let i = 0;
+  while (i < lines.length && lines[i].trim() === "") i++;
+  if (i >= lines.length) return content;
+  if (!/^#\s+.+$/.test(lines[i])) return content;
+  i++;
+  while (i < lines.length && lines[i].trim() === "") i++;
+  return lines.slice(i).join("\n");
+}
+
 export function generateTableOfContents(content: string): TocItem[] {
   const headingRegex = /^(#{1,6})\s+(.+)$/gm;
   const toc: TocItem[] = [];
