@@ -4,19 +4,36 @@ import path from "node:path";
 export const OG_WIDTH = 1200;
 export const OG_HEIGHT = 630;
 
-export async function loadOgFont(): Promise<ArrayBuffer> {
-  const fontPath = path.join(
-    process.cwd(),
-    "public/fonts/NotoSansKR-Bold-subset.ttf"
-  );
-  const buf = await fs.readFile(fontPath);
-  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+let fontCache: Promise<ArrayBuffer> | null = null;
+let logoCache: Promise<string> | null = null;
+
+export function loadOgFont(): Promise<ArrayBuffer> {
+  if (fontCache) return fontCache;
+  fontCache = (async () => {
+    const fontPath = path.join(
+      process.cwd(),
+      "public/fonts/NotoSansKR-Bold-subset.ttf"
+    );
+    const buf = await fs.readFile(fontPath);
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  })().catch((e) => {
+    fontCache = null;
+    throw e;
+  });
+  return fontCache;
 }
 
-export async function loadOgLogoDataUrl(): Promise<string> {
-  const logoPath = path.join(process.cwd(), "public/logo.png");
-  const buf = await fs.readFile(logoPath);
-  return `data:image/png;base64,${buf.toString("base64")}`;
+export function loadOgLogoDataUrl(): Promise<string> {
+  if (logoCache) return logoCache;
+  logoCache = (async () => {
+    const logoPath = path.join(process.cwd(), "public/logo.png");
+    const buf = await fs.readFile(logoPath);
+    return `data:image/png;base64,${buf.toString("base64")}`;
+  })().catch((e) => {
+    logoCache = null;
+    throw e;
+  });
+  return logoCache;
 }
 
 /**
