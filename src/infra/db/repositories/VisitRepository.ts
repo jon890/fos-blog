@@ -124,13 +124,25 @@ export class VisitRepository extends BaseRepository {
     offset: number;
   }): Promise<Array<{ path: string; visitCount: number }>> {
     const { limit, offset } = params;
-    const results = await this.db
-      .select({ pagePath: visitStats.pagePath, visitCount: visitStats.visitCount })
-      .from(visitStats)
-      .orderBy(desc(visitStats.visitCount), asc(visitStats.pagePath))
-      .limit(limit)
-      .offset(offset);
-    return results.map((r) => ({ path: r.pagePath, visitCount: r.visitCount }));
+    try {
+      const results = await this.db
+        .select({ pagePath: visitStats.pagePath, visitCount: visitStats.visitCount })
+        .from(visitStats)
+        .orderBy(desc(visitStats.visitCount), asc(visitStats.pagePath))
+        .limit(limit)
+        .offset(offset);
+      return results.map((r) => ({ path: r.pagePath, visitCount: r.visitCount }));
+    } catch (error) {
+      log.error(
+        {
+          component: "repo.visit",
+          operation: "getPopularPostPathsOffset",
+          err: error instanceof Error ? error : new Error(String(error)),
+        },
+        "failed to fetch popular posts offset"
+      );
+      throw error;
+    }
   }
 
   async getPopularPostPathsTotal(): Promise<number> {
