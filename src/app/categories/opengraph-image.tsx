@@ -49,9 +49,9 @@ export default async function CategoriesOgImage() {
     );
   }
 
-  const { category } = getRepositories();
   let categories: CategoryData[] = [];
   try {
+    const { category } = getRepositories();
     categories = await category.getCategories();
   } catch (e) {
     log.warn(

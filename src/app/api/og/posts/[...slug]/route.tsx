@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { ImageResponse } from "next/og";
 import logger from "@/lib/logger";
-import { getRepositories } from "@/infra/db/repositories";
+import { getRepositories, PostRepository } from "@/infra/db/repositories";
 import { extractTitle, extractDescription } from "@/lib/markdown";
 import { categoryIcons, DEFAULT_CATEGORY_ICON } from "@/infra/db/constants";
 import {
@@ -55,9 +55,9 @@ export async function GET(
     );
   }
 
-  const { post } = getRepositories();
-  let data: Awaited<ReturnType<typeof post.getPost>> = null;
+  let data: Awaited<ReturnType<PostRepository["getPost"]>> = null;
   try {
+    const { post } = getRepositories();
     data = await post.getPost(decoded);
   } catch (e) {
     log.warn(

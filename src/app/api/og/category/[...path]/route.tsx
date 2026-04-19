@@ -57,9 +57,9 @@ export async function GET(
     );
   }
 
-  const { folder } = getRepositories();
   let contents: FolderContentsResult = { posts: [], folders: [], readme: null };
   try {
+    const { folder } = getRepositories();
     contents = await folder.getFolderContents(folderPath);
   } catch (e) {
     log.warn(
