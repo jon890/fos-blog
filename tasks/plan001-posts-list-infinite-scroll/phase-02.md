@@ -27,8 +27,10 @@ Phase-01에서 추가한 인덱스를 활용하는 Repository 메서드 3개를 
 async getRecentPostsCursor(params: {
   limit: number;
   cursor?: { updatedAt: Date; id: number };
-}): Promise<PostData[]>
+}): Promise<Array<PostData & { updatedAt: Date; id: number }>>
 ```
+
+**반환 타입에 `updatedAt, id`를 처음부터 포함**. API Route가 `nextCursor` 문자열(`<iso8601>:<id>`)을 생성하는 데 필요. 클라이언트 응답에서는 route handler가 두 필드를 생략하고 내려보낸다 (phase-03 책임).
 
 SQL 의미:
 ```
@@ -50,7 +52,7 @@ const whereExpr = cursor
   : eq(posts.isActive, true);
 ```
 
-반환 필드는 `getRecentPosts` 와 동일 (`title, path, slug, category, subcategory, folders, description`). `folders` null-guard 유지.
+기존 `getRecentPosts` SELECT 컬럼 (`title, path, slug, category, subcategory, folders, description`)에 **`updatedAt, id` 추가**. `folders` null-guard는 유지.
 
 ### 2. `VisitRepository.getPopularPostPathsOffset` 추가
 
@@ -81,7 +83,17 @@ SQL:
 SELECT COUNT(*) AS total FROM visit_stats
 ```
 
-에러 시 `logger.error({ component, operation, err }, ...)` 4-field로 로깅 + `throw` (BLG3 사일런트 실패 금지). 기존 `try { ... } catch { return 0; }` 패턴이 아니라 **명시적 throw** — API layer가 500으로 응답.
+에러 시 기존 파일 상단의 `log = logger.child({ module })` 를 재사용하여 **4-field 구조화** 로깅 + `throw` (BLG3 사일런트 실패 금지):
+
+```ts
+log.error(
+  { component: "repo.visit", operation: "getPopularPostPathsTotal", err: error instanceof Error ? error : new Error(String(error)) },
+  "failed to count popular posts"
+);
+throw error;
+```
+
+기존 `try { ... } catch { return 0; }` 패턴이 아니라 **명시적 throw** — API layer가 500으로 응답.
 
 ### 4. PostRepository 단위 테스트 신규 파일
 
@@ -91,6 +103,7 @@ SELECT COUNT(*) AS total FROM visit_stats
 - `getRecentPostsCursor({ limit: 10 })` — cursor 없을 때 상위 10개 (목 DB)
 - `getRecentPostsCursor({ limit: 10, cursor })` — cursor 이후 범위만
 - `getRecentPostsCursor({ limit: 10 })` — `is_active = false` 필터링
+- **반환 객체에 `updatedAt`(Date 인스턴스) + `id`(number) 필드가 존재**하는지 타입 및 값 검증 (phase-03 nextCursor 생성 의존성)
 
 mock은 Drizzle `db` 객체를 `vi.mock`으로 대체. 기존 `SyncService.test.ts` 스타일.
 
@@ -124,14 +137,21 @@ pnpm test --run src/infra/db/repositories/
 # 4) 타입 체크
 pnpm type-check
 
-# 5) logger 구조화 4-field 준수 확인 (BLG2)
-grep -nE "logger.*error.*\{[^}]*component[^}]*operation[^}]*err" src/infra/db/repositories/VisitRepository.ts
+# 5) logger 구조화 4-field 준수 확인 (BLG2) — multiline 허용 + 실제 `log.`/`logger.` 패턴 수용
+grep -nzE "(log|logger)\.(error|warn)\s*\(\s*\{[^}]*component[^}]*operation[^}]*err" src/infra/db/repositories/VisitRepository.ts
+# 또는 문자열 포함 체크 (multiline 호출 대응):
+grep -n "component:" src/infra/db/repositories/VisitRepository.ts | grep -q "repo.visit" && \
+  grep -n "operation:" src/infra/db/repositories/VisitRepository.ts | grep -q "getPopularPostPathsTotal"
 
-# 6) catch 빈 swallow 없음 (BLG3)
-! grep -nE "catch\s*\{\s*return\s+(null|\[\]|\{\});?\s*\}" src/infra/db/repositories/VisitRepository.ts | grep -v "기존허용범위"
+# 6) getPopularPostPathsTotal 함수 내에 catch 사일런트 swallow 없음 (BLG3)
+#    — 기존 getPopularPostPaths 의 `catch { return []; }` 는 보존. awk 블록 추출 후 grep.
+awk '/async getPopularPostPathsTotal/,/^  \}/' src/infra/db/repositories/VisitRepository.ts | \
+  grep -qE "catch\s*\(.*\)\s*\{\s*(return|log\.error)" && \
+  ! awk '/async getPopularPostPathsTotal/,/^  \}/' src/infra/db/repositories/VisitRepository.ts | \
+      grep -nE "catch\s*\(.*\)\s*\{\s*return\s+(null|\[\]|\{\}|0);?\s*\}"
 ```
 
-(성공 기준 6은 기존 코드의 `catch { return 0; }` 패턴은 **보존**. 신규 메서드 `getPopularPostPathsTotal`에만 엄격 적용 — grep 범위를 함수 단위로 좁혀 검증.)
+성공 기준 #6은 기존 `catch { return 0; }` 코드 보존 + 신규 `getPopularPostPathsTotal`에만 엄격 적용 (awk로 함수 범위 추출 후 grep).
 
 ## PHASE_BLOCKED 조건
 

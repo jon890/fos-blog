@@ -149,7 +149,7 @@ grep -l '"use client"' src/components/PostsInfiniteList.tsx
 
 # 3) IntersectionObserver 직접 사용 (ADR-006 준수 — 외부 라이브러리 없음)
 grep -n "new IntersectionObserver" src/components/PostsInfiniteList.tsx
-! grep -nE "from ['\"]react-intersection-observer" src/components/
+! grep -rnE "from ['\"]react-intersection-observer" src/components/
 
 # 4) Cleanup 패턴 (메모리 누수 방지)
 grep -nE "(disconnect|removeEventListener)" src/components/PostsInfiniteList.tsx

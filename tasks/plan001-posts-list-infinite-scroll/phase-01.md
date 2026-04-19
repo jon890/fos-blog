@@ -23,28 +23,54 @@
 - `src/infra/db/schema/visitStats.ts` — 기존 `visit_stats_page_path_idx` unique 인덱스 패턴
 - `drizzle/` 디렉터리 — 기존 마이그레이션 SQL 파일 작명/포맷 참고
 
+## 사전 게이트 (작업 시작 전 필수)
+
+```bash
+# cwd: <worktree root>
+
+# 1) MySQL 컨테이너 기동 확인. 미기동이면 자동 기동
+pnpm db:up
+docker ps --format '{{.Names}} {{.Status}}' | grep -i mysql || {
+  echo "PHASE_BLOCKED: MySQL 컨테이너 기동 실패"; exit 1;
+}
+```
+
+MySQL ping 에러는 `pnpm db:migrate` 실행 시 자연 검출됨. 사전 단계는 컨테이너 기동만 보장.
+
 ## 작업 목록 (총 4개)
 
 ### 1. `src/infra/db/schema/posts.ts` 수정
 
-기존 `index` 배열에 composite descending 인덱스 추가:
+기존 `index` 배열에 composite descending 인덱스 추가. **drizzle-orm 0.45.1은 column-level `.desc()` on index 지원이 불확실**(drizzle-kit snapshot에서 방향 정보 직렬화 이슈 다수 보고) → **`sql` 템플릿 raw expression을 기본 채택**:
 
 ```ts
+import { sql } from "drizzle-orm";
+
 (table) => [
   index("category_idx").on(table.category),
   index("slug_idx").on(table.slug),
-  index("posts_updated_at_id_idx").on(table.updatedAt.desc(), table.id.desc()),
+  index("posts_updated_at_id_idx").on(
+    sql`${table.updatedAt} DESC`,
+    sql`${table.id} DESC`,
+  ),
 ],
 ```
 
-Drizzle MySQL core에서 `.desc()` 체인 지원되는지 버전 확인 (drizzle-orm 0.45.1). 미지원이면 `sql` 템플릿 raw index로 대체 — 이 경우 기존 패턴과 맞춤.
+대안 탐색(선택): `.desc()` chain을 먼저 시도해보고 `pnpm db:generate` 결과 SQL에 `DESC` 키워드가 **포함되지 않으면** 즉시 raw `sql` 방식으로 롤백. 판단 근거는 `grep "DESC" drizzle/<new>.sql` 실측.
 
 ### 2. `src/infra/db/schema/visitStats.ts` 수정
 
+동일하게 raw `sql` 채택:
+
 ```ts
+import { sql } from "drizzle-orm";
+
 (table) => [
   uniqueIndex("visit_stats_page_path_idx").on(table.pagePath),
-  index("visit_stats_count_path_idx").on(table.visitCount.desc(), table.pagePath),
+  index("visit_stats_count_path_idx").on(
+    sql`${table.visitCount} DESC`,
+    sql`${table.pagePath} ASC`,
+  ),
 ],
 ```
 
@@ -95,8 +121,8 @@ git diff --name-only | grep -E "drizzle/meta/_journal\.json"
 # 4) 타입 체크 통과
 pnpm type-check
 
-# 5) db:push 흔적 없음 (BLG1 금지 규칙)
-! grep -r "db:push" drizzle/ 2>/dev/null
+# 5) 생성 SQL에 DESC 키워드가 실제로 포함됐는지 확인 (방향성 누락 시 인덱스가 무용지물)
+ls drizzle/*.sql | tail -1 | xargs grep -n "DESC"
 ```
 
 ## PHASE_BLOCKED 조건

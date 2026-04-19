@@ -170,7 +170,24 @@ pnpm type-check
 pnpm test --run
 pnpm build
 
-# 9) 변경 파일 실측
+# 9) dev server boot + API endpoint 200 응답 확인 (런타임 smoke test)
+pnpm db:up > /dev/null
+(pnpm dev > /tmp/fosblog-dev.log 2>&1 &) && DEV_PID=$!
+# ready 대기 (max 60s)
+for i in {1..60}; do
+  curl -sf http://localhost:3000/api/posts/latest?limit=1 > /dev/null && break
+  sleep 1
+done
+curl -sfo /tmp/latest.json -w "latest=%{http_code}\n" "http://localhost:3000/api/posts/latest?limit=5"
+curl -sfo /tmp/popular.json -w "popular=%{http_code}\n" "http://localhost:3000/api/posts/popular?limit=5&offset=0"
+jq -e '.items and has("nextCursor")' /tmp/latest.json
+jq -e '.items and has("hasMore")'    /tmp/popular.json
+# 페이지 SSR 200 확인
+curl -sfo /dev/null -w "page-latest=%{http_code}\n"  http://localhost:3000/posts/latest
+curl -sfo /dev/null -w "page-popular=%{http_code}\n" http://localhost:3000/posts/popular
+kill $(pgrep -f "next dev" | head -1) 2>/dev/null || true
+
+# 10) 변경 파일 실측
 git diff --name-only  # 기대: 페이지 2개, page.tsx, 컴포넌트 4개, Repository 2개, API route 2개, 테스트 4개, 스키마 2개, drizzle sql 1개
 git diff --stat       # 실측 파일/줄 수 기록 (critic이 수치 검증)
 ```
@@ -184,13 +201,12 @@ git diff --stat       # 실측 파일/줄 수 기록 (critic이 수치 검증)
 ## 완료 후 team-lead 처리
 
 - 모든 phase PASS 후 team-lead가 통합 검증 명령 재확인 (`pnpm lint && pnpm type-check && pnpm test --run && pnpm build`)
-- 단일 커밋 또는 논리 단위별 분리 커밋 (atomic commits — 사용자 선호 메모리 반영)
-  - 권장 분리:
-    - `feat(db): add sort indexes for latest/popular lists`
-    - `feat(posts): add cursor/offset list repository methods + tests`
-    - `feat(api): add /api/posts/latest and /api/posts/popular + tests`
-    - `feat(ui): add infinite scroll components`
-    - `feat(posts): add /posts/latest /posts/popular pages + home CTA`
+- **분리 커밋 필수** (atomic commits — 사용자 선호 메모리 [atomic-commits]). 단일 커밋 금지:
+  - `feat(db): add sort indexes for latest/popular lists`
+  - `feat(posts): add cursor/offset list repository methods + tests`
+  - `feat(api): add /api/posts/latest and /api/posts/popular + tests`
+  - `feat(ui): add infinite scroll components`
+  - `feat(posts): add /posts/latest /posts/popular pages + home CTA`
 - docs는 이미 별도 선행 커밋됨 — 이 plan 실행 중 docs 변경 금지
 - PR 제목: `feat(posts): add infinite scroll latest/popular pages`
 - index.json `status: "completed"` 갱신 커밋 + push (누락 시 재실행 사고)
