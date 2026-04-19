@@ -3,6 +3,7 @@ import { Noto_Sans_KR, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { env } from "@/env";
+import { OG_WIDTH, OG_HEIGHT } from "@/lib/og";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Header } from "@/components/Header";
 import { VisitorCount } from "@/components/VisitorCount";
@@ -64,11 +65,20 @@ export const metadata: Metadata = {
     siteName: "FOS Study",
     title: "FOS Study - 개발 학습 블로그",
     description: "개발 공부 기록을 정리하는 블로그입니다.",
+    images: [
+      {
+        url: `${siteUrl}/og-default.png`,
+        width: OG_WIDTH,
+        height: OG_HEIGHT,
+        alt: "FOS Study — 개발 학습 블로그",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "FOS Study - 개발 학습 블로그",
     description: "개발 공부 기록을 정리하는 블로그입니다.",
+    images: [`${siteUrl}/og-default.png`],
   },
   robots: {
     index: true,

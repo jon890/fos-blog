@@ -41,15 +41,16 @@ test -f public/og-default.png
 #!/usr/bin/env python3
 """
 Noto Sans KR Bold 를 OG 이미지용으로 subset.
-- 대상: 한글 완성형 (U+AC00-U+D7A3, 2350자) + Basic Latin (U+0020-U+007E) + 일반 구두점
+- 대상: Unicode Hangul Syllables 블록 전체 (U+AC00-U+D7A3, 11,172자) + Basic Latin (U+0020-U+007E) + 일반 구두점
 - 결과: public/fonts/NotoSansKR-Bold-subset.woff2
 """
 ```
 
 구현 요구:
 - `fonttools` (pyftsubset) 사용
-- 원본 woff2 다운로드: Google Fonts 공식 URL (`https://fonts.gstatic.com/.../NotoSansKR-Bold.woff2`) 또는 Noto 프로젝트 GitHub release
-- unicode range: `U+0020-007E,U+AC00-D7A3,U+2010-2026,U+3000-303F,U+FF00-FFEF`
+- 원본 폰트 소스 (ADR-008): **Noto 프로젝트 공식 GitHub release 사용** — `https://github.com/notofonts/noto-cjk/releases` 의 Hangul OTF/TTF 또는 변환된 woff2. `fonts.gstatic.com` CDN은 auto-subset 결과라 원본 글리프 전체가 없어 `pyftsubset` 입력으로 부적합. 접근 불가 시 PHASE_BLOCKED.
+- unicode range (ADR-008 반영): `U+0020-007E,U+AC00-D7A3,U+2010-2026,U+3000-303F,U+FF00-FFEF`
+  - `U+AC00-D7A3` = Unicode Hangul Syllables 블록 전체 (11,172자) — 모든 한글 렌더 보장
 - 출력 path: `public/fonts/NotoSansKR-Bold-subset.woff2`
 - 스크립트는 멱등 (이미 있으면 덮어쓰기)
 - stdout 에 "subset size: {bytes}" 출력
@@ -68,11 +69,11 @@ ls -la public/fonts/NotoSansKR-Bold-subset.woff2
 
 검증:
 - 파일 존재
-- 파일 크기 < 300KB (목표 ~200KB)
+- 파일 크기 < 800KB (ADR-008 목표 ~500KB, 한도 800KB). 800KB 초과 시 PHASE_BLOCKED
 
 ### 3. `src/components/JsonLd.tsx` publisher.logo URL 고정값 + width/height
 
-기존 (line 67-71):
+기존 (line 64-71의 `publisher` 블록, 수정 대상은 `logo` sub-object):
 ```ts
 publisher: {
   "@type": "Organization",
@@ -144,10 +145,10 @@ twitter: {
 test -f public/logo.png
 test -f public/og-default.png
 
-# 2) 스크립트 + 생성물
+# 2) 스크립트 + 생성물 (ADR-008 한도 800KB)
 test -f scripts/build-og-fonts.py
 test -f public/fonts/NotoSansKR-Bold-subset.woff2
-[ "$(stat -f%z public/fonts/NotoSansKR-Bold-subset.woff2 2>/dev/null || stat -c%s public/fonts/NotoSansKR-Bold-subset.woff2)" -lt 307200 ]
+[ "$(stat -f%z public/fonts/NotoSansKR-Bold-subset.woff2 2>/dev/null || stat -c%s public/fonts/NotoSansKR-Bold-subset.woff2)" -lt 819200 ]
 
 # 3) JsonLd.tsx 수정 확인
 grep -n 'url: `${url.split("/").slice(0, 3).join("/")}/logo.png`' src/components/JsonLd.tsx
@@ -173,7 +174,8 @@ test -f .next/standalone/public/logo.png || test -f .next/static/og-default.png 
 
 - 전제 자산(`public/logo.png`, `public/og-default.png`) 미존재 → **PHASE_BLOCKED: 사용자가 나노바나나로 이미지 생성 후 commit 필요**
 - `pip install fonttools` 가 환경에 없고 설치 권한 없음 → **PHASE_BLOCKED: CI/로컬 Python 환경 확인 필요**
-- Google Fonts NotoSansKR-Bold 소스 URL 접근 불가 → **PHASE_BLOCKED: 원본 폰트 소스 대체 URL 결정 필요**
+- `notofonts/noto-cjk` GitHub release 접근 불가 → **PHASE_BLOCKED: 원본 폰트 소스 대체 URL 결정 필요**
+- subset 결과 크기가 800KB(ADR-008 한도) 초과 → **PHASE_BLOCKED: unicode range 좁히기 vs ADR-008 한도 재조정 사용자 결정 필요**
 
 ## 커밋 제외
 
