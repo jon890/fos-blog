@@ -206,3 +206,34 @@
 **Consequences**:
 - 첫 요청은 Node runtime 부팅 비용. 이후는 ISR 캐시 히트로 무의미
 - `fs.readFile(path.join(process.cwd(), 'public/fonts/...'))` 같은 Node API 사용 허용
+
+---
+
+## ADR-010. Markdown 본문 선두 H1 제거 (`stripLeadingH1`)
+
+**Context**: 글 상세 페이지(`src/app/posts/[...slug]/page.tsx:177`) 가 `<h1>{title}</h1>` 을 먼저 렌더한 뒤, `MarkdownRenderer` 로 본문을 그대로 렌더한다. 많은 글이 본문 맨 위에 `# Title` 로 시작하므로 **H1 이 한 페이지에 2개** 가 된다. `extractTitle()` 은 title 을 추출하기만 하고 원본 content 에서 제거하지 않는다. FolderPage 의 README 렌더에도 동일 패턴이 존재할 수 있다.
+
+**Decision**: `src/lib/markdown.ts` 에 `stripLeadingH1(content)` 유틸을 추가해, **본문 최상단에 등장하는 첫 h1 라인과 이어지는 공백 라인을 제거**한다. 글 상세와 FolderPage README 렌더 직전에 전처리로 적용.
+
+**Rule set**:
+- frontmatter 제거 후 남은 본문에서, 선두의 `^#\s+.+$` 라인 **1개** + 뒤이은 빈 라인들을 제거
+- 첫 비공백 라인이 h1 이 아니면 변경 없음
+- 본문 중간에 등장하는 h1 은 유지 (기존 글 내 섹션 마커로 간주)
+
+**Drivers**:
+- Google SEO 권고: 페이지당 **단일 H1** 이 가장 명확한 주제 신호
+- Markdown 원본 (GitHub `jon890/fos-study`) 의 `# Title` 관행을 보존하면서, 프론트엔드 렌더 단계에서만 중복 제거 — 원본 불변
+
+**Alternatives Considered**:
+- **`MarkdownRenderer` components.h1 → h2 강등** (기각): 본문 중간 h1 까지 강등되어 의도 왜곡
+- **Markdown 원본 수정** (기각): 200+ 글 일괄 수정 부담 + GitHub sync 마다 재수정 필요
+- **remark plugin** (기각): 오버엔지니어링. 한 줄 regex 로 해결 가능
+
+**Consequences**:
+- 글 상세 / FolderPage README 에서 h1 중복 해소
+- MarkdownRenderer 자체는 순수 렌더러로 유지 (전처리는 caller 책임)
+- 단위 테스트로 케이스 (frontmatter 있음/없음, h1 있음/없음/중간, 빈 content) 검증 — regression 방지
+
+**Follow-ups**:
+- 향후 다른 페이지(검색 결과 등)에서 Markdown 렌더 시에도 동일 전처리 적용 여부 판단
+- 글 본문의 heading 계층이 h2 부터 시작하게 되므로, rehype-slug + TOC 생성 로직 (`generateTableOfContents`) 영향 재확인
