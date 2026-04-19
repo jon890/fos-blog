@@ -245,6 +245,7 @@
 **Follow-ups**:
 - 향후 다른 페이지(검색 결과 등)에서 Markdown 렌더 시에도 동일 전처리 적용 여부 판단
 - 글 본문의 heading 계층이 h2 부터 시작하게 되므로, rehype-slug + TOC 생성 로직 (`generateTableOfContents`) 영향 재확인
+  → **확인됨**: `generateTableOfContents(mainContent)` 에 stripped content 를 전달하므로 H1 제목이 TOC 에서 제거되는 것이 의도된 동작. 페이지 `<h1>` 으로 이미 노출되므로 TOC 중복 없음
 
 ---
 
