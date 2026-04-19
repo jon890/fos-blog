@@ -44,6 +44,7 @@ gh api repos/<owner>/<repo>/pulls/<N>/comments \
   --jq '[.[] | {id: .id, path: .path, line: .line, body: .body[0:500], author_login: .user.login}]'
 ```
 
+**중요**: 두 명령을 **반드시 모두 실행**한다. 인라인 댓글 API만 확인하면 일반 코멘트(claude bot의 구조화 리뷰 포함)를 놓칠 수 있다.
 두 종류의 댓글 ID는 서로 다른 API를 사용하므로 혼동하지 않도록 구분하여 관리한다.
 댓글이 없거나 봇 리뷰가 없으면 사용자에게 알리고 종료한다.
 
