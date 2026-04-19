@@ -47,6 +47,14 @@ export async function generateMetadata({
       description,
       url: canonicalUrl,
       type: "website",
+      images: [
+        {
+          url: `${siteUrl}/api/og/category/${pathSegments.map(encodeURIComponent).join("/")}`,
+          width: 1200,
+          height: 630,
+          alt: `${currentFolder} | FOS Study`,
+        },
+      ],
     },
   };
 }
