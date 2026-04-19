@@ -150,7 +150,7 @@ Content sync cron (crontab):
 
 ## Agent Operating Rules
 
-webtoon-maker-v1에서 검증된 3 레포 공통 규칙. 하네스 (`scripts/run-phases.py`, `.claude/skills/{planning,plan-and-build,build-with-teams,docs-check}`)와 짝을 이룬다.
+webtoon-maker-v1에서 검증된 3 레포 공통 규칙. 하네스 (`.claude/skills/{planning,build-with-teams,docs-check}`)와 짝을 이룬다.
 
 ### 토큰 효율 (Opus/Sonnet 라우팅)
 
@@ -175,7 +175,7 @@ webtoon-maker-v1에서 검증된 3 레포 공통 규칙. 하네스 (`scripts/run
 - **Explore agent는 최후 수단** — Grep/Glob/Read로 3번 이상 시도한 후에도 못 찾을 때만 사용
 - **가정 없이 주장하지 않기** — "dead code", "미사용" 같은 판단은 실제로 참조를 grep한 후에만 제기
 
-### Task 작업 규칙 (plan-and-build / build-with-teams 사용 시)
+### Task 작업 규칙 (build-with-teams 사용 시)
 
 - 각 phase는 **원자적 단일 책임** — 다른 관심사면 별도 phase로 분리. **작업 항목 5개 이하** 엄수
 - **task 파일 생성 즉시 git commit** — `tasks/{plan}/index.json` + phase 파일을 실행 전에 커밋

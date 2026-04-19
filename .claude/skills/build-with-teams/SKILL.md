@@ -1,11 +1,11 @@
 ---
 name: build-with-teams
-description: Claude Agent Teams 기반 구현 자동화. 계획(team-lead) → 평가(critic) → 실행(executor) → 검증(docs-verifier) 파이프라인. run-phases.py 대신 에이전트 팀이 가시적으로 협업.
+description: Claude Agent Teams 기반 구현 자동화. 계획(team-lead) → 평가(critic) → 실행(executor) → 검증(docs-verifier) 파이프라인. 에이전트 팀이 가시적으로 협업하며 task phase 를 순차 실행.
 ---
 
 # build-with-teams
 
-task phase를 Claude Agent Teams 파이프라인으로 실행하는 시스템. `run-phases.py` 백그라운드 실행 대신 4-5명의 에이전트가 가시적으로 협업.
+task phase를 Claude Agent Teams 파이프라인으로 실행하는 시스템. 4-5명의 에이전트가 가시적으로 협업.
 
 ## 사전 검증 (실행 전 필수)
 
@@ -119,11 +119,12 @@ team-lead가 `docs/` 하위 문서를 읽고 사용자와 논의.
 ### 4. task 파일 생성
 
 `tasks/{task-name}/` 디렉터리에 `index.json` + `phase-{N}.md` 생성.
-phase 프롬프트 규칙은 기존 `plan-and-build`와 동일:
+phase 프롬프트 규칙:
 
 - 원자적 단일 책임, 작업 항목 5개 이하
 - 자기완결적 (이전 대화 없이 독립 실행 가능)
-- 성공 기준에 모든 작업 검증 포함
+- 성공 기준에 모든 작업 검증 포함 (grep/test/diff/build — "눈으로 확인" 금지)
+- 모든 Bash 블록 앞에 `# cwd: ...` 주석
 
 task 파일 생성 후 커밋.
 
@@ -278,13 +279,3 @@ executor가 phase 실패 보고 시:
     → [worktree 정리 + 팀 shutdown]
 ```
 
-## vs plan-and-build
-
-| | plan-and-build | build-with-teams |
-|---|---|---|
-| 실행 방식 | `run-phases.py` 백그라운드 | Claude Agent Teams 가시적 협업 |
-| 평가 단계 | 없음 | critic APPROVE 게이트 |
-| docs 검증 | 없음 | docs-verifier 자동 검증 |
-| 진행 상황 | 로그 파일 확인 | 에이전트 메시지로 실시간 확인 |
-| 실패 복구 | `--from-phase` 재시작 | team-lead 판단 → executor 재지시 |
-| 적합 규모 | 소·중 | 중·대 |
