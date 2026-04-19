@@ -28,18 +28,24 @@
 
 ```ts
 // src/infra/db/schema/posts.ts
-index("posts_updated_at_id_idx").on(table.updatedAt.desc(), table.id.desc()),
+index("posts_updated_at_id_idx").on(
+  sql`${table.updatedAt} DESC`,
+  sql`${table.id} DESC`,
+),
 ```
 
 - **목적**: `WHERE is_active = 1 ORDER BY updated_at DESC, id DESC LIMIT 10` 및 cursor 조건 `(updated_at, id) < (?, ?)` 의 빠른 평가
 - **없으면**: filesort 발생 → 200개 규모에서는 감내 가능하나 성장 시 degrade
-- **주의**: MySQL 8.4는 descending index 네이티브 지원 → Drizzle에서 `.desc()` chain 필요
+- **주의**: drizzle-orm 0.45.1은 column-level `.desc()` index chain의 SQL 방향 직렬화가 불안정 → raw `sql\`${col} DESC\`` 템플릿 채택 (생성 SQL에 `DESC` 키워드 실측 확인)
 
 ### Index B: `visit_stats` 인기 정렬 offset 페이징 지원
 
 ```ts
 // src/infra/db/schema/visitStats.ts
-index("visit_stats_count_path_idx").on(table.visitCount.desc(), table.pagePath),
+index("visit_stats_count_path_idx").on(
+  sql`${table.visitCount} DESC`,
+  sql`${table.pagePath} ASC`,
+),
 ```
 
 - **목적**: `ORDER BY visit_count DESC, page_path ASC LIMIT 10 OFFSET ?` 의 빠른 평가 + **동점일 때 순서 안정화** (ADR-002)
@@ -108,7 +114,7 @@ ORDER BY visit_count DESC, page_path ASC
 LIMIT :limit OFFSET :offset
 ```
 
-`hasMore` 계산은 API Route 레이어에서 `offset + items.length < total` 로 판정.
+`hasMore` 계산은 API Route 레이어에서 `offset + popularPaths.length < total` 로 판정 (비활성 포스트로 `items`가 줄어도 `visit_stats` 기준으로 진행).
 
 ---
 
