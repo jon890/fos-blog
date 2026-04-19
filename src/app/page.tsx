@@ -6,6 +6,7 @@ import logger from "@/lib/logger";
 const log = logger.child({ module: "app/page" });
 import { CategoryList } from "@/components/CategoryList";
 import { PostCard } from "@/components/PostCard";
+import { SectionCTAButton } from "@/components/SectionCTAButton";
 import { WebsiteJsonLd } from "@/components/JsonLd";
 import { ArrowRight, Sparkles, Flame } from "lucide-react";
 import Link from "next/link";
@@ -117,6 +118,7 @@ export default async function HomePage() {
                 />
               ))}
             </div>
+            <SectionCTAButton href="/posts/popular" label="인기 글 더 보기" />
           </section>
         )}
 
@@ -128,15 +130,18 @@ export default async function HomePage() {
             </h2>
           </div>
           {recentPosts.length > 0 ? (
-            <div className="space-y-2 md:space-y-4">
-              {recentPosts.map((post) => (
-                <PostCard
-                  key={post.path}
-                  post={post}
-                  viewCount={visitCounts[post.path] ?? 0}
-                />
-              ))}
-            </div>
+            <>
+              <div className="space-y-2 md:space-y-4">
+                {recentPosts.map((post) => (
+                  <PostCard
+                    key={post.path}
+                    post={post}
+                    viewCount={visitCounts[post.path] ?? 0}
+                  />
+                ))}
+              </div>
+              <SectionCTAButton href="/posts/latest" label="최신 글 더 보기" />
+            </>
           ) : (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               <p>아직 등록된 글이 없습니다.</p>
