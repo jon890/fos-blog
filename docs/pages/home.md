@@ -42,8 +42,12 @@
 ## Interactions
 
 - **카테고리 카드 클릭**: `/category/<slug>` 이동
-- **"모두 보기" 링크**: `/categories` 이동
+- **카테고리 섹션 "모두 보기" 링크**: `/categories` 이동
+- **"인기 글 더 보기" CTA 버튼** (섹션 하단): `/posts/popular` 이동
+- **"최신 글 더 보기" CTA 버튼** (섹션 하단): `/posts/latest` 이동
 - **PostCard 클릭**: `/posts/<path>` 이동
+
+※ 카테고리 섹션은 헤더 우측 "모두 보기 →" 링크, 글 섹션은 섹션 하단 큰 CTA 버튼 — [ADR-003](../adr.md#adr-003)
 
 ---
 
@@ -58,9 +62,11 @@
 
 ```
 Hero Section (제목 + 설명)
-Categories Section (최대 6개 → "모두 보기" 링크)
+Categories Section (최대 6개 → 헤더 우측 "모두 보기" 링크)
 Popular Posts Section (인기 글, 조회수 있을 때만 표시)
+  └ 섹션 하단 CTA 버튼 "인기 글 더 보기 →"
 Recent Posts Section (최근 6개)
+  └ 섹션 하단 CTA 버튼 "최신 글 더 보기 →"
 Stats Section (카테고리 수 / 전체 글 수 / "계속 성장 중")
 ```
 
@@ -71,6 +77,7 @@ Stats Section (카테고리 수 / 전체 글 수 / "계속 성장 중")
 - `src/app/page.tsx`
 - `src/components/CategoryList.tsx`
 - `src/components/PostCard.tsx`
+- `src/components/SectionCTAButton.tsx` (신규 — "더 보기" CTA)
 - `src/components/JsonLd.tsx`
 - `src/infra/db/repositories/CategoryRepository.ts`
 - `src/infra/db/repositories/PostRepository.ts`
