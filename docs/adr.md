@@ -128,3 +128,81 @@
 **Consequences**:
 - 컴포넌트 내부에서 `useEffect` + `IntersectionObserver` 훅 패턴 직접 관리
 - 리렌더 최적화는 `useRef`로 observer 인스턴스 고정
+
+---
+
+## ADR-007. OG 이미지 전략 — `next/og` 동적 생성 + 정적 fallback 하이브리드
+
+**Context**: 소셜 공유 시 썸네일 이미지가 CTR에 큰 영향. 현재 `layout.openGraph.images` 미설정 → 공유 시 이미지 없음. `ArticleJsonLd.publisher.logo` 가 실존하지 않는 URL(`/icon`) 참조 → Rich Results 검증 실패.
+
+**Decision**:
+- **정적 fallback**: `public/og-default.png` (1200×630), `public/logo.png` (512×512) 를 자산으로 고정 배치 — `layout.tsx` metadata.openGraph/twitter.images 에 기본값, `JsonLd.tsx` publisher.logo URL 에 사용
+- **동적 생성**: `next/og` `ImageResponse` 사용하여 각 페이지마다 제목/발췌/카테고리 배지가 렌더된 고유 OG 이미지 런타임 생성
+- 대상 경로:
+  - `src/app/opengraph-image.tsx` (홈)
+  - `src/app/categories/opengraph-image.tsx`
+  - `src/app/category/[...path]/opengraph-image.tsx`
+  - `src/app/posts/[...slug]/opengraph-image.tsx`
+- ISR `revalidate = 60` (글 페이지와 동기 맞춤)
+
+**Drivers**:
+- **CTR 극대화**: 공유 시 제목이 이미지에 렌더됨 → Twitter/Facebook/Slack 미리보기에서 즉시 내용 파악
+- **홈서버 호환**: Next.js 공식 API라 standalone 빌드에서 동작
+- **정적 fallback 보험**: 동적 생성 실패/미구현 페이지에도 브랜드 이미지 노출
+
+**Alternatives Considered**:
+- **정적 이미지 1장만** (`og-default.png` 단독): 간단하지만 글마다 같은 이미지 → 공유 변별력 없음. 기각
+- **빌드 타임 pre-render (SSG)**: 200개 OG 이미지를 빌드 시 생성. 빌드 시간 증가 + 글 수정 반영 지연. ISR 60초가 더 자연스러움. 기각
+
+**Consequences**:
+- `public/` 에 이미지 자산 2개 + 폰트 파일 1개 번들 필요
+- `ImageResponse` 공용 유틸(`src/lib/og.ts`)로 스타일/폰트/로고 embedding 중앙 관리
+- 동적 이미지 alt 텍스트는 각 `opengraph-image.tsx` 의 `export const alt` 로 페이지별 지정
+
+**Follow-ups**:
+- 빌드 후 Facebook Sharing Debugger / Twitter Card Validator / Google Rich Results Test 로 전수 검증
+- 향후 다크/라이트 변형, 카테고리별 색상 테마 고려 가능
+
+---
+
+## ADR-008. 동적 OG 폰트 — 로컬 subset 파일 번들
+
+**Context**: `ImageResponse` 로 한글 렌더 시 폰트 지정 필수. 외부 CDN(Google Fonts) fetch는 홈서버에서 네트워크 의존성 + 실패 시 렌더 불가.
+
+**Decision**: **Noto Sans KR Bold** 를 한글 완성형 2350자 + ASCII 로 **subset 한 woff2 파일을 `public/fonts/` 에 번들**.
+- subset 스크립트: `scripts/build-og-fonts.py` (pyftsubset 기반) — 재현 가능
+- 결과물: `public/fonts/NotoSansKR-Bold-subset.woff2` (~200KB 목표)
+- `ImageResponse` 는 Node `fs.readFile` 로 로컬 파일 로드 후 `fonts` 옵션에 전달
+
+**Drivers**:
+- 홈서버 외부의존성 제거 (네트워크 장애 시에도 OG 이미지 정상 생성)
+- 원본 1.2MB → subset 200KB 로 번들 경량화
+- 스크립트로 재생성 가능 → Noto 업데이트 시 커맨드 1회 실행
+
+**Alternatives Considered**:
+- **원본 woff2 그대로 번들**: 간단하지만 1.2MB. standalone 이미지 크기 증가. 기각
+- **Google Fonts runtime fetch**: 네트워크 의존성. 기각
+
+**Consequences**:
+- Python + fonttools 도커/CI 환경에서 subset 재생성 가능
+- `scripts/build-og-fonts.py` README 와 실행 가이드 필요
+
+---
+
+## ADR-009. `ImageResponse` 런타임 — Node.js 명시
+
+**Context**: `next/og` `ImageResponse` 는 기본 Edge runtime. 홈서버 standalone 에서는 Node.js 우선.
+
+**Decision**: 각 `opengraph-image.tsx` 에 `export const runtime = "nodejs"` 명시.
+
+**Drivers**:
+- **홈서버 standalone 안정성**: Node.js 전용 API(`fs.readFile` 로 폰트/로고 로드)를 문제없이 사용
+- **의존성 제약 최소**: Edge runtime 이 제한하는 Node API 사용 가능 (future-proof)
+- 성능 차이는 ISR 캐싱(60초) 이 흡수
+
+**Alternatives Considered**:
+- Edge runtime: 빠르지만 `fs` 미지원 → 폰트/로고 embedding 복잡. 기각
+
+**Consequences**:
+- 첫 요청은 Node runtime 부팅 비용. 이후는 ISR 캐시 히트로 무의미
+- `fs.readFile(path.join(process.cwd(), 'public/fonts/...'))` 같은 Node API 사용 허용
