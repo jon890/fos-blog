@@ -94,7 +94,7 @@ drizzle/
        │         └─ VisitRepository.getPopularPostPathsOffset({ limit, offset })
        │         └─ VisitRepository.getPopularPostPathsTotal()
        │         └─ PostRepository.getPostsByPaths(paths)
-       │         └─ response: { items, hasMore }
+       │         └─ response: { items, hasMore, nextOffset }
        │
        └─ 끝 도달 → nextCursor/hasMore 기반 종료
 ```
@@ -103,20 +103,32 @@ drizzle/
 
 ## 4. `PostsInfiniteList` 컴포넌트 (핵심)
 
-**Props**:
+**Props** (discriminated union — mode 별로 필요한 필드만 강제):
 ```ts
-type Props = {
-  mode: "latest" | "popular";
-  initialItems: Array<PostData & { visitCount: number }>;
-  initialNext: { cursor: string | null } | { offset: number; hasMore: boolean };
-};
+type PostItem = PostData & { visitCount: number };
+
+type Props =
+  | {
+      mode: "latest";
+      initialItems: PostItem[];
+      initialNextCursor: string | null;      // null → 더 이상 없음
+    }
+  | {
+      mode: "popular";
+      initialItems: PostItem[];
+      initialOffset: number;                 // 다음 요청 offset = pathRows.length (visit_stats 기준, 비활성 포스트 포함)
+      initialHasMore: boolean;
+    };
 ```
+
+평탄화 이유: `mode`와 페이지네이션 상태를 직접 매핑 — `mode === "latest"`면 `initialNextCursor`만 접근 가능, TS narrowing으로 cursor/offset 혼용 버그 차단.
 
 **내부 상태**:
 - `items` — 누적된 글 배열
 - `status` — `"idle" | "loading" | "error" | "done"`
-- `next` — cursor string 또는 offset number
-- `observerRef` — 바닥 sentinel div ref
+- `nextCursor` (latest 모드) / `nextOffset` (popular 모드)
+- `sentinelRef` — 바닥 sentinel div ref
+- `observerRef` — IntersectionObserver 인스턴스 ref
 
 **핵심 로직 (의사코드)**:
 ```
@@ -126,7 +138,7 @@ loadMore():
   try:
     res = fetch(apiUrl(mode, next))
     items.append(res.items)
-    next = (mode=latest) ? res.nextCursor : res.offset + limit
+    next = (mode=latest) ? res.nextCursor : res.nextOffset
     if terminator(res): status = "done"
     else: status = "idle"
   catch:
@@ -135,6 +147,10 @@ loadMore():
 IntersectionObserver(sentinel, threshold=0.1) → loadMore()
 Button onClick → loadMore()
 ```
+
+"더 보기" 버튼은 `status === "idle"` 일 때만 노출 (loading/error/done 상태는 각자 고유 UI).
+
+popular offset 진행은 **`visit_stats` 테이블 기준 `pathRows.length` 단위**로 증가 — 비활성 포스트 필터링으로 일부 `items`가 제외돼도 다음 요청에서 중복되지 않도록 API가 `nextOffset`을 명시적으로 응답.
 
 **접근성**:
 - `aria-live="polite"` 상태 영역
@@ -163,11 +179,14 @@ Query: limit?: number (default 10, max 30), offset?: number (default 0)
 Response 200:
 {
   items: Array<PostData & { visitCount: number }>,
-  hasMore: boolean
+  hasMore: boolean,
+  nextOffset: number   // offset + pathRows.length (비활성 포스트 포함 기준)
 }
 Response 400: offset 음수/비정상
 Response 500: DB 오류
 ```
+
+`nextOffset`은 `visit_stats` 테이블 기준 — 비활성 포스트가 `items`에서 빠지더라도 다음 요청 시 이미 스킵한 paths를 재요청하지 않도록 보장.
 
 ### 캐시 정책
 - 두 route 모두 `export const revalidate = <ISR 기준>` 혹은 `Cache-Control: public, s-maxage=...` 를 **설정하지 않는다** (무한 스크롤 추가 fetch는 동적)

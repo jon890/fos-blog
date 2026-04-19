@@ -37,15 +37,14 @@ export async function GET(request: Request): Promise<Response>
 7. 응답: `{ items, nextCursor }`
 8. 에러 시 BLG2 4-field 로거 + 500 + `{ error: "..." }` 응답 (BLG3 준수)
 
-※ `updatedAt`은 Repository에서 반환되지 않음 (기존 `PostData`는 `createdAt`/`updatedAt` 미포함). nextCursor 생성용으로 필요하므로:
-- 옵션 A: `getRecentPostsCursor` 반환 타입에 `updatedAt, id` 추가
-- 옵션 B: Route에서 별도로 조회
-→ **옵션 A 선택** (한 번 쿼리로 끝). Phase-02에서 반환 DTO에 `updatedAt: Date, id: number` 포함. 응답에서는 `updatedAt`을 **제외**하고 `nextCursor` 계산 후 버림.
+※ `nextCursor` 생성용으로 `updatedAt`/`id`가 필요. **phase-02에서 `getRecentPostsCursor` 반환 타입이 이미 `Array<PostData & { updatedAt: Date; id: number }>`로 확정**되어 있음 (phase-02 작업 1 참조). 이 Route Handler는 응답 body에서 두 필드를 제거하고 `items`에 싣는다:
 
-이 요구사항은 Phase-02 작업 항목 1에 역으로 반영해야 하므로, **executor는 Phase-02 시그니처를 이 phase 실행 시점에 확장**한다:
 ```ts
-// 확장된 시그니처
-async getRecentPostsCursor(...): Promise<Array<PostData & { updatedAt: Date; id: number }>>
+const rows = await post.getRecentPostsCursor({ limit, cursor });
+const last = rows[rows.length - 1];
+const nextCursor = rows.length === limit && last
+  ? `${last.updatedAt.toISOString()}:${last.id}` : null;
+const items = rows.map(({ updatedAt: _u, id: _i, ...rest }) => rest);
 ```
 
 ### 2. `GET /api/posts/popular` Route Handler
@@ -97,9 +96,14 @@ grep -n "export async function GET" src/app/api/posts/popular/route.ts
 grep -n "nextCursor" src/app/api/posts/latest/route.ts
 grep -n "hasMore" src/app/api/posts/popular/route.ts
 
-# 3) Logger 4-field 구조화 (BLG2)
-grep -nE "logger\.(error|warn)\(\s*\{[^}]*component" src/app/api/posts/latest/route.ts
-grep -nE "logger\.(error|warn)\(\s*\{[^}]*component" src/app/api/posts/popular/route.ts
+# 3) Logger 4-field 구조화 (BLG2) — 실제 코드베이스는 `log = logger.child({module})` → `log.error({...}, "msg")` 패턴.
+#    multi-line 호출 허용을 위해 component/operation/err 문자열 존재만 체크.
+grep -nE "component:\s*\"api\.posts\.latest\"" src/app/api/posts/latest/route.ts
+grep -nE "operation:\s*\"GET\"" src/app/api/posts/latest/route.ts
+grep -nE "err:" src/app/api/posts/latest/route.ts
+grep -nE "component:\s*\"api\.posts\.popular\"" src/app/api/posts/popular/route.ts
+grep -nE "operation:\s*\"GET\"" src/app/api/posts/popular/route.ts
+grep -nE "err:" src/app/api/posts/popular/route.ts
 
 # 4) 테스트 통과
 pnpm test --run src/app/api/posts/

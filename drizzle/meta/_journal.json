@@ -15,6 +15,20 @@
       "when": 1775017659512,
       "tag": "0001_add_comments_visit_logs_visit_stats",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1776579603395,
+      "tag": "0002_mature_mercury",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1776580577680,
+      "tag": "0003_dashing_rattler",
+      "breakpoints": true
     }
   ]
 }
