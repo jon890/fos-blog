@@ -1,8 +1,9 @@
 {
   "name": "plan002-seo-share-rich-results",
   "description": "OG 이미지 (정적 fallback + next/og 동적 생성) + Article JSON-LD publisher.logo 수정 → 소셜 공유 CTR + Google Rich Results 회복",
-  "status": "pending",
+  "status": "completed",
   "created_at": "2026-04-19",
+  "completed_at": "2026-04-19",
   "total_phases": 2,
   "related_docs": [
     "docs/adr.md"
@@ -17,14 +18,15 @@
       "file": "phase-01.md",
       "title": "정적 OG 자산 + 폰트 subset + JsonLd/layout metadata 수정",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 2,
       "file": "phase-02.md",
       "title": "next/og 동적 OG 이미지 4개 (홈/categories/category/글 상세)",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     }
-  ]
+  ],
+  "pr": "https://github.com/jon890/fos-blog/pull/61"
 }
