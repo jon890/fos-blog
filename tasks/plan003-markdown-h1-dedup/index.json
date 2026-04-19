@@ -1,8 +1,9 @@
 {
   "name": "plan003-markdown-h1-dedup",
   "description": "글 상세/FolderPage README 의 H1 중복 해소 — Markdown 본문 선두 h1 + 이어지는 공백 라인 제거 (stripLeadingH1 유틸)",
-  "status": "pending",
+  "status": "completed",
   "created_at": "2026-04-19",
+  "completed_at": "2026-04-19",
   "total_phases": 1,
   "related_docs": [
     "docs/adr.md"
@@ -13,7 +14,8 @@
       "file": "phase-01.md",
       "title": "stripLeadingH1 유틸 + 단위 테스트 + 글 상세/FolderPage 적용",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     }
-  ]
+  ],
+  "pr": "https://github.com/jon890/fos-blog/pull/62"
 }
