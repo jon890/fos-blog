@@ -116,9 +116,19 @@ lib/ (shared utils — used everywhere)
 ```
 
 - `app/` should not import directly from `infra/` — go through `services/`
-- Schema source of truth: `src/infra/db/schema/` — run `pnpm db:push` after changes
+- Schema source of truth: `src/infra/db/schema/` — 변경 후 `pnpm db:generate` 로 SQL 생성 → 커밋 → `pnpm db:migrate` 로 apply (아래 "DB 스키마 변경 규칙" 참조)
 - `posts.path` = canonical GitHub file path (unique key, not `slug`)
 - `posts.isActive` = soft delete — always filter `eq(posts.isActive, true)`
+
+---
+
+## DB 스키마 변경 규칙
+
+- **`pnpm db:push` 프로덕션 사용 금지** — 마이그레이션 이력이 남지 않아 홈서버 배포 시 schema drift + 데이터 손실 위험
+- 반드시 `pnpm db:generate`로 `drizzle/` 하위 SQL 파일 생성 → **git 커밋에 포함** → `pnpm db:migrate`로 apply
+- 파괴적 변경(drop column/table, rename)은 SQL 파일 수동 검토 후 apply
+- **로컬 실험** 한정으로 `pnpm db:push` 사용 가능. 단 커밋 전 반드시 `db:generate`로 마이그레이션화하거나 revert
+- `drizzle/` 디렉터리는 git 추적 대상 (자동 생성물이지만 배포 환경에서 apply 필요)
 
 ---
 
