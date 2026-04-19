@@ -49,13 +49,24 @@ load_dotenv()
 
 # ── 웹훅 알림 ──────────────────────────────────────────────────────────────────
 
+WEBHOOK_TIMEOUT = 10  # seconds
+DEFAULT_BOT_NAME = "fos-blog"
+
+
 def notify(message: str) -> None:
     """DOORAY_WEBHOOK_URL 환경변수가 있을 때만 전송. 없으면 조용히 스킵."""
     webhook_url = os.environ.get("DOORAY_WEBHOOK_URL")
     if not webhook_url:
         return
+    if not webhook_url.startswith("https://"):
+        print(
+            f"[warn] DOORAY_WEBHOOK_URL은 https://로 시작해야 합니다: {webhook_url[:20]}...",
+            file=sys.stderr,
+        )
+        return
+    bot_name = os.environ.get("DOORAY_BOT_NAME", DEFAULT_BOT_NAME)
     payload = json.dumps({
-        "botName": "webtoon-maker",
+        "botName": bot_name,
         "botIconImage": "https://static.dooray.com/static_images/dooray-bot.png",
         "text": message,
     }).encode()
@@ -66,7 +77,7 @@ def notify(message: str) -> None:
         method="POST",
     )
     try:
-        urllib.request.urlopen(req, timeout=10)
+        urllib.request.urlopen(req, timeout=WEBHOOK_TIMEOUT)
     except Exception as e:
         print(f"[warn] 웹훅 알림 실패: {e}", file=sys.stderr)
 
@@ -115,8 +126,20 @@ def validate_task(task: dict, task_dir: Path) -> None:
                     )
 
                 phase_file = task_dir / phase.get("file", "")
-                if phase.get("file") and not phase_file.exists():
-                    errors.append(f"phase 파일 없음: {phase_file}")
+                if phase.get("file"):
+                    resolved_task_dir = task_dir.resolve()
+                    try:
+                        if not phase_file.resolve().is_relative_to(resolved_task_dir):
+                            errors.append(
+                                f"phase[{i}].file은 task_dir 내부에 있어야 합니다: "
+                                f"{phase.get('file')}"
+                            )
+                    except (OSError, ValueError) as e:
+                        errors.append(
+                            f"phase[{i}].file 경로 해석 실패: {phase.get('file')} ({e})"
+                        )
+                    if not phase_file.exists():
+                        errors.append(f"phase 파일 없음: {phase_file}")
 
     if errors:
         print("\n❌ index.json 검증 실패:\n", file=sys.stderr)
