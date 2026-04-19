@@ -82,84 +82,97 @@ export async function GET(
   const icon = categoryIcons[category] ?? DEFAULT_CATEGORY_ICON;
   const showBadge = Boolean(data && category);
 
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "flex-start",
-          background: `linear-gradient(135deg, ${OG_COLORS.bgGradientStart} 0%, ${OG_COLORS.bgGradientMid} 50%, ${OG_COLORS.bgGradientEnd} 100%)`,
-          padding: OG_LAYOUT.padding,
-          position: "relative",
-        }}
-      >
-        {showBadge && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              background: OG_COLORS.badgeBg,
-              border: `1px solid ${OG_COLORS.badgeBorder}`,
-              borderRadius: 24,
-              padding: "8px 20px",
-              fontSize: 24,
-              color: OG_COLORS.textPrimary,
-              marginBottom: 28,
-            }}
-          >
-            {icon} {category}
-          </div>
-        )}
+  try {
+    return new ImageResponse(
+      (
         <div
           style={{
-            fontSize: 72,
-            fontWeight: 700,
-            color: OG_COLORS.textPrimary,
-            lineHeight: 1.2,
-            marginBottom: 28,
-            display: "-webkit-box",
-            overflow: "hidden",
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            background: `linear-gradient(135deg, ${OG_COLORS.bgGradientStart} 0%, ${OG_COLORS.bgGradientMid} 50%, ${OG_COLORS.bgGradientEnd} 100%)`,
+            padding: OG_LAYOUT.padding,
+            position: "relative",
           }}
         >
-          {title}
-        </div>
-        {description && (
+          {showBadge && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                background: OG_COLORS.badgeBg,
+                border: `1px solid ${OG_COLORS.badgeBorder}`,
+                borderRadius: 24,
+                padding: "8px 20px",
+                fontSize: 24,
+                color: OG_COLORS.textPrimary,
+                marginBottom: 28,
+              }}
+            >
+              {icon} {category}
+            </div>
+          )}
           <div
             style={{
-              fontSize: 32,
-              color: OG_COLORS.textSecondary,
-              lineHeight: 1.5,
+              fontSize: 72,
+              fontWeight: 700,
+              color: OG_COLORS.textPrimary,
+              lineHeight: 1.2,
+              marginBottom: 28,
+              display: "-webkit-box",
+              overflow: "hidden",
             }}
           >
-            {description}
+            {title}
           </div>
-        )}
-        {logo && (
-          <img
-            src={logo}
-            width={OG_LAYOUT.logoSize}
-            height={OG_LAYOUT.logoSize}
-            alt="FOS Study"
-            style={{
-              position: "absolute",
-              bottom: OG_LAYOUT.logoBottom,
-              left: OG_LAYOUT.logoLeft,
-              borderRadius: OG_LAYOUT.logoBorderRadius,
-            }}
-          />
-        )}
-      </div>
-    ),
-    {
-      width: OG_WIDTH,
-      height: OG_HEIGHT,
-      fonts: font
-        ? [{ name: "Noto Sans KR", data: font, weight: 700, style: "normal" }]
-        : [],
-    }
-  );
+          {description && (
+            <div
+              style={{
+                fontSize: 32,
+                color: OG_COLORS.textSecondary,
+                lineHeight: 1.5,
+              }}
+            >
+              {description}
+            </div>
+          )}
+          {logo && (
+            <img
+              src={logo}
+              width={OG_LAYOUT.logoSize}
+              height={OG_LAYOUT.logoSize}
+              alt="FOS Study"
+              style={{
+                position: "absolute",
+                bottom: OG_LAYOUT.logoBottom,
+                left: OG_LAYOUT.logoLeft,
+                borderRadius: OG_LAYOUT.logoBorderRadius,
+              }}
+            />
+          )}
+        </div>
+      ),
+      {
+        width: OG_WIDTH,
+        height: OG_HEIGHT,
+        fonts: font
+          ? [{ name: "Noto Sans KR", data: font, weight: 700, style: "normal" }]
+          : [],
+      }
+    );
+  } catch (e) {
+    log.error(
+      {
+        component: "og-post",
+        operation: "ImageResponse",
+        slug: decoded,
+        err: e instanceof Error ? e : new Error(String(e)),
+      },
+      "OG image render failed"
+    );
+    return new Response("Internal Server Error", { status: 500 });
+  }
 }

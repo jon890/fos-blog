@@ -47,70 +47,83 @@ export default async function HomeOgImage() {
     );
   }
 
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "flex-start",
-          background: `linear-gradient(135deg, ${OG_COLORS.bgGradientStart} 0%, ${OG_COLORS.bgGradientMid} 50%, ${OG_COLORS.bgGradientEnd} 100%)`,
-          padding: OG_LAYOUT.padding,
-          position: "relative",
-        }}
-      >
+  try {
+    return new ImageResponse(
+      (
         <div
           style={{
-            fontSize: 84,
-            fontWeight: 700,
-            color: OG_COLORS.textPrimary,
-            lineHeight: 1.1,
-            marginBottom: 20,
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            background: `linear-gradient(135deg, ${OG_COLORS.bgGradientStart} 0%, ${OG_COLORS.bgGradientMid} 50%, ${OG_COLORS.bgGradientEnd} 100%)`,
+            padding: OG_LAYOUT.padding,
+            position: "relative",
           }}
         >
-          FOS Study
-        </div>
-        <div
-          style={{
-            fontSize: 40,
-            color: OG_COLORS.textPrimary,
-            marginBottom: 32,
-            opacity: 0.9,
-          }}
-        >
-          개발 학습 블로그
-        </div>
-        <div
-          style={{
-            fontSize: 24,
-            color: OG_COLORS.textSecondary,
-          }}
-        >
-          AI · Algorithm · Database · DevOps
-        </div>
-        {logo && (
-          <img
-            src={logo}
-            width={OG_LAYOUT.logoSize}
-            height={OG_LAYOUT.logoSize}
+          <div
             style={{
-              position: "absolute",
-              bottom: OG_LAYOUT.logoBottom,
-              left: OG_LAYOUT.logoLeft,
-              borderRadius: OG_LAYOUT.logoBorderRadius,
+              fontSize: 84,
+              fontWeight: 700,
+              color: OG_COLORS.textPrimary,
+              lineHeight: 1.1,
+              marginBottom: 20,
             }}
-          />
-        )}
-      </div>
-    ),
-    {
-      ...size,
-      fonts: font
-        ? [{ name: "Noto Sans KR", data: font, weight: 700, style: "normal" }]
-        : [],
-    }
-  );
+          >
+            FOS Study
+          </div>
+          <div
+            style={{
+              fontSize: 40,
+              color: OG_COLORS.textPrimary,
+              marginBottom: 32,
+              opacity: 0.9,
+            }}
+          >
+            개발 학습 블로그
+          </div>
+          <div
+            style={{
+              fontSize: 24,
+              color: OG_COLORS.textSecondary,
+            }}
+          >
+            AI · Algorithm · Database · DevOps
+          </div>
+          {logo && (
+            <img
+              src={logo}
+              alt="FOS Study"
+              width={OG_LAYOUT.logoSize}
+              height={OG_LAYOUT.logoSize}
+              style={{
+                position: "absolute",
+                bottom: OG_LAYOUT.logoBottom,
+                left: OG_LAYOUT.logoLeft,
+                borderRadius: OG_LAYOUT.logoBorderRadius,
+              }}
+            />
+          )}
+        </div>
+      ),
+      {
+        ...size,
+        fonts: font
+          ? [{ name: "Noto Sans KR", data: font, weight: 700, style: "normal" }]
+          : [],
+      }
+    );
+  } catch (e) {
+    log.error(
+      {
+        component: "og-home",
+        operation: "ImageResponse",
+        err: e instanceof Error ? e : new Error(String(e)),
+      },
+      "OG image render failed"
+    );
+    return new Response("Internal Server Error", { status: 500 });
+  }
 }
