@@ -1,11 +1,12 @@
 import { getRepositories } from "@/infra/db/repositories";
 import logger from "@/lib/logger";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { PostsInfiniteList, type PostItem } from "@/components/PostsInfiniteList";
 import { BackToTopButton } from "@/components/BackToTopButton";
 
 const log = logger.child({ module: "app/posts/latest/page" });
 
-const INITIAL_LIMIT = 10;
+const INITIAL_LIMIT = DEFAULT_PAGE_SIZE;
 
 export const revalidate = 60;
 

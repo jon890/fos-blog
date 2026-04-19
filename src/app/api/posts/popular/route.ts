@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { getRepositories } from "@/infra/db/repositories";
+import { clampPageLimit } from "@/lib/pagination";
 import logger from "@/lib/logger";
 
 const log = logger.child({ module: "api/posts/popular" });
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
-  const limitParam = parseInt(url.searchParams.get("limit") ?? "10", 10);
-  const limit = Math.min(30, Math.max(1, isNaN(limitParam) ? 10 : limitParam));
+  const limit = clampPageLimit(url.searchParams.get("limit"));
   const offsetParam = parseInt(url.searchParams.get("offset") ?? "0", 10);
 
   if (isNaN(offsetParam) || offsetParam < 0) {
