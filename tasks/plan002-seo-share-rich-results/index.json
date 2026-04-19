@@ -1,0 +1,30 @@
+{
+  "name": "plan002-seo-share-rich-results",
+  "description": "OG 이미지 (정적 fallback + next/og 동적 생성) + Article JSON-LD publisher.logo 수정 → 소셜 공유 CTR + Google Rich Results 회복",
+  "status": "pending",
+  "created_at": "2026-04-19",
+  "total_phases": 2,
+  "related_docs": [
+    "docs/adr.md"
+  ],
+  "prerequisites": [
+    "public/logo.png (512×512) 사용자가 직접 준비 → main 브랜치 commit 필요",
+    "public/og-default.png (1200×630) 사용자가 직접 준비 → main 브랜치 commit 필요"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "정적 OG 자산 + 폰트 subset + JsonLd/layout metadata 수정",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "title": "next/og 동적 OG 이미지 4개 (홈/categories/category/글 상세)",
+      "model": "sonnet",
+      "status": "pending"
+    }
+  ]
+}
