@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { PostData } from "@/infra/db/types";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { PostCard } from "./PostCard";
 import { PostCardSkeleton } from "./PostCardSkeleton";
 import { BackToTopButton } from "./BackToTopButton";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
 export type PostItem = PostData & { visitCount: number };
 
@@ -45,7 +46,7 @@ export function PostsInfiniteList(props: Props) {
   const statusRef = useRef(status);
   statusRef.current = status;
 
-  async function loadMore() {
+  const loadMore = useCallback(async () => {
     if (statusRef.current === "loading" || statusRef.current === "done") return;
     setStatus("loading");
 
@@ -77,7 +78,7 @@ export function PostsInfiniteList(props: Props) {
     } catch {
       setStatus("error");
     }
-  }
+  }, [props.mode, nextCursor, nextOffset]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -96,8 +97,7 @@ export function PostsInfiniteList(props: Props) {
     return () => {
       observerRef.current?.disconnect();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nextCursor, nextOffset]);
+  }, [loadMore]);
 
   return (
     <div>
