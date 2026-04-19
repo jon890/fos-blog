@@ -139,11 +139,11 @@
 - **정적 fallback**: `public/og-default.png` (1200×630), `public/logo.png` (512×512) 를 자산으로 고정 배치 — `layout.tsx` metadata.openGraph/twitter.images 에 기본값, `JsonLd.tsx` publisher.logo URL 에 사용
 - **동적 생성**: `next/og` `ImageResponse` 사용하여 각 페이지마다 제목/발췌/카테고리 배지가 렌더된 고유 OG 이미지 런타임 생성
 - 대상 경로:
-  - `src/app/opengraph-image.tsx` (홈)
-  - `src/app/categories/opengraph-image.tsx`
-  - `src/app/category/[...path]/opengraph-image.tsx`
-  - `src/app/posts/[...slug]/opengraph-image.tsx`
-- ISR `revalidate = 60` (글 페이지와 동기 맞춤)
+  - `src/app/opengraph-image.tsx` (홈) — metadata file convention
+  - `src/app/categories/opengraph-image.tsx` — metadata file convention
+  - `src/app/api/og/category/[...path]/route.tsx` — API Route (catch-all 우회, ADR-011)
+  - `src/app/api/og/posts/[...slug]/route.tsx` — API Route (catch-all 우회, ADR-011)
+- ISR `revalidate = 60` (metadata file), 동등한 `Cache-Control: public, max-age=60, s-maxage=60, stale-while-revalidate=...` (API Route)
 
 **Drivers**:
 - **CTR 극대화**: 공유 시 제목이 이미지에 렌더됨 → Twitter/Facebook/Slack 미리보기에서 즉시 내용 파악
@@ -157,7 +157,9 @@
 **Consequences**:
 - `public/` 에 이미지 자산 2개 + 폰트 파일 1개 번들 필요
 - `ImageResponse` 공용 유틸(`src/lib/og.ts`)로 스타일/폰트/로고 embedding 중앙 관리
-- 동적 이미지 alt 텍스트는 각 `opengraph-image.tsx` 의 `export const alt` 로 페이지별 지정
+- 동적 이미지 alt 텍스트:
+  - metadata file (`opengraph-image.tsx`): `export const alt` 로 페이지별 지정
+  - API Route (`route.tsx`): `ImageResponse` JSX 내 `<img alt="...">` 로 지정
 
 **Follow-ups**:
 - 빌드 후 Facebook Sharing Debugger / Twitter Card Validator / Google Rich Results Test 로 전수 검증
@@ -169,23 +171,29 @@
 
 **Context**: `ImageResponse` 로 한글 렌더 시 폰트 지정 필수. 외부 CDN(Google Fonts) fetch는 홈서버에서 네트워크 의존성 + 실패 시 렌더 불가.
 
-**Decision**: **Noto Sans KR Bold** 를 한글 완성형 2350자 + ASCII 로 **subset 한 woff2 파일을 `public/fonts/` 에 번들**.
+**Decision**: **Noto Sans KR Bold** 를 Unicode Hangul Syllables 블록 전체(`U+AC00-D7A3`, 11,172자) + ASCII 로 **subset 한 TTF 파일을 `public/fonts/` 에 번들**.
 - subset 스크립트: `scripts/build-og-fonts.py` (pyftsubset 기반) — 재현 가능
-- 결과물: `public/fonts/NotoSansKR-Bold-subset.woff2` (~200KB 목표)
+- 결과물: `public/fonts/NotoSansKR-Bold-subset.ttf` (목표 ~1.6MB, 한도 2MB)
 - `ImageResponse` 는 Node `fs.readFile` 로 로컬 파일 로드 후 `fonts` 옵션에 전달
 
 **Drivers**:
 - 홈서버 외부의존성 제거 (네트워크 장애 시에도 OG 이미지 정상 생성)
-- 원본 1.2MB → subset 200KB 로 번들 경량화
+- **모든 한글 렌더 보장** — KS X 1001 2350자로 제한하면 최신 합성 음절(ㅆ, ㅎ 이중받침 조합 등) 누락 위험. Unicode 한글 음절 블록 전체로 풀 렌더
+- **포맷은 TTF 고정** — Next.js `ImageResponse.fonts`는 TTF/OTF/WOFF 만 지원, **WOFF2 미지원**. subset 결과는 TTF로 저장해야 `ImageResponse`가 로드 가능 (공식 satori 제약)
+- 원본 대비 subset 으로 불필요 글리프 제거 (번들 경량화 효과는 WOFF2 대비 제한적이나 "모든 한글 렌더 + 서버 전용 asset" 원칙이 우선)
 - 스크립트로 재생성 가능 → Noto 업데이트 시 커맨드 1회 실행
 
 **Alternatives Considered**:
-- **원본 woff2 그대로 번들**: 간단하지만 1.2MB. standalone 이미지 크기 증가. 기각
+- **woff2 subset**: ~577KB 로 훨씬 작지만 `ImageResponse.fonts` 미지원. 기각
+- **woff subset**: TTF 대비 ~50% 작으나 satori 구버전 호환성 불확실 + TTF 대비 실익 적음. 기각
+- **원본 TTF 그대로 번들**: 1.2MB 초과. standalone 이미지 크기 증가. 기각
 - **Google Fonts runtime fetch**: 네트워크 의존성. 기각
 
 **Consequences**:
 - Python + fonttools 도커/CI 환경에서 subset 재생성 가능
+- TTF 1.6MB 는 **서버 번들에만 포함** — 클라이언트 전송 0 (OG 이미지는 서버에서 PNG 로 렌더되어 전송됨)
 - `scripts/build-og-fonts.py` README 와 실행 가이드 필요
+- Dockerfile 에서 `COPY public` 필수 (standalone 은 `public/` 자동 복사 안 함)
 
 ---
 
@@ -193,7 +201,7 @@
 
 **Context**: `next/og` `ImageResponse` 는 기본 Edge runtime. 홈서버 standalone 에서는 Node.js 우선.
 
-**Decision**: 각 `opengraph-image.tsx` 에 `export const runtime = "nodejs"` 명시.
+**Decision**: 각 `opengraph-image.tsx` 및 OG 이미지를 생성하는 API Route(`route.tsx`) 모두에 `export const runtime = "nodejs"` 명시.
 
 **Drivers**:
 - **홈서버 standalone 안정성**: Node.js 전용 API(`fs.readFile` 로 폰트/로고 로드)를 문제없이 사용
@@ -237,3 +245,40 @@
 **Follow-ups**:
 - 향후 다른 페이지(검색 결과 등)에서 Markdown 렌더 시에도 동일 전처리 적용 여부 판단
 - 글 본문의 heading 계층이 h2 부터 시작하게 되므로, rehype-slug + TOC 생성 로직 (`generateTableOfContents`) 영향 재확인
+
+---
+
+## ADR-011. catch-all 세그먼트의 OG 이미지 — API Route 우회
+
+**Context**: Next.js App Router 의 `opengraph-image.tsx` (metadata file convention) 는 폴더 경로 뒤에 `/opengraph-image` URL 세그먼트를 자동 생성한다. `src/app/posts/[...slug]/`, `src/app/category/[...path]/` 같은 **catch-all 세그먼트(`[...x]`) 내부에 이 파일을 두면 빌드 실패**:
+
+```
+Error: Catch-all must be the last part of the URL in route "/posts/[...slug]/opengraph-image".
+```
+
+catch-all 은 URL 의 마지막 부분이어야 한다는 라우터 규칙이, metadata file 이 만드는 추가 세그먼트와 충돌한다. 단일 dynamic segment(`[slug]`) 에서는 이 제약이 없다.
+
+**Decision**: catch-all 세그먼트의 동적 OG 이미지는 **API Route** 로 구현하고, 해당 페이지의 `generateMetadata` 에서 `openGraph.images` 에 API Route URL 을 직접 주입.
+
+- catch-all 있는 경로:
+  - `src/app/api/og/posts/[...slug]/route.tsx` — `ImageResponse` 반환
+  - `src/app/api/og/category/[...path]/route.tsx` — 동일
+- catch-all 없는 경로는 기존 metadata file convention 유지:
+  - `src/app/opengraph-image.tsx` (홈)
+  - `src/app/categories/opengraph-image.tsx`
+
+**Drivers**:
+- **Next.js 라우터 구조적 제약** — 단일 dynamic 과 catch-all 은 동작이 다름. metadata file 우회 불가
+- **검색엔진 호환성 동일** — 크롤러는 `<meta property="og:image" content="...">` URL 을 따라가므로 metadata file 이든 API Route 든 결과 동일
+- **단일 컨벤션 강제 회피** — 가능한 곳은 metadata file (자동 ISR), 불가능한 곳만 API Route (수동 `Cache-Control`). 각 구조의 장점 활용
+
+**Alternatives Considered**:
+- **모든 경로를 API Route 로 통일**: 일관성은 있으나 metadata file 의 자동 ISR 포기. 기각
+- **catch-all 을 단일 dynamic + optional segment 로 리팩토링**: 기존 URL 구조 대규모 변경. 범위 초과. 기각
+- **catch-all 경로 OG 를 정적 fallback 만 사용**: 글별 OG 이미지 불가능 → plan002 목표(CTR 상승) 훼손. 기각
+
+**Consequences**:
+- API Route 에 `export const revalidate = 60` 을 두면 Next.js 가 자동으로 `Cache-Control: public, max-age=0, must-revalidate, s-maxage=60, stale-while-revalidate=...` 를 부여 → metadata file 과 동등한 ISR 동작. 별도 `Cache-Control` 수동 반환 불필요
+- `generateMetadata` 내부에서 OG URL 생성 시 `absolute URL` 권장 (`metadataBase` 설정 시 relative 도 가능)
+- 향후 catch-all 경로가 추가되면 동일 패턴(`/api/og/{scope}/[...x]/route.tsx`) 적용
+- 같은 이미지 스타일/유틸(`src/lib/og.ts`) 을 metadata file 과 API Route 가 공유 — 렌더 로직 중복 방지

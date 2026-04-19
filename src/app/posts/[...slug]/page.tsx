@@ -57,6 +57,8 @@ export async function generateMetadata({
     const publishedTime = data.post.createdAt?.toISOString();
     const modifiedTime = data.post.updatedAt?.toISOString();
 
+    const ogImageUrl = `${siteUrl}/api/og/posts/${slug.split("/").map(encodeURIComponent).join("/")}`;
+
     return {
       title,
       description,
@@ -68,8 +70,14 @@ export async function generateMetadata({
         url: postUrl,
         ...(publishedTime && { publishedTime }),
         ...(modifiedTime && { modifiedTime }),
+        images: [{ url: ogImageUrl, width: 1200, height: 630, alt: title }],
       },
-      twitter: { card: "summary_large_image", title, description },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [ogImageUrl],
+      },
     };
   } catch {
     return { title: "글을 찾을 수 없습니다" };

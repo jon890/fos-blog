@@ -66,7 +66,9 @@ export function ArticleJsonLd({
       name: "FOS Study",
       logo: {
         "@type": "ImageObject",
-        url: `${url.split("/").slice(0, 3).join("/")}/icon`,
+        url: `${url.split("/").slice(0, 3).join("/")}/logo.png`,
+        width: 512,
+        height: 512,
       },
     },
   };
