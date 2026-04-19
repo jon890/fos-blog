@@ -103,20 +103,32 @@ drizzle/
 
 ## 4. `PostsInfiniteList` 컴포넌트 (핵심)
 
-**Props**:
+**Props** (discriminated union — mode 별로 필요한 필드만 강제):
 ```ts
-type Props = {
-  mode: "latest" | "popular";
-  initialItems: Array<PostData & { visitCount: number }>;
-  initialNext: { cursor: string | null } | { offset: number; hasMore: boolean };
-};
+type PostItem = PostData & { visitCount: number };
+
+type Props =
+  | {
+      mode: "latest";
+      initialItems: PostItem[];
+      initialNextCursor: string | null;      // null → 더 이상 없음
+    }
+  | {
+      mode: "popular";
+      initialItems: PostItem[];
+      initialOffset: number;                 // 다음 요청 offset = initialItems.length
+      initialHasMore: boolean;
+    };
 ```
+
+평탄화 이유: `mode`와 페이지네이션 상태를 직접 매핑 — `mode === "latest"`면 `initialNextCursor`만 접근 가능, TS narrowing으로 cursor/offset 혼용 버그 차단.
 
 **내부 상태**:
 - `items` — 누적된 글 배열
 - `status` — `"idle" | "loading" | "error" | "done"`
-- `next` — cursor string 또는 offset number
-- `observerRef` — 바닥 sentinel div ref
+- `nextCursor` (latest 모드) / `nextOffset` (popular 모드)
+- `sentinelRef` — 바닥 sentinel div ref
+- `observerRef` — IntersectionObserver 인스턴스 ref
 
 **핵심 로직 (의사코드)**:
 ```
