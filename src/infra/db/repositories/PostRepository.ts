@@ -52,6 +52,41 @@ export class PostRepository extends BaseRepository {
     }));
   }
 
+  async getRecentPostsCursor(params: {
+    limit: number;
+    cursor?: { updatedAt: Date; id: number };
+  }): Promise<Array<PostData & { updatedAt: Date; id: number }>> {
+    const { limit, cursor } = params;
+    const whereExpr = cursor
+      ? and(
+          eq(posts.isActive, true),
+          sql`(${posts.updatedAt}, ${posts.id}) < (${cursor.updatedAt}, ${cursor.id})`
+        )
+      : eq(posts.isActive, true);
+
+    const result = await this.db
+      .select({
+        title: posts.title,
+        path: posts.path,
+        slug: posts.slug,
+        category: posts.category,
+        subcategory: posts.subcategory,
+        folders: posts.folders,
+        description: posts.description,
+        updatedAt: posts.updatedAt,
+        id: posts.id,
+      })
+      .from(posts)
+      .where(whereExpr)
+      .orderBy(desc(posts.updatedAt), desc(posts.id))
+      .limit(limit);
+
+    return result.map((p) => ({
+      ...p,
+      folders: p.folders || [],
+    }));
+  }
+
   async getPostId(slug: string) {
     const exists = await this.db
       .select({ id: posts.id })

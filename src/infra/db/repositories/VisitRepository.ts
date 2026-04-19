@@ -1,4 +1,4 @@
-import { eq, and, sql, inArray, desc } from "drizzle-orm";
+import { eq, and, sql, inArray, desc, asc } from "drizzle-orm";
 import { visitLogs, visitStats } from "../schema";
 import { BaseRepository } from "./BaseRepository";
 import logger from "@/lib/logger";
@@ -14,7 +14,6 @@ export class VisitRepository extends BaseRepository {
     try {
       const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
-      // 오늘 같은 IP로 같은 페이지를 방문한 기록이 있는지 확인
       const existing = await this.db
         .select({ id: visitLogs.id })
         .from(visitLogs)
@@ -28,10 +27,9 @@ export class VisitRepository extends BaseRepository {
         .limit(1);
 
       if (existing.length > 0) {
-        return false; // 이미 카운팅됨
+        return false;
       }
 
-      // 방문 로그 삽입
       await this.db.insert(visitLogs).values({
         pagePath,
         ipHash,
@@ -58,9 +56,6 @@ export class VisitRepository extends BaseRepository {
     }
   }
 
-  /**
-   * 특정 페이지의 조회수 반환
-   */
   async getVisitCount(pagePath: string): Promise<number> {
     try {
       const result = await this.db
@@ -75,9 +70,6 @@ export class VisitRepository extends BaseRepository {
     }
   }
 
-  /**
-   * 사이트 전체 방문자 수 (모든 페이지의 합계)
-   */
   async getTotalVisitCount(): Promise<number> {
     try {
       const result = await this.db
@@ -92,9 +84,6 @@ export class VisitRepository extends BaseRepository {
     }
   }
 
-  /**
-   * 여러 포스트의 조회수를 일괄 조회
-   */
   async getPostVisitCounts(
     pagePaths: string[]
   ): Promise<Record<string, number>> {
@@ -119,9 +108,6 @@ export class VisitRepository extends BaseRepository {
     }
   }
 
-  /**
-   * 방문수 기준 인기 포스트 경로 목록 반환
-   */
   async getPopularPostPaths(limit: number = 6): Promise<{ path: string; visitCount: number }[]> {
     try {
       const results = await this.db
@@ -133,9 +119,39 @@ export class VisitRepository extends BaseRepository {
     } catch { return []; }
   }
 
-  /**
-   * 오늘 방문자 수 (유니크 IP 기준)
-   */
+  async getPopularPostPathsOffset(params: {
+    limit: number;
+    offset: number;
+  }): Promise<Array<{ path: string; visitCount: number }>> {
+    const { limit, offset } = params;
+    const results = await this.db
+      .select({ pagePath: visitStats.pagePath, visitCount: visitStats.visitCount })
+      .from(visitStats)
+      .orderBy(desc(visitStats.visitCount), asc(visitStats.pagePath))
+      .limit(limit)
+      .offset(offset);
+    return results.map((r) => ({ path: r.pagePath, visitCount: r.visitCount }));
+  }
+
+  async getPopularPostPathsTotal(): Promise<number> {
+    try {
+      const result = await this.db
+        .select({ total: sql<number>`COUNT(*)` })
+        .from(visitStats);
+      return Number(result[0]?.total ?? 0);
+    } catch (error) {
+      log.error(
+        {
+          component: "repo.visit",
+          operation: "getPopularPostPathsTotal",
+          err: error instanceof Error ? error : new Error(String(error)),
+        },
+        "failed to count popular posts"
+      );
+      throw error;
+    }
+  }
+
   async getTodayVisitorCount(): Promise<number> {
     try {
       const today = new Date().toISOString().split("T")[0];
