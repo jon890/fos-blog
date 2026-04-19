@@ -78,7 +78,10 @@ export const OG_COLORS = {
 
 ```ts
 import { ImageResponse } from "next/og";
+import logger from "@/lib/logger";
 import { OG_WIDTH, OG_HEIGHT, OG_COLORS, loadOgFont, loadOgLogoDataUrl } from "@/lib/og";
+
+const log = logger.child({ module: "app/opengraph-image" });
 
 export const runtime = "nodejs";
 export const revalidate = 60;
@@ -87,13 +90,28 @@ export const contentType = "image/png";
 export const alt = "FOS Study — 개발 학습 블로그";
 
 export default async function HomeOgImage() {
-  const [font, logo] = await Promise.all([loadOgFont(), loadOgLogoDataUrl()]);
-  // JSX: 배경 그라디언트 + 좌측 텍스트(FOS Study / 개발 학습 블로그) + 좌하단 logo 48x48
+  let font: ArrayBuffer | null = null;
+  let logo: string | null = null;
+  try {
+    [font, logo] = await Promise.all([loadOgFont(), loadOgLogoDataUrl()]);
+  } catch (e) {
+    log.warn(
+      {
+        component: "og-home",
+        operation: "loadAssets",
+        err: e instanceof Error ? e : new Error(String(e)),
+      },
+      "OG asset load failed, rendering text-only fallback"
+    );
+  }
+  // JSX: 배경 그라디언트 + 좌측 텍스트(FOS Study / 개발 학습 블로그) + 좌하단 logo 48x48 (logo null 이면 텍스트만)
   return new ImageResponse(
     (/* ... */),
     {
       ...size,
-      fonts: [{ name: "Noto Sans KR", data: font, weight: 700, style: "normal" }],
+      fonts: font
+        ? [{ name: "Noto Sans KR", data: font, weight: 700, style: "normal" }]
+        : [],
     }
   );
 }
@@ -138,8 +156,30 @@ export default async function CategoryOgImage({ params }: Props) {
 - 좌하단: 로고 48×48
 - alt: `${currentFolder} | FOS Study`
 
-에러 처리:
-- `folder.getFolderContents` 가 실패하면 기본 텍스트만 ("카테고리") + logger.warn (BLG2 4-field)
+에러 처리 (BLG2 4-field 로그 — 홈 OG와 동일 패턴):
+
+```ts
+import logger from "@/lib/logger";
+const log = logger.child({ module: "app/category/opengraph-image" });
+
+try {
+  contents = await folder.getFolderContents(folderPath);
+} catch (e) {
+  log.warn(
+    {
+      component: "og-category",
+      operation: "getFolderContents",
+      folderPath,
+      err: e instanceof Error ? e : new Error(String(e)),
+    },
+    "folder contents fetch failed, rendering fallback"
+  );
+  contents = { posts: [], folders: [] };
+}
+```
+
+동일 fallback 규정을 `src/app/categories/opengraph-image.tsx`(파일 A) 에도 적용:
+- `getCategories()` 실패 시 `[]` 로 fallback + 동일 BLG2 로그 (component: "og-categories", operation: "getCategories")
 
 ### 4. `/posts/[...slug]` OG 이미지 (핵심)
 
@@ -189,9 +229,29 @@ export default async function PostOgImage({ params }: Props) {
 - 좌하단 로고 48×48
 - `ImageResponse` fonts: Noto Sans KR Bold
 
-DB 없거나 글 없는 경우:
-- title = "FOS Study", description = "", category badge 미표시
-- logger.warn (BLG2 4-field)
+DB 없거나 글 없는 경우 fallback (BLG2 4-field 로그):
+
+```ts
+import logger from "@/lib/logger";
+const log = logger.child({ module: "app/posts/opengraph-image" });
+
+let data: Awaited<ReturnType<typeof post.getPost>> = null;
+try {
+  data = await post.getPost(decoded);
+} catch (e) {
+  log.warn(
+    {
+      component: "og-post",
+      operation: "getPost",
+      slug: decoded,
+      err: e instanceof Error ? e : new Error(String(e)),
+    },
+    "post fetch failed, using fallback"
+  );
+  data = null;
+}
+// data === null 이면: title = "FOS Study", description = "", category badge 미표시
+```
 
 ### 5. 통합 검증 + 수동 확인 가이드
 
@@ -207,13 +267,21 @@ pnpm build
 # 빌드 산출물에 opengraph-image 포함 확인
 find .next -name "opengraph-image*" | head -10
 
-# standalone 에 폰트 / 로고 포함 확인
+# standalone 에 폰트 / 로고 포함 확인 (Next.js standalone은 public/을 자동 복사하지 않음 — 배포 가이드 참조)
 find .next/standalone -path "*fonts*" -name "*.woff2" | head
 find .next/standalone -path "*public*" -name "logo.png" | head
 ```
 
+**Next.js standalone 배포 가이드** (Dockerfile 또는 배포 스크립트에 반영 필수):
+- `next build` + `output: "standalone"` 은 `public/` 디렉터리를 `.next/standalone/` 에 **자동 복사하지 않는다** (공식 quirk).
+- Dockerfile 의 최종 스테이지에 아래가 이미 있거나 추가되어야 한다:
+  ```dockerfile
+  COPY --from=builder /app/public ./public
+  ```
+- 이 phase 에서는 Dockerfile 변경은 하지 않으며, 수동 확인 체크리스트에만 반영. 이미 `COPY public`이 있는지 `Dockerfile` 최상위 `grep "COPY.*public"` 로 확인.
+
 수동 검증 가이드 (phase 성공 기준 이후 README 에 기록):
-1. `pnpm start` 로 standalone 기동
+1. `pnpm start` 로 standalone 기동 (Dockerfile 빌드 경로 따를 경우 `public/` 수동 복사 확인)
 2. `curl -I http://localhost:3000/opengraph-image` → 200, Content-Type: image/png
 3. `curl -I http://localhost:3000/posts/<임의 글 slug>/opengraph-image` → 200
 4. 브라우저에서 위 URL 접근 → 실제 렌더된 이미지 확인
@@ -251,8 +319,15 @@ done
 grep -l "new ImageResponse" src/app/opengraph-image.tsx src/app/categories/opengraph-image.tsx 'src/app/category/[...path]/opengraph-image.tsx' 'src/app/posts/[...slug]/opengraph-image.tsx'
 grep -l "fonts:" src/app/opengraph-image.tsx
 
-# 6) BLG2 구조화 로그 (DB 조회 실패 케이스)
-grep -nE 'logger.*(warn|error).*\{[^}]*component[^}]*operation' 'src/app/posts/[...slug]/opengraph-image.tsx'
+# 6) BLG2 구조화 로그 (4개 OG 파일 모두 DB/자산 실패 fallback 로그 포함)
+#    - codebase 관례: `const log = logger.child(...)` + `log.warn({ ... component, operation, err }, "msg")`
+#    - 4개 파일 모두 component + operation 필드 포함 검증 (multi-line tolerant: -P + (?s) 대신 존재 여부만)
+for f in src/app/opengraph-image.tsx src/app/categories/opengraph-image.tsx 'src/app/category/[...path]/opengraph-image.tsx' 'src/app/posts/[...slug]/opengraph-image.tsx'; do
+  grep -q 'logger.child' "$f" || { echo "[FAIL] $f: missing logger.child"; exit 1; }
+  grep -q 'component:' "$f" || { echo "[FAIL] $f: missing component field"; exit 1; }
+  grep -q 'operation:' "$f" || { echo "[FAIL] $f: missing operation field"; exit 1; }
+  grep -qE 'log\.(warn|error)\(' "$f" || { echo "[FAIL] $f: missing log.warn/error call"; exit 1; }
+done
 
 # 7) 금지사항
 ! grep -nE "console\.(log|info|warn)" src/app/opengraph-image.tsx src/app/categories/opengraph-image.tsx 'src/app/category/[...path]/opengraph-image.tsx' 'src/app/posts/[...slug]/opengraph-image.tsx' src/lib/og.ts
