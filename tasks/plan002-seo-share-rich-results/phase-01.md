@@ -41,7 +41,7 @@ test -f public/og-default.png
 #!/usr/bin/env python3
 """
 Noto Sans KR Bold 를 OG 이미지용으로 subset.
-- 대상: 한글 완성형 (U+AC00-U+D7A3, 2350자) + Basic Latin (U+0020-U+007E) + 일반 구두점
+- 대상: Unicode Hangul Syllables 블록 전체 (U+AC00-U+D7A3, 11,172자) + Basic Latin (U+0020-U+007E) + 일반 구두점
 - 결과: public/fonts/NotoSansKR-Bold-subset.woff2
 """
 ```
