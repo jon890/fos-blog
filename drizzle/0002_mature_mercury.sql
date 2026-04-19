@@ -1,0 +1,2 @@
+CREATE INDEX `posts_updated_at_id_idx` ON `posts` (`updated_at` DESC,`id` DESC);--> statement-breakpoint
+CREATE INDEX `visit_stats_count_path_idx` ON `visit_stats` (`visit_count` DESC,`page_path` ASC);

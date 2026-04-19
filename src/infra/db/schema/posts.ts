@@ -8,6 +8,7 @@ import {
   boolean,
   json,
 } from "drizzle-orm/mysql-core";
+import { sql } from "drizzle-orm";
 
 // 포스트 테이블
 export const posts = mysqlTable(
@@ -24,12 +25,16 @@ export const posts = mysqlTable(
     description: text("description"),
     sha: varchar("sha", { length: 64 }), // GitHub file SHA for change detection
     isActive: boolean("is_active").notNull().default(true),
-    createdAt: timestamp("created_at").defaultNow(),
-    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
   },
   (table) => [
     index("category_idx").on(table.category),
     index("slug_idx").on(table.slug),
+    index("posts_updated_at_id_idx").on(
+      sql`${table.updatedAt} DESC`,
+      sql`${table.id} DESC`,
+    ),
   ],
 );
 
