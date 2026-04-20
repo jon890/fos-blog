@@ -7,6 +7,7 @@ import {
   getReadingTime,
   generateTableOfContents,
   parseFrontMatter,
+  stripLeadingH1,
 } from "@/lib/markdown";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { TableOfContents } from "@/components/TableOfContents";
@@ -111,7 +112,8 @@ export default async function PostPage({ params }: PostPageProps) {
   }
 
   const { content, post: postData } = data;
-  const { content: mainContent } = parseFrontMatter(content);
+  const { content: contentWithoutFrontmatter } = parseFrontMatter(content);
+  const mainContent = stripLeadingH1(contentWithoutFrontmatter);
   const title = extractTitle(content) || postData.title;
   const readingTime = getReadingTime(content);
   const toc = generateTableOfContents(mainContent);

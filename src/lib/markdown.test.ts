@@ -5,6 +5,7 @@ import {
   generateTableOfContents,
   getReadingTime,
   parseFrontMatter,
+  stripLeadingH1,
 } from "./markdown";
 
 // ===== parseFrontMatter =====
@@ -208,5 +209,42 @@ describe("generateTableOfContents", () => {
     const toc = generateTableOfContents(content);
     expect(toc).toHaveLength(1);
     expect(toc[0].text).toBe("진짜 헤딩");
+  });
+});
+
+// ===== stripLeadingH1 =====
+describe("stripLeadingH1", () => {
+  it("returns content unchanged when no leading h1", () => {
+    const input = "## Section\n본문...";
+    expect(stripLeadingH1(input)).toBe(input);
+  });
+
+  it("removes leading h1 and following blank lines", () => {
+    const input = "# Title\n\n본문 내용";
+    expect(stripLeadingH1(input)).toBe("본문 내용");
+  });
+
+  it("removes leading blank lines + h1 + trailing blank lines", () => {
+    const input = "\n\n# Title\n\n\n본문";
+    expect(stripLeadingH1(input)).toBe("본문");
+  });
+
+  it("returns empty string unchanged", () => {
+    expect(stripLeadingH1("")).toBe("");
+  });
+
+  it("preserves mid-document h1", () => {
+    const input = "본문 첫 단락\n\n# Mid Heading\n\n본문 이어서";
+    expect(stripLeadingH1(input)).toBe(input);
+  });
+
+  it("does not remove leading h2", () => {
+    const input = "## Only Section\n본문";
+    expect(stripLeadingH1(input)).toBe(input);
+  });
+
+  it("does not remove h1 without space after hash (e.g. #main)", () => {
+    const input = "#main\n본문";
+    expect(stripLeadingH1(input)).toBe(input);
   });
 });
