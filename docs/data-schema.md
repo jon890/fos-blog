@@ -10,12 +10,14 @@
 `posts`, `visit_stats` 테이블 자체는 변경하지 않는다.
 
 ### posts (`src/infra/db/schema/posts.ts`)
+
 - PK: `id (autoincrement)`
 - Unique: `path`
 - 기존 인덱스: `category_idx(category)`, `slug_idx(slug)`
 - `updatedAt timestamp` (defaultNow, onUpdateNow)
 
 ### visit_stats (`src/infra/db/schema/visitStats.ts`)
+
 - PK: `id (autoincrement)`
 - 기존 인덱스: `visit_stats_page_path_idx(page_path, unique)`
 - `visit_count int NOT NULL DEFAULT 0`
@@ -36,7 +38,7 @@ index("posts_updated_at_id_idx").on(
 
 - **목적**: `WHERE is_active = 1 ORDER BY updated_at DESC, id DESC LIMIT 10` 및 cursor 조건 `(updated_at, id) < (?, ?)` 의 빠른 평가
 - **없으면**: filesort 발생 → 200개 규모에서는 감내 가능하나 성장 시 degrade
-- **주의**: drizzle-orm 0.45.1은 column-level `.desc()` index chain의 SQL 방향 직렬화가 불안정 → raw `sql\`${col} DESC\`` 템플릿 채택 (생성 SQL에 `DESC` 키워드 실측 확인)
+- **주의**: drizzle-orm 0.45.1은 column-level `.desc()` index chain의 SQL 방향 직렬화가 불안정 → raw `sql\`${col} DESC\``템플릿 채택 (생성 SQL에`DESC` 키워드 실측 확인)
 
 ### Index B: `visit_stats` 인기 정렬 offset 페이징 지원
 
@@ -82,6 +84,7 @@ async getRecentPostsCursor(params: {
 ```
 
 **SQL 의미**:
+
 ```sql
 SELECT ... FROM posts
 WHERE is_active = 1
@@ -107,6 +110,7 @@ async getPopularPostPathsTotal(): Promise<number>
 ```
 
 **SQL 의미**:
+
 ```sql
 SELECT page_path, visit_count
 FROM visit_stats
@@ -120,10 +124,10 @@ LIMIT :limit OFFSET :offset
 
 ## 5. 반환 DTO
 
-| 필드 | 출처 | 비고 |
-|---|---|---|
-| `title, path, slug, category, subcategory, folders, description` | `posts` | 기존 `PostData` 동일 |
-| `visitCount` | `visit_stats.visit_count` (또는 0) | 두 페이지 모두 포함 |
+| 필드                                                             | 출처                               | 비고                 |
+| ---------------------------------------------------------------- | ---------------------------------- | -------------------- |
+| `title, path, slug, category, subcategory, folders, description` | `posts`                            | 기존 `PostData` 동일 |
+| `visitCount`                                                     | `visit_stats.visit_count` (또는 0) | 두 페이지 모두 포함  |
 
 ---
 

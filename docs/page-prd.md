@@ -25,10 +25,10 @@
 
 ## 3. 대상 사용자 및 컨텍스트
 
-| 항목 | 내용 |
-|------|------|
-| 대상 | 기술 블로그 독자 (개발자) |
-| 디바이스 | 데스크탑(LG 이상) — 현재 모바일은 TOC 미노출 |
+| 항목      | 내용                                                           |
+| --------- | -------------------------------------------------------------- |
+| 대상      | 기술 블로그 독자 (개발자)                                      |
+| 디바이스  | 데스크탑(LG 이상) — 현재 모바일은 TOC 미노출                   |
 | 읽기 패턴 | 목차로 구조 파악 → 특정 섹션 바로 이동 → 목차 불필요 시 숨기기 |
 
 ---
@@ -40,6 +40,7 @@
 목차는 **기본적으로 펼쳐진 상태**로 시작한다.
 
 **근거:**
+
 - 첫 방문자에게 글의 구조를 즉시 노출 (Content-First)
 - Google Docs, MDN Web Docs, Microsoft Learn 모두 TOC 기본 오픈
 - 숨기는 것은 사용자의 선택 — 강제하지 않는다
@@ -78,10 +79,10 @@ CSS Grid 트릭으로 `height: 0 → auto` 전환을 구현한다.
 - JS로 높이를 계산하지 않으므로 리페인트 최소화
 - 항목 수와 무관하게 일정한 느낌의 트랜지션
 
-| 상태 | 소요 시간 |
-|------|-----------|
-| 펼치기 | 200ms |
-| 접기 | 200ms |
+| 상태   | 소요 시간 |
+| ------ | --------- |
+| 펼치기 | 200ms     |
+| 접기   | 200ms     |
 
 200ms는 Nielsen Norman Group 권장 "즉각적 반응" 임계값(≤250ms) 이내다.
 
@@ -98,14 +99,14 @@ value: "true" | (없음 = 펼쳐짐)
 
 ### 4.5 접근성
 
-| 항목 | 구현 |
-|------|------|
-| 역할 | `<button>` 태그 (또는 `role="button"`) |
-| 상태 | `aria-expanded="true/false"` |
-| 제어 대상 | `aria-controls="toc-content"` |
-| 콘텐츠 ID | `id="toc-content"` |
-| 키보드 | Enter / Space 토글 (`<button>`이므로 기본 제공) |
-| 포커스 링 | `focus-visible:ring-2` (Tailwind) |
+| 항목      | 구현                                            |
+| --------- | ----------------------------------------------- |
+| 역할      | `<button>` 태그 (또는 `role="button"`)          |
+| 상태      | `aria-expanded="true/false"`                    |
+| 제어 대상 | `aria-controls="toc-content"`                   |
+| 콘텐츠 ID | `id="toc-content"`                              |
+| 키보드    | Enter / Space 토글 (`<button>`이므로 기본 제공) |
+| 포커스 링 | `focus-visible:ring-2` (Tailwind)               |
 
 ---
 
@@ -113,24 +114,24 @@ value: "true" | (없음 = 펼쳐짐)
 
 ### `TableOfContents` 변경 사항
 
-| 항목 | 변경 전 | 변경 후 |
-|------|---------|---------|
-| 헤더 | `<div>` | `<button>` (role, aria-expanded) |
-| Chevron 아이콘 | 없음 | ChevronDown, 회전 애니메이션 |
-| 목록 컨테이너 | `<ul>` 직접 노출 | Grid 래퍼 → `overflow-hidden` |
-| 상태 | 없음 | `isCollapsed` (useState) |
-| localStorage | 없음 | 읽기(useEffect) + 쓰기(토글 시) |
+| 항목           | 변경 전          | 변경 후                          |
+| -------------- | ---------------- | -------------------------------- |
+| 헤더           | `<div>`          | `<button>` (role, aria-expanded) |
+| Chevron 아이콘 | 없음             | ChevronDown, 회전 애니메이션     |
+| 목록 컨테이너  | `<ul>` 직접 노출 | Grid 래퍼 → `overflow-hidden`    |
+| 상태           | 없음             | `isCollapsed` (useState)         |
+| localStorage   | 없음             | 읽기(useEffect) + 쓰기(토글 시)  |
 
 ---
 
 ## 6. 비기능 요구사항
 
-| 항목 | 기준 |
-|------|------|
-| 번들 크기 증가 | 0 (새 의존성 없음) |
-| Cumulative Layout Shift | 없음 (sticky 포지셔닝 유지) |
-| 서버 컴포넌트 호환 | `"use client"` 유지 (기존과 동일) |
-| 다크모드 | 기존 Tailwind dark 클래스 유지 |
+| 항목                    | 기준                              |
+| ----------------------- | --------------------------------- |
+| 번들 크기 증가          | 0 (새 의존성 없음)                |
+| Cumulative Layout Shift | 없음 (sticky 포지셔닝 유지)       |
+| 서버 컴포넌트 호환      | `"use client"` 유지 (기존과 동일) |
+| 다크모드                | 기존 Tailwind dark 클래스 유지    |
 
 ---
 

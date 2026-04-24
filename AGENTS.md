@@ -141,14 +141,14 @@ Browser (Markdown + GFM + Mermaid + 문법 강조)
 
 ## Subdirectories
 
-| Directory / File   | Purpose                                                                                                  |
-| ------------------ | -------------------------------------------------------------------------------------------------------- |
-| `CLAUDE.md`        | AI 에이전트용 프로젝트 컨텍스트 문서 — 기술 스택, 디렉토리 구조, 컨벤션, 환경변수 상세 정리            |
-| `src/proxy.ts`     | Next.js middleware — records page visits to DB via `waitUntil` (fire-and-forget); runs on Edge Runtime   |
-| `src/app/`         | Next.js pages and API routes (see `src/app/AGENTS.md`)                                                   |
-| `src/components/`  | Reusable React UI components (see `src/components/AGENTS.md`)                                            |
-| `src/services/`    | Business logic layer — SyncService, PostService (see `src/services/AGENTS.md`)                          |
-| `src/infra/db/`    | Database schema and repositories (see `src/infra/db/AGENTS.md`)                                         |
-| `src/infra/github/`| GitHub API client and utilities (see `src/infra/github/AGENTS.md`)                                      |
-| `src/lib/`         | Shared utilities — markdown, logger, path-utils (see `src/lib/AGENTS.md`)                               |
-| `local/`           | Docker MySQL config (see `local/AGENTS.md`)                                                              |
+| Directory / File    | Purpose                                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------ |
+| `CLAUDE.md`         | AI 에이전트용 프로젝트 컨텍스트 문서 — 기술 스택, 디렉토리 구조, 컨벤션, 환경변수 상세 정리            |
+| `src/proxy.ts`      | Next.js middleware — records page visits to DB via `waitUntil` (fire-and-forget); runs on Edge Runtime |
+| `src/app/`          | Next.js pages and API routes (see `src/app/AGENTS.md`)                                                 |
+| `src/components/`   | Reusable React UI components (see `src/components/AGENTS.md`)                                          |
+| `src/services/`     | Business logic layer — SyncService, PostService (see `src/services/AGENTS.md`)                         |
+| `src/infra/db/`     | Database schema and repositories (see `src/infra/db/AGENTS.md`)                                        |
+| `src/infra/github/` | GitHub API client and utilities (see `src/infra/github/AGENTS.md`)                                     |
+| `src/lib/`          | Shared utilities — markdown, logger, path-utils (see `src/lib/AGENTS.md`)                              |
+| `local/`            | Docker MySQL config (see `local/AGENTS.md`)                                                            |
