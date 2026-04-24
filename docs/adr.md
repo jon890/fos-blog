@@ -249,6 +249,87 @@
 
 ---
 
+## ADR-011. 메인 도메인 전환 — `blog.fosworld.co.kr` 단일화
+
+**Context**: 현재 `fosworld.co.kr` + `blog.fosworld.co.kr` 두 도메인이 같은 앱을 서빙 중. GSC 리포트에서 `blog.*` URL 10개가 "적절한 표준 태그가 포함된 대체 페이지" 로 분류 (canonical 이 `fosworld.co.kr` 을 가리키기 때문). 크롤 예산 분산 + 운영 부담 + 브랜드 혼란. 당초 두 도메인을 모두 쓰던 이유는 "AdSense 서브도메인 미지원" 이라는 오해였으나 실제로 AdSense 는 서브도메인 완전 지원.
+
+**Decision**: **`blog.fosworld.co.kr` 을 메인 도메인으로 단일화**. `fosworld.co.kr` 은 **`/ads.txt` 만 예외 서빙**하고 나머지 경로는 `blog.fosworld.co.kr` 로 301 리디렉션.
+
+**Implementation**:
+- 앱 코드: `.env` 의 `NEXT_PUBLIC_SITE_URL=https://blog.fosworld.co.kr` 로 교체 → 모든 canonical/sitemap/OG/JSON-LD 자동 재생성 (코드 전체에 하드코딩된 도메인 참조 없음 — `env.*` 경유)
+- 홈서버 nginx: `server_name fosworld.co.kr` 블록에서 `location = /ads.txt` 는 실제 파일 서빙, 나머지는 `return 301 https://blog.fosworld.co.kr$request_uri`
+- SSL: Let's Encrypt 인증서가 `blog.*` 에도 발급되어 있어야 함 (현재 접근 가능 상태로 보아 OK)
+- GSC: Domain property (DNS TXT 인증) 기반이므로 서브도메인 자동 커버. 새 sitemap URL (`https://blog.fosworld.co.kr/sitemap.xml`) 수동 제출 권장
+
+**Drivers**:
+- **SEO 일관성**: canonical 분산 해소 → Google 이 단일 URL 만 크롤/색인
+- **AdSense 정책 호환**: `fosworld.co.kr/ads.txt` 를 예외로 유지하여 루트 도메인 레벨 ads.txt 정책 충족
+- **브랜드 명확**: `blog.*` = 블로그 라는 의미가 URL 에 담김. 루트는 향후 landing/포트폴리오로 확장 여지
+
+**Alternatives Considered**:
+- **`fosworld.co.kr` 메인 유지 + `blog.*` 301 리디렉션**: 기술적으로 동등하지만 "`blog.*` 을 주 브랜드로" 선호
+- **두 도메인 병행 유지** (현재 상태): Google 은 "정상" 이라 평가하지만 크롤 예산/운영 부담 지속
+- **`blog.*` 에 별도 앱**: 과도한 복잡도. 기각
+
+**Consequences**:
+- 도메인 전환 후 2~4주 간 SEO 순위 일시 변동 가능 (301 리디렉션이 링크 주스를 `blog.*` 로 이전)
+- 기존 `fosworld.co.kr/*` 외부 링크는 301 로 자동 연결 (방문자 UX 영향 없음)
+- 배포 절차에 nginx 설정 변경 단계 추가 — `docs/deployment.md` 로 가이드화
+
+**Follow-ups**:
+- AdSense 는 승인 신청 전에 전환 완료 후 `blog.fosworld.co.kr` 로 신청 (URL 일관성)
+- 향후 `fosworld.co.kr` 루트에 landing 페이지가 필요해지면 nginx 예외 추가 (현재는 `/ads.txt` 만)
+
+---
+
+## ADR-012. AdSense 승인 요건 — 정책/소개 페이지 + GitHub 프로필 연동
+
+**Context**: Google AdSense 승인 신청을 위해 **개인정보처리방침(Privacy Policy)** 은 필수. About/Contact 페이지는 "사이트 소유자 식별 + 방문자 소통 경로" 를 위해 권장. Terms of Service 는 AdSense 필수 아님.
+
+**Decision**:
+- **필수 페이지 3개 추가**: `/privacy`, `/about`, `/contact`
+- **Terms of Service 제외** (선택 사항, 블로그 규모에 오버엔지니어링)
+- **About 페이지는 GitHub 프로필 런타임 fetch + ISR 1시간** 로 구현 (`jon890` 계정)
+- **Contact**: 이메일 `jon89071@gmail.com` + GitHub Issues (`jon890/fos-study/issues`) 링크 병기
+- **Privacy Policy 톤**: 평이한 한국어 (법률 용어 스타일 X)
+- **정책 페이지 푸터 노출** + sitemap 반영 (indexable)
+
+**Data Collection 공개 범위** (Privacy Policy 내용):
+- **방문 통계**: IP 를 SHA-256 해시로만 저장 (`visit_logs.ip_hash`) → 복원 불가, 중복 방문 판별 목적
+- **댓글**: 닉네임(공개) + 비밀번호(bcrypt 해시) + 내용. IP 미수집
+- **쿠키/로컬스토리지**: 테마 설정(localStorage), 향후 Google AdSense 광고 쿠키 (Google 소유, 정책에 따라 비활성화 가능 안내)
+- **Google Analytics**: 현재 **미사용** (추후 도입 시 개정)
+
+**GitHub 프로필 연동 (About 페이지)**:
+- 런타임 fetch: `fetch('https://api.github.com/users/jon890', { next: { revalidate: 3600 } })`
+- 사용 필드: `name, avatar_url, bio, html_url, public_repos, followers`
+- Rate limit: GitHub 비인증 60 req/hour — ISR 1시간 캐시로 충분
+- 실패 시 fallback: 아바타 없이 텍스트만 렌더 + BLG2 4-field 로그
+- `next.config.ts` `images.remotePatterns` 에 `avatars.githubusercontent.com` 추가
+
+**Drivers**:
+- **AdSense 정책 필수 요건 충족** — 승인 반려의 최빈 사유는 Privacy Policy 부재
+- **ads.txt 기구현 활용**: `src/app/ads.txt/route.ts` 동적 route 가 이미 존재 → 승인 후 env 에 publisher ID 입력만 하면 즉시 작동
+- **About 페이지 최신성**: GitHub 프로필 정보 변경 시 별도 커밋 없이 자동 반영
+
+**Alternatives Considered**:
+- **Terms of Service 포함**: 블로그 규모에 과함. 필요 시 별도 plan 으로 추가
+- **About 페이지 하드코딩**: 프로필 변경 시 재빌드 필요. 기각
+- **About 페이지 build-time GitHub fetch**: 빌드 실패 시 페이지 깨짐. 런타임 ISR 이 복구 쉬움
+
+**Consequences**:
+- 푸터에 "정책" 섹션 추가 → 기존 푸터 레이아웃 조정
+- sitemap 에 3개 URL 추가 (`/privacy`, `/about`, `/contact`)
+- GitHub API 장애 시 About 페이지 일부 degrade (아바타 누락) 허용
+- `docs/adsense-checklist.md` 신규 — AdSense 신청 절차 + 승인 후 env 업데이트 체크리스트
+
+**Follow-ups**:
+- 승인 후 `NEXT_PUBLIC_GOOGLE_ADSENSE_ID` 에 실제 pub ID 입력 → 재배포
+- 광고 배치 (광고 단위 ID 별 page/sidebar/inline) 전략은 별도 plan 에서 진행
+- GA4 도입 시 Privacy Policy 개정 (Drivers 섹션 업데이트)
+
+---
+
 ## ADR-011. catch-all 세그먼트의 OG 이미지 — API Route 우회
 
 **Context**: Next.js App Router 의 `opengraph-image.tsx` (metadata file convention) 는 폴더 경로 뒤에 `/opengraph-image` URL 세그먼트를 자동 생성한다. `src/app/posts/[...slug]/`, `src/app/category/[...path]/` 같은 **catch-all 세그먼트(`[...x]`) 내부에 이 파일을 두면 빌드 실패**:
