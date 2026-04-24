@@ -2,7 +2,7 @@
 
 GitHub 저장소의 마크다운 파일을 자동으로 동기화하여 렌더링하는 개발자 블로그입니다.
 
-🌐 **Live:** https://fosworld.co.kr
+🌐 **Live:** https://blog.fosworld.co.kr
 
 ## 주요 기능
 

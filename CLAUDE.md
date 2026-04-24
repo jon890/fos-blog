@@ -1,6 +1,6 @@
 # fos-blog â€” Claude Code Project Context
 
-**Updated:** 2026-04-01 | **Repo:** github.com/jon890/fos-blog | **Live:** https://fosworld.co.kr
+**Updated:** 2026-04-24 | **Repo:** github.com/jon890/fos-blog | **Live:** https://blog.fosworld.co.kr
 
 ---
 
@@ -14,17 +14,17 @@ Next.js 16 developer blog that syncs Markdown from `jon890/fos-study` (GitHub) â
 
 ## Tech Stack
 
-| Layer | Stack |
-|-------|-------|
-| Framework | Next.js 16.1.6 (App Router, Turbopack) |
-| Language | TypeScript 5.7 (strict) |
-| Styling | Tailwind CSS 4.0 + @tailwindcss/typography |
-| Database | MySQL 8.4 (Docker) + Drizzle ORM 0.45.1 |
-| GitHub API | @octokit/rest 21.0.0 |
-| Markdown | react-markdown + remark-gfm + rehype-highlight + rehype-slug + mermaid |
-| Logging | pino (JSON) + pino-pretty (dev only) |
-| Testing | Vitest 4.1.0 |
-| Package mgr | pnpm 9.15.0 |
+| Layer       | Stack                                                                  |
+| ----------- | ---------------------------------------------------------------------- |
+| Framework   | Next.js 16.1.6 (App Router, Turbopack)                                 |
+| Language    | TypeScript 5.7 (strict)                                                |
+| Styling     | Tailwind CSS 4.0 + @tailwindcss/typography                             |
+| Database    | MySQL 8.4 (Docker) + Drizzle ORM 0.45.1                                |
+| GitHub API  | @octokit/rest 21.0.0                                                   |
+| Markdown    | react-markdown + remark-gfm + rehype-highlight + rehype-slug + mermaid |
+| Logging     | pino (JSON) + pino-pretty (dev only)                                   |
+| Testing     | Vitest 4.1.0                                                           |
+| Package mgr | pnpm 9.15.0                                                            |
 
 ---
 
@@ -81,7 +81,7 @@ DATABASE_URL=mysql://fos_user:fos_password@localhost:13307/fos_blog
 SYNC_API_KEY=...                   # Protects POST /api/sync
 
 # Public / SEO
-NEXT_PUBLIC_SITE_URL=https://fosworld.co.kr
+NEXT_PUBLIC_SITE_URL=https://blog.fosworld.co.kr
 NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=...
 NEXT_PUBLIC_GOOGLE_ADSENSE_ID=ca-pub-...
 ```
@@ -142,6 +142,7 @@ docker run -d --name fos-blog -p 3000:3000 --env-file .env fos-blog
 ```
 
 Content sync cron (crontab):
+
 ```bash
 0 * * * * curl -s -X POST http://localhost:3000/api/sync -H "Authorization: Bearer $SYNC_API_KEY"
 ```
@@ -225,6 +226,7 @@ type(scope): description
 - **Testing:** Vitest + co-located test files
 
 **Agents should prioritize:**
+
 1. Schema integrity (Drizzle types)
 2. Sync idempotency (no duplicate/lost data)
 3. Markdown fidelity (GFM, mermaid, links)
