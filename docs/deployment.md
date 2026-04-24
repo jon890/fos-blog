@@ -6,7 +6,7 @@ fos-blog 는 홈서버(Docker + Next.js standalone + nginx reverse proxy) 환경
 
 ---
 
-## 도메인 구조 (ADR-011)
+## 도메인 구조 (ADR-013)
 
 - **메인**: `https://blog.fosworld.co.kr` — Next.js 앱 서빙
 - **루트 `fosworld.co.kr`**: `/ads.txt` 만 예외 서빙, 나머지는 `blog.fosworld.co.kr` 로 301 리디렉션
@@ -138,18 +138,18 @@ Domain property (DNS TXT 인증) 기준이므로 서브도메인 property 별도
 
 ## 배포 체크리스트
 
-| 단계 | 명령 / 확인 |
-|---|---|
-| 1. env 업데이트 | `.env.production` 의 `NEXT_PUBLIC_SITE_URL` 확인 |
-| 2. 이미지 빌드 | `docker build -t fos-blog .` |
-| 3. DB 마이그레이션 | `pnpm db:migrate` (변경 시만) |
-| 4. 컨테이너 교체 | `docker stop && rm && run` |
-| 5. nginx reload | `sudo nginx -t && sudo systemctl reload nginx` |
-| 6. 리디렉션 검증 | `curl -I https://fosworld.co.kr/posts/database/mysql/innodb-architecture.md` → `301 Location: https://blog.fosworld.co.kr/...` |
-| 7. ads.txt 검증 | `curl https://fosworld.co.kr/ads.txt` → 동일 결과 `curl https://blog.fosworld.co.kr/ads.txt` |
-| 8. 앱 헬스체크 | `curl https://blog.fosworld.co.kr/` → 200 |
-| 9. GSC 새 sitemap 제출 | GSC 콘솔에서 수동 |
-| 10. AdSense ID 업데이트 (승인 후) | `.env.production` + 재배포 |
+| 단계                              | 명령 / 확인                                                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 1. env 업데이트                   | `.env.production` 의 `NEXT_PUBLIC_SITE_URL` 확인                                                                               |
+| 2. 이미지 빌드                    | `docker build -t fos-blog .`                                                                                                   |
+| 3. DB 마이그레이션                | `pnpm db:migrate` (변경 시만)                                                                                                  |
+| 4. 컨테이너 교체                  | `docker stop && rm && run`                                                                                                     |
+| 5. nginx reload                   | `sudo nginx -t && sudo systemctl reload nginx`                                                                                 |
+| 6. 리디렉션 검증                  | `curl -I https://fosworld.co.kr/posts/database/mysql/innodb-architecture.md` → `301 Location: https://blog.fosworld.co.kr/...` |
+| 7. ads.txt 검증                   | `curl https://fosworld.co.kr/ads.txt` → 동일 결과 `curl https://blog.fosworld.co.kr/ads.txt`                                   |
+| 8. 앱 헬스체크                    | `curl https://blog.fosworld.co.kr/` → 200                                                                                      |
+| 9. GSC 새 sitemap 제출            | GSC 콘솔에서 수동                                                                                                              |
+| 10. AdSense ID 업데이트 (승인 후) | `.env.production` + 재배포                                                                                                     |
 
 ---
 
@@ -174,6 +174,6 @@ docker run -d --name fos-blog -p 3000:3000 --env-file .env.production fos-blog:<
 
 ## 참고
 
-- ADR-011 — 도메인 전환 결정 근거
-- ADR-012 — AdSense 승인 요건
+- ADR-013 — 도메인 전환 결정 근거
+- ADR-014 — AdSense 승인 요건
 - `src/app/ads.txt/route.ts` — ads.txt 동적 생성 (env 기반)

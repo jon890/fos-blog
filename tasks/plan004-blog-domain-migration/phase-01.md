@@ -2,11 +2,11 @@
 
 ## 컨텍스트 (자기완결 프롬프트)
 
-메인 도메인을 `fosworld.co.kr` → `blog.fosworld.co.kr` 로 전환 (ADR-011). 이 phase 는 **코드 측** 만 수정하고 인프라 변경은 문서로만 안내 (실제 nginx/env 배포는 사용자 수동). 코드 내 하드코딩된 도메인 참조가 **없음** 을 git grep 으로 선검증 후, `.env.example` 교체 → 빌드 산출물의 canonical/sitemap 이 새 도메인으로 재생성되는지 확인.
+메인 도메인을 `fosworld.co.kr` → `blog.fosworld.co.kr` 로 전환 (ADR-013). 이 phase 는 **코드 측** 만 수정하고 인프라 변경은 문서로만 안내 (실제 nginx/env 배포는 사용자 수동). 코드 내 하드코딩된 도메인 참조가 **없음** 을 git grep 으로 선검증 후, `.env.example` 교체 → 빌드 산출물의 canonical/sitemap 이 새 도메인으로 재생성되는지 확인.
 
 ## 먼저 읽을 문서
 
-- `docs/adr.md` — ADR-011 (도메인 전환 결정 근거)
+- `docs/adr.md` — ADR-013 (도메인 전환 결정 근거)
 - `docs/deployment.md` — nginx 설정 예시, 배포 체크리스트
 - `src/env.ts` — 환경변수 스키마
 - `.claude/skills/_shared/common-critic-patterns.md` — P4 (cwd), P5 (기계 검증)
@@ -41,7 +41,7 @@
 주석 추가 (바로 위 라인):
 
 ```
-# 메인 도메인. fosworld.co.kr 은 /ads.txt 를 제외한 모든 경로를 이 URL 로 301 리디렉션 (ADR-011)
+# 메인 도메인. fosworld.co.kr 은 /ads.txt 를 제외한 모든 경로를 이 URL 로 301 리디렉션 (ADR-013)
 ```
 
 ### 2. 빌드 smoke test — canonical/sitemap 재생성 확인
@@ -72,7 +72,7 @@ grep -r "blog\.fosworld\.co\.kr" .next/server/app/sitemap.xml.body 2>/dev/null |
 ## 배포
 
 홈서버 배포 절차 + nginx 설정은 [`docs/deployment.md`](./docs/deployment.md) 참조.
-도메인 전환(ADR-011) 관련 수동 절차 포함.
+도메인 전환(ADR-013) 관련 수동 절차 포함.
 ```
 
 이미 README 에 배포 섹션이 있으면 링크만 교체 (중복 피함).

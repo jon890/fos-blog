@@ -1,7 +1,7 @@
 # AdSense 승인 체크리스트
 
 **작성일:** 2026-04-24
-**관련 ADR**: [ADR-012](./adr.md#adr-012)
+**관련 ADR**: [ADR-014](./adr.md#adr-014)
 
 Google AdSense 승인 신청 → 승인 → 광고 노출까지의 절차와 체크리스트.
 
@@ -9,7 +9,7 @@ Google AdSense 승인 신청 → 승인 → 광고 노출까지의 절차와 체
 
 ## 0. 사전 조건 (plan004 완료 후)
 
-- [ ] `blog.fosworld.co.kr` 메인 도메인 전환 완료 (ADR-011)
+- [ ] `blog.fosworld.co.kr` 메인 도메인 전환 완료 (ADR-013)
 - [ ] `https://blog.fosworld.co.kr/sitemap.xml` GSC 제출 완료
 - [ ] `https://blog.fosworld.co.kr/robots.txt` 접근 가능
 
