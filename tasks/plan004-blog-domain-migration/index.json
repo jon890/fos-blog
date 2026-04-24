@@ -1,20 +1,20 @@
 {
   "name": "plan004-blog-domain-migration",
-  "description": "메인 도메인을 fosworld.co.kr → blog.fosworld.co.kr 로 전환. 코드(env.example) + 배포 가이드(nginx 설정) 준비. 실제 nginx 설정/env 업데이트는 사용자 수동 실행.",
-  "status": "pending",
+  "description": "메인 도메인을 fosworld.co.kr → blog.fosworld.co.kr 로 전환. 코드 내 구 도메인 하드코딩 (env default, Dockerfile ARG, CI/lighthouse workflow, .env.example) 일괄 치환. 실제 홈서버 전환은 저장소 외부에서 수행.",
+  "status": "completed",
   "created_at": "2026-04-24",
+  "completed_at": "2026-04-24",
   "total_phases": 1,
   "related_docs": [
-    "docs/adr.md",
-    "docs/deployment.md"
+    "docs/adr.md"
   ],
   "phases": [
     {
       "number": 1,
       "file": "phase-01.md",
-      "title": ".env.example 업데이트 + nginx 가이드 검증 + 빌드 smoke test",
+      "title": "구 도메인 하드코딩 일괄 교체 + .env.example + 빌드 smoke test",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }
