@@ -22,7 +22,7 @@ RUN mkdir -p public
 ARG GITHUB_TOKEN
 ARG GITHUB_OWNER=jon890
 ARG GITHUB_REPO=fos-study
-ARG NEXT_PUBLIC_SITE_URL=https://fosworld.co.kr
+ARG NEXT_PUBLIC_SITE_URL=https://blog.fosworld.co.kr
 
 # Set environment variables for build
 ENV GITHUB_TOKEN=${GITHUB_TOKEN}

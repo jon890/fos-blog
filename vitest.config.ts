@@ -9,7 +9,7 @@ export default defineConfig({
       GITHUB_OWNER: "jon890",
       GITHUB_REPO: "fos-study",
       GITHUB_BRANCH: "main",
-      NEXT_PUBLIC_SITE_URL: "https://fosworld.co.kr",
+      NEXT_PUBLIC_SITE_URL: "https://blog.fosworld.co.kr",
     },
   },
   resolve: {

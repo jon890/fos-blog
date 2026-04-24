@@ -19,9 +19,9 @@ jobs:
         uses: treosh/lighthouse-ci-action@v11
         with:
           urls: |
-            https://fosworld.co.kr
-            https://fosworld.co.kr/categories
-            https://fosworld.co.kr/posts/AI/RAG/embedding.md
+            https://blog.fosworld.co.kr
+            https://blog.fosworld.co.kr/categories
+            https://blog.fosworld.co.kr/posts/AI/RAG/embedding.md
           configPath: ./.lighthouserc.json
           uploadArtifacts: true
           temporaryPublicStorage: true

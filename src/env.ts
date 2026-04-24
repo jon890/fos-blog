@@ -22,7 +22,7 @@ export const env = createEnv({
   },
   client: {
     // 선택 (기본값 있음)
-    NEXT_PUBLIC_SITE_URL: z.string().url().default("https://fosworld.co.kr"),
+    NEXT_PUBLIC_SITE_URL: z.string().url().default("https://blog.fosworld.co.kr"),
 
     // 선택
     NEXT_PUBLIC_GOOGLE_ADSENSE_ID: z.string().optional(),
