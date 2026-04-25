@@ -38,6 +38,10 @@
 - [ADR-015](#adr-015) — Visit tracking 경로 유효성 + middleware 분리
 - [ADR-016](#adr-016) — Rate limit middleware (60/min/IP, Googlebot 예외)
 
+### 디자인 시스템
+
+- [ADR-017](#adr-017) — Vercel 베이스 + Stripe 액센트 + Geist/Pretendard + shadcn 최신 (Claude Design 워크플로우)
+
 ---
 
 <a id="adr-001"></a>
@@ -257,3 +261,30 @@
 - **matcher**: `/((?!_next/static|_next/image|favicon|logo|og-default|fonts/).*)` — 정적 자산 제외
 
 **Why**: 홈서버 보호 + 외부 의존 0(Redis/Upstash 미도입) + 1 인스턴스에 충분. NPM `limit_req`(사용자가 Next.js 명시)/Redis(멀티 인스턴스 계획 없음)/Sliding window(burst 60×2 도 실용 OK) 기각. UA 위조 가능성 인지 — 보호 본질은 60/min 한도 자체, 봇 예외는 합법 크롤러 수용. 매 분 윈도우 갱신 시 entry 자연 갱신 → 별도 GC 불필요.
+
+---
+
+<a id="adr-017"></a>
+
+## ADR-017. 디자인 시스템 — Vercel 베이스 + Stripe 액센트 + Geist/Pretendard + shadcn 최신
+
+**Context**: 현재 디자인이 generic Tailwind look (gray + blue + rounded-xl + shadow-md) 으로 시각적 정체성 부족. 컬러 토큰 정의는 있으나 실제 사용 안 됨, shadcn/ui 미도입으로 UI 모두 자체 구현, Hero/PostCard 등 13개 문제점 식별 (참조: `docs/design-inspiration.md`).
+
+**Decision**:
+
+- **톤**: **Vercel 베이스** (pure black/white + 시안/블루 액센트, 절제, 미세 grid + 1px border, 작은 radius) + **Stripe 그라디언트 mesh** (hero 영역만) + **Linear** 의 큰 hero 텍스트 일부 차용
+- **폰트**: 영문 **Geist Sans/Mono** (`geist` npm 패키지) + 한글 **Pretendard** (CDN) — Geist 와 톤 매칭 + 한글 가독성
+- **컴포넌트 base**: **shadcn/ui 최신** (Tailwind v4 호환) — Dialog/Button/Card/Tooltip 등 도입. SearchDialog, Comments 등 자체 구현 점진 교체
+- **모션**: **motion-one** (~3KB, Framer Motion 경량 alt) — 미세 page transition + hover 디테일
+- **다크 우선**: default `dark` 유지 (Vercel/Linear 컨벤션, 현 동작과 일치)
+- **토큰 시스템**: Tailwind v4 `@theme` 블록 (`globals.css`) 으로 표준화 — 컬러/타이포/spacing/radii/shadows/motion primitives
+- **워크플로우**: Claude Design (Anthropic Labs Research Preview) 으로 mockup 생성 → 이 저장소에서 코드 구현. 단계별 프롬프트는 `docs/design-inspiration.md`
+
+**Why**:
+
+- **개발자 정체성**: 모던 dev-tool 사이트 (Vercel/Linear/Stripe) 톤이 기술 블로그와 자연스럽게 매치 + 운영자 1인 개발자 브랜드와 일관
+- **외부 의존성 최소**: shadcn (소스 복사 모델, lock-in 없음) + motion-one (3KB) + Geist npm + Pretendard CDN — 합산해도 번들 영향 작음
+- **한글 가독성 보존**: Pretendard 가 한글 dev-blog 사실상 표준. Geist 와 미세 매칭 양호
+- **Claude Design 활용**: mockup → 코드 분리로 시각 합의 후 구현 → iteration 비용 절감
+
+**Implementation 순서**: plan008 (토큰) → plan009 (컴포넌트) → plan010 (글 상세) → plan011 (홈/카테고리) → plan012 (검색/사이드바) → plan013 (모션). 각 plan PR 마다 Lighthouse 회귀 자동 검증 (`.github/workflows/lighthouse.yml`).
