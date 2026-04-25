@@ -26,17 +26,11 @@
 import { drizzle } from "drizzle-orm/mysql2";
 import { migrate } from "drizzle-orm/mysql2/migrator";
 import mysql from "mysql2/promise";
-import logger from "@/lib/logger";
-
-const log = logger.child({ module: "scripts/migrate" });
 
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
-    log.error(
-      { component: "migrate", operation: "init", err: new Error("DATABASE_URL missing") },
-      "DATABASE_URL not set"
-    );
+    console.error("[migrate] DATABASE_URL not set");
     process.exit(1);
   }
 
@@ -44,29 +38,28 @@ async function main() {
   const db = drizzle(conn);
 
   try {
-    log.info({ component: "migrate", operation: "start" }, "applying migrations");
+    console.log("[migrate] applying migrations");
     await migrate(db, { migrationsFolder: "./drizzle" });
-    log.info({ component: "migrate", operation: "complete" }, "migrations applied");
+    console.log("[migrate] migrations applied");
   } catch (error) {
-    log.error(
-      {
-        component: "migrate",
-        operation: "apply",
-        err: error instanceof Error ? error : new Error(String(error)),
-      },
-      "migrations failed"
+    console.error(
+      "[migrate] migrations failed:",
+      error instanceof Error ? error.message : String(error)
     );
-    process.exit(1);
-  } finally {
     await conn.end();
+    process.exit(1);
   }
+
+  await conn.end();
 }
 
 main();
 ```
 
-- 절대경로 import (`@/lib/logger`) 사용 — tsconfig 의 paths 가 standalone 빌드에 반영되는지 검토 필요. 안 되면 `../src/lib/logger` 같은 상대경로 또는 `console.log` (start script 한정 예외 — BLG2 의 `console.error` 금지는 앱 코드 대상)
-- 실패 시 `exit(1)` — 컨테이너 fail-fast (의도된 동작)
+설계 결정:
+- **`console.log/error` 사용** (BLG2 예외) — start script(컨테이너 부팅) 한정. 앱 코드 아님 + pino 의존 시 paths alias/모듈 resolve 문제로 옵션 B 빌드 실패 위험. 부팅 로그는 docker logs 로 충분 가시성
+- **`process.exit(1)` 전 `await conn.end()` 명시** (finally 미실행 회피) — exit() 는 finally 블록 건너뜀
+- **fail-fast**: 실패 시 컨테이너 부팅 실패 → 다음 기동 전 수동 개입 (의도된 안전장치)
 
 ### 2. `package.json` `db:migrate` script 동기화
 
@@ -151,24 +144,26 @@ builder stage 에 tsc 컴파일 step 추가:
 RUN pnpm tsc --project tsconfig.scripts.json
 ```
 
-### 4. 로컬 검증 + 빌드 산출물 확인
+### 4. `.gitignore` 에 `dist/` 추가 + 검증
+
+`dist/migrate.js` 는 빌드 산출물 (Dockerfile builder stage 에서 생성, production stage 로 COPY). git 추적 대상 아님.
 
 ```bash
 # cwd: <worktree root>
 
-# 1) 로컬에서 migrate.ts 단독 실행
-pnpm tsx scripts/migrate.ts
-# 기대: 이미 적용된 상태면 빠르게 완료. 새 마이그레이션 있으면 apply
+# 1) .gitignore 확인 / 추가
+grep -E '^dist/?$' .gitignore || echo "dist/" >> .gitignore
 
-# 2) 컴파일 산출물 확인
+# 2) 로컬 컴파일 검증
 pnpm tsc --project tsconfig.scripts.json
 test -f dist/migrate.js
 
-# 3) Docker 빌드
-docker build -t fos-blog:migrate-test .
+# 3) production 실행 경로 검증 (import resolve 만 — DB 미설정 시 fail-fast 정상)
+node dist/migrate.js 2>&1 | grep -q "DATABASE_URL not set" && echo "import resolve OK"
 
-# 4) 빌드 산출물에 migrate.js + drizzle 포함 확인
-docker run --rm fos-blog:migrate-test ls -la /app/migrate.js /app/drizzle/_journal.json
+# 4) Docker 빌드 + 산출물 확인
+docker build -t fos-blog:migrate-test .
+docker run --rm --entrypoint sh fos-blog:migrate-test -c "test -f /app/migrate.js && test -f /app/drizzle/_journal.json && echo OK"
 
 # 5) 통합 검증
 pnpm lint
@@ -200,32 +195,37 @@ grep -nE 'CMD\s+\[.*node migrate\.js.*node server\.js' Dockerfile
 # 4) 빌드 stage 에 tsc compile 추가
 grep -n "tsc --project tsconfig.scripts.json" Dockerfile
 
-# 5) BLG2 구조화 로그 (logger 사용)
-grep -n "logger.child" scripts/migrate.ts
-grep -nE 'component:\s*"migrate"' scripts/migrate.ts
-! grep -nE "console\.(log|error)" scripts/migrate.ts
+# 5) start script BLG2 예외 (console 사용 정당) — logger import 없음
+! grep -n 'from "@/lib/logger"' scripts/migrate.ts
+! grep -n "logger.child" scripts/migrate.ts
+grep -nE "console\.(log|error)" scripts/migrate.ts
 
-# 6) 통합 검증
+# 6) .gitignore 에 dist/ 추가
+grep -nE '^dist/?$' .gitignore
+
+# 7) 통합 검증
 pnpm lint
 pnpm type-check
 pnpm test --run
 pnpm build
 
-# 7) Docker 빌드 + migrate.js 포함 확인
+# 8) Docker 빌드 + migrate.js 포함 + import resolve 검증
 docker build -t fos-blog:plan008-test .
 docker run --rm --entrypoint sh fos-blog:plan008-test -c "test -f /app/migrate.js && test -f /app/drizzle/_journal.json && echo OK"
 
-# 8) 로컬 마이그레이션 idempotent 검증 (재실행해도 에러 없음)
+# 9) production 실행 경로 검증 — node dist/migrate.js (DATABASE_URL 미설정으로 fail-fast 도달 = import resolve 성공 증거)
+node dist/migrate.js 2>&1 | grep -q "DATABASE_URL not set" && echo "import resolve OK"
+
+# 10) 로컬 마이그레이션 idempotent (DB 가동 시)
 pnpm tsx scripts/migrate.ts
 pnpm tsx scripts/migrate.ts  # 두 번 연속 실행 모두 성공 (이미 적용된 것은 skip)
 ```
 
 ## PHASE_BLOCKED 조건
 
-- `drizzle-orm/mysql2/migrator` 가 export 안 함 (버전 차이) → **PHASE_BLOCKED: drizzle-orm 0.45.1 의 migrator API 경로 재확인 (mysql vs mysql2 driver)**
-- tsconfig.scripts.json 컴파일 시 `@/*` path alias 미해석 → **PHASE_BLOCKED: scripts 전용 tsconfig 의 paths 설정 필요 또는 import 경로를 상대경로로 변경**
-- `node migrate.js` 실행 시 import.meta / ESM 문제 → **PHASE_BLOCKED: tsconfig module 설정 (commonjs vs esnext) 재검토**
-- Docker 빌드 시 `pnpm tsc` 가 builder stage 의 tsconfig 를 못 찾음 → **PHASE_BLOCKED: COPY 순서 재정리**
+- `drizzle-orm/mysql2/migrator` export 부재 (버전 차이) → **PHASE_BLOCKED: drizzle-orm 0.45.1 의 migrator API 경로 재확인** — 첫 작업에서 `test -f node_modules/drizzle-orm/mysql2/migrator.js` 또는 `package.json` `exports` 필드로 사전 검증
+- `node dist/migrate.js` 실행 시 ESM/commonjs 충돌 → **PHASE_BLOCKED: tsconfig.scripts.json module 설정 재검토 (commonjs 채택)**
+- Docker 빌드 시 builder stage 의 `tsconfig.scripts.json` 미발견 → **PHASE_BLOCKED: COPY 순서 재정리 (tsconfig 들 builder 초반 COPY)**
 
 ## 커밋 제외 (phase 내부)
 
