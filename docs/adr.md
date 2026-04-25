@@ -250,13 +250,11 @@
 
 **Decision**:
 
-- **위치**: `src/middleware/rateLimit.ts` — 홈서버 1 인스턴스라 in-memory `Map` 으로 충분
-- **Runtime**: `src/proxy.ts` 에 `runtime: "nodejs"` 명시 — Edge Runtime 분리 인스턴스에서는 in-memory Map 무용지물
+- **위치**: `src/middleware/rateLimit.ts` — 홈서버 1 인스턴스, in-memory `Map`. NJS16 proxy 는 Node 고정이라 별도 runtime 명시 불필요
 - **알고리즘**: Fixed window 60초/IP — `Math.floor(Date.now() / 60_000)` 분 단위 버킷
-- **한도**: 분당 60 요청/IP. 초과 시 429 + `Retry-After: 60`
-- **봇 예외**: User-Agent `Googlebot` 매치 시 우회
-- **localhost 예외**: `127.0.0.1` / `::1` 우회 — crontab 의 `/api/sync` 자기 호출 보호
-- **메모리 가드**: `buckets.size > 10_000` 도달 시 만료된 windowKey 엔트리 일괄 sweep
+- **한도**: 분당 60 요청/IP. 초과 시 429 + `Retry-After`(다음 윈도우까지 남은 초)
+- **예외**: UA `Googlebot` / IP `127.0.0.1` `::1` 우회 — 합법 크롤러 + crontab `/api/sync` 자기 호출 보호
+- **메모리 가드**: `buckets.size >= 10_000` 시 만료 windowKey 엔트리 일괄 sweep
 - **matcher**: `/((?!_next/static|_next/image|favicon|logo|og-default|fonts/).*)` — 정적 자산 제외
 
-**Why**: 홈서버 보호 + 외부 의존 0(Redis/Upstash 미도입) + 1 인스턴스에 충분. NPM `limit_req`(사용자가 Next.js 명시)/Redis(멀티 인스턴스 계획 없음)/Sliding window(burst 60×2 도 실용 OK) 기각. UA 위조 가능성 인지 — 보호 본질은 60/min 한도 자체, 봇 예외는 합법 크롤러 수용. localhost 예외는 cron 호출이 자기 자신과 합쳐 한도 초과해 sync 가 끊기는 사고 방지(127.0.0.1/::1 외부 노출 없으므로 우회 안전). Runtime 명시는 Node 런타임 의존(`mysql2`)이 빠질 미래 시점에도 in-memory 정책이 깨지지 않도록 안전장치. 메모리 가드는 IP 다양성이 누적되는 장기 실행 시 OOM 방지 — sweep 은 windowKey 만료 기준이라 활성 IP 카운트는 보존.
+**Why**: 외부 의존 0 + 1 인스턴스 충분. Redis/Sliding window 기각(over-engineering). UA 위조는 본질적으로 60/min 한도 자체가 보호. localhost 우회는 외부 노출 없어 안전. 메모리 가드는 장기 IP 다양성 누적 OOM 방지 — sweep 기준이 windowKey 만료라 활성 IP 카운트는 보존.
