@@ -326,3 +326,36 @@ mockup 을 만들어주세요.
 - Geist 폰트: https://vercel.com/font
 - Pretendard: https://pretendard.dev
 - motion-one: https://motion.dev
+
+---
+
+## Claude Design Handoff Bundles (실측)
+
+### Round 1 — 디자인 시스템 토큰 (2026-04-25)
+
+- URL: `https://api.anthropic.com/v1/design/h/J72HSJyKRHwlb3S4Yjmk6w?open_file=fos-blog+Design+Tokens.html`
+- 로컬: `~/.claude/projects/.../tool-results/webfetch-1777097520807-wx9in3.bin` (gzip tar, 24.6KB)
+- 핵심 파일: `tokens.js` (source of truth), `styleguide.css` (CSS 변수 패턴 + Density)
+- → **plan009-design-tokens-foundation** 으로 적용 (이 플랜 파일: `~/.claude/plans/hidden-moseying-charm.md`)
+
+### Round 2 — 컴포넌트 mockup (2026-04-25)
+
+- URL: `https://api.anthropic.com/v1/design/h/mFKhF4UX1SITpFy5jE7QTw?open_file=fos-blog+Components.html`
+- 로컬: `~/.claude/projects/.../tool-results/webfetch-1777098410179-5850mb.bin` (gzip tar, 45.7KB)
+- 핵심 파일: `components-1.jsx`, `components-2.jsx`, `components.css`, `design-canvas.jsx`, `fos-blog Components.html`
+- **3 컴포넌트 × 다중 variants** (Round 1 토큰 기반):
+  - **Article Page** (3): Default(hero mesh + sticky TOC + reading progress + 카테고리 태그 + author) / Narrow reading(TOC 제거, 본문 폭 축소) / Light parity
+  - **Card List** (4): Editorial row list(번호+제목+발췌+카테고리+메타, 밀도 高) / Card grid(mesh placeholder cover + 카테고리 dot) / Terminal feed(`$ ls -la` REPL, caret blink) / Row list light parity
+  - **Code Block** (3): Default(filename header + 라인번호 + 라인 하이라이트 + copy) / Diff(semantic +/−) / Terminal(traffic-lights + build output + caret blink)
+- 카테고리 9색은 hue 만 변형, chroma·lightness 통일
+- **추출**: `tar xzOf <bin> 'fos-blog/project/components-1.jsx' > /tmp/components-1.jsx`
+
+### plan010 이상 분할 (제안)
+
+- **plan010**: 카테고리 매핑 헬퍼 (architecture/network/interview/kafka/internet → system/default) + PostCard / CategoryCard 리디자인 (Editorial row list 베이스, Card grid 옵션은 별도 변형)
+- **plan011**: Article page redesign (글 상세 — hero mesh + sticky TOC + reading progress bar)
+- **plan012**: Code Block (MarkdownRenderer 의 pre 처리 — filename header + line numbers + copy + diff/terminal variants)
+- **plan013**: Header + Footer + Hero (홈) redesign
+- **plan014**: Density 토글 + 사이드바 + 검색 (shadcn Sheet/Dialog)
+- **plan015**: motion-one 마이크로 인터랙션
+- → **권장**: 각 plan 시작 전 별도 plan mode 세션에서 components.* 파일 추출/분석 → plan 작성 → build-with-teams 실행

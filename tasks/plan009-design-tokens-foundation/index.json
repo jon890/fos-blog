@@ -1,0 +1,21 @@
+{
+  "name": "plan009-design-tokens-foundation",
+  "description": "Claude Design 토큰 (color/typography/spacing/radius/shadow/motion) 을 globals.css @theme + :root 에 매핑 + Geist/Pretendard 폰트 교체 + shadcn/ui foundation 도입 (Button 시범). 시각 영향 최소(컴포넌트 토큰 직접 미참조).",
+  "status": "pending",
+  "created_at": "2026-04-25",
+  "total_phases": 1,
+  "related_docs": [
+    "docs/adr.md",
+    "docs/design-inspiration.md"
+  ],
+  "approved_plan": "/Users/nhn/.claude/plans/hidden-moseying-charm.md",
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "tokens (@theme + :root) + Geist/Pretendard 폰트 + shadcn init + Button + 검증",
+      "model": "sonnet",
+      "status": "pending"
+    }
+  ]
+}
