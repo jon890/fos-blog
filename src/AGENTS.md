@@ -9,19 +9,20 @@
 
 ## Subdirectories
 
-| Directory     | Purpose                                                               |
-| ------------- | --------------------------------------------------------------------- |
-| `app/`        | Next.js 라우팅 — 페이지, API 라우트, 레이아웃 (see `app/AGENTS.md`)   |
-| `components/` | 재사용 가능한 React UI 컴포넌트 (see `components/AGENTS.md`)          |
-| `services/`   | 비즈니스 로직 레이어 — 동기화, 포스트 조회 (see `services/AGENTS.md`) |
-| `infra/`      | 외부 시스템 통합 — DB, GitHub API (see `infra/AGENTS.md`)             |
-| `lib/`        | 공유 유틸리티 — markdown, logger, path-utils (see `lib/AGENTS.md`)    |
+| Directory     | Purpose                                                                  |
+| ------------- | ------------------------------------------------------------------------ |
+| `app/`        | Next.js 라우팅 — 페이지, API 라우트, 레이아웃 (see `app/AGENTS.md`)      |
+| `components/` | 재사용 가능한 React UI 컴포넌트 (see `components/AGENTS.md`)             |
+| `services/`   | 비즈니스 로직 레이어 — 동기화, 포스트 조회 (see `services/AGENTS.md`)    |
+| `infra/`      | 외부 시스템 통합 — DB, GitHub API (see `infra/AGENTS.md`)                |
+| `lib/`        | 공유 유틸리티 — markdown, logger, path-utils (see `lib/AGENTS.md`)       |
+| `middleware/` | 미들웨어 책임별 모듈 — `visit.ts` (방문 기록), `rateLimit.ts` (예정)     |
 
 ## Key Files
 
-| File       | Description                                                                   |
-| ---------- | ----------------------------------------------------------------------------- |
-| `proxy.ts` | Next.js 미들웨어 — 포스트 조회수를 `waitUntil()`로 비동기 기록 (Edge Runtime) |
+| File       | Description                                                                              |
+| ---------- | ---------------------------------------------------------------------------------------- |
+| `proxy.ts` | Next.js 미들웨어 thin orchestrator — `middleware/visit.ts` + `middleware/rateLimit.ts` 조합 (Node Runtime) |
 
 ## Architecture
 
