@@ -1,8 +1,9 @@
 {
   "name": "plan005-adsense-approval-prep",
   "description": "AdSense 승인 준비 — /privacy, /about, /contact 페이지 추가. About 은 GitHub 프로필 런타임 fetch. 푸터 링크 + sitemap 반영. ads.txt 는 이미 동적 route 로 기구현.",
-  "status": "pending",
+  "status": "completed",
   "created_at": "2026-04-24",
+  "completed_at": "2026-04-25",
   "total_phases": 2,
   "related_docs": [
     "docs/adr.md",
@@ -17,14 +18,14 @@
       "file": "phase-01.md",
       "title": "정책/소개 페이지 3개 + next.config avatars 패턴",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 2,
       "file": "phase-02.md",
-      "title": "푸터 링크 + sitemap 반영 + 빌드 검증",
+      "title": "푸터 링크 + sitemap 반영 + 체크리스트 갱신 + 빌드 검증",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }
