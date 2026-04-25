@@ -414,3 +414,83 @@ catch-all 은 URL 의 마지막 부분이어야 한다는 라우터 규칙이, m
 - `generateMetadata` 내부에서 OG URL 생성 시 `absolute URL` 권장 (`metadataBase` 설정 시 relative 도 가능)
 - 향후 catch-all 경로가 추가되면 동일 패턴(`/api/og/{scope}/[...x]/route.tsx`) 적용
 - 같은 이미지 스타일/유틸(`src/lib/og.ts`) 을 metadata file 과 API Route 가 공유 — 렌더 로직 중복 방지
+
+---
+
+## ADR-015. Visit tracking 경로 유효성 + middleware 파일 분리
+
+**Context**: SQL injection 시도 등 비유효 경로(`interview/...XOR(sleep(15))...`)가 `visit_stats` 에 쌓여 홈/사이트 통계가 과대 계상되는 버그. 현재 `src/proxy.ts` middleware 가 정규식 매칭 외에 **실제 글 존재 여부를 검증하지 않고** 모든 요청을 기록.
+
+**Decision**:
+
+- **존재 검증을 middleware 단계에서 수행**: `posts.path` 가 실제 DB 에 존재할 때만 `visit_stats` 기록. 비활성 글(`is_active=0`) 도 기록 자체는 허용 (자연 보존)
+- **목록 페이지 명시적 제외**: `/posts/latest`, `/posts/popular` 는 noindex 리스트 — DB 조회 없이 early return
+- **길이 가드**: `pathname.length > 300` 차단 (DB `varchar(500)` 여유 + 공격 페이로드 차단)
+- **middleware 파일 분리**: `src/middleware/visit.ts` 와 `src/middleware/rateLimit.ts` 로 책임 분리. `src/proxy.ts` 는 두 함수를 조합하는 thin orchestrator
+- **기존 쓰레기 데이터 cleanup**: `drizzle-kit generate --custom` 으로 일회성 마이그레이션. **활성/비활성 무관 `posts.path` 에 존재하는 path 는 보존**, 그 외 (홈 `/` 제외) 모두 삭제
+
+**Drivers**:
+
+- 통계 정합성 (홈 조회수 정확도)
+- 로그 오염 방지 (악성 path 수천 개 누적 차단)
+- middleware 파일 분리로 가독성 + 단일 책임 (rate limit 추가 시 한 파일 비대화 방지)
+- DB 검증은 `waitUntil` 내부 비동기 — 응답 지연 없음
+
+**Alternatives Considered**:
+
+- **정규식 화이트리스트만**: 형태는 유효해도 실제 글이 아닌 path 가 통과 (예: `/posts/random.md` — 존재하지 않는 글) → 자연 차단 안 됨. 기각
+- **404 렌더에서만 기록 차단**: middleware 가 Edge Runtime 이라고 가정했으나 실제는 Node Runtime (`crypto`, `getDb` 직접 사용 중) — DB 조회 자유로움. 기각된 옵션
+- **카테고리/`/about`/`/privacy`/`/contact` 도 visit 추적**: 인기글 통계 외 용도 명확하지 않음 — 별도 plan 으로 분리. 기각
+
+**Consequences**:
+
+- middleware 가 1회 추가 DB 쿼리 (`post.getPostId`) — `waitUntil` 내부라 사용자 체감 0
+- `console.error` → BLG2 4-field structured logger 로 교체 (기존 `src/proxy.ts:30` 위반)
+- 현재 matcher (`["/", "/posts/:path*"]`) 는 visit tracking 용으로 유지. rate limit 은 ADR-016 별도 matcher
+- cleanup 마이그레이션 한 번 실행 후 기존 SQL injection 페이로드 row 제거. 향후 자연 발생 차단
+
+**Follow-ups**:
+
+- 카테고리 페이지(`/categories`, `/category/...`) visit tracking 이 필요해지면 별도 plan
+- `getPostId` 캐시화(in-memory TTL 60s) 가능성 — 현재 200개 규모에서 불필요
+
+---
+
+## ADR-016. Rate Limiting — Next.js middleware in-memory fixed window
+
+**Context**: 외부에서 갑작스러운 다량 요청으로 홈서버 자원 소진 사고 발생. NPM(nginx) 레벨 `limit_req` 미설정 + 앱 레벨 보호 부재.
+
+**Decision**:
+
+- **위치**: Next.js middleware (`src/middleware/rateLimit.ts`) — 홈서버 1 인스턴스 환경에서 단일 프로세스 in-memory `Map` 으로 충분
+- **알고리즘**: **Fixed window 60초/IP** — `Math.floor(Date.now() / 60_000)` 분 단위 버킷. 단순, 메모리 효율
+- **한도**: **분당 60 요청/IP** (초과 시 HTTP 429 + `Retry-After: 60`)
+- **봇 예외**: User-Agent 가 `Googlebot` 매치 시 제한 우회. UA 위조 가능성은 인지하지만 실제 DoS 는 분당 60 자체로 충분히 차단
+- **matcher 범위**: 정적 자산 제외 `/((?!_next/static|_next/image|favicon|logo|og-default|fonts/).*)` — 페이지 + API 만 카운트
+- **IP 추출**: `x-forwarded-for` 헤더 첫 항목 (NPM 뒤이므로) → fallback `x-real-ip` → `unknown`
+- **메모리 관리**: 매 분 새 윈도우로 갱신 시 이전 윈도우 entry 자연 GC. 별도 cleanup 불필요 (윈도우당 entry 수천 미만 예상)
+
+**Drivers**:
+
+- 홈서버 자원 보호 (DoS 완화)
+- 외부 의존성 0 (Redis/Upstash 등 도입 안 함)
+- 1 인스턴스라 in-memory 공유 충분
+
+**Alternatives Considered**:
+
+- **NPM `limit_req`**: nginx 레벨 — 실용적이지만 사용자가 "Next.js 에서 구현" 명시. 보조 수단으로 향후 추가 가능
+- **Redis-backed (Upstash 등)**: 멀티 인스턴스 확장에 유리 — 블로그 멀티 인스턴스 계획 없음. 오버엔지니어링
+- **Sliding window**: 더 정교 — fixed window 의 윈도우 경계 burst 허용은 60×2=120 이지만 실용적으로 충분. 기각
+
+**Consequences**:
+
+- middleware Node runtime 유지 (in-memory Map 보존). Edge runtime 으로 마이그레이션 시 단일 프로세스 가정 깨짐
+- UA 기반 봇 예외는 위조 가능 — 보안 핵심은 분당 60 한도 자체. 합법 크롤러 수용이 본질적 이유
+- 429 응답 시 `Retry-After: 60` 헤더 → 브라우저/봇이 표준 준수 시 대기 후 재시도
+- 정적 자산은 matcher 자체 제외라 카운트 없음 → 실제 사용자 트래픽 패턴(페이지 1 + 자산 N) 가 limit 초과하지 않음
+
+**Follow-ups**:
+
+- 멀티 인스턴스로 확장 시 Redis-backed limit 으로 마이그레이션
+- 봇 검증 강화 필요 시 reverse DNS lookup (verified Googlebot) 추가 — 현재 범위 외
+- NPM `limit_req` 보조 도입 검토 (이중 방어)
