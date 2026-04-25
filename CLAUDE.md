@@ -41,7 +41,7 @@ fos-blog/
 │   │   └── github/       # Octokit client, API, file-filter, image-rewrite
 │   ├── lib/              # Shared utils — markdown.ts, logger.ts, path-utils.ts
 │   ├── middleware/       # Per-concern middleware — visit.ts (visit tracking), rateLimit.ts (placeholder)
-│   └── proxy.ts          # Thin middleware orchestrator — composes middleware/* (Node Runtime)
+│   └── proxy.ts          # Next.js 16 proxy file convention (구 middleware.ts) — Node runtime 고정, `runtime` config 사용 불가
 ├── local/                # Docker Compose + MySQL init.sql
 ├── drizzle/              # Migration artifacts (auto-generated, do not edit)
 ├── Dockerfile            # Multi-stage build (output: standalone)

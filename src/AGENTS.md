@@ -22,7 +22,7 @@
 
 | File       | Description                                                                              |
 | ---------- | ---------------------------------------------------------------------------------------- |
-| `proxy.ts` | Next.js 미들웨어 thin orchestrator — `middleware/visit.ts` + `middleware/rateLimit.ts` 조합 (Node Runtime) |
+| `proxy.ts` | Next.js 16 proxy file convention (구 `middleware.ts`) — `middleware/*` 조합. Node runtime 고정, `runtime` config 사용 불가 |
 
 ## Architecture
 
