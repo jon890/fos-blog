@@ -156,7 +156,7 @@ export default function RootLayout({
             <main>{children}</main>
             <footer className="border-t border-gray-200 dark:border-gray-800 py-12 mt-16">
               <div className="container mx-auto px-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
                   {/* Brand */}
                   <div>
                     <div className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white mb-3">
@@ -215,6 +215,29 @@ export default function RootLayout({
                           className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                         >
                           Source Repository
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                  {/* Policy */}
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
+                      정책
+                    </h3>
+                    <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                      <li>
+                        <a href="/about" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                          소개
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/privacy" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                          개인정보처리방침
+                        </a>
+                      </li>
+                      <li>
+                        <a href="/contact" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                          연락처
                         </a>
                       </li>
                     </ul>
