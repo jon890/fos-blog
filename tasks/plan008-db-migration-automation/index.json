@@ -1,0 +1,19 @@
+{
+  "name": "plan008-db-migration-automation",
+  "description": "컨테이너 부팅 시 drizzle migrator 자동 실행. scripts/migrate.ts + Dockerfile CMD 교체 + production 이미지에 drizzle/ 복사. 배포 시 마이그레이션 누락 차단.",
+  "status": "pending",
+  "created_at": "2026-04-25",
+  "total_phases": 1,
+  "related_docs": [
+    "docs/adr.md"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "scripts/migrate.ts + Dockerfile entrypoint 통합 + 검증",
+      "model": "sonnet",
+      "status": "pending"
+    }
+  ]
+}

@@ -37,6 +37,11 @@
 
 - [ADR-015](#adr-015) — Visit tracking 경로 유효성 + middleware 분리
 - [ADR-016](#adr-016) — Rate limit middleware (60/min/IP, Googlebot 예외)
+- [ADR-018](#adr-018) — DB 마이그레이션 자동화 (컨테이너 부팅 시 drizzle migrator 실행)
+
+### 디자인 시스템
+
+- [ADR-017](#adr-017) — Vercel 베이스 + Stripe 액센트 + Geist/Pretendard + shadcn 최신 (Claude Design 워크플로우)
 
 ---
 
@@ -258,3 +263,64 @@
 - **matcher**: `/((?!_next/static|_next/image|favicon|logo|og-default|fonts/).*)` — 정적 자산 제외
 
 **Why**: 외부 의존 0 + 1 인스턴스 충분. Redis/Sliding window 기각(over-engineering). UA 위조는 본질적으로 60/min 한도 자체가 보호. localhost 우회는 외부 노출 없어 안전. 메모리 가드는 장기 IP 다양성 누적 OOM 방지 — sweep 기준이 windowKey 만료라 활성 IP 카운트는 보존.
+
+---
+
+<a id="adr-018"></a>
+
+## ADR-018. DB 마이그레이션 자동화 — 컨테이너 부팅 시 drizzle migrator 실행
+
+**Context**: 현재 `start.sh` 가 `docker compose up -d` 만 호출 → 매 배포마다 사용자가 수동으로 `pnpm db:migrate` 실행. plan006 의 `0004_cleanup_stale_visits` 같은 마이그레이션이 자동 적용 안 됨 → 운영 누락 위험.
+
+**Decision**: production 이미지에 `scripts/migrate.js` 포함 + Dockerfile CMD 를 `node migrate.js && node server.js` 로 교체. 컨테이너 부팅 시 미적용 마이그레이션 자동 apply.
+
+- 스크립트: `drizzle-orm/mysql2/migrator` 의 `migrate()` 사용 — drizzle-kit CLI 미포함 가능 (production deps 만으로 실행)
+- 이미지에 `drizzle/` 디렉터리 + 빌드된 `migrate.js` 복사
+- 적용 idempotent: drizzle journal (`__drizzle_migrations` 테이블) 이 이미 적용된 마이그레이션 skip
+- 부팅 시간: 신규 마이그레이션 0개면 ~수백 ms 추가, 1개 이상이면 SQL 크기에 비례
+
+**Why**:
+
+- **운영 안정성**: 배포 자동화 = 인적 누락 차단
+- **drizzle-kit 미포함**: drizzle-orm 의 migrator 만 production deps 로 충분 → 이미지 크기 영향 0
+- **Idempotency 보장**: 매 부팅마다 실행해도 안전
+- 별도 init container(`docker-compose depends_on`) 도 가능하지만 단일 컨테이너 인라인이 더 단순. 복잡도 낮은 1인 운영 환경에 적합
+
+**Consequences**:
+
+- `Dockerfile` production stage 에 `drizzle/` + `migrate.js` 복사 추가
+- 컨테이너 시작 로그에 `✓ migrations applied` 가시성
+- 마이그레이션 실패 시 컨테이너 부팅 실패 (fail-fast — 의도된 동작. 다음 컨테이너 기동 전 수동 개입 필요)
+- `start.sh` 의 docker compose up 만으로 모든 처리 완결 — 별도 step 불필요
+
+**Follow-ups**:
+
+- 추후 마이그레이션 lock (분산 환경) 필요 시 drizzle 의 `migrationsTable` 옵션 + 외부 락 검토. 현재 1 인스턴스라 불필요
+- 큰 마이그레이션은 수동 검토 후 commit (BLG1 db:push 금지 규칙은 그대로 유지)
+
+---
+
+<a id="adr-017"></a>
+
+## ADR-017. 디자인 시스템 — Vercel 베이스 + Stripe 액센트 + Geist/Pretendard + shadcn 최신
+
+**Context**: 현재 디자인이 generic Tailwind look (gray + blue + rounded-xl + shadow-md) 으로 시각적 정체성 부족. 컬러 토큰 정의는 있으나 실제 사용 안 됨, shadcn/ui 미도입으로 UI 모두 자체 구현, Hero/PostCard 등 13개 문제점 식별 (참조: `docs/design-inspiration.md`).
+
+**Decision**:
+
+- **톤**: **Vercel 베이스** (pure black/white + 시안/블루 액센트, 절제, 미세 grid + 1px border, 작은 radius) + **Stripe 그라디언트 mesh** (hero 영역만) + **Linear** 의 큰 hero 텍스트 일부 차용
+- **폰트**: 영문 **Geist Sans/Mono** (`geist` npm 패키지) + 한글 **Pretendard** (CDN) — Geist 와 톤 매칭 + 한글 가독성
+- **컴포넌트 base**: **shadcn/ui 최신** (Tailwind v4 호환) — Dialog/Button/Card/Tooltip 등 도입. SearchDialog, Comments 등 자체 구현 점진 교체
+- **모션**: **motion-one** (~3KB, Framer Motion 경량 alt) — 미세 page transition + hover 디테일
+- **다크 우선**: default `dark` 유지 (Vercel/Linear 컨벤션, 현 동작과 일치)
+- **토큰 시스템**: Tailwind v4 `@theme` 블록 (`globals.css`) 으로 표준화 — 컬러/타이포/spacing/radii/shadows/motion primitives
+- **워크플로우**: Claude Design (Anthropic Labs Research Preview) 으로 mockup 생성 → 이 저장소에서 코드 구현. 단계별 프롬프트는 `docs/design-inspiration.md`
+
+**Why**:
+
+- **개발자 정체성**: 모던 dev-tool 사이트 (Vercel/Linear/Stripe) 톤이 기술 블로그와 자연스럽게 매치 + 운영자 1인 개발자 브랜드와 일관
+- **외부 의존성 최소**: shadcn (소스 복사 모델, lock-in 없음) + motion-one (3KB) + Geist npm + Pretendard CDN — 합산해도 번들 영향 작음
+- **한글 가독성 보존**: Pretendard 가 한글 dev-blog 사실상 표준. Geist 와 미세 매칭 양호
+- **Claude Design 활용**: mockup → 코드 분리로 시각 합의 후 구현 → iteration 비용 절감
+
+**Implementation 순서**: plan008 (토큰) → plan009 (컴포넌트) → plan010 (글 상세) → plan011 (홈/카테고리) → plan012 (검색/사이드바) → plan013 (모션). 각 plan PR 마다 Lighthouse 회귀 자동 검증 (`.github/workflows/lighthouse.yml`).
