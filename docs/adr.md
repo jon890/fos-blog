@@ -2,7 +2,45 @@
 
 이 문서는 **코드/설정/git log로 자명하지 않은 기술 결정**만 기록한다. 자명한 사항(파일 위치, 함수명, 단순 구현 선택)은 제외. AI 에이전트가 설계 철학을 빠르게 추론하기 위한 컨텍스트.
 
+> 신규 ADR 추가/수정 시 아래 인덱스도 함께 갱신 — 분류 + 1줄 요약 + 앵커 링크.
+
 ---
+
+## ADR Index
+
+### 콘텐츠 & UX
+
+- [ADR-001](#adr-001) — 무한 스크롤 페이지 (SSR 첫 페이지 + 클라이언트 fetch 하이브리드)
+- [ADR-003](#adr-003) — 홈 진입 UX (섹션 하단 CTA 버튼, 카테고리 링크와 차별화)
+- [ADR-005](#adr-005) — 리스트 페이지 `noindex` (`/posts/latest|popular`)
+- [ADR-006](#adr-006) — IntersectionObserver 직접 구현 (의존성 0)
+- [ADR-010](#adr-010) — Markdown 본문 선두 H1 제거 (`stripLeadingH1`)
+
+### 데이터 & API
+
+- [ADR-002](#adr-002) — 페이지네이션 (최신=cursor, 인기=offset+pagePath)
+- [ADR-004](#adr-004) — 무한 스크롤 데이터 fetch = API Route
+
+### OG 이미지 & 공유
+
+- [ADR-007](#adr-007) — `next/og` 동적 + 정적 fallback 하이브리드
+- [ADR-008](#adr-008) — Noto Sans KR subset TTF 로컬 번들
+- [ADR-009](#adr-009) — `ImageResponse` 런타임 = Node.js
+- [ADR-011](#adr-011) — catch-all OG 이미지 = API Route 우회
+
+### 도메인 & SEO 검색 노출
+
+- [ADR-013](#adr-013) — 메인 도메인 단일화 (`blog.fosworld.co.kr`, `/ads.txt` 만 예외)
+- [ADR-014](#adr-014) — AdSense 승인 요건 (privacy/about/contact + GitHub 프로필 fetch)
+
+### 보안 & 안정성
+
+- [ADR-015](#adr-015) — Visit tracking 경로 유효성 + middleware 분리
+- [ADR-016](#adr-016) — Rate limit middleware (60/min/IP, Googlebot 예외)
+
+---
+
+<a id="adr-001"></a>
 
 ## ADR-001. 무한 스크롤 페이지 — SSR 첫 페이지 + 클라이언트 fetch 하이브리드
 
@@ -13,6 +51,8 @@
 **Why**: SEO 보존 + 빠른 FCP + 끊김 없는 스크롤. 통합 페이지(상태 복잡)/풀 CSR(SEO 손해)/페이지네이션(체감 느림) 모두 기각. 페이지 자체는 noindex(ADR-005). 뒤로가기 시 state 초기화는 감수 — 필요 시 sessionStorage 복원 추후 검토.
 
 ---
+
+<a id="adr-002"></a>
 
 ## ADR-002. 페이지네이션 — 최신=Cursor, 인기=Offset 혼합
 
@@ -27,6 +67,8 @@
 
 ---
 
+<a id="adr-003"></a>
+
 ## ADR-003. 홈 진입 UX — 섹션 하단 CTA 버튼
 
 **Context**: 카테고리 섹션은 헤더 우측 "모두 보기 →" 링크. 인기/최신 섹션도 같은 패턴 가능.
@@ -36,6 +78,8 @@
 **Why**: 글 목록은 핵심 탐색 행동 — 더 강한 클릭 유도 필요. 헤더 우측 링크는 모바일 터치 타깃(<44px) 위험. 두 패턴 공존 후 클릭률 비교로 추후 통일 검토.
 
 ---
+
+<a id="adr-004"></a>
 
 ## ADR-004. 무한 스크롤 데이터 Fetching — API Route
 
@@ -47,6 +91,8 @@
 
 ---
 
+<a id="adr-005"></a>
+
 ## ADR-005. 리스트 페이지 `noindex`
 
 **Context**: 리스트 페이지는 검색엔진 가치 낮고 중복 콘텐츠 가능성(글 제목 이미 홈/카테고리에 노출).
@@ -57,6 +103,8 @@
 
 ---
 
+<a id="adr-006"></a>
+
 ## ADR-006. IntersectionObserver 직접 구현 (의존성 미도입)
 
 **Context**: 무한 스크롤 트리거 구현 방법.
@@ -66,6 +114,8 @@
 **Why**: 번들 0 추가 + 10줄 패턴으로 충분 + MVP 의존성 최소 정책. `useEffect` + `useRef(observer)` 로 인스턴스 고정 + cleanup.
 
 ---
+
+<a id="adr-007"></a>
 
 ## ADR-007. OG 이미지 — `next/og` 동적 + 정적 fallback 하이브리드
 
@@ -83,6 +133,8 @@
 
 ---
 
+<a id="adr-008"></a>
+
 ## ADR-008. 동적 OG 폰트 — 로컬 subset TTF 번들
 
 **Context**: `ImageResponse` 한글 렌더에 폰트 필수. CDN fetch 는 홈서버 네트워크 의존.
@@ -92,6 +144,8 @@
 **Why**: 홈서버 외부 의존 0 + 모든 한글 렌더 보장(KS X 1001 2350자는 신생 음절 누락). **TTF 고정 이유**: `ImageResponse.fonts` 가 TTF/OTF/WOFF 만 지원, **WOFF2 미지원** (satori 제약). woff2(미지원)/woff(satori 호환 불확실)/원본 TTF(과대)/Google Fonts fetch(의존) 모두 기각. TTF 1.6MB 는 서버 번들 전용 — 클라이언트 전송 0. Dockerfile `COPY public` 필수.
 
 ---
+
+<a id="adr-009"></a>
 
 ## ADR-009. `ImageResponse` 런타임 — Node.js 명시
 
@@ -103,6 +157,8 @@
 
 ---
 
+<a id="adr-010"></a>
+
 ## ADR-010. Markdown 본문 선두 H1 제거 (`stripLeadingH1`)
 
 **Context**: 글 상세에서 페이지 `<h1>{title}</h1>` + Markdown 본문 첫 `# Title` 둘 다 렌더 → **H1 2개**. `extractTitle` 은 추출만 하고 원본 미수정. FolderPage README 도 동일.
@@ -112,6 +168,8 @@
 **Why**: Google SEO 권고(페이지당 단일 H1) + Markdown 원본(`jon890/fos-study`) 의 `# Title` 관행 보존 — 렌더 단계만 정리. h1→h2 강등(중간 h1 도 강등)/원본 수정(200+ 글 + sync 마다 재수정)/remark plugin(과함) 기각. TOC 는 stripped content 로 생성 → H1 중복 없음.
 
 ---
+
+<a id="adr-011"></a>
 
 ## ADR-011. catch-all OG 이미지 — API Route 우회
 
@@ -126,9 +184,11 @@
 
 ---
 
+<a id="adr-013"></a>
+
 ## ADR-013. 메인 도메인 단일화 — `blog.fosworld.co.kr`
 
-**Context**: `fosworld.co.kr` + `blog.fosworld.co.kr` 가 같은 앱을 서빙 → GSC "대체 페이지" 10개 분류, 크롤 예산 분산. "AdSense 서브도메인 미지원" 오해로 두 도메인 유지 — 실제로 AdSense 는 서브도메인 완전 지원.
+**Context**: `fosworld.co.kr` + `blog.fosworld.co.kr` 가 같은 앱을 서빙 → GSC "대체 페이지" 10개 분류, 크롤 예산 분산. 두 도메인 병행 운영의 SEO 손해 해소가 주요 동기.
 
 **Decision**: `blog.fosworld.co.kr` 메인 단일화. `fosworld.co.kr` 은 **`/ads.txt` 만 예외 서빙**, 나머지는 `blog.*` 로 301.
 
@@ -138,7 +198,11 @@
 
 **Why**: canonical 분산 해소 + AdSense `ads.txt` 루트 정책 호환 + 브랜드 명확화. 반대 방향(`fosworld.co.kr` 메인) 은 기술적으로 동등하지만 `blog.*` 브랜드 의도. 두 도메인 병행(크롤 예산 낭비)/별도 앱(과도) 기각. 도메인 전환 후 2~4주 SEO 변동 감수 — 301 이 자동 연결.
 
+**Caveat (AdSense 정책 상호작용)**: AdSense 는 **루트 도메인 우선 승인** 정책 — 신청 시 `fosworld.co.kr` 입력 필요. 301 만 응답하는 도메인이 승인 가능한지는 ADR-014 의 후속 조치에서 확인.
+
 ---
+
+<a id="adr-014"></a>
 
 ## ADR-014. AdSense 승인 — 정책/소개 페이지 + GitHub 프로필
 
@@ -154,7 +218,11 @@
 
 **Why**: 승인 반려의 최빈 사유는 Privacy 부재. `src/app/ads.txt/route.ts` 동적 route 기구현 → 승인 후 env publisher ID 입력만으로 작동. About 하드코딩(프로필 변경 시 재빌드)/build-time fetch(빌드 실패 시 페이지 깨짐) 기각. GA4 도입 시 Privacy 개정 필요.
 
+**Open Issue (도메인 신청 단위)**: AdSense 가 **루트 도메인 우선 승인** 정책 → 신청 단위는 `fosworld.co.kr`. 그러나 ADR-013 으로 `fosworld.co.kr` 은 `/ads.txt` 외 모든 경로가 301 → `blog.*`. 301 만 응답하는 도메인의 승인 가능성과 우회 전략(임시 콘텐츠 서빙 / blog 우선 신청 / 정책 재해석)은 후속 결정 필요.
+
 ---
+
+<a id="adr-015"></a>
 
 ## ADR-015. Visit tracking 경로 유효성 + middleware 분리
 
@@ -171,6 +239,8 @@
 **Why**: 통계 정합성 + 로그 오염 차단 + middleware 단일 책임. middleware 가 이미 Node Runtime(`crypto`/`getDb` 직접 사용) 이라 DB 조회 자유. `getPostId` 추가 쿼리는 `waitUntil` 내부 — 응답 지연 0. `console.error` → BLG2 4-field logger 교체. 정규식 화이트리스트만(존재 안 하는 글 통과) 기각.
 
 ---
+
+<a id="adr-016"></a>
 
 ## ADR-016. Rate Limiting — Next.js middleware in-memory fixed window
 
