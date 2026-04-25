@@ -206,10 +206,10 @@ executor 완료 후 team-lead → docs-verifier에게 검증 요청.
 2. 통합 검증 명령 (`pnpm lint && pnpm type-check && pnpm test && pnpm build`) 최종 확인
 3. git commit + push
 4. **PR 생성** — `gh pr create` (main 대상, 변경사항 요약)
-5. **index.json 완료 처리 + 커밋** — 메인 워킹 디렉토리에서:
-   - `tasks/{task-name}/index.json`의 `status`를 `"completed"`, 각 phase `status`도 `"completed"`로 변경
-   - `git add tasks/{task-name}/index.json && git commit -m "chore: {task-name} 완료 상태 업데이트"` + push
-   - **이 단계를 빠뜨리면 같은 plan이 재실행되는 사고 발생**
+5. **index.json 완료 처리 + 커밋** — **PR 머지 후 main 에서 마킹** (PR 브랜치와 main 양쪽이 같은 줄을 다르게 변경하면 머지 충돌 발생):
+   - PR 머지 → `git checkout main && git pull` → `tasks/{task-name}/index.json` status 를 `"completed"` (각 phase 도) 로 변경 → 커밋 + push
+   - **PR 머지 전에 main 에 직접 push 금지** (실사례: plan007 PR 머지 전 main 직접 push 로 index.json conflict 발생)
+   - 또는 PR 브랜치 안에 completed 마킹 커밋을 포함시켜 PR 머지로 자동 반영
 6. 팀 shutdown (SendMessage `shutdown_request`)
 
 ## worktree 기반 격리 실행 (필수)
