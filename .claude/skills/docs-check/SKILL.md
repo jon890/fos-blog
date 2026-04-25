@@ -196,13 +196,39 @@ ADR 추가 전 아래를 **반드시 자문**:
 2. **[필수] 라이브러리 함정·실험 결과·대안 기각·정책·트레이드오프 중 하나에 해당**
 3. **[필수] 결정/맥락/대안 기각 3요소**: 하나라도 비면 추론성 부족
 4. **[필수] 구현 세부 제거**: 코드 스니펫 10줄 이상, 파일 경로 3개 이상 나열, 작업 내역 제거
-5. **[권장] 카테고리 지정**: adr.md 상단 카테고리 인덱스에 한 줄 추가
+5. **[필수] 인덱스 동기화**: `docs/adr.md` 상단 ADR Index 의 5개 카테고리 중 적합한 곳에 한 줄 (`[ADR-XXX](#adr-xxx) — 한 줄 요약`) 추가 + 본문 헤딩 위에 `<a id="adr-xxx"></a>` 앵커
 6. **[권장] CLAUDE.md 상황별 참조 등록**: 코드 작업 중 반드시 확인해야 하는 ADR이라면 등록
 
 ### ADR 수정/폐기 시
 
 - **의사결정이 번복된 경우**: 대체 ADR 작성 + 과거 ADR 본문 **완전 삭제** (Superseded 표기 남기지 않음). 과거 결정의 근거는 git log + 새 ADR 본문에 녹여 보존
 - **변경 사항을 부분적으로 수용한 경우**: 기존 ADR 본문에서 해당 부분만 삭제/수정. 대안 기각에 "옵션 X는 Y 이유로 번복됨" 한 줄 추가
+
+## ADR Index 동기화 검증 (필수 자동 검사)
+
+ADR 본문에 새 ADR 이 추가됐는데 상단 Index 에 누락되면 AI 에이전트가 빠르게 탐색 못함. docs-check 실행 시 아래 자동 검증:
+
+```bash
+# cwd: <repo root>
+
+# 1) 본문에 정의된 ADR 번호 목록
+BODY=$(grep -oE '^## ADR-[0-9]+' docs/adr.md | sort -u)
+
+# 2) Index 에 링크된 ADR 번호 목록
+INDEX=$(grep -oE '\[ADR-[0-9]+\]\(#adr-[0-9]+\)' docs/adr.md | grep -oE 'ADR-[0-9]+' | sort -u)
+
+# 3) 본문 ⊂ Index 검증
+diff <(echo "$BODY") <(echo "$INDEX") && echo "OK: ADR Index synced"
+
+# 4) anchor 누락 검증 — 모든 ADR 헤딩 직전에 <a id="adr-XXX"></a>
+for n in $BODY; do
+  num=${n#"## ADR-"}
+  grep -B 1 "^## ADR-$num\." docs/adr.md | grep -q "<a id=\"adr-$num\"" \
+    || echo "MISSING anchor: ADR-$num"
+done
+```
+
+리포트의 [축] 헤더에 `[Index]` 표시로 별도 분류. 누락 발견 시 **반드시 갱신 후 다음 검증 진행**.
 
 ## 실행 주기 권장
 
