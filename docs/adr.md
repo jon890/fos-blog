@@ -198,7 +198,7 @@
 
 **Why**: canonical 분산 해소 + AdSense `ads.txt` 루트 정책 호환 + 브랜드 명확화. 반대 방향(`fosworld.co.kr` 메인) 은 기술적으로 동등하지만 `blog.*` 브랜드 의도. 두 도메인 병행(크롤 예산 낭비)/별도 앱(과도) 기각. 도메인 전환 후 2~4주 SEO 변동 감수 — 301 이 자동 연결.
 
-**Caveat (AdSense 정책 상호작용)**: AdSense 는 **루트 도메인 우선 승인** 정책 — 신청 시 `fosworld.co.kr` 입력 필요. 301 만 응답하는 도메인이 승인 가능한지는 ADR-014 의 후속 조치에서 확인.
+**AdSense 정책 상호작용**: AdSense 신청 단위는 루트 도메인(`fosworld.co.kr`). 봇이 301 추적 후 `blog.*` 콘텐츠를 평가하는 시나리오로 **현재 301 그대로 신청 → 승인 시 AdSense 사이트 메뉴에서 `blog.*` 서브도메인 추가**. 거절될 경우 fallback: `6.conf` 의 `location /` 을 임시 `proxy_pass` 로 환원해 양도메인 동일 서빙 → 재신청 → 승인 후 다시 301 복구. (ADR-014)
 
 ---
 
@@ -218,7 +218,9 @@
 
 **Why**: 승인 반려의 최빈 사유는 Privacy 부재. `src/app/ads.txt/route.ts` 동적 route 기구현 → 승인 후 env publisher ID 입력만으로 작동. About 하드코딩(프로필 변경 시 재빌드)/build-time fetch(빌드 실패 시 페이지 깨짐) 기각. GA4 도입 시 Privacy 개정 필요.
 
-**Open Issue (도메인 신청 단위)**: AdSense 가 **루트 도메인 우선 승인** 정책 → 신청 단위는 `fosworld.co.kr`. 그러나 ADR-013 으로 `fosworld.co.kr` 은 `/ads.txt` 외 모든 경로가 301 → `blog.*`. 301 만 응답하는 도메인의 승인 가능성과 우회 전략(임시 콘텐츠 서빙 / blog 우선 신청 / 정책 재해석)은 후속 결정 필요.
+**도메인 신청 단위**: AdSense 는 루트 도메인(`fosworld.co.kr`) 으로만 신청 가능 — 서브도메인(`blog.*`) 단독 입력 불가. 등록 정책: 루트 승인 → 사이트 메뉴에서 서브도메인 추가 → 별도 심사 없이 광고 노출.
+
+**신청 전략**: 현재 ADR-013 의 301 리디렉션을 **그대로 두고** `fosworld.co.kr` 신청. AdSense 봇이 redirect 추적 후 `blog.*` 콘텐츠를 평가할 가능성이 높음. 거절 시 `6.conf` 의 `location /` 을 임시 `proxy_pass` 환원(양도메인 동일 서빙) → 재신청 → 승인 후 301 복구. 절차/롤백은 `docs/adsense-checklist.md` §2 참조.
 
 ---
 
