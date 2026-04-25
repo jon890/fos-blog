@@ -118,4 +118,4 @@
 - `TableOfContents`는 `toc.length > 0` 일 때만 렌더링
 - GitHub URL은 `jon890/fos-study` 레포 고정
 - 모바일에서 TOC 미노출 — 별도 모바일 TOC 구현 시 이 문서 업데이트 필요
-- **조회수 증가**는 `src/proxy.ts`(Edge middleware)에서 처리 — `PostViewCount`는 표시만 담당
+- **조회수 증가**는 `src/proxy.ts` Node Runtime middleware (실 동작은 `src/middleware/visit.ts`로 위임)에서 처리 — `PostViewCount`는 표시만 담당

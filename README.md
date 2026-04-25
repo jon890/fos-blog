@@ -102,7 +102,8 @@ fos-blog/
 │   │   ├── db/           # Drizzle 스키마 + 레포지토리
 │   │   └── github/       # GitHub API 클라이언트
 │   ├── lib/              # 공유 유틸 (markdown, logger)
-│   └── proxy.ts          # 미들웨어 (방문자 통계)
+│   ├── middleware/       # 방문 기록 (visit.ts), rate limit (rateLimit.ts)
+│   └── proxy.ts          # 미들웨어 thin orchestrator
 ├── local/                # Docker Compose + MySQL 초기화
 ├── drizzle/              # 마이그레이션 파일 (자동 생성)
 └── Dockerfile            # 홈서버 배포용

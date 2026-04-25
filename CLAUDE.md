@@ -40,7 +40,8 @@ fos-blog/
 │   │   ├── db/           # Drizzle ORM — schema/, repositories/
 │   │   └── github/       # Octokit client, API, file-filter, image-rewrite
 │   ├── lib/              # Shared utils — markdown.ts, logger.ts, path-utils.ts
-│   └── proxy.ts          # Middleware — visit count via waitUntil() (Edge Runtime)
+│   ├── middleware/       # Per-concern middleware — visit.ts (visit tracking), rateLimit.ts (placeholder)
+│   └── proxy.ts          # Thin middleware orchestrator — composes middleware/* (Node Runtime)
 ├── local/                # Docker Compose + MySQL init.sql
 ├── drizzle/              # Migration artifacts (auto-generated, do not edit)
 ├── Dockerfile            # Multi-stage build (output: standalone)

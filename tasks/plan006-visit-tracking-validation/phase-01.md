@@ -25,10 +25,10 @@
 ```bash
 # cwd: <worktree root>
 
-# 1) MySQL 컨테이너 기동 (마이그레이션 검증용)
-pnpm db:up
-docker ps --format '{{.Names}} {{.Status}}' | grep -i mysql || {
-  echo "PHASE_BLOCKED: MySQL 컨테이너 기동 실패"; exit 1;
+# 1) MySQL 컨테이너 가동 확인 (마이그레이션 검증용)
+#    container 이름: fos-blog-mysql. 미가동 시 'docker compose -f local/docker-compose.yml up -d' 로 기동
+docker ps --format '{{.Names}} {{.Status}}' | grep -E "^fos-blog-mysql " || {
+  echo "PHASE_BLOCKED: fos-blog-mysql 컨테이너 미가동"; exit 1;
 }
 
 # 2) drizzle-kit custom 마이그레이션 지원 확인

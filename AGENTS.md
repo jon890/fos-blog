@@ -105,7 +105,8 @@ fos-blog/
 │   │   ├── db/       # Drizzle ORM — schema, repositories, connection
 │   │   └── github/   # GitHub API client (Octokit)
 │   ├── lib/          # Shared utilities (markdown, logger, path-utils)
-│   └── proxy.ts      # Next.js middleware — visit count recording
+│   ├── middleware/   # Per-concern middleware modules (visit.ts, rateLimit.ts)
+│   └── proxy.ts      # Thin middleware orchestrator — composes middleware/* (Node Runtime)
 ├── local/            # Local dev environment (Docker Compose, MySQL init)
 ├── drizzle/          # Drizzle migration artifacts (auto-generated)
 ├── public/           # Static assets
@@ -144,7 +145,8 @@ Browser (Markdown + GFM + Mermaid + 문법 강조)
 | Directory / File    | Purpose                                                                                                |
 | ------------------- | ------------------------------------------------------------------------------------------------------ |
 | `CLAUDE.md`         | AI 에이전트용 프로젝트 컨텍스트 문서 — 기술 스택, 디렉토리 구조, 컨벤션, 환경변수 상세 정리            |
-| `src/proxy.ts`      | Next.js middleware — records page visits to DB via `waitUntil` (fire-and-forget); runs on Edge Runtime |
+| `src/proxy.ts`      | Thin middleware orchestrator — delegates to `middleware/visit.ts` + `middleware/rateLimit.ts` (Node Runtime) |
+| `src/middleware/`   | Per-concern middleware modules — visit tracking (`visit.ts`), rate limiting (`rateLimit.ts`, plan007) |
 | `src/app/`          | Next.js pages and API routes (see `src/app/AGENTS.md`)                                                 |
 | `src/components/`   | Reusable React UI components (see `src/components/AGENTS.md`)                                          |
 | `src/services/`     | Business logic layer — SyncService, PostService (see `src/services/AGENTS.md`)                         |
