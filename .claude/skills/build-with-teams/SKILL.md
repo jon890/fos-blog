@@ -10,10 +10,10 @@ task phase를 Claude Agent Teams 파이프라인으로 실행하는 시스템. 4
 ## 사전 검증 (실행 전 필수)
 
 plan 인자를 받으면 **가장 먼저** `tasks/{plan}/index.json`의 `status`를 확인:
-- `"completed"` → 이미 완료된 plan. 사용자에게 알리고 **실행하지 않음**
+- `"completed"` → **추가 검증**: 해당 plan 의 실제 머지 커밋이 `git log` 에 존재하는지 확인 (e.g. `git log --oneline | grep -i {plan}`). 부재면 **마킹 사고** — 사용자에게 알리고 status 를 pending 으로 되돌릴지 결정
 - `"pending"` 또는 `"in_progress"` → 정상 진행
 
-이 검증을 빠뜨리면 완료된 plan을 재실행하는 사고가 발생한다.
+이 검증을 빠뜨리면 완료된 plan 을 재실행하거나, **마킹만 된 미실행 plan 의 dependency 가 깨진 채 다음 plan 을 실행하는 사고**가 발생한다 (실사례: plan006 이 status="completed" 였지만 머지 안 된 상태에서 plan007 진행 시도, 사전 게이트 PHASE_BLOCKED).
 
 ## 핵심 원칙
 
@@ -276,6 +276,29 @@ executor가 phase 실패 보고 시:
     → [team-lead 최종 커밋 + push]
     → [PR 생성]
     → [index.json completed + 커밋/push] ← 누락 시 재실행 사고
+    → [team-lead 노하우 누적 보고] ← 사용자에게 1-3줄
     → [worktree 정리 + 팀 shutdown]
 ```
+
+## 노하우 누적 (세션마다 보강)
+
+매 plan 실행 후 발견한 결함/실수/노하우 중 **재발 방지 가치 있는 것**을 1-2줄로 누적. **새 문서 신설 금지** — 에이전트가 자연스럽게 찾아갈 수 있는 기존 문서 위치만 사용.
+
+### 누적 위치 라우팅
+
+| 종류 | 위치 |
+|---|---|
+| critic 도메인 패턴 (BLG/FE/CLI) | `.claude/skills/_shared/common-critic-patterns.md` |
+| build-with-teams 자체 프로세스 결함 | 이 SKILL.md (해당 섹션에 1-2줄) |
+| 도메인 의사결정 | `docs/adr.md` |
+| AI 에이전트 컨텍스트 | `CLAUDE.md` / `<dir>/AGENTS.md` |
+
+### 누적 가치 판단 기준
+
+- ✅ 누적: 패턴/규약/프로세스 결함, 같은 실수 반복 가능성 있음 (e.g. NJS15→16 mental model 잔재, plan completed 마킹 사고)
+- ❌ 누적 금지: 한 번 실수, 일반 코딩 디테일 (오타, 카운트 오류, 일반 Vitest fake timer 누출 등)
+
+### team-lead 보고 의무
+
+PR 생성 후 worktree 정리 직전, 사용자에게 **"이번 세션 누적 노하우"** 1-3줄 보고. 누적 안 했으면 "신규 노하우 없음" 명시.
 
