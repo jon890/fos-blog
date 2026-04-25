@@ -7,22 +7,22 @@ Google AdSense 승인 신청 → 승인 → 광고 노출까지의 절차와 체
 
 ---
 
-## 0. 사전 조건 (plan004 완료 후)
+## 0. 사전 조건 (plan004 완료 — 2026-04-24 merged)
 
-- [ ] `blog.fosworld.co.kr` 메인 도메인 전환 완료 (ADR-013)
-- [ ] `https://blog.fosworld.co.kr/sitemap.xml` GSC 제출 완료
-- [ ] `https://blog.fosworld.co.kr/robots.txt` 접근 가능
+- [x] `blog.fosworld.co.kr` 메인 도메인 전환 완료 (ADR-013)
+- [x] `https://blog.fosworld.co.kr/sitemap.xml` GSC 제출 완료
+- [x] `https://blog.fosworld.co.kr/robots.txt` 접근 가능
 
 ---
 
-## 1. 기술 준비 (plan005 완료 후)
+## 1. 기술 준비 (plan005 완료 — 2026-04-24)
 
-- [ ] `/privacy` — 개인정보처리방침 페이지 (indexable, 푸터 링크)
-- [ ] `/about` — 블로그 소개 (GitHub 프로필 연동)
-- [ ] `/contact` — 연락처 (이메일 + GitHub Issues)
-- [ ] 푸터에 정책 페이지 링크 노출
-- [ ] `sitemap.xml` 에 3개 페이지 포함
-- [ ] `src/app/ads.txt/route.ts` 동작 확인 (env 없이도 `# ads.txt not configured` 반환)
+- [x] `/privacy` — 개인정보처리방침 페이지 (indexable, 푸터 링크)
+- [x] `/about` — 블로그 소개 (GitHub 프로필 연동)
+- [x] `/contact` — 연락처 (이메일 + GitHub Issues)
+- [x] 푸터에 정책 페이지 링크 노출
+- [x] `sitemap.xml` 에 3개 페이지 포함
+- [x] `src/app/ads.txt/route.ts` 동작 확인 (env 없이도 `# ads.txt not configured` 반환)
 
 ---
 
