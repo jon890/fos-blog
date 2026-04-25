@@ -2,11 +2,13 @@
 
 ## 컨텍스트 (자기완결 프롬프트)
 
-홈서버 자원 보호를 위해 Next.js middleware 레벨에서 IP 단위 rate limit 도입(ADR-016). plan006 에서 만든 `src/middleware/rateLimit.ts` placeholder 를 실제 구현으로 교체. fixed window 60초/IP, 분당 60 요청, Googlebot UA 예외, 초과 시 429 + Retry-After.
+홈서버 자원 보호를 위해 Next.js 16 proxy 레벨에서 IP 단위 rate limit 도입(ADR-016). plan006 에서 만든 `src/middleware/rateLimit.ts` placeholder 를 실제 구현으로 교체. fixed window 60초/IP, 분당 60 요청, Googlebot UA + localhost(`127.0.0.1`/`::1`) 예외, 초과 시 429 + Retry-After. `src/proxy.ts` matcher 확장 + in-memory `Map` 메모리 sweep 가드.
+
+> **참고**: `src/proxy.ts` 는 Next.js 16 정식 file convention (구 `middleware.ts`). proxy 는 Node runtime 고정이라 `config.runtime` 키는 사용 금지(빌드 에러).
 
 ## 먼저 읽을 문서
 
-- `docs/adr.md` — **ADR-016** (Rate limit 정책)
+- `docs/adr.md` — **ADR-016** (Rate limit 정책 — Runtime/localhost 예외/메모리 가드 포함)
 - `src/middleware/rateLimit.ts` — placeholder (plan006 산출물)
 - `src/proxy.ts` — orchestrator (plan006 산출물)
 - `src/middleware/visit.ts` — IP 추출 패턴 참고
@@ -32,7 +34,7 @@ grep -n "export function rateLimit" src/middleware/rateLimit.ts
 
 ## 작업 목록 (총 4개)
 
-### 1. `src/middleware/rateLimit.ts` 실제 구현
+### 1. `src/middleware/rateLimit.ts` 실제 구현 (localhost 예외 + 메모리 가드 포함)
 
 ```ts
 import { NextRequest, NextResponse } from "next/server";
@@ -42,7 +44,9 @@ const log = logger.child({ module: "middleware/rateLimit" });
 
 const WINDOW_MS = 60_000;          // 1분
 const MAX_REQUESTS_PER_WINDOW = 60;
+const MAX_BUCKETS = 10_000;
 const BOT_UA_PATTERN = /Googlebot/i;
+const LOCALHOST_IPS = new Set(["127.0.0.1", "::1"]);
 
 interface Bucket {
   windowKey: number;
@@ -65,22 +69,35 @@ function isAllowedBot(request: NextRequest): boolean {
 }
 
 /**
+ * MAX_BUCKETS 초과 시 현재 windowKey 와 다른 만료된 entry 일괄 제거.
+ * 활성 IP(현재 윈도우) 카운트는 보존.
+ */
+function sweepExpiredBuckets(currentWindowKey: number): void {
+  for (const [ip, bucket] of buckets) {
+    if (bucket.windowKey !== currentWindowKey) {
+      buckets.delete(ip);
+    }
+  }
+}
+
+/**
  * Fixed window 60초/IP rate limit.
- * - Googlebot UA 는 예외 (UA 위조 가능성은 인지, 본질적 보호는 60/min 한도 자체)
- * - 초과 시 429 + Retry-After: 60
- * - 응답 차단 없음 시 null 반환 (proxy.ts orchestrator 가 통과 처리)
+ * - Googlebot UA + localhost(127.0.0.1/::1) 는 예외 (cron 자기 호출 보호)
+ * - 초과 시 429 + Retry-After
+ * - 통과 시 null 반환 (proxy.ts orchestrator 가 통과 처리)
  */
 export function rateLimit(request: NextRequest): NextResponse | null {
   if (isAllowedBot(request)) return null;
 
   const ip = getClientIp(request);
-  if (ip === "unknown") return null;
+  if (ip === "unknown" || LOCALHOST_IPS.has(ip)) return null;
 
   const now = Date.now();
   const windowKey = Math.floor(now / WINDOW_MS);
   const bucket = buckets.get(ip);
 
   if (!bucket || bucket.windowKey !== windowKey) {
+    if (buckets.size >= MAX_BUCKETS) sweepExpiredBuckets(windowKey);
     buckets.set(ip, { windowKey, count: 1 });
     return null;
   }
@@ -111,12 +128,13 @@ export function rateLimit(request: NextRequest): NextResponse | null {
 ```
 
 설계 메모:
-- 매 분 새 윈도우 진입 시 같은 ip key 의 entry 가 새 카운트로 덮어써짐 — 별도 GC 불필요
-- 다만 IP 가 매우 많이 다양하면 Map 누적. 실용적으로 60초 동안 본 IP 만 잔존 — 다음 윈도우 진입 시 일치 안 하는 IP 는 그대로 메모리에 남지만 요청 시 덮어써짐. 장기 누적 방지는 별도 cleanup 필요할 수도 — `buckets.size > 10000` 같은 가드 또는 정기 sweep 추가 (선택사항, 본 phase 범위 외)
+- `LOCALHOST_IPS` 우회는 외부 노출 없는 것으로 가정 (홈서버 nginx 가 외부 클라이언트 IP 를 그대로 forward — 외부 클라이언트가 `127.0.0.1` 로 접근할 수 없음)
+- `sweepExpiredBuckets` 는 size cap 도달 시에만 실행 — 일반 path 비용 0
+- 매 분 새 windowKey 진입 시 같은 IP 의 count 가 자연 리셋 (덮어쓰기) — 활성 IP 의 메모리는 항상 1 entry
 
 ### 2. `src/proxy.ts` matcher 확장 (정적 자산 제외)
 
-기존 (plan006 결과):
+기존:
 ```ts
 export const config = {
   matcher: ["/", "/posts/:path*"],
@@ -127,37 +145,33 @@ export const config = {
 ```ts
 export const config = {
   matcher: [
-    // visit tracking 대상
     "/",
     "/posts/:path*",
-    // rate limit 대상 (정적 자산 제외)
     "/((?!_next/static|_next/image|favicon|logo|og-default|fonts/).*)",
   ],
 };
 ```
 
-주의:
-- Next.js matcher 배열은 OR 관계. 기존 visit matcher 와 새 광범위 matcher 가 둘 다 매치되는 경로(`/`, `/posts/...`)는 **한 번만** middleware 실행 (path 단위 dedup)
-- `_next/static`, `_next/image`, `favicon`, `logo.png`, `og-default.png`, `public/fonts/*` 자산은 모두 제외
-
-trackVisit 은 기존대로 동작 (자기 가드/skip 로직 유지). rateLimit 은 모든 비-자산 요청에 적용.
+- matcher 배열은 OR. 같은 path 중복 매치는 한 번만 실행
+- `runtime` config 명시 금지 — NJS16 proxy 는 Node 고정 (BLG5)
 
 ### 3. 단위 테스트 — `src/middleware/rateLimit.test.ts`
 
 Vitest 케이스:
-- 첫 요청 (bucket 없음) → null 반환 + Map 에 windowKey 1, count 1 저장
-- 같은 IP 두 번째 요청 → null + count 2
+- 첫 요청 (bucket 없음) → null + Map 에 windowKey/count=1 저장
 - 같은 IP 60번째 요청 → null + count 60
 - 같은 IP 61번째 요청 → 429 NextResponse + `Retry-After` 헤더
-- 윈도우 경계 통과 (`Date.now()` mock 으로 `WINDOW_MS` 진행) → 새 windowKey 로 count 1 리셋
+- 윈도우 경계 통과 (`vi.setSystemTime` 으로 `WINDOW_MS` 진행) → 새 windowKey 로 count 1 리셋
 - Googlebot UA → 항상 null (limit 우회)
-- IP `unknown` (헤더 없음) → null (제한 안 함)
+- localhost IP `127.0.0.1` / `::1` → 항상 null (우회)
+- IP `unknown` (헤더 없음) → null
 - 다른 IP 는 서로 독립 카운트
+- **메모리 가드**: `MAX_BUCKETS` 도달 후 새 windowKey 진입 시 만료 entry sweep + 활성 windowKey entry 보존
 
-mock:
+mock/패턴:
 - `vi.useFakeTimers()` + `vi.setSystemTime(...)` 으로 시간 제어
-- `NextRequest` 는 `new Request()` + `new NextRequest()` 패턴
-- 매 테스트 `beforeEach` 에서 `buckets.clear()` 또는 module 재import
+- `NextRequest` 는 `new NextRequest("http://...", { headers })` 패턴
+- 매 테스트 `beforeEach` 에서 `vi.resetModules()` + 동적 `import` 로 buckets Map 초기화 (top-level const 라 외부 reset 불가)
 
 ### 4. 통합 검증
 
@@ -169,11 +183,10 @@ pnpm type-check
 pnpm build
 ```
 
-수동 smoke (선택, 빌드 산출물에 reflect 됨):
+수동 smoke (선택, dev 서버에서 사용자 직접):
 ```bash
-# 분당 60 초과 시 429 확인 (사용자 수동, dev 또는 stg)
 for i in $(seq 1 65); do
-  curl -sI -H "User-Agent: Test" http://localhost:3000/ -o /dev/null -w "%{http_code}\n"
+  curl -sI -H "User-Agent: Test" -H "X-Forwarded-For: 1.2.3.4" http://localhost:3000/ -o /dev/null -w "%{http_code}\n"
 done | sort | uniq -c
 # 기대: 200 60회 + 429 5회
 ```
@@ -186,45 +199,53 @@ done | sort | uniq -c
 # 1) rateLimit 실구현 (no-op 제거)
 grep -n "MAX_REQUESTS_PER_WINDOW = 60" src/middleware/rateLimit.ts
 grep -n "WINDOW_MS = 60_000" src/middleware/rateLimit.ts
+grep -n "MAX_BUCKETS = 10_000" src/middleware/rateLimit.ts
 grep -n "Math.floor(now / WINDOW_MS)" src/middleware/rateLimit.ts
 grep -n "BOT_UA_PATTERN" src/middleware/rateLimit.ts
 grep -n "Googlebot" src/middleware/rateLimit.ts
 
-# 2) 429 응답 + Retry-After
+# 2) localhost 예외 + 메모리 sweep
+grep -nE 'LOCALHOST_IPS\s*=\s*new Set' src/middleware/rateLimit.ts
+grep -n '"127.0.0.1"' src/middleware/rateLimit.ts
+grep -n '"::1"' src/middleware/rateLimit.ts
+grep -n "sweepExpiredBuckets" src/middleware/rateLimit.ts
+grep -n "buckets.size >= MAX_BUCKETS" src/middleware/rateLimit.ts
+
+# 3) 429 응답 + Retry-After
 grep -nE "status:\s*429" src/middleware/rateLimit.ts
 grep -nE '"Retry-After"' src/middleware/rateLimit.ts
 
-# 3) BLG2 구조화 로거 + BLG3 (logger.warn 사용, 사일런트 차단 금지)
+# 4) BLG2 구조화 로거 + BLG3 (logger.warn 사용, 사일런트 차단 금지)
 grep -nE 'component:\s*"middleware\.rateLimit"' src/middleware/rateLimit.ts
 grep -nE 'operation:\s*"block"' src/middleware/rateLimit.ts
 grep -n "log.warn" src/middleware/rateLimit.ts
 ! grep -nE "console\." src/middleware/rateLimit.ts
 
-# 4) matcher 확장 (정적 자산 제외)
+# 5) proxy.ts: matcher 확장 (runtime 명시 금지 — NJS16 proxy 는 Node 고정)
+! grep -nE 'runtime:\s*"' src/proxy.ts
 grep -n "_next/static" src/proxy.ts
 grep -n "_next/image" src/proxy.ts
 grep -n "favicon" src/proxy.ts
 grep -nE "fonts/" src/proxy.ts
 
-# 5) 단위 테스트 + 빌드
+# 6) 단위 테스트 + 빌드
 test -f src/middleware/rateLimit.test.ts
 pnpm test --run src/middleware/
 pnpm lint
 pnpm type-check
 pnpm build
 
-# 6) 금지사항 (code-reviewer 반복 지적)
+# 7) 금지사항 (code-reviewer 반복 지적)
 ! grep -nE "as any" src/middleware/rateLimit.ts
 ```
 
 ## PHASE_BLOCKED 조건
 
-- Next.js 16 matcher 가 negative lookahead `(?!...)` 직접 지원 안 함 → **PHASE_BLOCKED: matcher 패턴 재설계 필요 (Next.js docs 확인)**
-- `vi.useFakeTimers()` 가 `Date.now()` mock 시 buckets Map 동작과 충돌 → **PHASE_BLOCKED: 시간 mock 전략 재검토**
-- middleware 가 Edge runtime 으로 강제 실행되어 in-memory Map 공유 안 됨 → **PHASE_BLOCKED: runtime 명시 필요 (현재는 Node runtime 가정)**
+- matcher negative lookahead `(?!...)` 빌드 실패 → **PHASE_BLOCKED: matcher 패턴 재설계** (NJS16 docs 상 정상 지원)
+- `vi.useFakeTimers()` + `Date.now()` mock 이 buckets Map 동작과 충돌 → **PHASE_BLOCKED: vi.resetModules + 동적 import 패턴**
 
 ## 커밋 제외 (phase 내부)
 
 executor 는 커밋하지 않는다. team-lead 가 일괄 커밋:
-- `feat(middleware): add fixed-window rate limit (60/min/IP, Googlebot exempt)`
-- `feat(proxy): expand matcher to cover non-asset paths for rate limit`
+- `feat(middleware): add fixed-window rate limit (60/min/IP, Googlebot/localhost exempt)`
+- `feat(proxy): expand matcher to cover non-asset paths`

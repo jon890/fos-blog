@@ -16,13 +16,13 @@
 | `services/`   | 비즈니스 로직 레이어 — 동기화, 포스트 조회 (see `services/AGENTS.md`)    |
 | `infra/`      | 외부 시스템 통합 — DB, GitHub API (see `infra/AGENTS.md`)                |
 | `lib/`        | 공유 유틸리티 — markdown, logger, path-utils (see `lib/AGENTS.md`)       |
-| `middleware/` | 미들웨어 책임별 모듈 — `visit.ts` (방문 기록), `rateLimit.ts` (예정)     |
+| `middleware/` | 미들웨어 책임별 모듈 — `visit.ts` (방문 기록), `rateLimit.ts` (요청 속도 제한, 60/min/IP) |
 
 ## Key Files
 
 | File       | Description                                                                              |
 | ---------- | ---------------------------------------------------------------------------------------- |
-| `proxy.ts` | Next.js 미들웨어 thin orchestrator — `middleware/visit.ts` + `middleware/rateLimit.ts` 조합 (Node Runtime) |
+| `proxy.ts` | Next.js 16 proxy file convention (구 `middleware.ts`) — `middleware/*` 조합. Node runtime 고정, `runtime` config 사용 불가 |
 
 ## Architecture
 

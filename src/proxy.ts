@@ -12,5 +12,9 @@ export function proxy(request: NextRequest, event: NextFetchEvent) {
 }
 
 export const config = {
-  matcher: ["/", "/posts/:path*"],
+  matcher: [
+    "/",
+    "/posts/:path*",
+    "/((?!_next/static|_next/image|favicon|logo|og-default|fonts/).*)",
+  ],
 };
