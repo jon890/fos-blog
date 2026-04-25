@@ -2,7 +2,9 @@
 
 ## 컨텍스트 (자기완결 프롬프트)
 
-홈서버 자원 보호를 위해 Next.js middleware 레벨에서 IP 단위 rate limit 도입(ADR-016). plan006 에서 만든 `src/middleware/rateLimit.ts` placeholder 를 실제 구현으로 교체. fixed window 60초/IP, 분당 60 요청, Googlebot UA + localhost 예외, 초과 시 429 + Retry-After. `src/proxy.ts` 에 Node Runtime 명시 + matcher 확장. in-memory `Map` 메모리 누수 방지를 위한 sweep 가드 포함.
+홈서버 자원 보호를 위해 Next.js 16 proxy 레벨에서 IP 단위 rate limit 도입(ADR-016). plan006 에서 만든 `src/middleware/rateLimit.ts` placeholder 를 실제 구현으로 교체. fixed window 60초/IP, 분당 60 요청, Googlebot UA + localhost(`127.0.0.1`/`::1`) 예외, 초과 시 429 + Retry-After. `src/proxy.ts` matcher 확장 + in-memory `Map` 메모리 sweep 가드.
+
+> **참고**: `src/proxy.ts` 는 Next.js 16 정식 file convention (구 `middleware.ts`). proxy 는 Node runtime 고정이라 `config.runtime` 키는 사용 금지(빌드 에러).
 
 ## 먼저 읽을 문서
 
@@ -130,9 +132,9 @@ export function rateLimit(request: NextRequest): NextResponse | null {
 - `sweepExpiredBuckets` 는 size cap 도달 시에만 실행 — 일반 path 비용 0
 - 매 분 새 windowKey 진입 시 같은 IP 의 count 가 자연 리셋 (덮어쓰기) — 활성 IP 의 메모리는 항상 1 entry
 
-### 2. `src/proxy.ts` Node Runtime 명시 + matcher 확장
+### 2. `src/proxy.ts` matcher 확장 (정적 자산 제외)
 
-기존 (plan006 결과):
+기존:
 ```ts
 export const config = {
   matcher: ["/", "/posts/:path*"],
@@ -142,21 +144,16 @@ export const config = {
 변경 후:
 ```ts
 export const config = {
-  runtime: "nodejs",
   matcher: [
-    // visit tracking 대상
     "/",
     "/posts/:path*",
-    // rate limit 대상 (정적 자산 제외)
     "/((?!_next/static|_next/image|favicon|logo|og-default|fonts/).*)",
   ],
 };
 ```
 
-주의:
-- `runtime: "nodejs"` 는 Next.js 16 middleware 에서 in-memory Map 동작 보장의 핵심 — 현재 visit.ts 가 mysql2 의존으로 자동 Node 강제 중이지만, 미래 안전장치로 명시
-- Next.js matcher 배열은 OR 관계. 같은 path 중복 매치는 한 번만 실행
-- `_next/static`, `_next/image`, `favicon`, `logo.png`, `og-default.png`, `public/fonts/*` 자산은 모두 제외
+- matcher 배열은 OR. 같은 path 중복 매치는 한 번만 실행
+- `runtime` config 명시 금지 — NJS16 proxy 는 Node 고정 (BLG5)
 
 ### 3. 단위 테스트 — `src/middleware/rateLimit.test.ts`
 
@@ -224,8 +221,8 @@ grep -nE 'operation:\s*"block"' src/middleware/rateLimit.ts
 grep -n "log.warn" src/middleware/rateLimit.ts
 ! grep -nE "console\." src/middleware/rateLimit.ts
 
-# 5) proxy.ts: Node Runtime 명시 + matcher 확장
-grep -nE 'runtime:\s*"nodejs"' src/proxy.ts
+# 5) proxy.ts: matcher 확장 (runtime 명시 금지 — NJS16 proxy 는 Node 고정)
+! grep -nE 'runtime:\s*"' src/proxy.ts
 grep -n "_next/static" src/proxy.ts
 grep -n "_next/image" src/proxy.ts
 grep -n "favicon" src/proxy.ts
@@ -244,12 +241,11 @@ pnpm build
 
 ## PHASE_BLOCKED 조건
 
-- Next.js 16 matcher 가 negative lookahead `(?!...)` 직접 지원 안 함 → **PHASE_BLOCKED: matcher 패턴 재설계 필요 (Next.js docs 확인)**
-- `runtime: "nodejs"` 가 middleware config 에서 직접 지원 안 됨 → **PHASE_BLOCKED: Node Runtime 강제 방법 재확인 (Next.js 16 docs)**
-- `vi.useFakeTimers()` 가 `Date.now()` mock 시 buckets Map 동작과 충돌 → **PHASE_BLOCKED: 시간 mock 전략 재검토 (vi.resetModules 패턴)**
+- matcher negative lookahead `(?!...)` 빌드 실패 → **PHASE_BLOCKED: matcher 패턴 재설계** (NJS16 docs 상 정상 지원)
+- `vi.useFakeTimers()` + `Date.now()` mock 이 buckets Map 동작과 충돌 → **PHASE_BLOCKED: vi.resetModules + 동적 import 패턴**
 
 ## 커밋 제외 (phase 내부)
 
 executor 는 커밋하지 않는다. team-lead 가 일괄 커밋:
 - `feat(middleware): add fixed-window rate limit (60/min/IP, Googlebot/localhost exempt)`
-- `feat(proxy): expand matcher + pin Node runtime for in-memory rate limit`
+- `feat(proxy): expand matcher to cover non-asset paths`
