@@ -29,8 +29,9 @@ export function CodeCard({
     navigator.clipboard.writeText(rawCode).then(
       () => {
         setCopied(true);
-        const t = setTimeout(() => setCopied(false), COPY_TIMEOUT_MS);
-        return () => clearTimeout(t);
+        // setTimeout 자체가 idle 복귀를 처리. Promise.then 의 반환값은
+        // 무시되므로 useEffect-style cleanup return 은 dead code.
+        setTimeout(() => setCopied(false), COPY_TIMEOUT_MS);
       },
       () => {
         // 복사 실패 — 사용자에게는 ARIA live region 으로 통지 (alert 금지)
