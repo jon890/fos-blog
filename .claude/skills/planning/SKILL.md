@@ -13,13 +13,13 @@ description: 새 기능/변경사항 구현 전 8단계 설계 워크플로우. 
 - **모호함 제로**: 각 단계에서 조금이라도 모호하면 반드시 사용자와 논의. 넘어가지 않는다
 - **AI 에이전트 관점**: 최종 문서는 AI 에이전트가 읽고 구현할 수 있을 정도로 명확해야 한다
 - **간결한 문서**: 컨텍스트 낭비 금지. 의사결정 의도는 보존하되 구현 상세는 코드에
-- **Critic 반복 지적 사전 소진**: task 파일 작성 시 `common-critic-patterns.md`의 패턴을 모두 self-check. critic이 매번 똑같은 지적을 반복하지 않도록 plan 단계에서 미리 해결
+- **Critic 반복 지적 사전 소진**: task 파일 작성 시 `common-pitfalls.md`의 패턴을 모두 self-check. critic이 매번 똑같은 지적을 반복하지 않도록 plan 단계에서 미리 해결
 
 ## Critic 패턴 사전 소진 (필수)
 
-task 파일을 **사용자에게 제출하기 전**에 반드시 [`common-critic-patterns.md`](../_shared/common-critic-patterns.md)의 시드 7 패턴 + 레포별 +α를 모두 self-check한다. 이 체크리스트를 거치지 않으면 `/build-with-teams` 실행 시 critic이 REVISE를 내놓고 재평가 사이클이 돈다.
+task 파일을 **사용자에게 제출하기 전**에 반드시 [`common-pitfalls.md`](../_shared/common-pitfalls.md)의 시드 7 패턴 + 레포별 +α를 모두 self-check한다. 이 체크리스트를 거치지 않으면 `/build-with-teams` 실행 시 critic이 REVISE를 내놓고 재평가 사이클이 돈다.
 
-**축적 규칙**: critic이 **새로운 타입**의 지적을 하면 세션 종료 후 `common-critic-patterns.md`에 패턴을 추가한다. 이 파일은 시간이 지날수록 두꺼워지고, critic이 할 말은 줄어든다.
+**축적 규칙**: critic이 **새로운 타입**의 지적을 하면 세션 종료 후 `common-pitfalls.md`에 패턴을 추가한다. 이 파일은 시간이 지날수록 두꺼워지고, critic이 할 말은 줄어든다.
 
 ## 실행 절차
 
@@ -157,7 +157,7 @@ task 파일을 **사용자에게 제출하기 전**에 반드시 [`common-critic
 
 1. **docs 반영 완료 확인** — `docs/adr.md` / `docs/flow.md` / `docs/data-schema.md` / `docs/code-architecture.md` / `docs/pages/{page}.md` / `CLAUDE.md` 중 해당하는 문서에 이번 결정이 모두 기록됐는지 점검
 2. **task 파일 생성** — `tasks/plan{N}-{kebab-slug}/` 디렉터리 + `index.json` + phase 파일들 작성 (CLAUDE.md "Task 작업 규칙" 준수: 원자적 단일 책임, phase 당 작업 5개 이하, 자기완결 프롬프트, **마지막 phase 에 index.json status="completed" 마킹 명시**)
-3. **`common-critic-patterns.md` 의 P1~P9 + 패턴 소진 체크리스트 사전 소진** — task 제출 전 self-check
+3. **`common-pitfalls.md` 의 P1~P9 + 패턴 소진 체크리스트 사전 소진** — task 제출 전 self-check
 4. **branch 확인** — `git branch --show-current` 가 `main` 이어야 함. PR 브랜치에서 작업 중이면 stash 후 main 으로 switch
 5. **git commit** — docs 변경 + task 파일을 **한 커밋** 으로 묶어 생성
 6. **git push origin main** — 원격에 즉시 반영 (force push 금지)

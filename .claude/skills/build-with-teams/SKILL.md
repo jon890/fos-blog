@@ -264,7 +264,7 @@ critic 평가 관점:
 4. Phase 크기가 5개 이하인가?
 5. 성공 기준이 충분한가?
 6. **실제 코드와 일치하는가?** (파일 존재, 함수명, 줄 수 검증)
-7. **`common-critic-patterns.md` 의 모든 패턴이 사전 소진되었는가?**
+7. **`common-pitfalls.md` 의 모든 패턴이 사전 소진되었는가?**
 
 판정:
 - **APPROVE** → 6단계로
@@ -480,7 +480,7 @@ executor 가 phase 실패 보고 시:
 
 | 종류 | 트리거 (어떤 사고/관찰) | 누적 위치 | 형식 / 섹션 |
 |---|---|---|---|
-| critic 반복 지적 패턴 | critic 이 동일 결함 타입을 2회+ 지적 | `.claude/skills/_shared/common-critic-patterns.md` | `### P{N}.` (Bad / Good / Why / How to apply 4-section) |
+| critic 반복 지적 패턴 | critic 이 동일 결함 타입을 2회+ 지적 | `.claude/skills/_shared/common-pitfalls.md` | `### P{N}.` (Bad / Good / Why / How to apply 4-section) |
 | build-with-teams 프로세스 결함 | sub-agent 협업 / 게이트 / worktree 절차 자체에서 사고 발생 | 이 SKILL.md | 해당 섹션 (예: "팀원 자발적 실행 방지", "executor cwd 격리") 끝에 1-2줄 |
 | 도메인 의사결정 | "왜 X 를 선택했는가" 가 코드만 봐서는 추론 불가 + ADR 자명성 게이트 통과 | `docs/adr.md` | `## ADR-XXX` (결정 / 맥락 / 대안 기각 구조) |
 | AI 에이전트 컨텍스트 | 프로젝트 전반 코딩 규칙 / 스택 / 레이어 / 금지사항 변경 | `CLAUDE.md` / `<dir>/AGENTS.md` | 기존 섹션 갱신 또는 신규 1-2줄 |

@@ -236,6 +236,64 @@ ${ISSUE_URL}"
 
 ---
 
+## 6.5단계: 리뷰 학습 누적 (재발 방지 — 필수)
+
+reply 까지 완료되면 이번 PR 의 리뷰에서 **재발 가능 패턴**을 추출해 `_shared/common-pitfalls.md` 에 누적한다. 같은 지적이 다음 PR 에서 반복되지 않도록 critic / 사전 self-check 양쪽에 학습.
+
+### 추출 기준 (✅ 누적 / ❌ 누적 금지)
+
+- ✅ 누적: **재현 가능한 패턴** — 같은 실수가 다른 코드에서도 발생할 가능성. 구체적 명령으로 검출 가능. 예: "MySQL `count(*)` 의 `sql<number>` 타입 부정확 — `sql<string>` + 외부 `Number()` 권장"
+- ❌ 누적 금지: 1회성 오타 / 특정 plan 컨텍스트에서만 의미 있는 코멘트 / 칭찬 / 단순 확인 요청
+
+### 누적 위치 결정
+
+| 패턴 종류 | 위치 | 섹션 |
+|---|---|---|
+| 라이브러리 / DB / 타입 함정 (Drizzle / pino / Octokit / React 등 fos-blog 스택) | `_shared/common-pitfalls.md` | "### fos-blog (Next.js 16 / Drizzle ORM / MySQL / pino)" 의 BLG# |
+| 일반 critic 시드 패턴 (수치 추측 / cwd 모호 / 눈으로 확인 등) | 같은 파일 | P# 시드 패턴 |
+| 도메인 의사결정 / ADR 가치 | `docs/adr.md` | 신규 ADR (자명성 게이트 통과 후) |
+| 페이지 / 컴포넌트 흐름 변경 | `docs/pages/{page}.md` | 해당 섹션 |
+
+### 작성 형식 (BLG# 추가 예시)
+
+```markdown
+**BLG6. {짧은 패턴 이름}**
+- {증상 1줄}
+- **Good**: {해결책 1줄 + 코드 패턴}
+- **Why**: {왜 발생하는지 / 검출 명령}
+```
+
+3-4 줄 이상이면 시드 P# 형식 (Bad / Good / Why / How to apply) 으로 작성.
+
+### 누적 후 사용자 보고
+
+7단계 결과 보고 안에 **"이번 PR 학습 누적"** 섹션 추가:
+
+```
+📚 리뷰 학습 누적 (<count>건)
+  - BLG6: <패턴 한 줄> → _shared/common-pitfalls.md
+  - BLG7: <패턴 한 줄> → _shared/common-pitfalls.md
+```
+
+학습할 가치가 없었으면 "신규 학습 없음 (모두 1회성 / 컨텍스트 종속)" 명시.
+
+### 누적 commit
+
+학습 누적은 **PR 브랜치 commit 에 포함하지 않는다** (PR scope 외). 별도 main 직접 commit 또는 다음 plan 의 docs 갱신과 함께 처리. PR 머지 후 main 직접 commit 이 가장 깔끔:
+
+```bash
+# cwd: <repo root>, branch: main
+git switch main && git pull --ff-only
+# common-pitfalls.md 편집
+git add .claude/skills/_shared/common-pitfalls.md
+git commit -m "docs(skill): accumulate review learnings from PR #<N>"
+git push origin main
+```
+
+`/review-fix` 스킬 자체로는 commit 까지 자동 수행하지 않고, 사용자에게 누적 내용을 보여주고 "main 에 commit 할까요?" 확인.
+
+---
+
 ## 7단계: 결과 보고
 
 완료 후 요약:
