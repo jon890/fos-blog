@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Noto_Sans_KR, JetBrains_Mono } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import Script from "next/script";
 import "./globals.css";
 import { env } from "@/env";
@@ -9,20 +10,6 @@ import { Header } from "@/components/Header";
 import { VisitorCount } from "@/components/VisitorCount";
 import { SidebarProvider } from "@/components/SidebarContext";
 import { FolderSidebarWrapper } from "@/app/components/FolderSidebarWrapper";
-
-const notoSansKR = Noto_Sans_KR({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-sans",
-  display: "swap",
-  preload: false,
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-  display: "swap",
-});
 
 const siteUrl = env.NEXT_PUBLIC_SITE_URL;
 
@@ -142,7 +129,7 @@ export default function RootLayout({
           />
         )}
       </head>
-      <body className={`${notoSansKR.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+      <body className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

@@ -18,7 +18,7 @@ Next.js 16 developer blog that syncs Markdown from `jon890/fos-study` (GitHub) â
 | ----------- | ---------------------------------------------------------------------- |
 | Framework   | Next.js 16.1.6 (App Router, Turbopack)                                 |
 | Language    | TypeScript 5.7 (strict)                                                |
-| Styling     | Tailwind CSS 4.0 + @tailwindcss/typography                             |
+| Styling     | Tailwind CSS 4.1 + @tailwindcss/typography + shadcn/ui                 |
 | Database    | MySQL 8.4 (Docker) + Drizzle ORM 0.45.1                                |
 | GitHub API  | @octokit/rest 21.0.0                                                   |
 | Markdown    | react-markdown + remark-gfm + rehype-highlight + rehype-slug + mermaid |

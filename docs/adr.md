@@ -148,6 +148,8 @@
 
 **Why**: 홈서버 외부 의존 0 + 모든 한글 렌더 보장(KS X 1001 2350자는 신생 음절 누락). **TTF 고정 이유**: `ImageResponse.fonts` 가 TTF/OTF/WOFF 만 지원, **WOFF2 미지원** (satori 제약). woff2(미지원)/woff(satori 호환 불확실)/원본 TTF(과대)/Google Fonts fetch(의존) 모두 기각. TTF 1.6MB 는 서버 번들 전용 — 클라이언트 전송 0. Dockerfile `COPY public` 필수.
 
+**Scope 명시**: 이 ADR 의 폰트는 **OG 이미지 생성 전용** (서버 사이드 satori). UI 렌더링 폰트는 [ADR-017](#adr-017) 참조 (Geist + Pretendard).
+
 ---
 
 <a id="adr-009"></a>
@@ -314,6 +316,7 @@
 - **모션**: **motion-one** (~3KB, Framer Motion 경량 alt) — 미세 page transition + hover 디테일
 - **다크 우선**: default `dark` 유지 (Vercel/Linear 컨벤션, 현 동작과 일치)
 - **토큰 시스템**: Tailwind v4 `@theme` 블록 (`globals.css`) 으로 표준화 — 컬러/타이포/spacing/radii/shadows/motion primitives
+- **카테고리 9종 (canonical)**: `ai / algorithm / db / devops / java / js / react / next / system` — oklch chroma 0.09, lightness 0.74 (dark) / 0.50 (light). 데이터의 raw 카테고리 키 (architecture/network/interview/kafka/internet 등) 는 헬퍼 (`src/lib/category-meta.ts`, plan010) 에서 9종 중 하나로 정규화 (미매핑 → `system`)
 - **워크플로우**: Claude Design (Anthropic Labs Research Preview) 으로 mockup 생성 → 이 저장소에서 코드 구현. 단계별 프롬프트는 `docs/design-inspiration.md`
 
 **Why**:
@@ -323,4 +326,4 @@
 - **한글 가독성 보존**: Pretendard 가 한글 dev-blog 사실상 표준. Geist 와 미세 매칭 양호
 - **Claude Design 활용**: mockup → 코드 분리로 시각 합의 후 구현 → iteration 비용 절감
 
-**Implementation 순서**: plan008 (토큰) → plan009 (컴포넌트) → plan010 (글 상세) → plan011 (홈/카테고리) → plan012 (검색/사이드바) → plan013 (모션). 각 plan PR 마다 Lighthouse 회귀 자동 검증 (`.github/workflows/lighthouse.yml`).
+**Implementation 순서**: plan009 (토큰 + 폰트 + shadcn foundation) → plan010 (Card/List 컴포넌트 리디자인) → plan011+ (글 상세 / 홈 Hero / 검색 / 모션 등 — `docs/design-inspiration.md` 참조). 각 plan PR 마다 Lighthouse 회귀 자동 검증 (`.github/workflows/lighthouse.yml`).
