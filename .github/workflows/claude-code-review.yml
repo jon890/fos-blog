@@ -300,11 +300,30 @@ jobs:
 
             ## Step 4: Post General Summary Comment
 
-            Post exactly ONE general summary comment containing ALL findings (both INLINE and GENERAL):
+            Post exactly ONE general summary comment containing ALL findings (both INLINE and GENERAL).
 
+            **CRITICAL — body 전달 방식**: 반드시 `--body-file -` + HEREDOC 패턴을 사용한다.
+            `--body "...\n..."` 처럼 큰따옴표 안에 `\n` escape 를 쓰면 shell 이 literal 두 글자
+            (`\` + `n`) 그대로 GitHub API 에 전달해 댓글 본문이 깨진다 (실제 줄바꿈으로 렌더 안 됨).
+
+            ```bash
+            gh pr comment ${{ env.PR_NUMBER }} --repo ${{ github.repository }} --body-file - <<'COMMENT_EOF'
+            ## 코드 리뷰 [PR 제목 요약]
+
+            [한 줄 전체 평가]
+
+            ---
+
+            ### 🔴 머지 전 필수 수정 (있는 경우만)
+
+            ...
+
+            (이하 Summary Comment Format 그대로 — 실제 줄바꿈으로 작성)
+            COMMENT_EOF
             ```
-            gh pr comment ${{ env.PR_NUMBER }} --repo ${{ github.repository }} --body "..."
-            ```
+
+            HEREDOC 안에서는 `\n` escape 없이 **실제 newline** 만 사용한다. backtick 코드 블록,
+            한국어, 이모지 모두 `'COMMENT_EOF'` (single-quoted) 안에서 안전하게 통과.
 
             ## Summary Comment Format
 
@@ -346,5 +365,8 @@ jobs:
             - **Only include sections that have content** — omit empty 🔴 or 🟡 sections entirely
             - **Be specific** — reference exact file names and line numbers
             - **If zero issues found**, skip Step 3 and write a short positive review with 🟢 section only in Step 4
+            - **General comment 작성 시 반드시 `--body-file -` HEREDOC 사용** — `--body "...\n..."` 는
+              shell 이 `\n` 을 literal 로 처리해 댓글 포매팅이 깨진다 (Step 4 의 CRITICAL 참조).
+              Step 3 의 인라인 review JSON body 안의 `\n` 은 JSON parser 가 해석하므로 정상.
 
           claude_args: '--model claude-sonnet-4-6 --allowedTools "Agent,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*)" --disallowedTools "Read,Write,Edit,Glob,Grep,LS"'
