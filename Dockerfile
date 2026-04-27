@@ -39,7 +39,7 @@ RUN pnpm build
 # Bundle migrate script with all deps inlined (Next.js standalone tracer
 # does not include drizzle-orm/mysql2 as standalone require()-able packages,
 # so we ship migrate.js as a self-contained bundle).
-RUN pnpm exec ncc build scripts/migrate.ts -o dist -m
+RUN pnpm exec ncc build scripts/migrate.ts -o dist
 
 # Production stage
 FROM node:22-alpine AS runner
