@@ -330,6 +330,13 @@
 
 **Implementation 순서**: plan009 (토큰 + 폰트 + shadcn foundation) → plan010 (Card/List 컴포넌트 리디자인) → plan011+ (글 상세 / 홈 Hero / 검색 / 모션 등 — `docs/design-inspiration.md` 참조). 각 plan PR 마다 Lighthouse 회귀 자동 검증 (`.github/workflows/lighthouse.yml`).
 
+**plan013 추가 결정**:
+
+- **HeroMesh 구현 방식**: SVG `<radialGradient>` 3 stops + CSS `@keyframes mesh-rotate-slow` (60s/90s/75s linear) 채택. **Canvas 미채택 사유**: 라이트 모드 투명도 제어 + GPU 합성 레이어 비용이 정적 SVG 대비 과도, Lighthouse JS 비용 증가, prefers-reduced-motion 처리 까다로움. SVG + CSS 는 JS 0, 자연스러운 reduced-motion 지원, 토큰 (`--mesh-stop-*`) 으로 다크/라이트 색 전환 자동.
+- **SVG `<stop>` 색은 inline `style={{ stopColor: ... }}` 로**: SVG presentation attribute 의 `stopColor="var(--...)"` 는 var() 미해석 (CSS context 가 아님). inline style 로 전달해야 var() 정상 동작.
+- **Header brand mark 변경**: `📚 FOS Study` 이모지 → `● fos-blog/study` (Geist Mono + 시안 dot + glow). 이모지는 dev-blog 톤과 매치 안 됨, mono + dot 패턴이 Vercel/Linear 톤과 일관. dot 은 `--color-brand-400` 토큰 사용으로 다크/라이트 자동 전환.
+- **HomeHero `<dl>` 통계 4 슬롯**: posts/categories 는 실데이터, series/subscribers 는 placeholder ("—"). UI 그리드 균형 + 향후 채울 자리 명시 의도 — 비활성 슬롯이라 disabled style 명시.
+
 
 <a id="adr-019"></a>
 

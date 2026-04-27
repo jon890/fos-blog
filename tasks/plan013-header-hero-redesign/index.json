@@ -1,7 +1,7 @@
 {
   "name": "plan013-header-hero-redesign",
   "description": "Claude Design Round 2 mockup 의 TopBar + Hero + HeroMesh 패턴 적용 — Header 의 mono nav 라벨 (01 / 홈 등) + brand mark dot + 토큰 정렬 + 6 기능 유지. 홈 Hero 신설 (eyebrow + h1 with <em> 강조 + caret + lead + <dl> 블로그 통계). HeroMesh = SVG radial-gradient + CSS slow rotate (Lighthouse 친화). plan011 (article page) 머지 후 진행. Footer 는 plan013-2 분리 (Footer mockup 추가 요청 후).",
-  "status": "pending",
+  "status": "completed",
   "created_at": "2026-04-27",
   "total_phases": 1,
   "related_docs": [
@@ -18,7 +18,7 @@
       "file": "phase-01.md",
       "title": "Header mono nav + brand mark + HomeHero (eyebrow/h1/caret/dl) + HeroMesh SVG + 토큰 정렬",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }
