@@ -1,0 +1,23 @@
+{
+  "name": "plan010-card-list-redesign",
+  "description": "Claude Design Round 2 컴포넌트 mockup (Editorial row list / Card grid) 기반 PostCard / CategoryCard / SectionCTAButton 리디자인 + 카테고리 정규화 헬퍼 (architecture/network/interview/kafka/internet → system) 도입. plan009 (design tokens foundation) 머지 후 진행. Terminal feed variant 는 제외.",
+  "status": "pending",
+  "created_at": "2026-04-27",
+  "total_phases": 1,
+  "related_docs": [
+    "docs/adr.md",
+    "docs/design-inspiration.md"
+  ],
+  "depends_on": [
+    "plan009-design-tokens-foundation"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "category-meta 헬퍼 + PostCard (row+grid) + CategoryCard + SectionCTAButton 리디자인 + 검증",
+      "model": "sonnet",
+      "status": "pending"
+    }
+  ]
+}
