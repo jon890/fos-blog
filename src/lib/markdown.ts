@@ -1,5 +1,6 @@
 // Markdown utility functions
 import GithubSlugger from "github-slugger";
+import type { Element as HastElement, ElementContent, Text } from "hast";
 
 export interface FrontMatter {
   title?: string;
@@ -144,4 +145,71 @@ export function generateTableOfContents(content: string): TocItem[] {
   }
 
   return toc;
+}
+
+// ============================================================
+// Hast helpers for rehype-pretty-code integration
+// ============================================================
+
+/**
+ * hast 트리에서 모든 text node 값을 이어붙임.
+ * pretty-code 가 wrapping 한 [data-line] span 뒤에는 \n 삽입 (clipboard 복사 라인 보존).
+ */
+export function extractRawText(node: HastElement | ElementContent): string {
+  if (node.type === "text") return (node as Text).value;
+  if (node.type !== "element") return "";
+  const el = node as HastElement;
+  const isLine = el.properties?.["data-line"] !== undefined;
+  const inner = (el.children ?? []).map(extractRawText).join("");
+  return isLine ? inner + "\n" : inner;
+}
+
+/**
+ * hast 서브트리에서 지정 tagName 의 첫 번째 element 를 찾아 텍스트 content 반환.
+ * pretty-code 의 figcaption (filename) 추출에 사용.
+ */
+export function findChildText(
+  node: HastElement,
+  tagName: string,
+): string | undefined {
+  function search(n: HastElement | ElementContent): string | undefined {
+    if (n.type !== "element") return undefined;
+    const el = n as HastElement;
+    if (el.tagName === tagName) {
+      return (el.children ?? [])
+        .filter((c): c is Text => c.type === "text")
+        .map((c) => c.value)
+        .join("");
+    }
+    for (const child of el.children ?? []) {
+      const result = search(child);
+      if (result !== undefined) return result;
+    }
+    return undefined;
+  }
+  return search(node);
+}
+
+/**
+ * hast 서브트리에서 첫 번째 <code> element 의 지정 data-* 속성 값 반환.
+ * pretty-code 의 data-language / data-theme 추출에 사용.
+ */
+export function findCodeProp(
+  node: HastElement,
+  propName: string,
+): string | undefined {
+  function search(n: HastElement | ElementContent): string | undefined {
+    if (n.type !== "element") return undefined;
+    const el = n as HastElement;
+    if (el.tagName === "code") {
+      const val = el.properties?.[propName];
+      return typeof val === "string" ? val : undefined;
+    }
+    for (const child of el.children ?? []) {
+      const result = search(child);
+      if (result !== undefined) return result;
+    }
+    return undefined;
+  }
+  return search(node);
 }

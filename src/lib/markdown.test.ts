@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
+import type { Element as HastElement, Properties } from "hast";
 import {
   extractDescription,
+  extractRawText,
   extractTitle,
+  findChildText,
+  findCodeProp,
   generateTableOfContents,
   getReadingTime,
   parseFrontMatter,
@@ -246,5 +250,128 @@ describe("stripLeadingH1", () => {
   it("does not remove h1 without space after hash (e.g. #main)", () => {
     const input = "#main\n본문";
     expect(stripLeadingH1(input)).toBe(input);
+  });
+});
+
+// ===== hast helpers (rehype-pretty-code integration) =====
+
+function makeText(value: string): HastElement["children"][number] {
+  return { type: "text", value };
+}
+
+function makeElement(
+  tagName: string,
+  properties: Properties = {},
+  children: HastElement["children"] = [],
+): HastElement {
+  return {
+    type: "element",
+    tagName,
+    properties,
+    children,
+  };
+}
+
+describe("extractRawText", () => {
+  it("text node 의 value 를 그대로 반환", () => {
+    expect(extractRawText(makeText("hello"))).toBe("hello");
+  });
+
+  it("nested element 의 모든 text 를 이어붙임", () => {
+    const tree = makeElement("span", {}, [
+      makeText("hello "),
+      makeElement("em", {}, [makeText("world")]),
+    ]);
+    expect(extractRawText(tree)).toBe("hello world");
+  });
+
+  it("data-line 속성을 가진 element 끝에 \\n 삽입 (clipboard 라인 보존)", () => {
+    const tree = makeElement("code", {}, [
+      makeElement("span", { "data-line": "" }, [makeText("line 1")]),
+      makeElement("span", { "data-line": "" }, [makeText("line 2")]),
+    ]);
+    expect(extractRawText(tree)).toBe("line 1\nline 2\n");
+  });
+
+  it("element type 도 아니고 text 도 아니면 빈 문자열", () => {
+    expect(extractRawText({ type: "comment", value: "주석" } as never)).toBe("");
+  });
+
+  it("children 이 없는 element 는 빈 문자열", () => {
+    expect(extractRawText(makeElement("div"))).toBe("");
+  });
+});
+
+describe("findChildText", () => {
+  it("지정 tagName 의 첫 element text 를 반환", () => {
+    const tree = makeElement("figure", {}, [
+      makeElement("figcaption", {}, [makeText("file.ts")]),
+      makeElement("pre", {}, [makeText("code body")]),
+    ]);
+    expect(findChildText(tree, "figcaption")).toBe("file.ts");
+  });
+
+  it("nested 구조에서도 재귀 검색", () => {
+    const tree = makeElement("figure", {}, [
+      makeElement("div", {}, [
+        makeElement("span", {}, [
+          makeElement("figcaption", {}, [makeText("nested.ts")]),
+        ]),
+      ]),
+    ]);
+    expect(findChildText(tree, "figcaption")).toBe("nested.ts");
+  });
+
+  it("미존재 tagName 은 undefined", () => {
+    const tree = makeElement("figure", {}, [
+      makeElement("pre", {}, [makeText("body")]),
+    ]);
+    expect(findChildText(tree, "figcaption")).toBeUndefined();
+  });
+
+  it("element 가 children 없을 때 — 빈 문자열 반환 (text node 0개)", () => {
+    const tree = makeElement("figure", {}, [makeElement("figcaption")]);
+    expect(findChildText(tree, "figcaption")).toBe("");
+  });
+});
+
+describe("findCodeProp", () => {
+  it("첫 <code> element 의 data-* 속성 반환", () => {
+    const tree = makeElement("figure", {}, [
+      makeElement("pre", {}, [
+        makeElement("code", { "data-language": "typescript" }, []),
+      ]),
+    ]);
+    expect(findCodeProp(tree, "data-language")).toBe("typescript");
+  });
+
+  it("nested 위치의 <code> 도 검색", () => {
+    const tree = makeElement("div", {}, [
+      makeElement("section", {}, [
+        makeElement("code", { "data-theme": "github-dark" }, []),
+      ]),
+    ]);
+    expect(findCodeProp(tree, "data-theme")).toBe("github-dark");
+  });
+
+  it("<code> 미존재 시 undefined", () => {
+    const tree = makeElement("figure", {}, [
+      makeElement("pre", {}, [makeText("body")]),
+    ]);
+    expect(findCodeProp(tree, "data-language")).toBeUndefined();
+  });
+
+  it("<code> 의 properties 에 해당 prop 이 없으면 undefined", () => {
+    const tree = makeElement("figure", {}, [
+      makeElement("code", { className: ["language-ts"] }, []),
+    ]);
+    expect(findCodeProp(tree, "data-language")).toBeUndefined();
+  });
+
+  it("string 이 아닌 prop 값은 undefined (방어적 타입 가드)", () => {
+    const tree = makeElement("figure", {}, [
+      makeElement("code", { "data-line-numbers": true }, []),
+    ]);
+    expect(findCodeProp(tree, "data-line-numbers")).toBeUndefined();
   });
 });
