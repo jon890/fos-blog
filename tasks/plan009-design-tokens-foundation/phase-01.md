@@ -6,6 +6,28 @@ ADR-017 의 디자인 시스템 결정에 따라 Claude Design 토큰 mockup 결
 
 승인된 Plan: `/Users/nhn/.claude/plans/hidden-moseying-charm.md` (사용자 ExitPlanMode 승인 완료)
 
+### 현재 baseline (이 phase 가 변경할 대상)
+
+`src/app/globals.css` 현재 구조:
+- `@import "tailwindcss"` + `@source` 2 줄 (`./app/**`, `../components/**`)
+- `@variant dark (&:where(.dark, .dark *))` — `.dark` 클래스 기반 dark 토글
+- `@theme` 블록의 4 변수: `--color-background`, `--color-foreground`, `--color-primary`, `--color-primary-dark`
+- `.dark { --color-background: #0a0a0a; --color-foreground: #ededed; }` 별도 블록 — dark override
+- `body { font-family: var(--font-sans), "Noto Sans KR", ... }` — fallback chain
+- 기존 `.category-{architecture,database,javascript,default,...}` 9 클래스 (Tailwind `@apply` 패턴)
+- `prose`, `scrollbar`, `animate-fade-in` 정의 (그대로 유지)
+
+`src/app/layout.tsx` 현재:
+- `next/font/google` 의 `Noto_Sans_KR`, `JetBrains_Mono` import (line 1-4 부근)
+- `notoSansKR.variable` / `jetbrainsMono.variable` 을 `<body className>` 에 주입
+
+### 이 phase 의 핵심 전환
+
+1. **dark default 전환**: 기존 `light(default) + .dark(override)` → 새 `dark(default) + :root:not(.dark)(light override)`. `.dark { ... }` 별도 블록은 **삭제** (새 패턴이 동일 결과 제공: `<html class="dark">` 토글 시 `:root:not(.dark)` 가 비활성, `@theme` 의 dark 기본값이 활성)
+2. **body font-family 단순화**: `var(--font-sans), "Noto Sans KR", ...` fallback chain → `var(--font-sans)` 단일. fallback 은 새 `--font-sans` 토큰 정의 안에 흡수 (`"Geist", "Pretendard", -apple-system, ...`)
+3. **카테고리 9 클래스 교체**: 기존 `architecture/database/javascript/default` 등 → 새 `ai/algorithm/db/devops/java/js/react/next/system` 9 클래스 (oklch 토큰 + color-mix 패턴, `@apply` 미사용)
+4. **shadcn foundation**: shadcn init + Button 1개 시범 (다음 plan 에서 사용) — Tailwind v4 호환 검증 필수
+
 ## 먼저 읽을 문서
 
 - `docs/adr.md` — **ADR-017** (디자인 시스템 결정)
@@ -216,6 +238,11 @@ code, kbd, samp, pre {
 
 **기존 `prose`, `scrollbar`, `animate-fade-in` 정의 유지** — 토큰 변수 직접 참조 안 하므로 영향 없음.
 
+**삭제 대상** (충돌/중복 제거):
+- `.dark { --color-background: #0a0a0a; --color-foreground: #ededed; }` 별도 블록 — 새 `:root:not(.dark)` 패턴이 동일 결과 제공 (dark 가 default, light 가 override). 잔존 시 `--color-background` 가 두 곳에서 정의되어 cascade 우선순위 혼선 가능
+- 기존 body 의 `font-family: var(--font-sans), "Noto Sans KR", system-ui, ...` 의 fallback chain — 새 `--font-sans` 토큰 정의가 fallback 을 흡수하므로 단순화
+- 기존 body 의 `font-family: var(--font-mono), "JetBrains Mono", ...` — `code, kbd, samp, pre` 의 새 정의로 교체
+
 ### 2. `src/app/layout.tsx` — 폰트 교체
 
 기존 `next/font/google` import (line 1-4) 와 `Noto_Sans_KR`, `JetBrains_Mono` 정의 제거. 대신:
@@ -252,10 +279,26 @@ cp src/app/globals.css /tmp/globals.css.pre-shadcn.bak
 **shadcn init**:
 ```bash
 # cwd: <worktree root>
+
+# 1) -d 플래그 동작 확인 (defaults 적용 + 비대화형)
+pnpm dlx shadcn@latest init --help 2>&1 | grep -E "(-d|--defaults|--yes)"
+
+# 2) init 실행 — Tailwind v4 + RSC + TS 환경 자동 감지 기대
 pnpm dlx shadcn@latest init -d
-# -d 옵션: defaults 적용 (Style: Default, Base color: Neutral, CSS vars: Yes, alias: @/*)
-# 비대화형 권장. 대화형이면 위 응답을 입력
+# defaults: Style=Default, Base color=Neutral, CSS vars=Yes, alias=@/*
+
+# 3) Tailwind v4 호환 검증
+test -f components.json
+cat components.json | grep -E '"tailwind"' | head -3
+# 기대: tailwind.config 가 비어 있거나 v4 인식. v3 가정 시 "tailwind": { "config": "tailwind.config.ts" } 등 깨진 경로 출력 → PHASE_BLOCKED
 ```
+
+**비대화형 실패 시 대안**: shadcn cli 가 `-d` 무시하고 프롬프트를 띄우면 다음 응답 자동화:
+```bash
+# cwd: <worktree root>
+printf "Default\nNeutral\nyes\n@/*\n" | pnpm dlx shadcn@latest init
+```
+또는 `components.json` 을 수동으로 작성 (Tailwind v4 호환 형식 — 후속 plan 에서 처리, 이번 plan 에선 PHASE_BLOCKED).
 
 `init` 결과:
 - `components.json` 생성
@@ -316,11 +359,6 @@ grep -rE "Geist|pretendard" .next/server/app/ 2>/dev/null | head -3
 grep -rE "oklch\(0\.78 0\.13 195\)" .next/static/ 2>/dev/null | head -3
 ```
 
-수동 회귀 (선택):
-- `pnpm dev` → 홈/글 상세 페이지 시각 비교 — 폰트가 Geist+Pretendard 로 교체됨, 그 외 색상/spacing 은 동일 (컴포넌트가 토큰 미참조)
-- 다크/라이트 토글 동작
-- Lighthouse: Performance ≥ 90, Accessibility ≥ 95
-
 ## 성공 기준 (기계 명령만)
 
 ```bash
@@ -370,8 +408,11 @@ pnpm type-check
 pnpm test --run
 pnpm build
 
-# 10) 금지사항
-! grep -nE "as any" src/app/layout.tsx src/app/globals.css
+# 10) @source 디렉티브 보존 (shadcn init 가 덮어쓰지 않았는지)
+test "$(grep -c '^@source' src/app/globals.css)" -ge 2
+
+# 11) 금지사항 (button.tsx 도 검사 — shadcn 산출물이지만 우리가 검증)
+! grep -nE "as any" src/app/layout.tsx src/app/globals.css src/components/ui/button.tsx
 ```
 
 ## PHASE_BLOCKED 조건
@@ -380,6 +421,8 @@ pnpm build
 - Geist 폰트가 Next.js 16 / Tailwind v4 와 호환 안 됨 (typing 에러) → **PHASE_BLOCKED: geist 패키지 버전 확인 + workaround 검토**
 - `@variant dark` 와 `:root:not(.dark)` 조합으로 light/dark 토글이 깨짐 → **PHASE_BLOCKED: ThemeProvider 의 class 적용 방식 재확인**
 - oklch 가 빌드 시 변환 에러 → **PHASE_BLOCKED: PostCSS 설정 (Tailwind v4 는 자동) 확인**
+- shadcn cli 가 `-d` 무시하고 인터랙티브 프롬프트 진입 → **PHASE_BLOCKED: 비대화형 대안(printf pipe) 도 실패 → components.json 수동 작성 후속 plan 으로 분리**
+- shadcn init 결과 `components.json` 의 `tailwind.config` 가 v3 형식 (config 파일 경로 강제 등) 으로 생성되어 빌드 실패 → **PHASE_BLOCKED: shadcn cli 의 Tailwind v4 호환 버전 확인 또는 수동 components.json 작성**
 
 ## 커밋 제외 (phase 내부)
 
@@ -394,3 +437,11 @@ executor 는 커밋하지 않는다. team-lead 가 일괄 커밋 (atomic commits
 - 기존 컴포넌트가 토큰 변수를 직접 참조하지 않음 → 시각 변화는 **폰트 교체** 와 **body letter-spacing/line-height** 만
 - 한글 폭이 Pretendard 로 살짝 달라질 수 있음 → Lighthouse CLS 회귀 자동 검출
 - 다음 plan (plan010 컴포넌트 리디자인) 의 토대 — PostCard / Hero / Article / Code Block 등이 토큰 사용
+
+## 수동 검증 (성공 기준 아님 — 사용자/team-lead 가 PR 리뷰 시 참고)
+
+> 이 섹션은 **성공 기준이 아니다**. executor 는 위 "성공 기준 (기계 명령만)" 만 통과하면 phase 완료. 아래는 PR 리뷰 단계에서 사용자가 눈으로 검증할 항목.
+>
+> - `pnpm dev` → 홈/글 상세 페이지 — 폰트가 Geist+Pretendard 로 교체됨, 그 외 색상/spacing 은 동일 (컴포넌트가 토큰 미참조이므로)
+> - 다크/라이트 토글 동작 (`<html class="dark">` ↔ 일반)
+> - Lighthouse: Performance ≥ 90, Accessibility ≥ 95 (`.github/workflows/lighthouse.yml` CI 자동 실행)
