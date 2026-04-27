@@ -42,6 +42,7 @@ fos-blog/
 │   ├── lib/              # Shared utils — markdown.ts, logger.ts, path-utils.ts
 │   ├── middleware/       # Per-concern middleware — visit.ts (visit tracking), rateLimit.ts (60/min/IP fixed window)
 │   └── proxy.ts          # Next.js 16 proxy file convention (구 middleware.ts) — Node runtime 고정, `runtime` config 사용 불가
+├── scripts/              # Build-time/start-up scripts — migrate.ts (drizzle migrator, 컨테이너 부팅 시 자동 apply)
 ├── local/                # Docker Compose + MySQL init.sql
 ├── drizzle/              # Migration artifacts (auto-generated, do not edit)
 ├── Dockerfile            # Multi-stage build (output: standalone)
@@ -65,6 +66,7 @@ pnpm db:up         # Start MySQL container
 pnpm db:down       # Stop MySQL container
 pnpm db:push       # Apply schema changes
 pnpm db:generate   # Generate migration files
+pnpm db:migrate:runtime  # Run scripts/migrate.ts via tsx (로컬 검증; production 은 Dockerfile 에서 컴파일된 migrate.js 자동 실행)
 pnpm db:studio     # Drizzle Studio GUI
 pnpm setup         # db:up + db:push (first-time setup)
 ```
@@ -97,7 +99,7 @@ See `.env.example` for full list.
 - **Components:** PascalCase, named exports, no direct DB calls
 - **TypeScript:** strict mode, `@/*` path alias, `_` prefix for unused vars
 - **Tailwind:** `src/app/globals.css` must include `@source` for every dir with Tailwind classes
-- **Logging:** `logger.child({ module: '...' })` from `@/lib/logger` — no `console.log`
+- **Logging:** `logger.child({ module: '...' })` from `@/lib/logger` — no `console.log`. **예외**: `scripts/*.ts` 는 standalone 실행이라 path alias 미동작 → `console.log/error` 허용 (eslint.config.mjs 에서 globals 명시)
 - **Error handling:** `err: error instanceof Error ? error : new Error(String(error))`
 - **Tests:** co-located `*.test.ts`, Vitest, mock repositories with `vi.mock()`
 - **API routes:** Bearer token auth via `SYNC_API_KEY`
