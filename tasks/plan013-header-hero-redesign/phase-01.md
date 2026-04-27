@@ -62,9 +62,10 @@ test -f src/app/page.tsx
 test -f src/app/layout.tsx
 grep -nE "📚 FOS Study|FOS Study" src/components/Header.tsx | head -3
 
-# 3) Round 2 mockup 추출
-tar xzOf ~/.claude/projects/-Users-nhn-personal-fos-blog/d11b8756-7896-451b-932e-0678c2241d67/tool-results/webfetch-1777098410179-5850mb.bin 'fos-blog/project/app-base.jsx' > /tmp/app-base.jsx
-grep -nE "function (HeroMesh|TopBar|Hero)" /tmp/app-base.jsx | head -5
+# 3) Round 2 mockup 추출 (있으면 참조, 없으면 docs/design-inspiration.md 만으로 진행)
+tar xzOf ~/.claude/projects/-Users-nhn-personal-fos-blog/d11b8756-7896-451b-932e-0678c2241d67/tool-results/webfetch-1777098410179-5850mb.bin 'fos-blog/project/app-base.jsx' > /tmp/app-base.jsx 2>/dev/null && \
+  grep -nE "function (HeroMesh|TopBar|Hero)" /tmp/app-base.jsx | head -5 || \
+  echo "ℹ️ mockup 캐시 미존재 — docs/design-inspiration.md + phase-01.md 본문으로 진행 (fallback 정상)"
 
 # 4) repository 통계 함수 확인 — HomeHero 의 dl 항목용
 grep -n "getCategoryCount\|count.*posts\|getRecentPosts\|getCategories" src/infra/db/repositories/*.ts | head -10
@@ -102,17 +103,19 @@ export function HeroMesh({ primaryHue = 195, motion = "default" }: HeroMeshProps
     >
       <svg viewBox="0 0 100 60" preserveAspectRatio="none" className="hero-mesh-svg">
         <defs>
+          {/* 주의: SVG presentation attribute (stopColor=) 는 var() 해석 안 됨.
+              CSS property 컨텍스트가 필요하므로 inline style 로 전달. */}
           <radialGradient id="mesh-stop-1" cx="20%" cy="30%" r="60%">
-            <stop offset="0%" stopColor="oklch(0.7 0.16 var(--mesh-primary-hue))" stopOpacity="0.55" />
-            <stop offset="60%" stopColor="oklch(0.7 0.16 var(--mesh-primary-hue))" stopOpacity="0" />
+            <stop offset="0%" style={{ stopColor: "oklch(0.7 0.16 var(--mesh-primary-hue))", stopOpacity: 0.55 }} />
+            <stop offset="60%" style={{ stopColor: "oklch(0.7 0.16 var(--mesh-primary-hue))", stopOpacity: 0 }} />
           </radialGradient>
           <radialGradient id="mesh-stop-2" cx="80%" cy="35%" r="55%">
-            <stop offset="0%" stopColor="var(--mesh-stop-03)" stopOpacity="0.4" />
-            <stop offset="60%" stopColor="var(--mesh-stop-03)" stopOpacity="0" />
+            <stop offset="0%" style={{ stopColor: "var(--mesh-stop-03)", stopOpacity: 0.4 }} />
+            <stop offset="60%" style={{ stopColor: "var(--mesh-stop-03)", stopOpacity: 0 }} />
           </radialGradient>
           <radialGradient id="mesh-stop-3" cx="50%" cy="80%" r="60%">
-            <stop offset="0%" stopColor="var(--mesh-stop-02)" stopOpacity="0.45" />
-            <stop offset="60%" stopColor="var(--mesh-stop-02)" stopOpacity="0" />
+            <stop offset="0%" style={{ stopColor: "var(--mesh-stop-02)", stopOpacity: 0.45 }} />
+            <stop offset="60%" style={{ stopColor: "var(--mesh-stop-02)", stopOpacity: 0 }} />
           </radialGradient>
         </defs>
         <rect className="mesh-layer mesh-layer-1" width="100" height="60" fill="url(#mesh-stop-1)" />
@@ -239,7 +242,7 @@ a) **brand**: `📚 FOS Study` → mockup `.brand-mark .dot` 패턴
     className="h-2 w-2 rounded-full bg-[var(--color-brand-400)]"
     style={{ boxShadow: "0 0 8px var(--color-brand-400)" }}
   />
-  fos-blog<span className="text-[var(--color-fg-muted)]">/dev-notes</span>
+  fos-blog<span className="text-[var(--color-fg-muted)]">/study</span>
 </Link>
 ```
 
@@ -333,7 +336,7 @@ return (
 @media (prefers-reduced-motion: reduce) {
   .hero-mesh .mesh-layer { animation: none !important; }
 }
-.ab.light .hero-mesh { opacity: 0.55; }
+:root:not(.dark) .hero-mesh { opacity: 0.55; }
 
 /* === Hero caret === */
 .hero-caret {
@@ -391,6 +394,20 @@ ls -la .next/static/chunks/ | grep -i hero
 grep -rE "hero-mesh|HomeHero" .next/server/app/ 2>/dev/null | head -3
 ```
 
+#### 5d. tasks/index.json `status="completed"` 마킹
+
+```bash
+# cwd: <worktree root>
+# top-level + phases[0] 모두 completed 로 갱신
+sed -i '' 's/"status": "pending"/"status": "completed"/g' tasks/plan013-header-hero-redesign/index.json
+
+# 검증: completed 가 정확히 2회 (top-level + phases[0]) 등장
+grep -c '"status": "completed"' tasks/plan013-header-hero-redesign/index.json   # = 2
+! grep -n '"status": "pending"' tasks/plan013-header-hero-redesign/index.json
+```
+
+**왜**: 다음 build-with-teams 사전 검증 3중 체크 중 1번 (main index.json status) 통과를 위해. PR 머지 전 단계에서 완료 마킹은 PR 브랜치 안에 포함되어야 main 직접 커밋을 회피.
+
 수동 smoke (선택, 사용자 PR 리뷰 시):
 - `pnpm dev` → 홈 시각 확인 (Hero mesh 회전 60s, caret 깜빡임)
 - 다크/라이트 토글 → mesh 색 자연 전환
@@ -413,7 +430,9 @@ grep -n "primaryHue" src/components/HeroMesh.tsx
 grep -nE "postCount|categoryCount|seriesCount|subscriberCount" src/components/HomeHero.tsx | wc -l  # >= 4
 grep -n 'oklch(0.74 0.09 220)' src/components/HomeHero.tsx  # h1 <em> blue 색 (mockup react hue)
 grep -n 'FOS-WORLD · DEV NOTES' src/components/HomeHero.tsx  # eyebrow 카피 mockup 톤
-grep -n 'fos-blog/dev-notes' src/components/Header.tsx  # brand mark 변경
+grep -n 'fos-blog' src/components/Header.tsx          # brand mark 본문 ("fos-blog")
+grep -n '/study' src/components/Header.tsx            # brand mark suffix ("/study")
+! grep -n '📚 FOS Study' src/components/Header.tsx    # 기존 brand 제거 확인
 
 # 2) page.tsx 가 HomeHero 사용 + 기존 Hero Section 제거
 grep -n "HomeHero" src/app/page.tsx
@@ -452,7 +471,19 @@ pnpm lint
 pnpm type-check
 pnpm build
 
-# 9) 금지사항
+# 9) SVG stop var() 해석 가능 — inline style 사용 (presentation attribute 의 var() 미해결 회피)
+grep -nE 'style=\{\{ stopColor:' src/components/HeroMesh.tsx
+! grep -nE 'stopColor="var\(' src/components/HeroMesh.tsx
+
+# 10) 라이트 모드 selector 정확성 (.ab.light mockup 잔재 금지 — 프로젝트 룰: :root:not(.dark))
+! grep -nE '\.ab\.light' src/app/globals.css
+grep -nE ':root:not\(\.dark\) \.hero-mesh|\.hero-mesh.*opacity' src/app/globals.css | head -3
+
+# 11) tasks/index.json status="completed" 마킹 (다음 plan 사전 검증 통과 위해)
+grep -c '"status": "completed"' tasks/plan013-header-hero-redesign/index.json   # = 2
+! grep -n '"status": "pending"' tasks/plan013-header-hero-redesign/index.json
+
+# 12) 금지사항
 ! grep -nE "as any" src/components/HeroMesh.tsx src/components/HomeHero.tsx src/components/Header.tsx
 ! grep -nE "console\.(log|warn|error)" src/components/HeroMesh.tsx src/components/HomeHero.tsx src/components/Header.tsx
 ! grep -nE "alert\(|confirm\(|prompt\(" src/components/HeroMesh.tsx src/components/HomeHero.tsx
