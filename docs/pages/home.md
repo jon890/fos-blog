@@ -2,7 +2,7 @@
 
 **Route:** `/`  
 **File:** `src/app/page.tsx`  
-**Updated:** 2026-04-02
+**Updated:** 2026-04-27
 
 ---
 
@@ -18,6 +18,7 @@
 |--------|--------|---------|
 | CategoryRepository | `getCategories()` | 전체 카테고리 목록 + 글 수 |
 | PostRepository | `getRecentPosts(6)` | 최근 글 6개 |
+| PostRepository | `getActivePostCount()` | HomeHero 통계용 활성 글 총 개수 (plan013) |
 | VisitRepository | `getPopularPostPaths(limit*3)` | 인기 글 경로 + 조회수 |
 | PostRepository | `getPostsByPaths(paths)` | 인기 글 상세 데이터 |
 | VisitRepository | `getPostVisitCounts(postPaths)` | 최근 글 조회수 맵 |
@@ -33,6 +34,8 @@
 
 | Component | Role |
 |-----------|------|
+| `HomeHero` (plan013) | eyebrow + h1 + lead + `<dl>` 4 stats 한 컴포넌트 — 기존 별도 Hero/Stats 섹션 통합 |
+| `HeroMesh` (plan013) | SVG `<radialGradient>` + CSS slow rotate 배경 mesh (server, prefers-reduced-motion 자동 처리) |
 | `CategoryList` | 카테고리 그리드 (최대 6개 표시) |
 | `PostCard` | 인기 글 / 최근 글 카드 |
 | `WebsiteJsonLd` | JSON-LD 구조화 데이터 |
@@ -61,23 +64,26 @@
 ## Layout
 
 ```
-Hero Section (제목 + 설명)
+HomeHero (eyebrow + h1<em> + caret + lead + <dl> 4 stats)  ← plan013, HeroMesh 배경 포함
 Categories Section (최대 6개 → 헤더 우측 "모두 보기" 링크)
 Popular Posts Section (인기 글, 조회수 있을 때만 표시)
   └ 섹션 하단 CTA 버튼 "인기 글 더 보기 →"
 Recent Posts Section (최근 6개)
   └ 섹션 하단 CTA 버튼 "최신 글 더 보기 →"
-Stats Section (카테고리 수 / 전체 글 수 / "계속 성장 중")
 ```
+
+> plan013 이전: 별도 Hero Section + Stats Section 으로 분리되어 있었음. 현재는 `<HomeHero>` 한 컴포넌트로 통합 — eyebrow, h1, lead, 4 stats `<dl>` (posts/categories/series·subscribers placeholder).
 
 ---
 
 ## Related Files
 
 - `src/app/page.tsx`
+- `src/components/HomeHero.tsx` (plan013)
+- `src/components/HeroMesh.tsx` (plan013)
 - `src/components/CategoryList.tsx`
 - `src/components/PostCard.tsx`
-- `src/components/SectionCTAButton.tsx` (신규 — "더 보기" CTA)
+- `src/components/SectionCTAButton.tsx`
 - `src/components/JsonLd.tsx`
 - `src/infra/db/repositories/CategoryRepository.ts`
 - `src/infra/db/repositories/PostRepository.ts`
