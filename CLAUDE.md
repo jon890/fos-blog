@@ -45,11 +45,8 @@ fos-blog/
 ├── scripts/              # Build-time/start-up scripts — migrate.ts (drizzle migrator, 컨테이너 부팅 시 자동 apply)
 ├── local/                # Docker Compose + MySQL init.sql
 ├── drizzle/              # Migration artifacts (auto-generated, do not edit)
-├── Dockerfile            # Multi-stage build (output: standalone)
-└── AGENTS.md             # Directory delegation guide
+└── Dockerfile            # Multi-stage build (output: standalone)
 ```
-
-See `src/AGENTS.md` for full layered architecture details.
 
 ---
 
@@ -204,19 +201,6 @@ type(scope): description
 ```
 
 예시: `feat(sync): add retry with exponential backoff`, `fix(db): prevent duplicate post insertion`, `docs(task): add layered architecture ADR`
-
----
-
-## Subdirectory Agent Docs
-
-- `src/AGENTS.md` — architecture overview
-- `src/app/AGENTS.md` — pages, API routes
-- `src/components/AGENTS.md` — UI components
-- `src/services/AGENTS.md` — business logic
-- `src/infra/db/AGENTS.md` — schema, repositories
-- `src/infra/github/AGENTS.md` — GitHub API client
-- `src/lib/AGENTS.md` — shared utilities
-- `local/AGENTS.md` — MySQL Docker setup
 
 ---
 
