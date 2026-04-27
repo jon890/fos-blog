@@ -1,0 +1,22 @@
+{
+  "name": "plan007-2-rate-limit-policy-tightening",
+  "description": "rate limit 정책 강화 — proxy.ts matcher 확장 (RSC payload + /api/* + root 정적 파일 제외), rateLimit.ts 의 localhost 매핑 + IPv4-mapped IPv6 + RFC1918 사설 대역 우회, BOT_UA 확장 (Bingbot + NaverBot Yeti). hotfix PR #76 (한도 60 → 1000) 의 본질 fix. plan007 후속.",
+  "status": "pending",
+  "created_at": "2026-04-27",
+  "total_phases": 1,
+  "related_docs": [
+    "docs/adr.md"
+  ],
+  "depends_on": [
+    "plan007-rate-limit"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "matcher 좁히기 + LOCALHOST/RFC1918 우회 + BOT_UA 확장 + 단위 테스트",
+      "model": "sonnet",
+      "status": "pending"
+    }
+  ]
+}
