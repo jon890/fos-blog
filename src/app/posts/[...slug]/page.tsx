@@ -179,9 +179,9 @@ export default async function PostPage({ params }: PostPageProps) {
 
       <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-8 px-6 py-12 md:grid-cols-[1fr_minmax(0,820px)_240px] md:gap-12 md:py-16">
         <div className="hidden md:block" aria-hidden />
-        <div className="min-w-0">
+        <article className="min-w-0">
           <MarkdownRenderer content={stripped} basePath={slug} />
-        </div>
+        </article>
         <aside className="hidden md:block">
           <TableOfContents toc={tocItems} />
         </aside>

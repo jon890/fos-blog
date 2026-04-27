@@ -71,7 +71,7 @@ export function ArticleHero({
           className="mb-6 flex items-center gap-2 font-mono text-[12px] text-[var(--color-fg-muted)]"
         >
           {breadcrumb.map((item, i) => (
-            <span key={i} className="flex items-center gap-2">
+            <span key={item.label} className="flex items-center gap-2">
               {i > 0 && (
                 <span className="text-[var(--color-fg-faint)]">/</span>
               )}
