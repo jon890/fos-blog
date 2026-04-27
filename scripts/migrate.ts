@@ -9,7 +9,17 @@ async function main() {
     process.exit(1);
   }
 
-  const conn = await mysql.createConnection(databaseUrl);
+  let conn;
+  try {
+    conn = await mysql.createConnection(databaseUrl);
+  } catch (error) {
+    console.error(
+      "[migrate] DB connection failed:",
+      error instanceof Error ? error.message : String(error)
+    );
+    process.exit(1);
+  }
+
   const db = drizzle(conn);
 
   try {
