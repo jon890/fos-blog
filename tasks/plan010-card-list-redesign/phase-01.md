@@ -221,9 +221,9 @@ export function PostCard({
           <h3 className="text-[17px] font-medium leading-snug tracking-tight text-[var(--color-fg-primary)] line-clamp-2">
             {post.title}
           </h3>
-          {post.excerpt && (
+          {post.description && (
             <p className="line-clamp-2 text-[13px] leading-relaxed text-[var(--color-fg-secondary)]">
-              {post.excerpt}
+              {post.description}
             </p>
           )}
           <div className="mt-auto flex items-center justify-between gap-3 border-t border-[var(--color-border-subtle)] pt-3 font-mono text-[11px] text-[var(--color-fg-muted)]">
@@ -257,9 +257,9 @@ export function PostCard({
         <div className="text-[16px] font-medium leading-snug tracking-tight text-[var(--color-fg-primary)] transition-colors duration-150 group-hover:text-[var(--color-brand-400)] md:text-[17px]">
           {post.title}
         </div>
-        {post.excerpt && (
+        {post.description && (
           <div className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-[var(--color-fg-secondary)] md:text-[14px]">
-            {post.excerpt}
+            {post.description}
           </div>
         )}
         {/* 모바일에선 cat/meta 를 본문 아래로 내림 */}
@@ -320,7 +320,8 @@ function formatDate(date: Date | string | null | undefined): string {
 - 기존 prop (`post`, `showCategory`, `viewCount`) **모두 호환**. 신규 `variant`, `index` 는 옵셔널 — 호출 사이트 변경 없이 row 변형이 자동 적용
 - mockup 의 `--cat-color` 패턴을 inline style 로 그대로 재현 — Tailwind v4 의 arbitrary `bg-[var(--cat-color)]` 도 가능하지만 dot/text 양쪽에 currentColor 로 같이 쓰기 위해 inline 채택
 - 모바일 (sm 미만) 에선 5열 grid 가 깨지므로 cat/meta 를 body 아래로 접어 표시
-- `post.excerpt` 와 `post.createdAt` 은 `PostData` 의 기존 필드 — 데이터 스키마 변경 없음
+- `post.description` 와 `post.createdAt` 은 `PostData` 의 기존 필드 — 데이터 스키마 변경 없음 (`PostData.excerpt` 는 존재하지 않음, `description` 사용)
+- 기존 `FileText` / `ChevronRight` import 및 `post.subcategory` 표기는 모두 제거 — canonical 카테고리 한 줄로 통합되어 의도된 단순화
 
 ### 3. `src/components/PostCardSkeleton.tsx` — row 변형 매칭 갱신
 
@@ -465,7 +466,7 @@ grep -n "export function getCategoryColor" src/lib/category-meta.ts
 grep -n "export function getCategoryHue" src/lib/category-meta.ts
 
 # 2) PostCard variant prop + 토큰 사용
-grep -n 'variant\?:\s*"row"\s*|\s*"grid"' src/components/PostCard.tsx
+grep -nE 'variant\?:\s*"row"\s*\|\s*"grid"' src/components/PostCard.tsx
 grep -n "getCategoryColor" src/components/PostCard.tsx
 grep -nE 'var\(--color-(fg|border|bg|brand|cat)' src/components/PostCard.tsx
 ! grep -n "bg-amber-400\|bg-purple-400\|bg-orange-400" src/components/PostCard.tsx
@@ -488,7 +489,7 @@ grep -nE 'var\(--color-border|var\(--color-fg' src/components/SectionCTAButton.t
 
 # 6) 호출 사이트 호환 (PostCard prop 변경 없음 — variant 누락 시 row 기본)
 grep -n "PostCard" src/app/page.tsx
-grep -n "PostCard" src/app/category/\[\.\.\.path\]/page.tsx
+grep -n "PostCard" 'src/app/category/[...path]/page.tsx'
 grep -n "PostCard" src/components/PostsInfiniteList.tsx
 
 # 7) 통합 빌드/테스트
@@ -523,7 +524,7 @@ pnpm build
 
 - `globals.css` 에 `--color-cat-system` 토큰이 없음 → **PHASE_BLOCKED: plan009 미머지**
 - `geist/font/sans` import 가 layout.tsx 에 없음 → **PHASE_BLOCKED: plan009 미머지**
-- PostData/CategoryData 타입에 `excerpt` 또는 `createdAt` 또는 `count` 가 없음 → **PHASE_BLOCKED: 데이터 스키마 확인 필요** (executor 가 import 해서 실제 필드 확인 — 누락이면 사용자 에스컬레이션)
+- PostData/CategoryData 타입에 `description` 또는 `createdAt` 또는 `count` 가 없음 → **PHASE_BLOCKED: 데이터 스키마 확인 필요** (executor 가 import 해서 실제 필드 확인 — 누락이면 사용자 에스컬레이션)
 
 ## 커밋 제외 (phase 내부)
 
