@@ -3,9 +3,9 @@ import logger from "@/lib/logger";
 
 const log = logger.child({ module: "middleware/rateLimit" });
 
-const WINDOW_MS = 60_000; // 1분
-const MAX_REQUESTS_PER_WINDOW = 60;
-const MAX_BUCKETS = 10_000;
+export const WINDOW_MS = 60_000; // 1분
+export const MAX_REQUESTS_PER_WINDOW = 1000;
+export const MAX_BUCKETS = 10_000;
 const BOT_UA_PATTERN = /Googlebot/i;
 const LOCALHOST_IPS = new Set(["127.0.0.1", "::1"]);
 
