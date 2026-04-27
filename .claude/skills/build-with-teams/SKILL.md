@@ -200,17 +200,14 @@ executor 완료 후 team-lead → docs-verifier에게 검증 요청.
 - **UPDATE_NEEDED** → team-lead가 docs 업데이트 후 재검증 (한도 2회)
 - **VIOLATION** → team-lead가 코드 수정 지시 (executor 재투입, 한도 2회)
 
-### 9. 완료 + PR 생성
+### 9. 완료 + PR 생성 + 즉시 팀 종료
 
-1. team-lead가 변경사항 검토
-2. 통합 검증 명령 (`pnpm lint && pnpm type-check && pnpm test && pnpm build`) 최종 확인
-3. git commit + push
-4. **PR 생성** — `gh pr create` (main 대상, 변경사항 요약)
-5. **index.json 완료 처리 + 커밋** — **PR 머지 후 main 에서 마킹** (PR 브랜치와 main 양쪽이 같은 줄을 다르게 변경하면 머지 충돌 발생):
-   - PR 머지 → `git checkout main && git pull` → `tasks/{task-name}/index.json` status 를 `"completed"` (각 phase 도) 로 변경 → 커밋 + push
-   - **PR 머지 전에 main 에 직접 push 금지** (실사례: plan007 PR 머지 전 main 직접 push 로 index.json conflict 발생)
-   - 또는 PR 브랜치 안에 completed 마킹 커밋을 포함시켜 PR 머지로 자동 반영
-6. 팀 shutdown (SendMessage `shutdown_request`)
+1. team-lead 가 변경사항 검토
+2. 통합 검증 (`pnpm lint && pnpm type-check && pnpm test && pnpm build`)
+3. **`tasks/{task-name}/index.json` status="completed" 마킹 커밋을 PR 브랜치에 포함** — PR 머지로 자동 main 반영. main 직접 push 금지(충돌 사고 방지)
+4. push + `gh pr create` (main 대상)
+5. **즉시 팀 shutdown** (SendMessage `shutdown_request`) + worktree 정리 + team-lead 누적 노하우 보고
+6. 사용자가 GitHub 에서 PR 머지 → completed 상태 자동 반영. main 후속 작업 0개
 
 ## worktree 기반 격리 실행 (필수)
 
@@ -273,11 +270,10 @@ executor가 phase 실패 보고 시:
     → [executor 실행] ←─ 실패 시 원인 분석 후 재실행
     → [코드 품질 검사] ←─ FIX_NEEDED면 executor 재투입 (한도 2회)
     → [docs-verifier 검증 (문서 부패 포함)] ←─ VIOLATION/UPDATE_NEEDED면 재투입 (한도 2회)
-    → [team-lead 최종 커밋 + push]
-    → [PR 생성]
-    → [index.json completed + 커밋/push] ← 누락 시 재실행 사고
-    → [team-lead 노하우 누적 보고] ← 사용자에게 1-3줄
-    → [worktree 정리 + 팀 shutdown]
+    → [team-lead 최종 커밋 + index.json completed (PR 브랜치 안)]
+    → [push + PR 생성]
+    → [팀 즉시 shutdown + worktree 정리 + 누적 노하우 보고]
+    → (사용자 PR 머지 → completed 자동 main 반영, 후속 작업 0개)
 ```
 
 ## 노하우 누적 (세션마다 보강)
