@@ -1,4 +1,4 @@
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+@import "pretendard/dist/web/static/pretendard.css";
 @import "tailwindcss";
 @source "./app/**/*.{ts,tsx}";
 @source "../components/**/*.{ts,tsx}";
@@ -260,13 +260,7 @@ code, kbd, samp, pre {
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  /* radius scale 은 상단 @theme 블록의 정적 값 (4/6/10/16px) 사용 — shadcn calc 재정의 제거 (review-fix #69) */
 }
 
 :root {
