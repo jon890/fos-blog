@@ -36,8 +36,10 @@ ENV SKIP_ENV_VALIDATION=true
 # Build the application
 RUN pnpm build
 
-# Compile migrate script
-RUN pnpm tsc --project tsconfig.scripts.json
+# Bundle migrate script with all deps inlined (Next.js standalone tracer
+# does not include drizzle-orm/mysql2 as standalone require()-able packages,
+# so we ship migrate.js as a self-contained bundle).
+RUN pnpm exec ncc build scripts/migrate.ts -o dist -m
 
 # Production stage
 FROM node:22-alpine AS runner
@@ -61,7 +63,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy migration script and artifacts
-COPY --from=builder --chown=nextjs:nodejs /app/dist/migrate.js ./migrate.js
+COPY --from=builder --chown=nextjs:nodejs /app/dist/index.js ./migrate.js
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
 
 USER nextjs
