@@ -1,0 +1,24 @@
+{
+  "name": "plan012-code-block-redesign",
+  "description": "Claude Design Round 2 mockup 의 .code-card / .code-content / .term-block 패턴 적용 — rehype-highlight → rehype-pretty-code (shiki dual theme github-dark/light) 마이그레이션 + filename header (title=...) + line numbers + copy button (CodeCard client wrapper) + line-highlight ({3-5,7}) + diff/terminal variants. plan011 (article page) 머지 후 진행. mermaid pre 는 skip 처리.",
+  "status": "pending",
+  "created_at": "2026-04-27",
+  "total_phases": 1,
+  "related_docs": [
+    "docs/adr.md",
+    "docs/design-inspiration.md"
+  ],
+  "depends_on": [
+    "plan009-design-tokens-foundation",
+    "plan011-article-page-redesign"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "rehype-pretty-code 마이그레이션 + CodeCard + 코드블록 frame 토큰 + 기존 글 syntax 검증",
+      "model": "sonnet",
+      "status": "pending"
+    }
+  ]
+}
