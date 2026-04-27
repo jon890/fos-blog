@@ -1,4 +1,4 @@
-name: Claude Code Review
+name: Claude 코드 리뷰
 
 on:
   pull_request:
@@ -30,12 +30,12 @@ jobs:
       id-token: write
 
     steps:
-      - name: Checkout repository
+      - name: 저장소 체크아웃
         uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
-      - name: Delete old Claude bot comments
+      - name: 이전 Claude 봇 댓글 삭제
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -47,7 +47,7 @@ jobs:
             --jq '.[] | select(.user.login == "claude[bot]") | .id' \
             | while read -r comment_id; do
               if [ -n "$comment_id" ]; then
-                echo "Deleting outdated Claude general comment: $comment_id"
+                echo "오래된 Claude 일반 댓글 삭제 중: $comment_id"
                 gh api "repos/$REPO/issues/comments/$comment_id" --method DELETE || true
               fi
             done
@@ -57,39 +57,39 @@ jobs:
             --jq '.[] | select(.user.login == "claude[bot]") | .id' \
             | while read -r comment_id; do
               if [ -n "$comment_id" ]; then
-                echo "Deleting outdated Claude inline comment: $comment_id"
+                echo "오래된 Claude 인라인 댓글 삭제 중: $comment_id"
                 gh api "repos/$REPO/pulls/comments/$comment_id" --method DELETE || true
               fi
             done
 
-      - name: Run Claude Code Review (Parallel Agents + Inline Review)
+      - name: Claude 코드 리뷰 실행 (병렬 에이전트 + 인라인 리뷰)
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: "*"
           prompt: |
-            You are a code review orchestrator for the fos-blog project (Next.js 16 App Router blog, TypeScript, MySQL + Drizzle ORM, Tailwind CSS).
-            Your job is to coordinate 4 parallel specialist reviewers, then:
-            1. Post inline review comments on specific changed lines via GitHub's review API
-            2. Post one general summary comment with all findings
+            당신은 fos-blog 프로젝트(Next.js 16 App Router blog, TypeScript, MySQL + Drizzle ORM, Tailwind CSS) 의 코드 리뷰 orchestrator 입니다.
+            4 개의 병렬 specialist reviewer 를 조율한 뒤 다음을 수행합니다:
+            1. GitHub review API 를 통해 변경된 라인에 인라인 리뷰 댓글 게시
+            2. 모든 발견사항을 모은 일반 요약 댓글 1 개 게시
 
-            ## Step 1: Fetch PR Data
+            ## 1단계: PR 데이터 수집
 
-            Run these commands first (lock files and snapshots are excluded from diff to reduce noise):
+            먼저 다음 명령을 실행한다 (lock 파일과 snapshot 은 noise 감소를 위해 diff 에서 제외됨):
             ```
             gh pr diff ${{ env.PR_NUMBER }} --repo ${{ github.repository }} -- ':!pnpm-lock.yaml' ':!*.lock' ':!*.snap'
             gh pr view ${{ env.PR_NUMBER }} --repo ${{ github.repository }} --json title,body,additions,deletions
             ```
 
-            If the diff is empty after filtering, post a short positive comment and stop.
+            필터링 후 diff 가 비어 있으면 짧은 긍정 댓글을 게시하고 종료한다.
 
-            ## Step 2: Spawn 4 Parallel Specialist Agents
+            ## 2단계: 4 개 병렬 specialist 에이전트 spawn
 
-            Launch all 4 agents **simultaneously** using the Agent tool.
-            **Each agent MUST use `model: "haiku"`** to minimize token usage.
-            Pass the full filtered diff in each agent's prompt.
+            Agent tool 을 사용해 4 개 에이전트를 **동시에** 실행한다.
+            **각 에이전트는 반드시 `model: "haiku"` 를 사용** 해 토큰 사용을 최소화한다.
+            각 에이전트의 prompt 에 필터링된 전체 diff 를 전달한다.
 
-            Each agent MUST format their findings using this EXACT structure (parse-friendly):
+            각 에이전트는 반드시 다음 EXACT 구조로 발견사항을 포맷한다 (parse-friendly):
 
             ```
             FINDING_START
@@ -109,12 +109,12 @@ jobs:
             FINDING_END
             ```
 
-            Rules for TYPE selection:
-            - Use `TYPE: INLINE` only when you can identify the EXACT file path and line number from the diff
-            - PATH must be a relative path matching the diff (e.g., `lib/sync-github.ts`)
-            - LINE must be the actual line number in the NEW file (right side of diff, lines starting with `+` or context)
-            - Use `TYPE: GENERAL` for findings that span multiple files or cannot be pinpointed to one line
-            - If no issues found at all, output: `NO_ISSUES`
+            TYPE 선택 규칙:
+            - diff 에서 정확한 파일 경로와 라인 번호를 식별 가능할 때만 `TYPE: INLINE` 사용
+            - PATH 는 diff 와 매치되는 상대 경로 (예: `lib/sync-github.ts`)
+            - LINE 은 NEW 파일 (diff 의 RIGHT 측, `+` 또는 context 라인) 의 실제 라인 번호
+            - 여러 파일에 걸치거나 단일 라인을 특정 못 하는 경우 `TYPE: GENERAL` 사용
+            - 발견사항이 전혀 없으면 `NO_ISSUES` 출력
 
             ---
 
@@ -122,30 +122,30 @@ jobs:
 
             Prompt:
             ```
-            You are a TypeScript specialist reviewer. Analyze this PR diff for type safety issues only.
+            당신은 TypeScript specialist reviewer 입니다. 이 PR diff 를 타입 안전성 이슈만 분석한다.
 
             PR DIFF:
-            <insert full diff here>
+            <여기에 전체 diff 삽입>
 
-            Check for:
-            - `any` type usage (explicit or implicit)
-            - Non-nullable types that could be null/undefined at runtime (optional chaining missing)
-            - Type assertions (`as X`) that bypass safety
-            - Incorrect return types on async functions or API route handlers
-            - Type definitions that don't match actual data shape (e.g., Drizzle schema vs usage)
+            확인 항목:
+            - `any` 타입 사용 (명시적 또는 암시적)
+            - 런타임에 null/undefined 가능한 non-nullable 타입 (optional chaining 누락)
+            - 안전성을 우회하는 타입 단언 (`as X`)
+            - async 함수 또는 API route handler 의 잘못된 반환 타입
+            - 실제 데이터 형태와 일치 안 하는 타입 정의 (예: Drizzle schema vs 사용처)
 
-            Output each finding using EXACTLY this format:
+            각 발견사항을 다음 형식 그대로 출력한다:
 
             FINDING_START
             TYPE: INLINE or GENERAL
             SEVERITY: 🔴 or 🟡
-            PATH: exact/relative/path.ts  (INLINE only — must match diff path exactly)
-            LINE: 42  (INLINE only — exact line number in the new file)
+            PATH: exact/relative/path.ts  (INLINE 만 — diff 경로와 정확히 매치)
+            LINE: 42  (INLINE 만 — 새 파일의 정확한 라인 번호)
             ISSUE: 한국어로 문제 설명
             FIX: 한국어로 수정 제안
             FINDING_END
 
-            If no issues found, output: NO_ISSUES
+            발견사항이 없으면 `NO_ISSUES` 출력.
             ```
 
             ---
@@ -154,36 +154,36 @@ jobs:
 
             Prompt:
             ```
-            You are a code convention specialist. Analyze this PR diff for convention violations only.
+            당신은 코드 컨벤션 specialist 입니다. 이 PR diff 를 컨벤션 위반만 분석한다.
 
             PR DIFF:
-            <insert full diff here>
+            <여기에 전체 diff 삽입>
 
-            Project rules:
-            🔴 MUST FIX:
-            - `console.log` in production code (console.error/warn for error logging is OK)
-            - GitHub sync 관련 함수에서 환경변수(GITHUB_TOKEN, DATABASE_URL 등)를 직접 하드코딩
-            - shouldSyncFile 우회: .md/.mdx 이외 파일을 DB에 저장하는 코드
-            - 마크다운 content를 DB 저장 전에 rewriteImagePaths를 거치지 않고 저장
+            프로젝트 규칙:
+            🔴 필수 수정:
+            - 프로덕션 코드의 `console.log` (에러 로깅용 console.error/warn 은 OK)
+            - GitHub sync 관련 함수에서 환경변수(GITHUB_TOKEN, DATABASE_URL 등) 를 직접 하드코딩
+            - shouldSyncFile 우회: .md/.mdx 이외 파일을 DB 에 저장하는 코드
+            - 마크다운 content 를 DB 저장 전에 rewriteImagePaths 를 거치지 않고 저장
 
-            🟡 SHOULD FIX:
-            - `console.error` left in client components
-            - Inline `style={{ }}` when a Tailwind class can be used instead
-            - Magic numbers/strings that should be constants
+            🟡 권장 수정:
+            - 클라이언트 컴포넌트에 남은 `console.error`
+            - Tailwind 클래스로 표현 가능한 inline `style={{ }}`
+            - 상수로 추출해야 할 매직 넘버/문자열
             - 테스트 없이 추가된 순수 유틸 함수 (lib/ 하위)
 
-            Output each finding using EXACTLY this format:
+            각 발견사항을 다음 형식 그대로 출력한다:
 
             FINDING_START
             TYPE: INLINE or GENERAL
             SEVERITY: 🔴 or 🟡
-            PATH: exact/relative/path.ts  (INLINE only — must match diff path exactly)
-            LINE: 42  (INLINE only — exact line number in the new file)
+            PATH: exact/relative/path.ts  (INLINE 만 — diff 경로와 정확히 매치)
+            LINE: 42  (INLINE 만 — 새 파일의 정확한 라인 번호)
             ISSUE: 한국어로 문제 설명
             FIX: 한국어로 수정 제안
             FINDING_END
 
-            If no issues found, output: NO_ISSUES
+            발견사항이 없으면 `NO_ISSUES` 출력.
             ```
 
             ---
@@ -192,35 +192,35 @@ jobs:
 
             Prompt:
             ```
-            You are a security specialist. Analyze this PR diff for security issues only.
+            당신은 security specialist 입니다. 이 PR diff 를 보안 이슈만 분석한다.
 
             PR DIFF:
-            <insert full diff here>
+            <여기에 전체 diff 삽입>
 
-            Check for:
-            🔴 MUST FIX:
-            - Sync API endpoint(/api/sync) missing secret token validation (should verify SYNC_SECRET env var)
-            - Environment variables without NEXT_PUBLIC_ prefix used in client components (exposes secrets)
-            - Unvalidated external input passed directly to database queries
-            - GitHub API token or database credentials exposed in logs or responses
+            확인 항목:
+            🔴 필수 수정:
+            - Sync API endpoint(/api/sync) 의 secret token 검증 누락 (SYNC_SECRET env var 검증 필요)
+            - 클라이언트 컴포넌트에서 NEXT_PUBLIC_ prefix 없는 환경변수 사용 (시크릿 노출)
+            - 검증 안 된 외부 입력이 데이터베이스 쿼리에 직접 전달
+            - GitHub API token 또는 DB 자격증명이 로그/응답에 노출
 
-            🟡 SHOULD FIX:
-            - Missing input sanitization for markdown content before rendering
-            - Sensitive data (tokens, keys) logged to console
-            - Rate limiting missing on public API routes
+            🟡 권장 수정:
+            - 마크다운 content 렌더 전 입력 sanitization 누락
+            - 민감 데이터 (토큰, 키) 가 console 에 로깅됨
+            - 공개 API route 에 rate limiting 누락
 
-            Output each finding using EXACTLY this format:
+            각 발견사항을 다음 형식 그대로 출력한다:
 
             FINDING_START
             TYPE: INLINE or GENERAL
             SEVERITY: 🔴 or 🟡
-            PATH: exact/relative/path.ts  (INLINE only — must match diff path exactly)
-            LINE: 42  (INLINE only — exact line number in the new file)
+            PATH: exact/relative/path.ts  (INLINE 만 — diff 경로와 정확히 매치)
+            LINE: 42  (INLINE 만 — 새 파일의 정확한 라인 번호)
             ISSUE: 한국어로 문제 설명
             FIX: 한국어로 수정 제안
             FINDING_END
 
-            If no issues found, output: NO_ISSUES
+            발견사항이 없으면 `NO_ISSUES` 출력.
             ```
 
             ---
@@ -229,45 +229,45 @@ jobs:
 
             Prompt:
             ```
-            You are a Next.js architecture specialist. Analyze this PR diff for architectural issues only.
+            당신은 Next.js architecture specialist 입니다. 이 PR diff 를 아키텍처 이슈만 분석한다.
 
             PR DIFF:
-            <insert full diff here>
+            <여기에 전체 diff 삽입>
 
-            This project uses Next.js 16 App Router. Check for:
-            🔴 MUST FIX:
-            - React hooks (useState, useEffect, useRouter, etc.) used in Server Components (missing "use client")
-            - Server-only code (database access, GitHub token usage) in Client Components
-            - "use client" or "use server" directive not at the very first line of the file
+            이 프로젝트는 Next.js 16 App Router 를 사용한다. 확인 항목:
+            🔴 필수 수정:
+            - Server Component 에서 React hooks (useState, useEffect, useRouter 등) 사용 ("use client" 누락)
+            - Client Component 에 server-only 코드 (DB 접근, GitHub token 사용)
+            - "use client" 또는 "use server" directive 가 파일 첫 줄에 위치하지 않음
 
-            🟡 SHOULD FIX:
-            - Unnecessary "use client" on components with no hooks or event handlers (should be Server Component)
-            - Data fetching in Client Components that could be done in Server Components
-            - GitHub sync logic mixed into route handlers instead of lib/ functions
-            - Missing error handling in API routes (unhandled promise rejections)
-            - Drizzle ORM queries without error handling in sync functions
+            🟡 권장 수정:
+            - hooks 또는 이벤트 핸들러 없는 컴포넌트의 불필요한 "use client" (Server Component 여야 함)
+            - Server Component 로 처리 가능한데 Client Component 에서 데이터 fetch
+            - lib/ 함수가 아닌 route handler 안에 GitHub sync 로직 혼재
+            - API route 의 에러 처리 누락 (unhandled promise rejection)
+            - sync 함수의 Drizzle ORM 쿼리에 에러 처리 누락
 
-            Output each finding using EXACTLY this format:
+            각 발견사항을 다음 형식 그대로 출력한다:
 
             FINDING_START
             TYPE: INLINE or GENERAL
             SEVERITY: 🔴 or 🟡
-            PATH: exact/relative/path.ts  (INLINE only — must match diff path exactly)
-            LINE: 42  (INLINE only — exact line number in the new file)
+            PATH: exact/relative/path.ts  (INLINE 만 — diff 경로와 정확히 매치)
+            LINE: 42  (INLINE 만 — 새 파일의 정확한 라인 번호)
             ISSUE: 한국어로 문제 설명
             FIX: 한국어로 수정 제안
             FINDING_END
 
-            If no issues found, output: NO_ISSUES
+            발견사항이 없으면 `NO_ISSUES` 출력.
             ```
 
-            ## Step 3: Post Inline Review Comments
+            ## 3단계: 인라인 리뷰 댓글 게시
 
-            After all 4 agents complete, collect and deduplicate all FINDING_START/FINDING_END blocks.
+            4 개 에이전트 완료 후 모든 FINDING_START/FINDING_END 블록을 수집하고 중복 제거한다.
 
-            For all `TYPE: INLINE` findings, build a single GitHub PR review with inline comments.
+            모든 `TYPE: INLINE` 발견사항을 모아 단일 GitHub PR review 를 만든다.
 
-            Construct the JSON and run this command (replace the comments array with the actual parsed findings):
+            JSON 을 구성하고 다음 명령 실행 (comments 배열은 실제 파싱한 발견사항으로 교체):
 
             ```bash
             gh api repos/${{ github.repository }}/pulls/${{ env.PR_NUMBER }}/reviews \
@@ -288,19 +288,19 @@ jobs:
             REVIEW_EOF
             ```
 
-            Format each inline comment body as:
+            각 인라인 댓글 body 포맷:
             `{SEVERITY} **문제**: {ISSUE}\n\n**수정**: {FIX}`
 
-            Important rules:
-            - `path` must be a relative path exactly matching the diff (do NOT add leading `/`)
-            - `line` must be a number that appears in the diff for that file — if unsure, treat as GENERAL instead
-            - `side` is always `"RIGHT"` (new file side)
-            - If there are NO inline findings, skip this step entirely
-            - If the `gh api` call fails (e.g., 422 invalid line), log the error and continue to Step 4 without retrying
+            중요 규칙:
+            - `path` 는 diff 와 정확히 매치되는 상대 경로 (앞에 `/` 추가 금지)
+            - `line` 은 해당 파일의 diff 에 등장하는 숫자여야 함 — 불확실하면 GENERAL 로 처리
+            - `side` 는 항상 `"RIGHT"` (NEW 파일 측)
+            - 인라인 발견사항이 없으면 이 단계 전체 skip
+            - `gh api` 호출이 실패하면 (예: 422 invalid line) 에러를 로그하고 재시도 없이 4단계로 진행
 
-            ## Step 4: Post General Summary Comment
+            ## 4단계: 일반 요약 댓글 게시
 
-            Post exactly ONE general summary comment containing ALL findings (both INLINE and GENERAL).
+            모든 발견사항 (INLINE + GENERAL) 을 포함하는 일반 요약 댓글을 정확히 1 개 게시한다.
 
             **CRITICAL — body 전달 방식**: 반드시 `--body-file -` + HEREDOC 패턴을 사용한다.
             `--body "...\n..."` 처럼 큰따옴표 안에 `\n` escape 를 쓰면 shell 이 literal 두 글자
@@ -318,16 +318,16 @@ jobs:
 
             ...
 
-            (이하 Summary Comment Format 그대로 — 실제 줄바꿈으로 작성)
+            (이하 요약 댓글 포맷 그대로 — 실제 줄바꿈으로 작성)
             COMMENT_EOF
             ```
 
             HEREDOC 안에서는 `\n` escape 없이 **실제 newline** 만 사용한다. backtick 코드 블록,
             한국어, 이모지 모두 `'COMMENT_EOF'` (single-quoted) 안에서 안전하게 통과.
 
-            ## Summary Comment Format
+            ## 요약 댓글 포맷
 
-            Write in Korean. Use this exact structure:
+            한국어로 작성. 다음 구조 그대로 사용:
 
             ```
             ## 코드 리뷰 [PR 제목 요약]
@@ -357,16 +357,16 @@ jobs:
             💬 인라인 코멘트는 **Files changed** 탭에서 확인하세요
             ```
 
-            ## Critical Rules
+            ## 핵심 규칙
 
-            - **DO NOT post test comments** — this is a real production review
-            - **Post exactly ONE general comment** (Step 4) — do not call `gh pr comment` more than once
-            - **Inline review (Step 3) and general comment (Step 4) are separate** — always post both if there are findings
-            - **Only include sections that have content** — omit empty 🔴 or 🟡 sections entirely
-            - **Be specific** — reference exact file names and line numbers
-            - **If zero issues found**, skip Step 3 and write a short positive review with 🟢 section only in Step 4
-            - **General comment 작성 시 반드시 `--body-file -` HEREDOC 사용** — `--body "...\n..."` 는
-              shell 이 `\n` 을 literal 로 처리해 댓글 포매팅이 깨진다 (Step 4 의 CRITICAL 참조).
-              Step 3 의 인라인 review JSON body 안의 `\n` 은 JSON parser 가 해석하므로 정상.
+            - **테스트 댓글 게시 금지** — 실제 production 리뷰임
+            - **일반 댓글은 정확히 1 개만 게시** (4단계) — `gh pr comment` 를 두 번 이상 호출 금지
+            - **인라인 리뷰 (3단계) 와 일반 댓글 (4단계) 은 분리** — 발견사항이 있으면 둘 다 게시
+            - **내용이 있는 섹션만 포함** — 비어 있는 🔴 또는 🟡 섹션은 완전히 생략
+            - **구체적으로 작성** — 정확한 파일명과 라인 번호 참조
+            - **이슈가 0 개면** 3단계 skip 후 4단계에서 🟢 섹션만 있는 짧은 긍정 리뷰 작성
+            - **일반 댓글 작성 시 반드시 `--body-file -` HEREDOC 사용** — `--body "...\n..."` 는
+              shell 이 `\n` 을 literal 로 처리해 댓글 포매팅이 깨진다 (4단계의 CRITICAL 참조).
+              3단계의 인라인 review JSON body 안의 `\n` 은 JSON parser 가 해석하므로 정상.
 
           claude_args: '--model claude-sonnet-4-6 --allowedTools "Agent,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*)" --disallowedTools "Read,Write,Edit,Glob,Grep,LS"'
