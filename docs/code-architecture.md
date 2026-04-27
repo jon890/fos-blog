@@ -235,9 +235,24 @@ log.error(
 
 ---
 
+## 마크다운 렌더 파이프라인 (plan014)
+
+```
+src/components/
+├── MarkdownRenderer.tsx              # server, async — unified.process() + hast-util-to-jsx-runtime
+├── CodeCard.tsx                      # client island, clipboard 복사
+├── Mermaid.tsx                       # client island, SVG 렌더
+└── markdown/
+    └── unified-pipeline.ts           # server-only, shiki highlighter singleton (모듈 로드 시 1회 await)
+```
+
+**규칙**: `src/components/markdown/*` 는 server-only 모듈 (`import "server-only"` 가드). client 에서 import 시 빌드 에러. components mapping 으로 server tree 안에 client island 자연스럽게 주입 (RSC 표준 패턴). `react-markdown` 의존성 제거 — ADR-020 참조.
+
+---
+
 ## 8. 실패/회귀 방지
 
-- **Common Critic Patterns (`.claude/skills/_shared/common-critic-patterns.md`) 사전 소진**:
+- **Common Pitfalls (`.claude/skills/_shared/common-pitfalls.md`) 사전 소진**:
   - P2 파일 범위: 본 문서 §2 트리로 명시
   - P4 cwd: 구현 phase에서 모든 bash 블록에 `# cwd:` 주석
   - P5 기계적 검증: 테스트 명령만 사용 (pnpm test, pnpm type-check, pnpm lint)

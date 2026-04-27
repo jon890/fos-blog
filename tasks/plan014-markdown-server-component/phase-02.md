@@ -1,0 +1,169 @@
+# Phase 02 — MarkdownRenderer 를 server async 로 재작성 + react-markdown 의존성 제거
+
+## 컨텍스트 (자기완결 프롬프트)
+
+phase-01 에서 server-only `unified-pipeline.ts` + `markdownComponents` 분리 완료 전제. 이 phase 는 `MarkdownRenderer.tsx` 를 server async 로 재작성하고 react-markdown 을 의존성에서 제거. 호출처 (`posts/[...slug]/page.tsx` + `category/[...path]/page.tsx`) 는 이미 server async — 호환 OK.
+
+### 사전 게이트
+
+```bash
+# cwd: <worktree root>
+
+# 1) phase-01 산출물
+test -f src/components/markdown/unified-pipeline.ts
+test -f src/components/markdown/components.tsx
+grep -n "export async function parseMarkdownToHast" src/components/markdown/unified-pipeline.ts
+grep -n "export const markdownComponents" src/components/markdown/components.tsx
+
+# 2) 기존 MarkdownRenderer 사용처 — 모두 server component (async function Page)
+grep -n "async function" src/app/posts/\[...slug\]/page.tsx | head -1   # async page 확인
+grep -n "async function" src/app/category/\[...path\]/page.tsx | head -1
+
+# 3) react-markdown 아직 존재
+grep -n '"react-markdown":' package.json
+```
+
+## 작업 목록 (총 5개)
+
+### 1. `src/components/MarkdownRenderer.tsx` 재작성
+
+기존 285 라인을 약 30-40 라인으로 축소. `"use client"` 제거 + async 함수.
+
+```tsx
+import { Fragment, jsx, jsxs } from "react/jsx-runtime";
+import { toJsxRuntime } from "hast-util-to-jsx-runtime";
+import { parseMarkdownToHast } from "./markdown/unified-pipeline";
+import { markdownComponents } from "./markdown/components";
+
+interface MarkdownRendererProps {
+  content: string;
+  basePath: string;
+}
+
+export async function MarkdownRenderer({ content, basePath }: MarkdownRendererProps) {
+  const tree = await parseMarkdownToHast(content);
+  return (
+    <div className="prose-sm md:prose prose-gray dark:prose-invert max-w-none">
+      {toJsxRuntime(tree, {
+        Fragment,
+        jsx,
+        jsxs,
+        components: markdownComponents,
+      })}
+    </div>
+  );
+}
+```
+
+설계 메모:
+- `"use client"` 완전 제거 (BLG6 — 잘못 마킹됐던 것)
+- `basePath` prop 은 현재 미사용처럼 보이지만 components mapping 안의 `<a>` 핸들러 / 상대 경로 해석에 쓰일 가능성 → phase-01 의 components.tsx 에서 `basePath` 를 클로저로 받아 처리하는 식으로 수정 필요 시 작업 1 안에 같이 처리
+- React 19 + Next.js 16 에서 `react/jsx-runtime` 의 `Fragment` / `jsx` / `jsxs` import 는 정상 (React 18+ 표준)
+
+**basePath 처리**: 기존 `MarkdownRenderer.tsx` 에서 `basePath` 가 어디 쓰이는지 grep 으로 먼저 확인. 만약 components mapping 의 `a` 핸들러에서만 쓰인다면 `markdownComponents` 를 함수형으로 변경:
+
+```ts
+// components.tsx
+export function createMarkdownComponents(basePath: string): Partial<Components> { ... }
+```
+
+그리고 MarkdownRenderer 에서 `components: createMarkdownComponents(basePath)`. 사용 안 되면 prop 자체를 deprecate (단 호출처 시그니처 변경 영향 → 그대로 받고 사용처에서 무시).
+
+### 2. `src/components/MarkdownRenderer.regression-1.test.ts` async 대응
+
+기존 테스트가 `MarkdownRenderer` 를 호출한다면 async 컴포넌트 렌더 패턴으로 변경:
+
+```ts
+// before: render(<MarkdownRenderer content={...} />)
+// after: render(await MarkdownRenderer({ content: ..., basePath: ... }))
+```
+
+vitest 는 async 컴포넌트 호출 결과 (JSX) 를 그대로 render 가능. 만약 testing-library 의 `render` 가 async 컴포넌트를 직접 받지 못하면 `await` 한 결과를 받으면 됨.
+
+테스트 케이스 의도는 모두 보존 (코드 블록 / mermaid / GFM 표 / 헤딩 slug / inline code 등 회귀 방지).
+
+### 3. `package.json` 에서 `react-markdown` 제거
+
+```bash
+# cwd: <worktree root>
+pnpm remove react-markdown
+
+# 검증
+! grep -n '"react-markdown":' package.json
+! grep -rn 'from "react-markdown"' src/
+```
+
+### 4. 호출처 변경 검증 (호환 확인 — 코드 변경 0)
+
+`posts/[...slug]/page.tsx` + `category/[...path]/page.tsx` 는 이미 async server component. JSX 안에서 `<MarkdownRenderer ... />` 를 그대로 사용해도 server component 가 server component 를 자식으로 렌더하는 표준 RSC 패턴 → 변경 불필요.
+
+```bash
+# cwd: <worktree root>
+# 호출 시그니처가 그대로인지 확인 (content + basePath)
+grep -n "<MarkdownRenderer" src/app/posts/\[...slug\]/page.tsx
+grep -n "<MarkdownRenderer" src/app/category/\[...path\]/page.tsx
+```
+
+### 5. 통합 검증
+
+```bash
+# cwd: <worktree root>
+pnpm lint
+pnpm type-check
+pnpm test -- --run
+pnpm build
+
+# build 시 server-only 가드가 client 트리에서 import 되지 않는지 확인 (build 통과면 OK)
+# 만약 server-only 위반이면 build 가 즉시 실패하며 오류 메시지에 "server-only" 명시
+```
+
+## 성공 기준 (기계 명령만)
+
+```bash
+# cwd: <worktree root>
+
+# 1) MarkdownRenderer 가 server component (use client 제거 + async)
+! grep -n '"use client"' src/components/MarkdownRenderer.tsx
+grep -nE "export async function MarkdownRenderer" src/components/MarkdownRenderer.tsx
+
+# 2) react-markdown 의존성 / import 모두 제거
+! grep -n '"react-markdown":' package.json
+! grep -rn 'from "react-markdown"' src/
+
+# 3) hast-util-to-jsx-runtime 사용 + react/jsx-runtime import
+grep -n 'from "hast-util-to-jsx-runtime"' src/components/MarkdownRenderer.tsx
+grep -n 'from "react/jsx-runtime"' src/components/MarkdownRenderer.tsx
+grep -n "toJsxRuntime" src/components/MarkdownRenderer.tsx
+
+# 4) 호출처 시그니처 변경 없음
+grep -n "<MarkdownRenderer content=" src/app/posts/\[...slug\]/page.tsx
+grep -n "<MarkdownRenderer content=" src/app/category/\[...path\]/page.tsx
+
+# 5) MarkdownRenderer.tsx 라인 수 (대폭 축소 확인)
+test "$(wc -l < src/components/MarkdownRenderer.tsx)" -lt 60
+
+# 6) regression test 통과
+pnpm test -- --run src/components/MarkdownRenderer.regression-1.test.ts
+
+# 7) 빌드 + 회귀
+pnpm test -- --run
+pnpm lint
+pnpm type-check
+pnpm build
+
+# 8) 금지사항
+! grep -nE "as any" src/components/MarkdownRenderer.tsx
+! grep -nE "console\.(log|warn|error)" src/components/MarkdownRenderer.tsx
+```
+
+## PHASE_BLOCKED 조건
+
+- `hast-util-to-jsx-runtime` 의 `components` prop 시그니처가 react-markdown 과 호환 안 됨 → 핸들러 내부 `node?.properties?.[...]` 접근 형태 변경 필요. 즉시 보고
+- `pnpm build` 시 `server-only` 가드가 다른 import path 에서 위반 → SearchDialog / 다른 client component 가 MarkdownRenderer 를 import 하는지 확인 (현재 grep 상 없음)
+- regression test 가 깨짐 → 의미 보존 가능한 fix 시도 후 안 되면 보고
+
+## 커밋 제외 (phase 내부)
+
+executor 는 커밋하지 않는다. team-lead 가 일괄 커밋:
+- `feat(markdown): convert MarkdownRenderer to server async component (ADR-020)`
+- `chore(deps): drop react-markdown — replaced by unified async`
