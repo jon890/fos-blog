@@ -43,7 +43,7 @@ export function HomeHero({ postCount, categoryCount, seriesCount, subscriberCoun
           한국어 개발자를 위한
           <br />
           학습 노트
-          <em className="not-italic font-mono" style={{ color: "var(--color-cat-react)" }}>
+          <em className="not-italic font-mono text-[var(--color-cat-react)]">
             (.mdx)
           </em>
           <span className="hero-caret" aria-hidden />

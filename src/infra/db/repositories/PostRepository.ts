@@ -333,7 +333,7 @@ export class PostRepository extends BaseRepository {
 
   async getActivePostCount(): Promise<number> {
     const result = await this.db
-      .select({ count: sql<number>`count(*)` })
+      .select({ count: sql<string>`count(*)` })
       .from(posts)
       .where(eq(posts.isActive, true));
     return Number(result[0]?.count ?? 0);

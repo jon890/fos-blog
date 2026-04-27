@@ -19,7 +19,7 @@ export function HeroMesh({ primaryHue = 195, motion = "default" }: HeroMeshProps
     <div
       aria-hidden
       className={`hero-mesh ${motionClass}`}
-      style={{ "--mesh-primary-hue": primaryHue } as CSSProperties}
+      style={{ "--mesh-primary-hue": String(primaryHue) } as CSSProperties}
     >
       <svg viewBox="0 0 100 60" preserveAspectRatio="none" className="hero-mesh-svg">
         <defs>
