@@ -76,7 +76,7 @@ grep -n "ADR-016" docs/adr.md
 
 위 항목 중 어느 하나라도 실패하면 **PHASE_BLOCKED: PR #76 (rate-limit 1000 hotfix) 미머지**.
 
-## 작업 목록 (총 4개)
+## 작업 목록 (총 5개)
 
 ### 1. `src/proxy.ts` — matcher negative lookahead 확장 (Q1 B)
 
@@ -103,6 +103,7 @@ export const config = {
 기존 `LOCALHOST_IPS Set` 을 함수 기반 `isLocalOrPrivateIp(ip)` 로 교체. `BOT_UA_PATTERN` 확장.
 
 ```ts
+// NaverBot 은 현재 Yeti UA 만 사용하지만, Naver 가 향후 별도 봇명을 도입할 가능성 대비 future-proofing 으로 유지
 const BOT_UA_PATTERN = /Googlebot|Bingbot|NaverBot|Yeti/i;
 
 /**
@@ -239,7 +240,38 @@ it("isLocalOrPrivateIp 단위 — public IPv4 는 false", async () => {
 
 기존 `localhost 127.0.0.1` / `localhost ::1` 케이스도 그대로 통과해야 함 (회귀 방지).
 
-### 4. 통합 검증 + ADR-016 갱신 검토
+**기존 sweep test IP 회귀 방지 (필수)**: `rateLimit.test.ts` 의 MAX_BUCKETS sweep describe 블록 (현재 L108-144) 의 IP 생성식이 `10.${...}` 형태이면 phase 변경 후 `isLocalOrPrivateIp("10.x.x.x") === true` 가 되어 buckets 등록 자체가 안 됨 → sweep 의 OOM 가드 의미가 silent 하게 사라진다. 다음과 같이 변경:
+
+```ts
+// 변경 전 (L125)
+const ip = `10.${Math.floor(i / 65536)}.${Math.floor((i % 65536) / 256)}.${i % 256}`;
+
+// 변경 후 — TEST-NET-3 (203.0.113.0/24) 가 too small 이므로 CGN 대역(100.64.0.0/10) 사용
+const ip = `100.${64 + Math.floor(i / 65536)}.${Math.floor((i % 65536) / 256)}.${i % 256}`;
+```
+
+`100.64.0.0/10` (RFC 6598 CGN 대역) 은 RFC1918/loopback 모두 아님 → `isLocalOrPrivateIp === false`. `newIp = "99.99.99.99"` 도 그대로 유지 (CGN 범위와 충돌 없음).
+
+### 4. ADR-016 갱신 (한도 1000 + 우회 정책 확장)
+
+`docs/adr.md` 의 ADR-016 항목을 phase 변경에 맞춰 갱신. 현재 "localhost(127.0.0.1/::1) 예외" + "Googlebot UA 예외" + 한도 60 으로 기술된 부분을 다음으로 교체:
+
+```md
+## ADR-016. Rate limit 정책
+
+**Decision**:
+- Fixed window 60초/IP, 분당 **1000 요청** (PR #76 hotfix 완화 + plan007-2 본질 fix)
+- **우회 대상**:
+  - localhost: `127.x.x.x`, `::1`, `::ffff:127.x.x.x`, `"localhost"`
+  - RFC1918 사설 대역: `10.0.0.0/8`, `172.16-31.x.x`, `192.168.0.0/16` (+ IPv4-mapped IPv6 형태)
+  - IPv6 ULA: `fc00::/7`
+  - 정상 봇 UA: `Googlebot|Bingbot|NaverBot|Yeti` (Google + Microsoft + Naver SEO)
+- proxy.ts matcher 는 HTML navigation 만 카운트 — `/_next/data` (RSC payload), `/api/*`, root 정적 파일(`*.png|css|js|...`), `sitemap.xml|robots.txt|ads.txt|manifest.json` 모두 제외
+```
+
+자명성 검사: 한도 1000 + 우회 정책 모두 코드에 self-evident → ADR 본문은 "왜" 만 보존 (LAN 내 접속 자연 우회 의도 + 한국 SEO 봇 인덱싱 보장 의도). 수치는 코드 참조.
+
+### 5. 통합 검증
 
 ```bash
 # cwd: <worktree root>
@@ -249,24 +281,6 @@ pnpm type-check
 pnpm test -- --run
 pnpm build
 ```
-
-ADR-016 본문 갱신 필요 여부 확인:
-- 기존 ADR-016 의 "localhost(127.0.0.1/::1) 예외" 문구가 정확하지 않음 → 사실상 RFC1918 + IPv4-mapped 까지 확장
-- "Googlebot UA 예외" → "Google/Bing/Naver SEO bot 예외" 로 업데이트
-- 한도 60 → 1000 (PR #76) 도 ADR 반영
-
-ADR 갱신은 본 phase 의 작업 5 로 진행 (필요 시):
-
-```md
-## ADR-016. Rate limit 정책
-
-**Decision**:
-- Fixed window 60초/IP, 분당 **1000 요청** (PR #76 완화)
-- **우회 대상**: localhost (127.x.x.x, ::1, ::ffff:127.x.x.x, "localhost") + RFC1918 사설 대역 (10/172.16-31/192.168) + IPv6 ULA (fc00::/7) + 정상 봇 UA (Googlebot, Bingbot, NaverBot Yeti)
-- ...
-```
-
-자명성 검사: 한도 1000 + 우회 정책 모두 코드에 self-evident → ADR 본문은 "왜" 만 보존 (LAN 내 접속 자연 우회 의도 + 한국 SEO 봇 인덱싱 보장 의도). 수치는 코드 참조.
 
 ## 성공 기준 (기계 명령만)
 
@@ -304,13 +318,20 @@ grep -n "Bingbot" src/middleware/rateLimit.test.ts
 grep -nE "Yeti|NaverBot" src/middleware/rateLimit.test.ts
 grep -n "isLocalOrPrivateIp" src/middleware/rateLimit.test.ts
 
-# 5) 빌드 + 회귀
+# sweep test IP 회귀 방지 — 10.x.x.x 사용 금지 (RFC1918 우회 후 buckets 등록 안 됨)
+! grep -nE 'const ip = `10\.' src/middleware/rateLimit.test.ts
+grep -nE 'const ip = `100\.' src/middleware/rateLimit.test.ts
+
+# 5) ADR-016 갱신
+grep -nE "1000.*요청|RFC1918|Bingbot|Yeti" docs/adr.md
+
+# 6) 빌드 + 회귀
 pnpm test -- --run
 pnpm lint
 pnpm type-check
 pnpm build
 
-# 6) 금지사항
+# 7) 금지사항
 ! grep -nE "as any" src/middleware/rateLimit.ts src/proxy.ts
 ! grep -nE "console\\.(log|warn|error)" src/middleware/rateLimit.ts src/proxy.ts
 ```
