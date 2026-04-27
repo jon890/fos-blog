@@ -243,7 +243,7 @@ mockup 을 만들어주세요.
 구성:
 - Header (sticky)
 - Hero (Stripe gradient mesh 배경 + 큰 타이포)
-- 카테고리 섹션 (8개 카테고리 grid, "모두 보기 →" 헤더 우측 링크)
+- 카테고리 섹션 (9개 canonical 카테고리 grid, "모두 보기 →" 헤더 우측 링크)
 - 인기 글 섹션 (PostCard × 6, "인기 글 더 보기 →" CTA 버튼 하단)
 - 최근 글 섹션 (PostCard × 6, "최신 글 더 보기 →" CTA 버튼 하단)
 - 통계 섹션 (카테고리 수 / 전체 글 수 / "계속 성장 중" 3-card)

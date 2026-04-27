@@ -1,47 +1,48 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import type { CategoryData } from "@/infra/db/types";
-import { Folder } from "lucide-react";
+import { getCategoryColor, toCanonicalCategory } from "@/lib/category-meta";
 
 interface CategoryCardProps {
   category: CategoryData;
 }
 
-const CATEGORY_ACCENT: Record<string, string> = {
-  java:         "border-l-amber-400 dark:border-l-amber-500",
-  AI:           "border-l-purple-400 dark:border-l-purple-500",
-  database:     "border-l-orange-400 dark:border-l-orange-500",
-  devops:       "border-l-red-400 dark:border-l-red-500",
-  javascript:   "border-l-yellow-400 dark:border-l-yellow-500",
-  react:        "border-l-cyan-400 dark:border-l-cyan-500",
-  algorithm:    "border-l-green-400 dark:border-l-green-500",
-  architecture: "border-l-blue-400 dark:border-l-blue-500",
-  interview:    "border-l-pink-400 dark:border-l-pink-500",
-  network:      "border-l-indigo-400 dark:border-l-indigo-500",
-  kafka:        "border-l-rose-400 dark:border-l-rose-500",
-  internet:     "border-l-teal-400 dark:border-l-teal-500",
-};
-
 export function CategoryCard({ category }: CategoryCardProps) {
-  const accent = CATEGORY_ACCENT[category.slug] ?? "border-l-gray-400 dark:border-l-gray-600";
+  const catColor = getCategoryColor(category.slug);
+  const canonical = toCanonicalCategory(category.slug);
+  const inlineStyle = { "--cat-color": catColor } as CSSProperties;
 
   return (
     <Link
       href={`/category/${encodeURIComponent(category.slug)}`}
-      className={`group block p-3 md:p-5 rounded-xl border border-l-4 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-300 ${accent}`}
+      style={inlineStyle}
+      className="group relative block overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)] p-4 transition-[border-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--color-border-strong)] md:p-5"
     >
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl md:text-3xl">{category.icon}</span>
-          <div>
-            <h3 className="font-semibold text-base md:text-lg text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+      <span
+        className="absolute inset-y-0 left-0 w-[2px] opacity-70 transition-opacity duration-200 group-hover:opacity-100"
+        style={{ background: "var(--cat-color)" }}
+        aria-hidden
+      />
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          {category.icon && (
+            <span className="text-2xl md:text-3xl">{category.icon}</span>
+          )}
+          <div className="min-w-0">
+            <h3 className="truncate text-base font-semibold tracking-tight text-[var(--color-fg-primary)] transition-colors duration-150 group-hover:text-[var(--color-brand-400)] md:text-lg">
               {category.name}
             </h3>
-            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
-              {category.count}개의 글
+            <p className="mt-0.5 font-mono text-[11px] text-[var(--color-fg-muted)]">
+              {category.count.toLocaleString()} posts
             </p>
           </div>
         </div>
-        <Folder className="w-5 h-5 text-gray-400 dark:text-gray-600 group-hover:text-blue-500 transition-colors" />
+        <span
+          className="font-mono text-[10px] uppercase tracking-[0.06em]"
+          style={{ color: "var(--cat-color)" }}
+        >
+          {canonical}
+        </span>
       </div>
     </Link>
   );
