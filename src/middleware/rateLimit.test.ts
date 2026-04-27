@@ -103,6 +103,80 @@ describe("rateLimit — fixed window", () => {
     expect(rateLimit(reqA)?.status).toBe(429); // A 차단
     expect(rateLimit(reqB)).toBeNull(); // B 독립 — 통과
   });
+
+  it("IPv4-mapped IPv6 localhost (::ffff:127.0.0.1) 은 항상 null", async () => {
+    const { rateLimit, MAX_REQUESTS_PER_WINDOW } = await import("./rateLimit");
+    for (let i = 0; i < MAX_REQUESTS_PER_WINDOW + 10; i++) {
+      expect(rateLimit(makeRequest("::ffff:127.0.0.1"))).toBeNull();
+    }
+  });
+
+  it("RFC1918 192.168.x.x 우회", async () => {
+    const { rateLimit, MAX_REQUESTS_PER_WINDOW } = await import("./rateLimit");
+    for (let i = 0; i < MAX_REQUESTS_PER_WINDOW + 10; i++) {
+      expect(rateLimit(makeRequest("192.168.1.50"))).toBeNull();
+    }
+  });
+
+  it("RFC1918 10.x.x.x 우회", async () => {
+    const { rateLimit, MAX_REQUESTS_PER_WINDOW } = await import("./rateLimit");
+    for (let i = 0; i < MAX_REQUESTS_PER_WINDOW + 10; i++) {
+      expect(rateLimit(makeRequest("10.0.5.7"))).toBeNull();
+    }
+  });
+
+  it("RFC1918 172.16-31.x.x 우회 (172.20.x.x)", async () => {
+    const { rateLimit, MAX_REQUESTS_PER_WINDOW } = await import("./rateLimit");
+    for (let i = 0; i < MAX_REQUESTS_PER_WINDOW + 10; i++) {
+      expect(rateLimit(makeRequest("172.20.10.5"))).toBeNull();
+    }
+  });
+
+  it("172.16 미만 (172.15.x.x) 은 사설 대역 아님 — 차단됨", async () => {
+    const { rateLimit, MAX_REQUESTS_PER_WINDOW } = await import("./rateLimit");
+    const req = makeRequest("172.15.1.1");
+    for (let i = 0; i < MAX_REQUESTS_PER_WINDOW; i++) rateLimit(req);
+    expect(rateLimit(req)?.status).toBe(429);
+  });
+
+  it("172.32 이상 (172.32.x.x) 은 사설 대역 아님 — 차단됨", async () => {
+    const { rateLimit, MAX_REQUESTS_PER_WINDOW } = await import("./rateLimit");
+    const req = makeRequest("172.32.1.1");
+    for (let i = 0; i < MAX_REQUESTS_PER_WINDOW; i++) rateLimit(req);
+    expect(rateLimit(req)?.status).toBe(429);
+  });
+
+  it("Bingbot UA 는 항상 null", async () => {
+    const { rateLimit, MAX_REQUESTS_PER_WINDOW } = await import("./rateLimit");
+    for (let i = 0; i < MAX_REQUESTS_PER_WINDOW + 10; i++) {
+      expect(
+        rateLimit(makeRequest("1.2.3.4", "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)"))
+      ).toBeNull();
+    }
+  });
+
+  it("NaverBot Yeti UA 는 항상 null", async () => {
+    const { rateLimit, MAX_REQUESTS_PER_WINDOW } = await import("./rateLimit");
+    for (let i = 0; i < MAX_REQUESTS_PER_WINDOW + 10; i++) {
+      expect(
+        rateLimit(makeRequest("1.2.3.4", "Mozilla/5.0 (compatible; Yeti/1.1; +http://naver.me/spd)"))
+      ).toBeNull();
+    }
+  });
+
+  it("isLocalOrPrivateIp 단위 — IPv6 ULA (fc/fd) 우회", async () => {
+    const { isLocalOrPrivateIp } = await import("./rateLimit");
+    expect(isLocalOrPrivateIp("fc00::1")).toBe(true);
+    expect(isLocalOrPrivateIp("fd12:3456:789a::1")).toBe(true);
+    expect(isLocalOrPrivateIp("2001:db8::1")).toBe(false); // global IPv6 — 차단
+  });
+
+  it("isLocalOrPrivateIp 단위 — public IPv4 는 false", async () => {
+    const { isLocalOrPrivateIp } = await import("./rateLimit");
+    expect(isLocalOrPrivateIp("8.8.8.8")).toBe(false);
+    expect(isLocalOrPrivateIp("1.1.1.1")).toBe(false);
+    expect(isLocalOrPrivateIp("203.0.113.42")).toBe(false);
+  });
 });
 
 describe("rateLimit — 메모리 가드 (MAX_BUCKETS sweep)", () => {
@@ -122,7 +196,7 @@ describe("rateLimit — 메모리 가드 (MAX_BUCKETS sweep)", () => {
 
     // MAX_BUCKETS 개 IP 를 현재 윈도우에서 채움
     for (let i = 0; i < MAX_BUCKETS; i++) {
-      const ip = `10.${Math.floor(i / 65536)}.${Math.floor((i % 65536) / 256)}.${i % 256}`;
+      const ip = `100.${64 + Math.floor(i / 65536)}.${Math.floor((i % 65536) / 256)}.${i % 256}`;
       rateLimit(makeRequest(ip));
     }
 
