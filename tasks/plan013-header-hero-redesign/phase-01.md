@@ -130,7 +130,7 @@ export function HeroMesh({ primaryHue = 195, motion = "default" }: HeroMeshProps
 - `prefers-reduced-motion: reduce` 는 globals.css 에서 자동 처리
 - viewBox 100x60 + preserveAspectRatio="none" 으로 컨테이너 fill (SVG 의 일반 패턴)
 
-### 2. `src/components/HomeHero.tsx` 신규 (server)
+### 2. `src/components/HomeHero.tsx` 신규 (server) — Round 3 home.jsx 톤
 
 ```tsx
 import { HeroMesh } from "./HeroMesh";
@@ -138,16 +138,21 @@ import { HeroMesh } from "./HeroMesh";
 interface HomeHeroProps {
   postCount: number;
   categoryCount: number;
-  lastUpdate: Date | null;
-  githubRepo: string;  // "jon890/fos-study"
+  /** 시리즈 수 — issue #72 미구현이면 null. null 이면 stat 항목 자리에 "—" placeholder */
+  seriesCount: number | null;
+  /** 뉴스레터 구독자 수 — Newsletter 미구현이면 null. null 이면 "—" placeholder */
+  subscriberCount: number | null;
 }
 
-function formatLastUpdate(date: Date | null): string {
-  if (!date) return "";
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
+function formatStatValue(n: number | null): string {
+  if (n === null) return "—";
+  if (n >= 1000) {
+    return (n / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+  }
+  return n.toLocaleString();
 }
 
-export function HomeHero({ postCount, categoryCount, lastUpdate, githubRepo }: HomeHeroProps) {
+export function HomeHero({ postCount, categoryCount, seriesCount, subscriberCount }: HomeHeroProps) {
   return (
     <header className="hero relative overflow-hidden border-b border-[var(--color-border-subtle)] px-6 pt-20 pb-16 md:pt-28 md:pb-24">
       <HeroMesh primaryHue={195} />
@@ -162,47 +167,44 @@ export function HomeHero({ postCount, categoryCount, lastUpdate, githubRepo }: H
         }}
       />
 
-      <div className="container relative z-[2] mx-auto max-w-[880px]">
-        <div className="hero-eyebrow font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-fg-muted)]">
-          FOS-BLOG · 한국어 개발 학습 · 2026
+      <div className="container relative z-[2] mx-auto max-w-[1180px]">
+        {/* eyebrow + 1px brand line prefix (mockup .h-hero .eyebrow::before) */}
+        <div className="hero-eyebrow inline-flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-fg-muted)]">
+          <span aria-hidden className="block h-px w-6 bg-[var(--color-brand-400)]" />
+          <span>FOS-WORLD · DEV NOTES · 2026</span>
         </div>
 
-        <h1 className="mt-5 max-w-[20ch] text-[34px] font-semibold leading-[1.1] tracking-tight text-[var(--color-fg-primary)] md:text-[56px]">
-          기록은 가장 빠른 학습입니다
-          <em className="not-italic font-mono text-[var(--color-brand-400)]"> (.posts)</em>
+        <h1 className="mt-5 max-w-[22ch] text-[36px] font-semibold leading-[1.05] tracking-tight text-[var(--color-fg-primary)] md:text-[64px]">
+          한국어 개발자를 위한
+          <br />
+          학습 노트
+          <em className="not-italic font-mono" style={{ color: "oklch(0.74 0.09 220)" }}>
+            (.mdx)
+          </em>
           <span className="hero-caret" aria-hidden />
         </h1>
 
-        <p className="mt-6 max-w-[56ch] text-[16px] leading-relaxed text-[var(--color-fg-secondary)] md:text-[18px]">
-          개발하면서 마주친 문제와 해소 과정을 글로 남깁니다. JavaScript / TypeScript /
-          알고리즘 / DB / DevOps 의 학습 기록을 한 곳에 모았어요.
+        <p className="mt-6 max-w-[60ch] text-[16px] leading-relaxed text-[var(--color-fg-secondary)] md:text-[18px]">
+          AI · 알고리즘 · DB · DevOps · Java/Spring · JS/TS · React · Next.js · System.
+          공부하면서 기록하고, 기록하면서 다시 배웁니다.
         </p>
 
         <dl className="hero-meta mt-10 grid grid-cols-2 gap-x-8 gap-y-4 font-mono text-[12px] md:grid-cols-4">
           <div>
             <dt className="text-[var(--color-fg-muted)] uppercase tracking-[0.06em]">posts</dt>
-            <dd className="mt-1 text-[var(--color-fg-primary)]">{postCount.toLocaleString()}</dd>
+            <dd className="mt-1 text-[24px] font-semibold tracking-tight text-[var(--color-fg-primary)]">{postCount.toLocaleString()}</dd>
           </div>
           <div>
             <dt className="text-[var(--color-fg-muted)] uppercase tracking-[0.06em]">categories</dt>
-            <dd className="mt-1 text-[var(--color-fg-primary)]">{categoryCount}</dd>
+            <dd className="mt-1 text-[24px] font-semibold tracking-tight text-[var(--color-fg-primary)]">{categoryCount}</dd>
           </div>
           <div>
-            <dt className="text-[var(--color-fg-muted)] uppercase tracking-[0.06em]">last update</dt>
-            <dd className="mt-1 text-[var(--color-fg-primary)]">{formatLastUpdate(lastUpdate)}</dd>
+            <dt className="text-[var(--color-fg-muted)] uppercase tracking-[0.06em]">series</dt>
+            <dd className="mt-1 text-[24px] font-semibold tracking-tight text-[var(--color-fg-primary)]">{formatStatValue(seriesCount)}</dd>
           </div>
           <div>
-            <dt className="text-[var(--color-fg-muted)] uppercase tracking-[0.06em]">github</dt>
-            <dd className="mt-1">
-              <a
-                href={`https://github.com/${githubRepo}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[var(--color-brand-400)] hover:underline"
-              >
-                {githubRepo}
-              </a>
-            </dd>
+            <dt className="text-[var(--color-fg-muted)] uppercase tracking-[0.06em]">subscribers</dt>
+            <dd className="mt-1 text-[24px] font-semibold tracking-tight text-[var(--color-fg-primary)]">{formatStatValue(subscriberCount)}</dd>
           </div>
         </dl>
       </div>
@@ -211,11 +213,19 @@ export function HomeHero({ postCount, categoryCount, lastUpdate, githubRepo }: H
 }
 ```
 
-설계 메모:
-- 모든 색 토큰화 (mockup 의 `<em>` 강조는 brand-400 mono 색)
-- caret 깜빡임은 globals.css 의 `.hero-caret` 룰 + keyframes
-- `<dl>` 4 항목 (Q4 A) — server side 에서 props 로 데이터 받음 (page.tsx 가 repository 호출)
-- max-width 880px (mockup 880px 그대로, plan011 ArticleHero 와 일관)
+설계 메모 (Round 3 home.jsx 톤 반영):
+- **eyebrow 1px brand line prefix** (mockup `.h-hero .eyebrow::before`) — `<span>` 24x1 brand 색
+- **h1 `<em>(.mdx)`** — react hue 220 blue 톤 (`oklch(0.74 0.09 220)`, brand-400 cyan 아님). mockup 의 `.h-hero h1 em` 색 정확히 매칭
+- **lead 카피 변경** — 카테고리 9개 inline 나열 (mockup 패턴, "AI · 알고리즘 · DB · DevOps · ...")
+- **stats 4 항목** = posts / categories / series / subscribers
+  - **series**: issue #72 미구현 → page.tsx 가 `null` 전달 → "—" placeholder
+  - **subscribers**: Newsletter 미구현 → page.tsx 가 `null` 전달 → "—" placeholder
+  - 향후 series / Newsletter 구현 시 page.tsx 에서 실제 값 전달, props 시그니처 변경 없음
+  - `formatStatValue` 가 1000+ 자동 `2.4k` 축약 (mockup 표기와 일치)
+- **stats 숫자 크기 24px font-semibold** (mockup `.h-hero .stats .stat .n` 톤)
+- **max-width 1180px** (mockup 의 `.h-hero-inner max-width: 1180px` — 더 넓은 stage)
+- **h1 64px (md+)** — mockup 톤 (이전 56px 보다 크게)
+- caret 깜빡임은 globals.css 의 `.hero-caret` 룰 (변경 없음)
 
 ### 3. `src/components/Header.tsx` 토큰 정렬 + mono nav 라벨
 
@@ -229,7 +239,7 @@ a) **brand**: `📚 FOS Study` → mockup `.brand-mark .dot` 패턴
     className="h-2 w-2 rounded-full bg-[var(--color-brand-400)]"
     style={{ boxShadow: "0 0 8px var(--color-brand-400)" }}
   />
-  fos-blog<span className="text-[var(--color-fg-muted)]">/study</span>
+  fos-blog<span className="text-[var(--color-fg-muted)]">/dev-notes</span>
 </Link>
 ```
 
@@ -264,8 +274,11 @@ const [categories, recentPosts, popularPosts, postCountTotal] = await Promise.al
   post.getActivePostCount(),  // 신규 — repository 추가 필요 (없으면 작업 5에서 추가)
 ]);
 
-const lastUpdate = recentPosts[0]?.updatedAt ?? recentPosts[0]?.createdAt ?? null;
 const categoryCount = categories.length;
+// series / subscribers 는 issue #72 / Newsletter 구현 후 실제 값 전달.
+// 미구현 동안 null → HomeHero 가 "—" placeholder 렌더
+const seriesCount: number | null = null;
+const subscriberCount: number | null = null;
 
 // JSX:
 return (
@@ -274,8 +287,8 @@ return (
     <HomeHero
       postCount={postCountTotal}
       categoryCount={categoryCount}
-      lastUpdate={lastUpdate}
-      githubRepo="jon890/fos-study"
+      seriesCount={seriesCount}
+      subscriberCount={subscriberCount}
     />
     <main className="container mx-auto px-4 py-12 md:py-16">
       {/* 기존 카테고리/Popular/Recent 섹션 그대로 */}
@@ -397,7 +410,10 @@ test -f src/components/HomeHero.tsx
 grep -n "export function HeroMesh" src/components/HeroMesh.tsx
 grep -n "export function HomeHero" src/components/HomeHero.tsx
 grep -n "primaryHue" src/components/HeroMesh.tsx
-grep -nE "postCount|categoryCount|lastUpdate" src/components/HomeHero.tsx | wc -l  # = 3
+grep -nE "postCount|categoryCount|seriesCount|subscriberCount" src/components/HomeHero.tsx | wc -l  # >= 4
+grep -n 'oklch(0.74 0.09 220)' src/components/HomeHero.tsx  # h1 <em> blue 색 (mockup react hue)
+grep -n 'FOS-WORLD · DEV NOTES' src/components/HomeHero.tsx  # eyebrow 카피 mockup 톤
+grep -n 'fos-blog/dev-notes' src/components/Header.tsx  # brand mark 변경
 
 # 2) page.tsx 가 HomeHero 사용 + 기존 Hero Section 제거
 grep -n "HomeHero" src/app/page.tsx
