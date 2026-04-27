@@ -1,12 +1,14 @@
 {
   "name": "plan011-article-page-redesign",
   "description": "Claude Design Round 2 mockup 의 Artwork 컴포넌트 기반 글 상세 페이지 리디자인 — Hero (mesh + tag + title + lead + meta) + 3-col body grid + sticky TOC (in-place 리디자인) + Header 통합 reading progress + prose mockup 톤. plan009 (tokens) + plan010 (category-meta) 머지 완료를 전제. series/tags/prev-next 는 issue #72 로 분리.",
-  "status": "pending",
+  "status": "completed",
   "created_at": "2026-04-27",
+  "completed_at": "2026-04-27",
   "total_phases": 1,
   "related_docs": [
     "docs/adr.md",
-    "docs/design-inspiration.md"
+    "docs/design-inspiration.md",
+    "docs/pages/post-detail.md"
   ],
   "depends_on": [
     "plan009-design-tokens-foundation",
@@ -18,7 +20,7 @@
       "file": "phase-01.md",
       "title": "ArticleHero + 3-col body + TOC 리디자인 + Header reading progress + prose 토큰",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }

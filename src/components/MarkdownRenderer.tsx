@@ -196,7 +196,7 @@ export function MarkdownRenderer({ content, basePath }: MarkdownRendererProps) {
   };
 
   return (
-    <article className="prose-sm md:prose prose-gray dark:prose-invert max-w-none">
+    <div className="prose-sm md:prose prose-gray dark:prose-invert max-w-none">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSlug, rehypeHighlight, rehypeRaw]}
@@ -204,6 +204,6 @@ export function MarkdownRenderer({ content, basePath }: MarkdownRendererProps) {
       >
         {content}
       </ReactMarkdown>
-    </article>
+    </div>
   );
 }
