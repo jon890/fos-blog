@@ -25,7 +25,9 @@ export function CategoryCard({ category }: CategoryCardProps) {
       />
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="text-2xl md:text-3xl">{category.icon}</span>
+          {category.icon && (
+            <span className="text-2xl md:text-3xl">{category.icon}</span>
+          )}
           <div className="min-w-0">
             <h3 className="truncate text-base font-semibold tracking-tight text-[var(--color-fg-primary)] transition-colors duration-150 group-hover:text-[var(--color-brand-400)] md:text-lg">
               {category.name}

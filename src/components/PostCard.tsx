@@ -141,9 +141,7 @@ export function PostCard({
   );
 }
 
-function formatDate(date: Date | string | null | undefined): string {
-  if (!date) return "";
-  const d = typeof date === "string" ? new Date(date) : date;
-  if (Number.isNaN(d.getTime())) return "";
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+function formatDate(date: Date | null | undefined): string {
+  if (!date || Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
 }
