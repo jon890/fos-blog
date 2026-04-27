@@ -36,7 +36,7 @@ export default [
     },
   },
   {
-    files: ["*.config.{js,mjs,cjs}", "*.config.*.{js,mjs,cjs}"],
+    files: ["*.config.{js,mjs,cjs}", "*.config.*.{js,mjs,cjs}", "scripts/**/*.ts"],
     languageOptions: {
       globals: {
         module: "readonly",
@@ -44,10 +44,11 @@ export default [
         __dirname: "readonly",
         __filename: "readonly",
         process: "readonly",
+        console: "readonly",
       },
     },
   },
   {
-    ignores: [".next/**", "node_modules/**", "out/**", "build/**"],
+    ignores: [".next/**", "node_modules/**", "out/**", "build/**", "dist/**"],
   },
 ];

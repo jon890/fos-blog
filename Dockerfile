@@ -36,6 +36,9 @@ ENV SKIP_ENV_VALIDATION=true
 # Build the application
 RUN pnpm build
 
+# Compile migrate script
+RUN pnpm tsc --project tsconfig.scripts.json
+
 # Production stage
 FROM node:22-alpine AS runner
 
@@ -57,6 +60,10 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy migration script and artifacts
+COPY --from=builder --chown=nextjs:nodejs /app/dist/migrate.js ./migrate.js
+COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
+
 USER nextjs
 
 EXPOSE 3000
@@ -64,4 +71,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "node migrate.js && node server.js"]
