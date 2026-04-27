@@ -37,7 +37,8 @@
 | Component | Role |
 |-----------|------|
 | `ArticleHero` | Hero 영역 — mesh 그라디언트 (카테고리 hue 변형 + plan009 토큰) + breadcrumb + 카테고리 art-tag + 제목 + 리드 + meta row (date · readtime · views) |
-| `MarkdownRenderer` | 마크다운 본문 렌더링 (GFM, mermaid, syntax highlight). 외부 wrapper 는 `<div>` (글 페이지에서 article 중첩 회피) |
+| `MarkdownRenderer` | 마크다운 본문 렌더링 (GFM, mermaid, syntax highlight via rehype-pretty-code + shiki dual theme). 외부 wrapper 는 `<div>` (글 페이지에서 article 중첩 회피). `components.figure` 핸들러가 pretty-code 의 figure 를 받아 `<CodeCard>` 로 교체. mermaid 는 `data-language === "mermaid"` 검사로 우회 (`<Mermaid>` 직접 반환) |
+| `CodeCard` | rehype-pretty-code 가 생성한 figure 코드 블록을 받아 frame (filename header / 언어 배지 / copy 버튼) 으로 wrap 하는 client component. shadcn Button (variant=ghost size=xs) + clipboard API + 2초 idle 복귀 + `aria-live="polite"` 스크린리더 통지 (plan012) |
 | `TableOfContents` | 사이드바 목차. mono 톤 + 번호 prefix (`01`/`02`) + brand 좌측 라인 + active highlight + sticky top-20. **H2 만 표시** (page.tsx 에서 `level === 2` filter) |
 | `ArticleFooter` | `frontmatter.tags` 가 있는 경우만 렌더되는 태그 칩 영역 (graceful fallback) |
 | `Comments` | 댓글 섹션 (postPath 전달) |
@@ -121,15 +122,16 @@
 - `src/components/ArticleHero.tsx`
 - `src/components/ArticleFooter.tsx`
 - `src/components/MarkdownRenderer.tsx`
+- `src/components/CodeCard.tsx` — 코드 블록 frame wrapper (plan012)
 - `src/components/TableOfContents.tsx`
 - `src/components/Header.tsx` — `/posts/*` reading progress
 - `src/components/Comments.tsx`
 - `src/components/JsonLd.tsx`
 - `src/infra/db/repositories/PostRepository.ts`
 - `src/infra/db/repositories/VisitRepository.ts` — `getVisitCount(pagePath)`
-- `src/lib/markdown.ts`
+- `src/lib/markdown.ts` — 본문 처리 + plan012 hast 헬퍼 (`extractRawText` / `findChildText` / `findCodeProp`)
 - `src/lib/category-meta.ts` — `getCategoryColor` / `getCategoryHue` / `toCanonicalCategory` (plan010)
-- `src/app/globals.css` — plan009 토큰 + plan011 prose 확장 (H2 counter / blockquote QUOTE / inline code / mermaid 격리)
+- `src/app/globals.css` — plan009 토큰 + plan011 prose 확장 (H2 counter / blockquote QUOTE / inline code / mermaid 격리) + plan012 코드 블록 frame (`.code-card` / shiki dual theme)
 
 ---
 
