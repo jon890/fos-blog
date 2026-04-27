@@ -478,17 +478,31 @@ executor 가 phase 실패 보고 시:
 
 ### 누적 위치 라우팅
 
-| 종류 | 위치 |
-|---|---|
-| critic 도메인 패턴 (BLG/FE/CLI) | `.claude/skills/_shared/common-critic-patterns.md` |
-| build-with-teams 자체 프로세스 결함 | 이 SKILL.md (해당 섹션에 1-2줄) |
-| 도메인 의사결정 | `docs/adr.md` |
-| AI 에이전트 컨텍스트 | `CLAUDE.md` / `<dir>/AGENTS.md` |
+| 종류 | 트리거 (어떤 사고/관찰) | 누적 위치 | 형식 / 섹션 |
+|---|---|---|---|
+| critic 반복 지적 패턴 | critic 이 동일 결함 타입을 2회+ 지적 | `.claude/skills/_shared/common-critic-patterns.md` | `### P{N}.` (Bad / Good / Why / How to apply 4-section) |
+| build-with-teams 프로세스 결함 | sub-agent 협업 / 게이트 / worktree 절차 자체에서 사고 발생 | 이 SKILL.md | 해당 섹션 (예: "팀원 자발적 실행 방지", "executor cwd 격리") 끝에 1-2줄 |
+| 도메인 의사결정 | "왜 X 를 선택했는가" 가 코드만 봐서는 추론 불가 + ADR 자명성 게이트 통과 | `docs/adr.md` | `## ADR-XXX` (결정 / 맥락 / 대안 기각 구조) |
+| AI 에이전트 컨텍스트 | 프로젝트 전반 코딩 규칙 / 스택 / 레이어 / 금지사항 변경 | `CLAUDE.md` / `<dir>/AGENTS.md` | 기존 섹션 갱신 또는 신규 1-2줄 |
+| 페이지별 상세 | 특정 page.tsx 의 흐름 / 컴포넌트 / Data 변경 | `docs/pages/{page}.md` | Components / Data / Layout 표 갱신 |
+| 일회용 메모 (다음 plan 동안만 유효) | 재발 가능성 낮지만 잠시 잊지 않을 정보 | (누적 금지 — 사용자 보고로 끝) | — |
 
 ### 누적 가치 판단 기준
 
-- ✅ 누적: 패턴/규약/프로세스 결함, 같은 실수 반복 가능성 있음 (e.g. NJS15→16 mental model 잔재, plan completed 마킹 사고, agent self-shutdown 패턴)
-- ❌ 누적 금지: 한 번 실수, 일반 코딩 디테일 (오타, 카운트 오류, 일반 Vitest fake timer 누출 등)
+| 기준 | ✅ 누적 | ❌ 누적 금지 |
+|---|---|---|
+| **재발 가능성** | 패턴 / 규약 / 프로세스 결함, 같은 실수 반복 가능 | 한 번 실수 (단순 오타, 카운트 오류) |
+| **추상화 정도** | 1-2 단어로 패턴화 가능 (e.g. "agent self-shutdown 패턴", "SVG presentation attribute var() 미해결") | 매우 구체적 1회성 (e.g. "어제 plan013 의 hero 색상 잘못 잡음") |
+| **검증 가능성** | grep / test / build 등 기계 명령으로 재발 시 즉시 검출 가능 | 사람의 주관적 판단에만 의존 |
+| **scope** | critic / executor / docs-verifier 의 일반 행동에 영향 | 한 plan 의 task 본문에서만 의미 |
+
+**관찰 사례** (이미 누적된 fos-blog 고유 사고):
+- NJS15 → 16 mental model 잔재 (proxy.ts 규약 위반)
+- plan completed 마킹 ↔ 머지 정합 사고 (재실행 사고)
+- agent self-shutdown 패턴 (code-reviewer / docs-verifier idle 후 자체 종료)
+- critic v2 재평가 시 v1 재전송 사고
+- silent 테스트 회귀 (rate-limit 우회 확장 시 기존 sweep test IP 흡수)
+- branch 확인 누락 commit 사고 (PR 작업 브랜치에 무관 commit 박힘)
 
 ### team-lead 보고 의무
 
