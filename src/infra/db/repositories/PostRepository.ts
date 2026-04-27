@@ -330,4 +330,12 @@ export class PostRepository extends BaseRepository {
       count: Number(r.count),
     }));
   }
+
+  async getActivePostCount(): Promise<number> {
+    const result = await this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(posts)
+      .where(eq(posts.isActive, true));
+    return Number(result[0]?.count ?? 0);
+  }
 }
