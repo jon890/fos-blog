@@ -7,12 +7,30 @@ import { SearchDialog } from "./SearchDialog";
 import { Book, Github, Home, Menu, X, Search, PanelLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSidebar } from "./SidebarContext";
+import type { CSSProperties } from "react";
 
 export function Header() {
   const pathname = usePathname();
   const { toggle: toggleSidebar } = useSidebar();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const isArticle = pathname?.startsWith("/posts/");
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (!isArticle) {
+      setProgress(0);
+      return;
+    }
+    const onScroll = () => {
+      const max =
+        document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(max > 0 ? Math.min(1, window.scrollY / max) : 0);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [isArticle]);
 
   // Cmd/Ctrl + K 단축키로 검색 열기
   useEffect(() => {
@@ -40,7 +58,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 w-full bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
@@ -153,6 +171,24 @@ export function Header() {
 
       {/* Search Dialog */}
       <SearchDialog isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+
+      {/* Reading progress — replaces static border-b */}
+      <div
+        aria-hidden
+        className="absolute bottom-0 left-0 h-px w-full bg-[var(--color-border-subtle)]"
+      />
+      {isArticle && (
+        <div
+          aria-hidden
+          className="absolute bottom-0 left-0 h-px bg-[var(--color-brand-400)] transition-[width] duration-75 ease-linear"
+          style={
+            {
+              width: `${progress * 100}%`,
+              boxShadow: "0 0 8px var(--color-brand-400)",
+            } as CSSProperties
+          }
+        />
+      )}
     </header>
   );
 }
