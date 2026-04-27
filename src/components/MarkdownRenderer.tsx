@@ -25,7 +25,11 @@ import {
 
 type HastChild = {
   type: string;
-  properties?: { className?: string[]; [key: string]: unknown };
+  properties?: {
+    className?: string[];
+    "data-language"?: string;
+    [key: string]: unknown;
+  };
 };
 
 /**
@@ -80,21 +84,22 @@ export function MarkdownRenderer({ content, basePath }: MarkdownRendererProps) {
       const isPrettyCodeFigure =
         hastNode?.properties?.["data-rehype-pretty-code-figure"] !== undefined;
 
-      if (!isPrettyCodeFigure) {
-        // 일반 figure (markdown image caption 등) 는 그대로 렌더
+      if (!isPrettyCodeFigure || !hastNode) {
+        // 일반 figure (markdown image caption 등) 또는 hastNode 부재
+        // (TypeScript 타입 좁히기용 명시 가드) — 원본 그대로 렌더
         return <figure {...props}>{children}</figure>;
       }
 
-      const language = findCodeProp(hastNode!, "data-language");
+      const language = findCodeProp(hastNode, "data-language");
 
       // mermaid 블록 → raw text 추출 후 Mermaid 컴포넌트로 라우팅
       if (language === "mermaid") {
-        const chartText = extractRawText(hastNode!).trim();
+        const chartText = extractRawText(hastNode).trim();
         return <Mermaid chart={chartText} />;
       }
 
-      const filename = findChildText(hastNode!, "figcaption");
-      const rawCode = extractRawText(hastNode!).trim();
+      const filename = findChildText(hastNode, "figcaption");
+      const rawCode = extractRawText(hastNode).trim();
       const variant: "code" | "diff" | "terminal" =
         language === "diff"
           ? "diff"
