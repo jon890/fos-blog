@@ -68,6 +68,10 @@ grep -n -- "--color-cat-system" src/app/globals.css
 test -f src/lib/category-meta.ts
 grep -n "export function getCategoryHue" src/lib/category-meta.ts
 
+# C1 사전 확인: visit count fetch 경로 — 신규 method 만들 필요 없음
+! grep -nE "\\bvisitCount\\b" src/infra/db/schema/posts.ts   # posts 스키마엔 visitCount 없음
+grep -n "getVisitCount" src/infra/db/repositories/VisitRepository.ts   # 기존 메서드 재사용
+
 # 2) 기존 컴포넌트 + 유틸 위치
 test -f src/app/posts/\[...slug\]/page.tsx
 test -f src/components/TableOfContents.tsx
@@ -88,7 +92,9 @@ tar xzOf ~/.claude/projects/-Users-nhn-personal-fos-blog/d11b8756-7896-451b-932e
 
 `/tmp/components-1.jsx` 의 `Artwork` 함수 + `/tmp/components.css` 의 `.art-*` (라인 30-235 범위) 가 source of truth. 코드는 그대로 복사 금지 — fos-blog 의 React/Next 패턴으로 재구성.
 
-## 작업 목록 (총 5개)
+## 작업 목록 (총 7개) — 단일 phase 정당화
+
+> CLAUDE.md "작업 항목 5개 이하" 규약을 검토했지만, 본 plan011 은 **Round 2 mockup 의 단일 시각 응집체** (Hero+grid+TOC+Header progress+prose 가 한 화면에서 같이 보여야 디자인 의도가 성립) 라 PR 단위로 쪼개면 중간 상태 (Hero 만 있고 grid 미적용 등) 가 노출되어 사용자에게 더 큰 시각 회귀로 보임. 따라서 **단일 phase 유지** 하되 작업을 7 항목으로 펼쳐 각 항목별 독립 검증 명령을 보장. critic M1 지적에 따른 표기 정정.
 
 ### 1. `src/components/ArticleHero.tsx` 신규
 
@@ -140,8 +146,10 @@ export function ArticleHero({
         aria-hidden
         className="pointer-events-none absolute inset-0 z-0 blur-[40px] saturate-[140%]"
         style={{
+          // C2 fix: `var(...) / 0.xx` shorthand 는 valid CSS 가 아님.
+          // color-mix() 로 alpha 합성. 모든 stop 동일 패턴.
           background:
-            "radial-gradient(60% 80% at 20% 20%, var(--mesh-stop-cat) / 0.45, transparent 60%), radial-gradient(50% 70% at 80% 30%, var(--mesh-stop-03) / 0.32, transparent 60%), radial-gradient(50% 70% at 50% 80%, var(--mesh-stop-02) / 0.35, transparent 60%)",
+            "radial-gradient(60% 80% at 20% 20%, color-mix(in oklch, var(--mesh-stop-cat) 45%, transparent), transparent 60%), radial-gradient(50% 70% at 80% 30%, color-mix(in oklch, var(--mesh-stop-03) 32%, transparent), transparent 60%), radial-gradient(50% 70% at 50% 80%, color-mix(in oklch, var(--mesh-stop-02) 35%, transparent), transparent 60%)",
         }}
       />
       {/* 80px grid mask */}
@@ -266,6 +274,11 @@ export function ArticleFooter({ tags }: ArticleFooterProps) {
 
 Header 가 이미 client component 인지 확인. 아니면 client 전환 (`"use client"` 추가).
 
+**M5 fix — 기존 `border-b` 유틸 제거 필수**:
+- `Header.tsx:43` 의 `<header className="… border-b border-gray-200 dark:border-gray-800 …">` 에서 **`border-b border-gray-200 dark:border-gray-800` 토큰 제거**.
+- 제거하지 않으면 회색 1px 보더 위에 brand fill 이 덧씌워져 progress 미진입 영역에서 회색 라인이 그대로 보임 (mockup 의 "1px 라인을 progress fill 로 변환" 의도 위반).
+- 대체 fallback 1px 라인은 아래 JSX 의 `absolute bottom-0 h-px w-full bg-[var(--color-border-subtle)]` 가 라이트/다크 모두 cover.
+
 추가:
 ```tsx
 "use client";
@@ -316,17 +329,30 @@ JSX (Header 의 sticky 컨테이너 끝부분):
 - scroll listener 는 `isArticle` 조건에서만 등록 → 메모리 누수 없음
 - transition 75ms (mockup 의 `--duration-instant`) — 스크롤 따라 빠르게 반응
 
-### 5. `page.tsx` + `MarkdownRenderer.tsx` + `globals.css` 통합
-
-#### 5a. `src/app/posts/[...slug]/page.tsx` 재구성
+### 5. `src/app/posts/[...slug]/page.tsx` 재구성 (page.tsx 통합)
 
 기존 layout 을 `ArticleHero` + 3-col grid + `MarkdownRenderer` + `TableOfContents` (filter H2) + `ArticleFooter` + 기존 `Comments` + `JsonLd` 로 교체.
+
+**view count 데이터 경로 (C1 fix)**:
+- `posts` 스키마에는 `visitCount` 컬럼 없음 — `visit_stats` 별도 테이블.
+- 신규 method 만들 필요 없이 기존 `VisitRepository.getVisitCount(pagePath)` 사용 (위치: `src/infra/db/repositories/VisitRepository.ts:59`).
+- `pagePath` 는 PostViewCount 가 사용하는 것과 동일하게 `post.path` (CMS canonical path) 를 그대로 사용 → API/server 모두 일관.
+- 기존 client `<PostViewCount pagePath={postData.path} />` 는 **제거** (Hero meta row 가 흡수). 임시 placeholder 도 두지 말고 import 까지 깨끗이 정리.
+
+신규 import (이전엔 없었음 — executor 누락 방지):
+```tsx
+import { getRepositories } from "@/infra/db/repositories";
+import { ArticleHero } from "@/components/ArticleHero";
+import { ArticleFooter } from "@/components/ArticleFooter";
+import { extractDescription } from "@/lib/markdown"; // 기존 import 목록에 없으면 추가
+```
 
 주요 변경:
 ```tsx
 const tocItems = generateTableOfContents(stripped).filter((i) => i.level === 2);
 const readTime = getReadingTime(stripped);
-const viewCount = data.post.visitCount ?? 0;
+const { visit } = getRepositories();
+const viewCount = await visit.getVisitCount(post.path); // C1 fix: 별도 visit_stats 테이블에서 server-side fetch
 const desc = extractDescription(data.content);
 const breadcrumb = [
   { label: "fos-blog", href: "/" },
@@ -349,9 +375,10 @@ return (
     />
     <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-8 px-6 py-12 md:grid-cols-[1fr_minmax(0,820px)_240px] md:gap-12 md:py-16">
       <div className="hidden md:block" aria-hidden />
-      <article className="prose prose-fos min-w-0">
+      <div className="min-w-0">
+        {/* M2 fix: MarkdownRenderer 가 자체 <article class="prose"> 를 렌더 — 여기서 다시 <article> 로 감싸면 중첩 article + 중복 prose */}
         <MarkdownRenderer content={stripped} />
-      </article>
+      </div>
       <aside className="hidden md:block">
         <TableOfContents items={tocItems} />
       </aside>
@@ -364,14 +391,15 @@ return (
 );
 ```
 
-기존 `<Folder>`, `<Calendar>`, `<Clock>` lucide 아이콘 + `← 목록으로` 링크 등 hero 와 중복되는 메타 영역은 제거 (ArticleHero 가 모두 흡수).
+기존 `<Folder>`, `<Calendar>`, `<Clock>` lucide 아이콘 + `← 목록으로` 링크 + `<PostViewCount …/>` 등 hero 와 중복되는 메타 영역은 모두 제거 (ArticleHero 가 흡수).
 
-#### 5b. `src/components/MarkdownRenderer.tsx` 변경
+### 6. `src/components/MarkdownRenderer.tsx` 변경 (M2 fix)
 
-- 컨테이너 className 에 `prose-fos` 추가 (글로벌 .prose 룰과 합쳐 mockup 톤 강화)
-- mermaid 처리 변경 없음 — globals.css 의 selector 격리로 처리
+- 기존 `<article className="prose-sm md:prose prose-gray dark:prose-invert max-w-none">` (`MarkdownRenderer.tsx:199`) 의 외부 wrapper 를 **`<article>` → `<div>`** 로 변경. 이유: page.tsx 에서 동일 영역을 다시 wrap 하기 어려운 구조 + 단일 글 페이지에 `<article>` 은 한 번만 (page.tsx 가 article 의미를 갖지 않으면 MarkdownRenderer 가 단독 article 유지해도 무방하지만, plan 의 grid 구조상 wrap 충돌 방지를 위해 `<div>` 로 통일).
+- prose className 자체는 그대로 유지 (`prose-sm md:prose prose-gray dark:prose-invert max-w-none`). M3 fix: `prose-fos` 추가하지 않음 (정의된 룰 없는 dead variant).
+- mermaid 처리 변경 없음 — globals.css 의 selector 격리로 처리.
 
-#### 5c. `src/app/globals.css` prose 확장
+### 7. `src/app/globals.css` prose 확장
 
 ```css
 /* mockup 톤 prose — 기존 .prose 룰 확장 */
@@ -450,7 +478,9 @@ pnpm test -- --run
 pnpm build
 
 # mermaid 회귀 테스트 (Q10 A + Q18 C)
-pnpm test -- --run mermaid
+# M4 fix: vitest positional filter 는 파일경로 substring match. 실제 파일은 MarkdownRenderer.regression-1.test.ts.
+# "mermaid" 로 filter 하면 0개 매칭이라 위양성 통과.
+pnpm test -- --run MarkdownRenderer.regression
 ```
 
 수동 smoke (선택, 사용자 PR 리뷰 시):
@@ -511,9 +541,15 @@ pnpm lint
 pnpm type-check
 pnpm build
 
-# 10) mermaid 회귀 테스트 명시 통과 (Q10 A)
-pnpm test -- --run mermaid 2>&1 | grep -E "passed|failed"
-! pnpm test -- --run mermaid 2>&1 | grep -E "failed"
+# 10) mermaid 회귀 테스트 명시 통과 (Q10 A) — M4 fix: 실제 파일명으로 filter + N>=1 통과 검증
+pnpm test -- --run MarkdownRenderer.regression 2>&1 | tee /tmp/plan011-mermaid-test.log
+grep -E "Tests +[1-9][0-9]* passed" /tmp/plan011-mermaid-test.log    # >=1 통과 보장
+! grep -E "failed" /tmp/plan011-mermaid-test.log
+
+# 10-bis) Header border-b 제거 (M5)
+! grep -nE "border-b +border-gray" src/components/Header.tsx
+# Hero mesh CSS 의 invalid `var(...) / 0.xx` shorthand 회귀 차단 (C2)
+! grep -nE "var\\(--mesh-stop[^)]*\\) +/ +0\\." src/components/ArticleHero.tsx
 
 # 11) 금지사항 (critic 반복 지적)
 ! grep -nE "as any" src/components/ArticleHero.tsx src/components/ArticleFooter.tsx src/components/Header.tsx
@@ -535,6 +571,7 @@ executor 는 커밋하지 않는다. team-lead 가 일괄 커밋 (atomic commits
 - `feat(article): add ArticleHero with mesh gradient + breadcrumb + meta row`
 - `feat(article): add ArticleFooter with frontmatter.tags graceful fallback`
 - `feat(toc): redesign TableOfContents with mono sidebar tone`
-- `feat(header): integrate reading progress fill on /posts/* pathname`
+- `feat(header): integrate reading progress fill on /posts/* pathname (drop static border-b)`
+- `refactor(post-page): use ArticleHero + 3-col grid + server-side viewCount + filter H2 TOC`
+- `refactor(markdown-renderer): drop nested <article> wrapper to avoid duplicate prose container`
 - `feat(prose): extend prose tokens with H2 counter + blockquote QUOTE label + inline code`
-- `refactor(post-page): use new ArticleHero + 3-col grid + filter H2 TOC`
