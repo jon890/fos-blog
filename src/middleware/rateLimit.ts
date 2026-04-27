@@ -51,10 +51,19 @@ interface Bucket {
 
 const buckets = new Map<string, Bucket>();
 
+/**
+ * 클라이언트 IP 추출. x-real-ip 우선, x-forwarded-for fallback.
+ *
+ * x-real-ip 우선 이유: nginx 가 직접 주입하는 헤더라 클라이언트 위조 불가.
+ * x-forwarded-for 는 chain 형태 (클라이언트가 임의 prefix 삽입 가능) → spoofing 위험.
+ * 공격자가 RFC1918 IP (192.168.x.x 등) 로 헤더를 위조해 isLocalOrPrivateIp 우회 시도 차단.
+ *
+ * dev 환경 (nginx 없음) 에선 둘 다 부재 → "unknown" 으로 fail-open (의도 동작).
+ */
 function getClientIp(request: NextRequest): string {
   return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("x-real-ip") ||
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "unknown"
   );
 }
