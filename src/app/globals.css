@@ -148,23 +148,7 @@ code, kbd, samp, pre {
   font-family: var(--font-mono);
 }
 
-/* Code highlighting styles */
-.hljs {
-  background: transparent !important;
-}
-
 /* Markdown content styles */
-.prose pre {
-  @apply bg-gray-900 dark:bg-gray-800 rounded-lg overflow-x-auto border border-gray-700;
-}
-
-.prose code {
-  @apply text-pink-500 dark:text-pink-400;
-}
-
-.prose pre code {
-  @apply text-gray-100 bg-transparent p-0;
-}
 
 .prose img {
   @apply rounded-lg shadow-lg;
@@ -233,12 +217,153 @@ code, kbd, samp, pre {
   color: var(--color-fg-faint);
 }
 
-/* mermaid 격리 — prose pre 룰의 영향 차단 */
-.prose pre.mermaid,
-.prose pre:has(> code.language-mermaid) {
+/* mermaid 격리 — pretty-code figure 안의 mermaid 는 components.figure 에서 처리되므로
+   CSS 격리는 fallback 용으로만 유지 */
+.prose pre[data-language="mermaid"] {
   background: transparent !important;
   border: none !important;
   padding: 0;
+}
+
+/* === 코드 블록 frame (plan012) === */
+.prose .code-card {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  background: var(--color-bg-subtle);
+  overflow: hidden;
+  margin: 24px 0;
+}
+.prose .code-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--color-bg-base);
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.prose .code-card-head .left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-fg-secondary);
+}
+.prose .code-card-head .lang {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--color-brand-400);
+  background: color-mix(in oklch, var(--color-brand-400), transparent 88%);
+  border: 1px solid color-mix(in oklch, var(--color-brand-400), transparent 70%);
+}
+.prose .code-card-head .filename {
+  color: var(--color-fg-primary);
+}
+.prose .code-card-head .right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.prose .code-card-head .cb-btn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-fg-muted);
+}
+
+/* code body */
+.prose .code-card-body {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-x: auto;
+}
+.prose .code-card-body pre {
+  margin: 0;
+  padding: 16px 20px;
+  background: transparent !important; /* keepBackground:false 와 결합 */
+  border: none !important;
+  color: var(--color-fg-secondary);
+}
+
+/* line numbers — [data-line-numbers] 메타가 있을 때만 표시 (M5 fix) */
+.prose .code-card-body code {
+  display: grid;
+  counter-reset: line;
+}
+.prose .code-card-body code [data-line] {
+  display: inline-block;
+  width: 100%;
+  padding: 0 16px;
+}
+.prose .code-card-body code[data-line-numbers] [data-line] {
+  counter-increment: line;
+}
+.prose .code-card-body code[data-line-numbers] [data-line]::before {
+  content: counter(line);
+  display: inline-block;
+  width: 2.5ch;
+  margin-right: 1.5ch;
+  text-align: right;
+  color: var(--color-fg-faint);
+  font-size: 12px;
+}
+@media (max-width: 767px) {
+  .prose .code-card-body code[data-line-numbers] [data-line]::before {
+    display: none; /* 모바일 line numbers 숨김 (Q9 i) */
+  }
+}
+
+/* line-highlight (Q6) */
+.prose .code-card-body code [data-highlighted-line] {
+  background: color-mix(in oklch, var(--color-brand-400), transparent 92%);
+  border-left: 2px solid var(--color-brand-400);
+}
+
+/* diff variant */
+.prose .code-card-body code [data-diff="add"] {
+  background: color-mix(in oklch, var(--color-success), transparent 88%);
+  border-left: 2px solid var(--color-success);
+}
+.prose .code-card-body code [data-diff="add"]::before {
+  content: "+";
+}
+.prose .code-card-body code [data-diff="remove"] {
+  background: color-mix(in oklch, var(--color-error), transparent 90%);
+  border-left: 2px solid var(--color-error);
+}
+.prose .code-card-body code [data-diff="remove"]::before {
+  content: "-";
+}
+
+/* terminal variant */
+.prose .code-card--terminal {
+  background: var(--color-bg-base);
+}
+.prose .code-card--terminal .code-card-body pre {
+  font-family: var(--font-mono);
+}
+/* 첫 라인에만 $ prompt 표시 (M5 후속: 전 라인 적용 부적절) */
+.prose .code-card--terminal .code-card-body [data-line]:first-child::before {
+  content: "$";
+  color: var(--color-brand-400);
+  font-weight: 500;
+  width: auto;
+  margin-right: 1ch;
+}
+
+/* shiki dual theme — html.dark 클래스 기반 토글 */
+html.dark .shiki,
+html.dark .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+}
+html:not(.dark) .shiki,
+html:not(.dark) .shiki span {
+  color: var(--shiki-light) !important;
+  background-color: var(--shiki-light-bg) !important;
 }
 
 /* Custom scrollbar */
