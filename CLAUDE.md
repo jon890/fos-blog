@@ -40,7 +40,7 @@ fos-blog/
 │   │   ├── db/           # Drizzle ORM — schema/, repositories/
 │   │   └── github/       # Octokit client, API, file-filter, image-rewrite
 │   ├── lib/              # Shared utils — markdown.ts, logger.ts, path-utils.ts
-│   ├── middleware/       # Per-concern middleware — visit.ts (visit tracking), rateLimit.ts (60/min/IP fixed window)
+│   ├── middleware/       # Per-concern middleware — visit.ts (visit tracking), rateLimit.ts (1000/min/IP fixed window, RFC1918/봇 우회)
 │   └── proxy.ts          # Next.js 16 proxy file convention (구 middleware.ts) — Node runtime 고정, `runtime` config 사용 불가
 ├── scripts/              # Build-time/start-up scripts — migrate.ts (drizzle migrator, 컨테이너 부팅 시 자동 apply)
 ├── local/                # Docker Compose + MySQL init.sql
