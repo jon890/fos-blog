@@ -359,7 +359,7 @@
 
 **Decision**:
 
-- **`rehype-pretty-code` (shiki 기반)** 채택. dual theme `{ light: "github-light", dark: "github-dark" }` 구성 → CSS variable (`--shiki-light` / `--shiki-dark`) 기반 토글 한 줄 (`html.dark .shiki { color: var(--shiki-dark); }`) 로 다크/라이트 전환
+- **`rehype-pretty-code` (shiki 기반)** 채택. dual theme `{ light: "github-light", dark: "github-dark" }` 구성 → CSS variable (`--shiki-light` / `--shiki-dark`) 기반 토글 한 줄 (`html.dark .code-card-body pre span { color: var(--shiki-dark); }`) 로 다크/라이트 전환. **셀렉터 주의 (plan017)**: rehype-pretty-code v14 는 `.shiki` className 을 부여하지 않으므로 `.shiki` 셀렉터는 매칭 실패 → `.code-card-body pre span` 으로 토큰 span 직접 타깃. `unified-pipeline.test.ts` 가 이 계약 (className 부재 + `--shiki-light`/`--shiki-dark` 변수 보유) 을 회귀 테스트로 고정
 - **`figure data-rehype-pretty-code-figure` 출력 구조 활용**: react-markdown `components.figure` 핸들러가 figure 를 받아 신규 `<CodeCard>` (client wrapper, copy 버튼) 로 교체. filename 은 자식 figcaption.textContent, language 는 자식 code.data-language 에서 추출 (헬퍼 `findChildText` / `findCodeProp` 을 `src/lib/markdown.ts` 에 신설)
 - **mermaid 우회**: pretty-code Options 에 `filter` 가 없어 (fictional API), `data-language === "mermaid"` 검사로 우회. `components.figure` / `isMermaidPreNode()` 모두 `data-language` 기반 분기 + 기존 className 기반 검사 (legacy 호환) 동시 지원
 - **`bypassInlineCode: true`**: plan011 의 `.prose :not(pre) > code` 인라인 룰 보존. inline code 는 shiki 처리 skip
