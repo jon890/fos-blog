@@ -359,7 +359,11 @@ jobs:
 
             ## 핵심 규칙
 
-            - **테스트 댓글 게시 금지** — 실제 production 리뷰임
+            - **테스트 / 더미 / placeholder 댓글 게시 절대 금지** — 실제 production 리뷰임. 사용자 토큰 낭비 + review-fix 흐름 오염. 게시 직전 다음 sanity check 통과해야 한다:
+              - body 가 specialist agent FINDING 의 `🔴`/`🟡` + `**문제**:` + `**수정**:` 패턴을 모두 포함하는가?
+              - body 에 `test body`, `test 1`, `sample`, `placeholder`, `example`, `<여기에>`, `{ISSUE}`, `{FIX}` 같은 dummy / template 잔재가 없는가?
+              - body 가 12자 미만이거나 의미 있는 한국어 문장 0개면 reject
+              위 셋 중 하나라도 실패하는 entry 는 즉시 제거 후 게시. comments 배열이 비면 3단계 review 게시 자체 skip + 4단계 일반 요약 댓글에 "발견사항 없음 — 인라인 review skip" 한 줄로 갈음.
             - **일반 댓글은 정확히 1 개만 게시** (4단계) — `gh pr comment` 를 두 번 이상 호출 금지
             - **인라인 리뷰 (3단계) 와 일반 댓글 (4단계) 은 분리** — 발견사항이 있으면 둘 다 게시
             - **내용이 있는 섹션만 포함** — 비어 있는 🔴 또는 🟡 섹션은 완전히 생략
