@@ -10,8 +10,12 @@
 // `data-language="mermaid"` on the <pre> node instead of `className="language-mermaid"`
 // on the child <code>. isMermaidPreNode() now supports both detection methods.
 
-import { describe, it, expect } from "vitest";
-import { isMermaidPreNode } from "./MarkdownRenderer";
+import { describe, expect, it, vi } from "vitest";
+
+// vitest node 환경에서 server-only 가드 우회
+vi.mock("server-only", () => ({}));
+
+import { isMermaidPreNode } from "./markdown/components";
 
 describe("isMermaidPreNode", () => {
   // --- Legacy: className-based detection (pre-pretty-code) ---
@@ -105,5 +109,23 @@ describe("isMermaidPreNode", () => {
       children: [],
     };
     expect(isMermaidPreNode(node)).toBe(false);
+  });
+});
+
+// --- Server async component regression (plan014) ---
+
+describe("parseMarkdownToHast (server async pipeline)", () => {
+  it("server async component — runSync 회귀 방지: shiki 로 코드 블록 렌더 시 throw 하지 않음", async () => {
+    const md = "```ts\nconst x = 1;\n```";
+    const { parseMarkdownToHast } = await import("./markdown/unified-pipeline");
+    const tree = await parseMarkdownToHast(md);
+    expect(JSON.stringify(tree)).toMatch(/data-rehype-pretty-code-figure/);
+  });
+
+  it("server async component — mermaid 블록은 data-language=mermaid 로 표시", async () => {
+    const md = "```mermaid\ngraph TD; A-->B;\n```";
+    const { parseMarkdownToHast } = await import("./markdown/unified-pipeline");
+    const tree = await parseMarkdownToHast(md);
+    expect(JSON.stringify(tree)).toMatch(/"data-language":\s*"mermaid"/);
   });
 });
