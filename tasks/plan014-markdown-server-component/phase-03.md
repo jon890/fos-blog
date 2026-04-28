@@ -42,22 +42,34 @@ grep -rE "Function.runSync" .next/server/chunks/ 2>/dev/null | wc -l   # = 0 기
 
 ### 2. 기존 regression test + 신규 회귀 케이스 추가
 
-`src/components/MarkdownRenderer.regression-1.test.ts` 에 다음 케이스가 포함되도록 보강 (없으면 추가):
+`src/components/MarkdownRenderer.regression-1.test.ts` 상단에 **`server-only` mock 필수** — vitest 의 `environment: "node"` (vitest.config.ts:6) 에서 `server-only` 패키지는 import 시 throw 함 (Next.js 의 react-server condition 미적용 환경). 신규 import path 와 함께 추가:
+
+```ts
+import { describe, expect, it, vi } from "vitest";
+
+// vitest node 환경에서 server-only 가드 우회
+vi.mock("server-only", () => ({}));
+```
+
+신규 회귀 케이스 추가:
 
 ```ts
 it("server async component — runSync 회귀 방지: shiki 로 코드 블록 렌더 시 throw 하지 않음", async () => {
   const md = "```ts\nconst x = 1;\n```";
-  const tree = await import("./markdown/unified-pipeline").then((m) => m.parseMarkdownToHast(md));
-  // tree 안에 figure / shiki span 존재 (rehype-pretty-code 가 정상 동작)
+  const { parseMarkdownToHast } = await import("./markdown/unified-pipeline");
+  const tree = await parseMarkdownToHast(md);
   expect(JSON.stringify(tree)).toMatch(/data-rehype-pretty-code-figure/);
 });
 
 it("server async component — mermaid 블록은 data-language=mermaid 로 표시", async () => {
   const md = "```mermaid\ngraph TD; A-->B;\n```";
-  const tree = await import("./markdown/unified-pipeline").then((m) => m.parseMarkdownToHast(md));
+  const { parseMarkdownToHast } = await import("./markdown/unified-pipeline");
+  const tree = await parseMarkdownToHast(md);
   expect(JSON.stringify(tree)).toMatch(/"data-language":\s*"mermaid"/);
 });
 ```
+
+**왜 mock 필수**: `unified-pipeline.ts` 가 `import "server-only"` 가드를 가지므로 vitest 의 node 환경에서 직접 import 시 `server-only` 패키지가 throw → 모든 테스트 실패. mock 1줄로 회피.
 
 ### 3. ADR 본문 상호 참조 / 메모 보강 (선택, 자명성 게이트 통과 시)
 
@@ -93,7 +105,8 @@ grep -c '"status": "completed"' tasks/plan014-markdown-server-component/index.js
 # 2) unified async pipeline 산출물 포함
 grep -rE "hast-util-to-jsx-runtime|toJsxRuntime|parseMarkdownToHast" .next/server/chunks/ 2>/dev/null | head -1
 
-# 3) test 통과
+# 3) server-only vitest mock + test 통과
+grep -n 'vi.mock("server-only"' src/components/MarkdownRenderer.regression-1.test.ts
 pnpm test -- --run src/components/MarkdownRenderer.regression-1.test.ts
 pnpm test -- --run
 
