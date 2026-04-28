@@ -17,6 +17,7 @@ export type CanonicalCategory =
   | "system";
 
 const RAW_TO_CANONICAL: Record<string, CanonicalCategory> = {
+  // raw → canonical (기존)
   AI: "ai",
   algorithm: "algorithm",
   database: "db",
@@ -28,6 +29,12 @@ const RAW_TO_CANONICAL: Record<string, CanonicalCategory> = {
   css: "js",
   react: "react",
   next: "next",
+  // canonical → canonical self-map (Footer / 직접 호출 안전망)
+  ai: "ai",
+  db: "db",
+  js: "js",
+  // algorithm/devops/java/react/next 는 raw 값과 canonical 값이 동일하므로 위 라인이 그대로 self-map 역할
+  system: "system",
 };
 
 export function toCanonicalCategory(raw: string): CanonicalCategory {
