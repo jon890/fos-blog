@@ -1,7 +1,7 @@
 {
   "name": "plan017-syntax-highlight-fix",
   "description": "코드 블록 syntax highlighting 누락 수정 — globals.css 의 .shiki 셀렉터가 rehype-pretty-code v14 의 실제 출력 (className 부재 + data-theme 속성) 과 매칭 실패. .code-card-body pre span 으로 셀렉터 교체 + 회귀 테스트로 재발 차단.",
-  "status": "pending",
+  "status": "completed",
   "created_at": "2026-04-28",
   "total_phases": 2,
   "related_docs": [
@@ -16,14 +16,14 @@
       "file": "phase-01.md",
       "title": "globals.css shiki 셀렉터 교체 + 색상 회귀 테스트 추가",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 2,
       "file": "phase-02.md",
       "title": "통합 검증 + Lighthouse smoke + index.json status=completed",
       "model": "haiku",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }
