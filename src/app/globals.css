@@ -358,11 +358,12 @@ code, kbd, samp, pre {
 
 /* shiki dual theme — rehype-pretty-code v14 는 .shiki className 부여하지 않으므로
  * .code-card-body 의 pre/code 후손 span 을 직접 타깃. html.dark 클래스로 토글.
- * keepBackground: false 와 결합되어 background-color 는 부모 (.code-card-body pre) 가 담당. */
-html.dark .code-card-body pre span {
+ * keepBackground: false 와 결합되어 background-color 는 부모 (.code-card-body pre) 가 담당.
+ * .prose 스코프는 다른 .code-card-body 규칙과 일관성 유지 — markdown 렌더러 외부 사용 시 의도치 않은 적용 차단. */
+html.dark .prose .code-card-body pre span {
   color: var(--shiki-dark);
 }
-html:not(.dark) .code-card-body pre span {
+html:not(.dark) .prose .code-card-body pre span {
   color: var(--shiki-light);
 }
 

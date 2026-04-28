@@ -6,8 +6,9 @@ vi.mock("server-only", () => ({}));
 import type { Root, Element, RootContent } from "hast";
 import { parseMarkdownToHast } from "./unified-pipeline";
 
-// hast 트리 탐색 헬퍼 — RootContent 는 ElementContent | Doctype 의 상위 집합
-// Root.children: RootContent[], Element.children: ElementContent[] — 공통 상위 타입으로 통일
+// hast 트리 탐색 헬퍼 — Element.children(ElementContent[]) ⊂ RootContent[]
+// 이므로 widening cast 안전. parent가 Element | Root 유니온일 때 .children
+// 추론이 ElementContent[] | RootContent[] 로 갈라져 직접 .find() 불가 → 단언 필요.
 function isElement(node: RootContent): node is Element {
   return node.type === "element";
 }
