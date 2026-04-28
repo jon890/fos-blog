@@ -353,6 +353,7 @@ git -C /Users/.../fos-blog/.claude/worktrees/{plan} status --short
 - **BLG4. Markdown 렌더 XSS 회피**. `react-markdown` + `rehype-raw` 조합은 `rehype-sanitize` 동반 또는 source 자기 소유 명시 주석.
 - **BLG5. Next.js 16 proxy 규약** (NJS15 잔재 방지). `src/proxy.ts` = NJS16 정식 file convention. root `middleware.ts` 금지. `runtime` config 금지. `middleware-manifest.json` 비었다고 dead code 판단 금지.
 - **BLG6. `"use client"` 잘못 마킹 사고** (plan014 관측). `useState` / `useEffect` / `onClick` / `navigator` / `window` / `document` 사용 0건인데 `"use client"` 가 붙어 있으면 RSC server 첫 패스에서 client 컴포넌트 트리 평가가 일어나 sync 처리 (예: `react-markdown` 의 `runSync`) 가 server 에서 실행됨. shiki / mermaid 등 async 의존성이 있는 라이브러리와 결합하면 `runSync finished async` 같은 사고 발생. **검출**: `grep -l '"use client"' src/components/*.tsx | xargs -I{} sh -c 'grep -L "useState\|useEffect\|useRef\|onClick\|onChange\|navigator\\.\|document\\.\|window\\." {} && echo "{}: 잘못된 use client 의심"'`. **Good**: 인터랙션이 정말 없으면 `"use client"` 제거 (server component). 일부만 인터랙션이면 island 분리 (CodeCard / Mermaid 패턴).
+- **BLG7. task 파일 안의 테스트 코드 스니펫에 `as any` 금지** (PR #92 관측). phase-XX.md 의 ts 코드 블록은 executor 가 거의 그대로 복사 → 프로덕션 테스트 코드의 일부가 됨. `(tree as any)` / `(c: any)` / `as string[]` 같은 escape hatch 가 들어가면 type-check 가 unchecked 로 통과해 진짜 검증 의미 약화. **Good**: hast 트리는 `import type { Root, Element, ElementContent } from "hast"` + `function isElement(n: ElementContent): n is Element` type guard 패턴. union 가능 속성 (`Properties.className: string[] | string | number`) 은 `Array.isArray()` 가드. **Why**: planning doc 수준에서 깨끗한 코드 예시 = executor 의 1-shot 통과율 ↑.
 
 ---
 
