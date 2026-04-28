@@ -1,0 +1,39 @@
+{
+  "name": "plan015-categories-redesign",
+  "description": "Claude Design (h/SvcdB2wohXQWj4xRJAdUZA) 핸드오프 기반 Categories 페이지 리디자인 — /categories 인덱스 (sub-hero + Most active top-3 featured + All categories grid) + /category/[...path] 상세 (tinted sub-hero + breadcrumb + README frame + SubfolderCard + PostListRow). 신규 토큰 추가 없음 — plan009 토큰만 사용. mockup 의 PostListRow 는 카테고리 detail 전용, 인덱스 (latest/popular) 는 plan016 PostCard 그대로.",
+  "status": "pending",
+  "created_at": "2026-04-28",
+  "total_phases": 3,
+  "related_docs": [
+    "docs/adr.md",
+    "docs/design-inspiration.md"
+  ],
+  "depends_on": [
+    "plan009-design-tokens-foundation",
+    "plan010-card-list-redesign",
+    "plan013-header-hero-redesign"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "CategoriesSubHero + Breadcrumb + CategoryFeatured + CategoryCard 재구성 + /categories 페이지 교체",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "title": "CategoryDetailSubHero + SubfolderCard + PostListRow + ReadmeFrame + /category/[...path] 페이지 교체",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 3,
+      "file": "phase-03.md",
+      "title": "통합 검증 + legacy 잔재 grep + Lighthouse smoke",
+      "model": "haiku",
+      "status": "pending"
+    }
+  ]
+}
