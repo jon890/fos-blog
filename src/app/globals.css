@@ -285,6 +285,8 @@ code, kbd, samp, pre {
   padding: 16px 20px;
   background: transparent !important; /* keepBackground:false 와 결합 */
   border: none !important;
+  /* fallback color — shiki 가 처리하지 못한 영역 (data-line 외부, plain text 등).
+   * 토큰 span 은 아래 .code-card-body pre span 규칙이 var(--shiki-{light|dark}) 로 override. */
   color: var(--color-fg-secondary);
 }
 
@@ -354,16 +356,14 @@ code, kbd, samp, pre {
   margin-right: 1ch;
 }
 
-/* shiki dual theme — html.dark 클래스 기반 토글 */
-html.dark .shiki,
-html.dark .shiki span {
-  color: var(--shiki-dark) !important;
-  background-color: var(--shiki-dark-bg) !important;
+/* shiki dual theme — rehype-pretty-code v14 는 .shiki className 부여하지 않으므로
+ * .code-card-body 의 pre/code 후손 span 을 직접 타깃. html.dark 클래스로 토글.
+ * keepBackground: false 와 결합되어 background-color 는 부모 (.code-card-body pre) 가 담당. */
+html.dark .code-card-body pre span {
+  color: var(--shiki-dark);
 }
-html:not(.dark) .shiki,
-html:not(.dark) .shiki span {
-  color: var(--shiki-light) !important;
-  background-color: var(--shiki-light-bg) !important;
+html:not(.dark) .code-card-body pre span {
+  color: var(--shiki-light);
 }
 
 /* Custom scrollbar */
