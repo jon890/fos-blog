@@ -342,6 +342,14 @@
 - **Header brand mark 변경**: `📚 FOS Study` 이모지 → `● fos-blog/study` (Geist Mono + 시안 dot + glow). 이모지는 dev-blog 톤과 매치 안 됨, mono + dot 패턴이 Vercel/Linear 톤과 일관. dot 은 `--color-brand-400` 토큰 사용으로 다크/라이트 자동 전환.
 - **HomeHero `<dl>` 통계 4 슬롯**: posts/categories 는 실데이터, series/subscribers 는 placeholder ("—"). UI 그리드 균형 + 향후 채울 자리 명시 의도 — 비활성 슬롯이라 disabled style 명시.
 
+**plan013-2 추가 결정 (Footer)**:
+
+- **SiteFooter 컴포넌트 분리**: 기존 `layout.tsx` 인라인 footer → `src/components/SiteFooter.tsx` server component 로 추출. 4-column (Brand / Site+Policy / Categories / Connect) + Eyebrow status row + mesh accent + bottom built-with stack 으로 복잡도 증가 → layout.tsx 가독성 + 재사용성 확보. sub-component (`ColHead`/`FooterList`/`SocialItem`) 는 같은 파일 안 private 유지 — 재사용 범위 footer 한정이라 types/ 분리 불필요.
+- **미구현 기능 graceful fallback 패턴**: RSS feed (`/rss.xml`) / Newsletter 는 별도 issue 로 위임하되 Footer 의 자리 예약 의도로 visible 유지. 처리 방식: `disabled` prop → `<a>` 가 아닌 `<span aria-disabled="true" title="준비 중">` + `pointer-events-none opacity-40`. 클릭 차단하면서 UI 자리 보존 — "곧 나올 것" 신호. 구현 시점에 prop 만 제거.
+- **POLICY column arrow=path 패턴**: 정책 링크 (`/about`, `/privacy`, `/contact`) 의 hover decoration 은 `↗` 대신 경로 문자열 자체 (`arrowMono: true` mono font). 외부 링크 (Connect col 의 GitHub/Source ↗) 와 시각 차별화 + 내부 경로 명시. mockup 디자인 의도, helper 통일 권장 금지.
+- **BUILD_DATE 하드코딩 follow-up**: `const BUILD_DATE = "2026.04.27"` 빌드 타임 스탬프. `process.env.BUILD_DATE` 또는 `package.json.version` 기반 동적화는 별도 issue. Footer eyebrow row 의 `v0.1 · {BUILD_DATE} · seoul, kr` 표시용.
+- **category-meta canonical self-map 보강**: SiteFooter 가 lowercase canonical key (`"ai"`, `"db"`, `"js"`) 직접 호출 → 기존 `RAW_TO_CANONICAL` 은 raw key (`"AI"`, `"database"`, `"javascript"`) 만 매핑이라 fallback `"system"` 으로 잘못 처리됨 (3 카테고리 hue 오류). `RAW_TO_CANONICAL` 에 self-map 4 항목 (`ai/db/js/system`) 추가. `algorithm/devops/java/react/next` 는 raw==canonical 동일이라 자동.
+
 
 <a id="adr-019"></a>
 

@@ -1,7 +1,7 @@
 {
   "name": "plan013-2-footer-redesign",
   "description": "Claude Design Round 3 footer.jsx + footer.css 기반 Footer 리디자인 — 4-column grid (Brand / Site+Policy / Categories / Connect), eyebrow with status pulse, mesh accent + grid line, visitor counter, RSS/Newsletter graceful fallback, MIT-license + 'built with' stack. plan013 (Header+Hero) 머지 후 진행. layout.tsx 인라인 footer → 신규 SiteFooter 컴포넌트로 분리.",
-  "status": "pending",
+  "status": "completed",
   "created_at": "2026-04-27",
   "total_phases": 1,
   "related_docs": [
@@ -18,7 +18,7 @@
       "file": "phase-01.md",
       "title": "SiteFooter 4-column + Categories + Connect (RSS/Newsletter graceful) + eyebrow status + bottom stack",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }
