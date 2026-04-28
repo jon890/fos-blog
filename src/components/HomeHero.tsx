@@ -40,9 +40,9 @@ export function HomeHero({ postCount, categoryCount, seriesCount, subscriberCoun
         </div>
 
         <h1 className="mt-5 max-w-[22ch] text-[36px] font-semibold leading-[1.05] tracking-tight text-[var(--color-fg-primary)] md:text-[64px]">
-          한국어 개발자를 위한
+          매일 쌓는
           <br />
-          학습 노트
+          개발 학습 노트
           <em className="not-italic font-mono text-[var(--color-cat-react)]">
             (.mdx)
           </em>
