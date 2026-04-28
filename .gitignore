@@ -37,6 +37,7 @@ next-env.d.ts
 # claude code, oh-my-claude-code
 .claude/settings.local.json
 .claude/worktrees
+.claude-pr/
 .omc
 .gstack/
 dist/
