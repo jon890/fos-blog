@@ -76,7 +76,7 @@ export function createMarkdownComponents(basePath: string): Partial<Components> 
         return <Mermaid chart={chartText} />;
       }
 
-      const filename = findChildText(hastNode, "figcaption");
+      const filename = findChildText(hastNode, "figcaption") ?? undefined;
       const rawCode = extractRawText(hastNode).trim();
       const variant: "code" | "diff" | "terminal" =
         language === "diff"
@@ -179,8 +179,8 @@ export function createMarkdownComponents(basePath: string): Partial<Components> 
         !isExternal && !isAnchor && /\.mdx?($|#)/.test(href ?? "");
 
       const resolvedHref =
-        isRelativeMd && basePath
-          ? resolveMarkdownLink(href!, basePath)
+        isRelativeMd && basePath && href
+          ? resolveMarkdownLink(href, basePath)
           : href;
 
       return (
@@ -234,17 +234,19 @@ export function createMarkdownComponents(basePath: string): Partial<Components> 
         {children}
       </td>
     ),
-    img: ({ src, alt }) => (
-      <Image
-        src={typeof src === "string" ? src : ""}
-        alt={alt || ""}
-        width={0}
-        height={0}
-        sizes="100vw"
-        className="my-4 rounded-lg shadow-lg max-w-full h-auto"
-        style={{ width: "100%", height: "auto" }}
-      />
-    ),
+    img: ({ src, alt }) => {
+      if (typeof src !== "string" || !src) return null;
+      return (
+        <Image
+          src={src}
+          alt={alt || ""}
+          width={0}
+          height={0}
+          sizes="100vw"
+          className="my-4 rounded-lg shadow-lg w-full h-auto"
+        />
+      );
+    },
     hr: ({ ...props }) => (
       <hr className="my-8 border-gray-200 dark:border-gray-800" {...props} />
     ),
