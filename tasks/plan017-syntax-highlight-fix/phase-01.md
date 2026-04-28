@@ -76,41 +76,62 @@ html:not(.dark) .code-card-body pre span {
 
 ```ts
 import { describe, it, expect } from "vitest";
+import type { Root, Element, ElementContent } from "hast";
 import { parseMarkdownToHast } from "./unified-pipeline";
+
+// hast 트리 탐색 헬퍼 — type-guard 로 Element 만 통과시켜 .properties / .children 접근 안전
+function isElement(node: ElementContent): node is Element {
+  return node.type === "element";
+}
+function findChildElement(parent: Element | Root, tagName: string): Element | undefined {
+  return parent.children.find((c): c is Element => isElement(c) && c.tagName === tagName);
+}
 
 describe("rehype-pretty-code output structure (regression guard for plan017)", () => {
   it("produces span tokens with --shiki-light + --shiki-dark CSS variables", async () => {
-    const tree = await parseMarkdownToHast("```ts\nconst x = 42;\n```");
+    const tree: Root = await parseMarkdownToHast("```ts\nconst x = 42;\n```");
 
     // figure > pre > code > span[data-line] > span[style="--shiki-..."]
-    const figure = (tree as any).children.find((c: any) => c.tagName === "figure");
+    const figure = findChildElement(tree, "figure");
     expect(figure?.properties?.["data-rehype-pretty-code-figure"]).toBeDefined();
+    if (!figure) throw new Error("figure missing");
 
-    const pre = figure.children.find((c: any) => c.tagName === "pre");
+    const pre = findChildElement(figure, "pre");
     expect(pre?.properties?.["data-language"]).toBe("ts");
-    expect(pre?.properties?.["data-theme"]).toContain("github-light");
-    expect(pre?.properties?.["data-theme"]).toContain("github-dark");
+    expect(String(pre?.properties?.["data-theme"] ?? "")).toContain("github-light");
+    expect(String(pre?.properties?.["data-theme"] ?? "")).toContain("github-dark");
+    if (!pre) throw new Error("pre missing");
 
-    const code = pre.children.find((c: any) => c.tagName === "code");
-    const lineSpan = code.children.find((c: any) => c.tagName === "span" && c.properties?.["data-line"] !== undefined);
+    const code = findChildElement(pre, "code");
+    if (!code) throw new Error("code missing");
+    const lineSpan = code.children.find(
+      (c): c is Element =>
+        isElement(c) && c.tagName === "span" && c.properties?.["data-line"] !== undefined,
+    );
     expect(lineSpan).toBeDefined();
+    if (!lineSpan) throw new Error("lineSpan missing");
 
     // 토큰 span 들이 --shiki-light + --shiki-dark CSS 변수를 inline style 로 보유
-    const tokenSpans = lineSpan.children.filter((c: any) => c.tagName === "span");
+    const tokenSpans = lineSpan.children.filter(
+      (c): c is Element => isElement(c) && c.tagName === "span",
+    );
     expect(tokenSpans.length).toBeGreaterThan(0);
-    const styleStrs = tokenSpans.map((s: any) => s.properties?.style ?? "");
-    expect(styleStrs.some((s: string) => s.includes("--shiki-light"))).toBe(true);
-    expect(styleStrs.some((s: string) => s.includes("--shiki-dark"))).toBe(true);
+    const styleStrs = tokenSpans.map((s) => String(s.properties?.style ?? ""));
+    expect(styleStrs.some((s) => s.includes("--shiki-light"))).toBe(true);
+    expect(styleStrs.some((s) => s.includes("--shiki-dark"))).toBe(true);
   });
 
   it("does NOT add .shiki className (selector contract held by globals.css)", async () => {
-    const tree = await parseMarkdownToHast("```ts\nconst x = 42;\n```");
-    const figure = (tree as any).children.find((c: any) => c.tagName === "figure");
-    const pre = figure.children.find((c: any) => c.tagName === "pre");
+    const tree: Root = await parseMarkdownToHast("```ts\nconst x = 42;\n```");
+    const figure = findChildElement(tree, "figure");
+    if (!figure) throw new Error("figure missing");
+    const pre = findChildElement(figure, "pre");
 
     // .shiki className 부재가 globals.css 의 .code-card-body pre span 셀렉터 선택의 근거.
     // 이게 깨지면 (= rehype-pretty-code 가 .shiki 부여하기 시작하면) globals.css 도 다시 검토 필요.
-    const className = (pre?.properties?.className as string[] | undefined) ?? [];
+    // hast Properties.className 은 string[] | string | number 가능 — Array.isArray 가드로 안전 검증.
+    const rawClassName = pre?.properties?.className;
+    const className = Array.isArray(rawClassName) ? rawClassName : [];
     expect(className).not.toContain("shiki");
   });
 });
