@@ -1,7 +1,7 @@
 {
   "name": "plan014-markdown-server-component",
   "description": "MarkdownRenderer 를 server component (async) 로 재설계 — react-markdown(sync) 의존성 제거 + unified.process() async + hast-util-to-jsx-runtime 직접 사용. shiki highlighter 는 server-only 모듈 singleton + 모듈 로드 시 1회 await 캐싱. CodeCard / Mermaid 는 기존 client island 그대로 유지. ADR-019 도입 후 production 에서 분 단위로 폭증한 `Error: 'runSync' finished async` (digest 1174120868 / 2958684477) 근본 fix.",
-  "status": "pending",
+  "status": "completed",
   "created_at": "2026-04-27",
   "total_phases": 3,
   "related_docs": [
@@ -17,21 +17,21 @@
       "file": "phase-01.md",
       "title": "unified-pipeline 모듈 신설 + shiki highlighter singleton + components mapping 분리",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 2,
       "file": "phase-02.md",
       "title": "MarkdownRenderer 를 server async 로 재작성 + react-markdown 의존성 제거",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 3,
       "file": "phase-03.md",
       "title": "regression test 갱신 + 통합 검증 + index.json status=completed 마킹",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }

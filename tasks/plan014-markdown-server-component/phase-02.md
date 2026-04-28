@@ -13,7 +13,7 @@ phase-01 에서 server-only `unified-pipeline.ts` + `markdownComponents` 분리 
 test -f src/components/markdown/unified-pipeline.ts
 test -f src/components/markdown/components.tsx
 grep -n "export async function parseMarkdownToHast" src/components/markdown/unified-pipeline.ts
-grep -n "export const markdownComponents" src/components/markdown/components.tsx
+grep -n "export function createMarkdownComponents" src/components/markdown/components.tsx
 
 # 2) 기존 MarkdownRenderer 사용처 — 모두 server component (async function Page)
 grep -n "async function" src/app/posts/\[...slug\]/page.tsx | head -1   # async page 확인
@@ -33,7 +33,7 @@ grep -n '"react-markdown":' package.json
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import { parseMarkdownToHast } from "./markdown/unified-pipeline";
-import { markdownComponents } from "./markdown/components";
+import { createMarkdownComponents } from "./markdown/components";
 
 interface MarkdownRendererProps {
   content: string;
@@ -48,7 +48,8 @@ export async function MarkdownRenderer({ content, basePath }: MarkdownRendererPr
         Fragment,
         jsx,
         jsxs,
-        components: markdownComponents,
+        passNode: true,
+        components: createMarkdownComponents(basePath),
       })}
     </div>
   );
@@ -57,30 +58,31 @@ export async function MarkdownRenderer({ content, basePath }: MarkdownRendererPr
 
 설계 메모:
 - `"use client"` 완전 제거 (BLG6 — 잘못 마킹됐던 것)
-- `basePath` prop 은 현재 미사용처럼 보이지만 components mapping 안의 `<a>` 핸들러 / 상대 경로 해석에 쓰일 가능성 → phase-01 의 components.tsx 에서 `basePath` 를 클로저로 받아 처리하는 식으로 수정 필요 시 작업 1 안에 같이 처리
+- **`passNode: true` 필수**: hast-util-to-jsx-runtime 의 default 는 false → 핸들러의 `node` prop 이 undefined 가 되면 `figure`/`pre` 의 `data-rehype-pretty-code-figure` / `data-language` 검사 모두 무력화 → 코드블록 frame / mermaid 분기 깨짐. 절대 빠뜨리지 말 것
+- **`createMarkdownComponents(basePath)` 함수형 호출**: phase-01 작업 3 에서 factory 로 정의됨. `a` 핸들러가 closure 로 basePath 를 캡처해 `resolveMarkdownLink(href, basePath)` 호출
 - React 19 + Next.js 16 에서 `react/jsx-runtime` 의 `Fragment` / `jsx` / `jsxs` import 는 정상 (React 18+ 표준)
 
-**basePath 처리**: 기존 `MarkdownRenderer.tsx` 에서 `basePath` 가 어디 쓰이는지 grep 으로 먼저 확인. 만약 components mapping 의 `a` 핸들러에서만 쓰인다면 `markdownComponents` 를 함수형으로 변경:
+### 2. `src/components/MarkdownRenderer.regression-1.test.ts` async + import path 변경
+
+기존 테스트 (현재 `import { isMermaidPreNode } from "./MarkdownRenderer"` — 9 케이스) 의 import path 를 phase-01 에서 이동된 components.tsx 로 갱신:
 
 ```ts
-// components.tsx
-export function createMarkdownComponents(basePath: string): Partial<Components> { ... }
+// before
+import { isMermaidPreNode } from "./MarkdownRenderer";
+// after
+import { isMermaidPreNode } from "./markdown/components";
 ```
 
-그리고 MarkdownRenderer 에서 `components: createMarkdownComponents(basePath)`. 사용 안 되면 prop 자체를 deprecate (단 호출처 시그니처 변경 영향 → 그대로 받고 사용처에서 무시).
-
-### 2. `src/components/MarkdownRenderer.regression-1.test.ts` async 대응
-
-기존 테스트가 `MarkdownRenderer` 를 호출한다면 async 컴포넌트 렌더 패턴으로 변경:
+테스트가 `MarkdownRenderer` 를 직접 렌더하는 케이스가 있다면 async 호출 패턴으로:
 
 ```ts
 // before: render(<MarkdownRenderer content={...} />)
 // after: render(await MarkdownRenderer({ content: ..., basePath: ... }))
 ```
 
-vitest 는 async 컴포넌트 호출 결과 (JSX) 를 그대로 render 가능. 만약 testing-library 의 `render` 가 async 컴포넌트를 직접 받지 못하면 `await` 한 결과를 받으면 됨.
+vitest 는 async 컴포넌트 호출 결과 (JSX) 를 그대로 render 가능. testing-library 의 `render` 가 async 컴포넌트를 직접 받지 못하면 `await` 한 결과를 받으면 됨.
 
-테스트 케이스 의도는 모두 보존 (코드 블록 / mermaid / GFM 표 / 헤딩 slug / inline code 등 회귀 방지).
+기존 9 테스트 케이스 의도 모두 보존 (코드 블록 / mermaid / GFM 표 / 헤딩 slug / inline code 등 회귀 방지).
 
 ### 3. `package.json` 에서 `react-markdown` 제거
 
@@ -130,10 +132,16 @@ grep -nE "export async function MarkdownRenderer" src/components/MarkdownRendere
 ! grep -n '"react-markdown":' package.json
 ! grep -rn 'from "react-markdown"' src/
 
-# 3) hast-util-to-jsx-runtime 사용 + react/jsx-runtime import
+# 3) hast-util-to-jsx-runtime 사용 + react/jsx-runtime import + passNode + createMarkdownComponents
 grep -n 'from "hast-util-to-jsx-runtime"' src/components/MarkdownRenderer.tsx
 grep -n 'from "react/jsx-runtime"' src/components/MarkdownRenderer.tsx
 grep -n "toJsxRuntime" src/components/MarkdownRenderer.tsx
+grep -n "passNode: true" src/components/MarkdownRenderer.tsx                # 필수 (CRITICAL)
+grep -n "createMarkdownComponents(basePath)" src/components/MarkdownRenderer.tsx
+
+# 3-1) regression test import path 갱신
+grep -n 'from "./markdown/components"' src/components/MarkdownRenderer.regression-1.test.ts
+! grep -n 'from "./MarkdownRenderer"' src/components/MarkdownRenderer.regression-1.test.ts | grep -v "from './MarkdownRenderer'\\s*$"
 
 # 4) 호출처 시그니처 변경 없음
 grep -n "<MarkdownRenderer content=" src/app/posts/\[...slug\]/page.tsx

@@ -91,46 +91,74 @@ export async function parseMarkdownToHast(markdown: string): Promise<HastRoot> {
 
 ### 2. `src/components/markdown/pretty-code-options.ts` 신설
 
-기존 `MarkdownRenderer.tsx:58-67` 의 `PRETTY_CODE_OPTIONS` 객체를 **그대로** 이동:
+기존 `MarkdownRenderer.tsx:61-66` 의 `PRETTY_CODE_OPTIONS` 객체 **4 필드 모두 보존** (theme / defaultLang / keepBackground / bypassInlineCode):
 
 ```ts
 import type { Options as PrettyCodeOptions } from "rehype-pretty-code";
 
 export const PRETTY_CODE_OPTIONS: PrettyCodeOptions = {
   theme: { light: "github-light", dark: "github-dark" },
-  bypassInlineCode: true,
+  defaultLang: "plaintext",
   keepBackground: false,
+  bypassInlineCode: true,
 };
 ```
 
 `MarkdownRenderer.tsx` 에서 직접 정의하던 것을 import 로 교체 (phase-02 에서).
 
-### 3. `src/components/markdown/components.tsx` 신설
+### 3. `src/components/markdown/components.tsx` 신설 — `createMarkdownComponents(basePath)` 함수형
 
-기존 `MarkdownRenderer.tsx:23-275` 의 `components` 객체 (특히 `figure` / `pre` / `isMermaidPreNode` 등 helper) 를 **그대로** 이동. 단 import 형태는 `hast-util-to-jsx-runtime` 의 `Components` 타입을 사용:
+기존 `MarkdownRenderer.tsx:23-275` 의 `components` 객체 + `isMermaidPreNode` helper 를 **함수형 export** 로 이동. `a` 핸들러가 `basePath` 를 명시적으로 사용 (`MarkdownRenderer.tsx:204` `resolveMarkdownLink(href!, basePath)`) 하므로 closure 로 받아야 함.
 
-```ts
+```tsx
 import type { Components } from "hast-util-to-jsx-runtime";
+import type { Element as HastElement } from "hast";
+import Image from "next/image";
 import { CodeCard } from "../CodeCard";
 import { Mermaid } from "../Mermaid";
-import { extractRawText, findChildText, findCodeProp } from "@/lib/markdown";
+import { resolveMarkdownLink } from "@/lib/resolve-markdown-link";
+import {
+  extractRawText,
+  findChildText,
+  findCodeProp,
+} from "@/lib/markdown";
 
-// (기존 isMermaidPreNode helper 그대로 이동)
+// (기존 MarkdownRenderer.tsx 의 isMermaidPreNode helper 그대로 이동 — named export 유지)
+// 시그니처는 baseline 부분형 그대로 유지 (HastElement 강제 시 9개 test fixture 가 tagName/type 필수 위반 → strict TS 깨짐)
+import type { ElementContent as HastChild } from "hast";
 
-export const markdownComponents: Partial<Components> = {
-  figure: ({ node, children, ...props }) => {
-    // (기존 figure 핸들러 본문 그대로)
-  },
-  pre: ({ node, children, ...props }) => {
-    // (기존 pre 핸들러 본문 그대로 — mermaid 분기 포함)
-  },
-  // (기존 a / table / blockquote / hr 등 그대로)
-};
+export function isMermaidPreNode(node: {
+  children?: HastChild[];
+  properties?: Record<string, unknown>;
+}): boolean {
+  // (기존 본문 그대로)
+}
+
+export function createMarkdownComponents(basePath: string): Partial<Components> {
+  return {
+    figure: ({ node, children, ...props }) => {
+      // (기존 figure 핸들러 본문 그대로)
+    },
+    pre: ({ node, children, ...props }) => {
+      // (기존 pre 핸들러 본문 그대로 — mermaid 분기 포함)
+    },
+    a: ({ children, href, ...props }) => {
+      // (기존 a 핸들러 본문 그대로 — basePath 는 closure 로 캡처)
+    },
+    img: (props) => { /* 기존 그대로 (next/image) */ },
+    table: ({ children, ...props }) => { /* 기존 그대로 */ },
+    blockquote: ({ children, ...props }) => { /* 기존 그대로 */ },
+    hr: (props) => { /* 기존 그대로 */ },
+    // (그 외 기존 핸들러 모두 동일)
+  };
+}
 ```
 
 설계 메모:
+- **핵심 변경**: `markdownComponents: Partial<Components>` 객체 → `createMarkdownComponents(basePath: string)` factory 함수. `a` 핸들러가 basePath 를 closure 로 캡처해 `resolveMarkdownLink` 호출
+- **`isMermaidPreNode` named export 유지**: 기존 `MarkdownRenderer.regression-1.test.ts:14` 가 import 중 → phase-02 에서 test import path 를 `./markdown/components` 로 변경하면 호환
 - 핸들러 본문은 phase-01 에서 **그대로 복사** (semantic 변경 0). 함수 인자 prop 형태가 react-markdown 의 `components` 와 hast-util-to-jsx-runtime 의 `Components` 가 거의 동일 (`node`, `children`, ...props) 라 그대로 동작
-- 만약 type signature 차이로 type-check 실패하면 작업 5 (phase-01 에서 보수) 로 넘기지 말고 즉시 SendMessage 로 team-lead 에 보고 (scope 확장)
+- type signature 차이로 type-check 실패 시 즉시 SendMessage 로 team-lead 에 보고
 
 ### 4. `package.json` direct dep promote + 통합 검증
 
@@ -167,13 +195,16 @@ grep -n 'import "server-only"' src/components/markdown/unified-pipeline.ts
 grep -n "processorPromise" src/components/markdown/unified-pipeline.ts
 grep -n "export async function parseMarkdownToHast" src/components/markdown/unified-pipeline.ts
 
-# 4) PRETTY_CODE_OPTIONS export
+# 4) PRETTY_CODE_OPTIONS export — 4 필드 모두 보존
 grep -n "export const PRETTY_CODE_OPTIONS" src/components/markdown/pretty-code-options.ts
-grep -nE "github-light|github-dark|bypassInlineCode|keepBackground" src/components/markdown/pretty-code-options.ts | wc -l   # >= 4
+grep -cE "theme:|defaultLang|keepBackground|bypassInlineCode" src/components/markdown/pretty-code-options.ts   # = 4
 
-# 5) components export + figure / pre 핸들러 보존
-grep -n "export const markdownComponents" src/components/markdown/components.tsx
-grep -n "isMermaidPreNode\|data-rehype-pretty-code-figure\|data-language" src/components/markdown/components.tsx | wc -l   # >= 3
+# 5) components.tsx — createMarkdownComponents factory + isMermaidPreNode named export + Image / resolveMarkdownLink import
+grep -n "export function createMarkdownComponents" src/components/markdown/components.tsx
+grep -n "export function isMermaidPreNode" src/components/markdown/components.tsx
+grep -n 'from "next/image"' src/components/markdown/components.tsx
+grep -n '@/lib/resolve-markdown-link' src/components/markdown/components.tsx
+grep -nE "data-rehype-pretty-code-figure|data-language|extractRawText|findChildText|findCodeProp" src/components/markdown/components.tsx | wc -l   # >= 5
 
 # 6) package.json direct dep
 grep -nE '"unified":|"remark-parse":|"remark-rehype":|"hast-util-to-jsx-runtime":' package.json | wc -l   # = 4
