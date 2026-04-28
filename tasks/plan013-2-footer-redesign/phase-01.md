@@ -59,7 +59,7 @@ scope 외 (별도 plan/issue):
 # 1) plan009 + plan013 머지 완료 확인
 grep -n -- "--mesh-stop-01" src/app/globals.css
 grep -n "HomeHero" src/components/HomeHero.tsx
-grep -n "fos-blog/dev-notes" src/components/Header.tsx
+grep -n "fos-blog<span" src/components/Header.tsx     # plan013 의 Header brand wordmark 존재 확인 (slug suffix 는 어떤 값이든 통과)
 grep -n "FOS-WORLD · DEV NOTES" src/components/HomeHero.tsx
 
 # 2) 재사용 대상 확인
@@ -80,7 +80,41 @@ grep -n "<footer" src/app/layout.tsx
 
 ## 작업 목록 (총 5개)
 
-### 1. `src/components/SiteFooter.tsx` 신규 (server)
+### 1. `src/lib/category-meta.ts` — canonical self-map 보강
+
+현재 `RAW_TO_CANONICAL` 은 `"AI"`, `"database"`, `"javascript"` 등 raw 키만 매핑. SiteFooter 가 canonical 키 (`"ai"`, `"db"`, `"js"`, `"algorithm"`, `"devops"`, `"java"`, `"react"`, `"next"`, `"system"`) 를 직접 넘기면 `toCanonicalCategory("ai")` 가 `undefined → "system"` 으로 fallback → 3개 카테고리(ai/db/js) 의 hue 가 system(250) 으로 잘못 렌더링.
+
+`RAW_TO_CANONICAL` 에 canonical → canonical self-map 9 항목 추가:
+
+```ts
+const RAW_TO_CANONICAL: Record<string, CanonicalCategory> = {
+  // raw → canonical (기존)
+  AI: "ai",
+  algorithm: "algorithm",
+  database: "db",
+  redis: "db",
+  devops: "devops",
+  java: "java",
+  javascript: "js",
+  html: "js",
+  css: "js",
+  react: "react",
+  next: "next",
+  // canonical → canonical self-map (Footer / 직접 호출 안전망)
+  ai: "ai",
+  db: "db",
+  js: "js",
+  // algorithm/devops/java/react/next 는 raw 값과 canonical 값이 동일하므로 위 라인이 그대로 self-map 역할
+  system: "system",
+};
+```
+
+설계 메모:
+- canonical key 도 `RAW_TO_CANONICAL` 의 key 로 추가하면 "raw 가 canonical 일 때도 통과" 가 자연스러워진다 (멱등). 호출자가 "이 값이 raw 인가 canonical 인가" 신경 쓸 필요 없음
+- `algorithm`/`devops`/`java`/`react`/`next` 는 이미 self-map 효과 (raw 키와 canonical 값이 우연히 동일)
+- `getCategoryColor` / `getCategoryHue` / `getCategoryTokenVar` 모두 자동으로 영향 받아 정합
+
+### 2. `src/components/SiteFooter.tsx` 신규 (server)
 
 ```tsx
 import Link from "next/link";
@@ -390,7 +424,7 @@ function SocialItem({ href, Icon, ttl, sub, arrow, external, disabled }: SocialI
 - `lucide-react` 의 `Github / Code2 / Rss / Mail / ArrowUpRight` 사용 (모두 기존 의존성)
 - mesh / grid / accent 모두 inline style — globals.css 룰 추가 없이 자기완결
 
-### 2. `src/app/layout.tsx` — 인라인 footer 제거 + `<SiteFooter />` 호출
+### 3. `src/app/layout.tsx` — 인라인 footer 제거 + `<SiteFooter />` 호출
 
 ```tsx
 import { SiteFooter } from "@/components/SiteFooter";
@@ -403,7 +437,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 
 기존 라인 144-240 의 인라인 `<footer>` 전체 삭제. `<SiteFooter />` 한 줄로 교체. `<VisitorCount />` 도 footer 안으로 이동 (layout.tsx 에서 import 제거).
 
-### 3. `src/app/globals.css` — `.fbf-accent` 그라디언트 룰 (선택)
+### 4. `src/app/globals.css` — `.fbf-accent` 그라디언트 룰 (선택)
 
 mockup 의 `.fbf-accent` 는 horizontal gradient line:
 ```css
@@ -421,23 +455,7 @@ mockup 의 `.fbf-accent` 는 horizontal gradient line:
 
 inline style 로 처리하기 어색해 globals.css 에 추가 (한 룰만).
 
-### 4. RSS / Newsletter 미구현 issue 등록
-
-phase 종료 후 team-lead 가 등록 (executor 는 제외):
-
-```bash
-gh issue create \
-  --title "RSS feed 라우트 신설 (/rss.xml)" \
-  --body "Footer 의 RSS 링크 활성화 위해 /rss.xml 라우트 + RSS 2.0 XML 생성 필요. plan013-2 에서 graceful fallback (disabled) 처리됨. 사용자 결정 필요: 직접 구현 vs feed 생성 라이브러리 (예: feed npm). category/series 필터 적용 여부."
-
-gh issue create \
-  --title "Newsletter 구독 기능 도입" \
-  --body "Footer 의 Newsletter 링크 활성화 위해 구독 폼 + 백엔드 (Buttondown / Mailchimp / 자체 SMTP) 결정 필요. plan013-2 에서 graceful fallback (disabled) 처리됨. HomeHero 의 subscribers stat 도 Newsletter 구현 후 실값 반영. 무료 플랜 비교 + 운영 비용 고려."
-```
-
-(이 작업은 phase 의 직접 결과물 아님. team-lead 가 PR 생성 시 함께 처리)
-
-### 5. 통합 검증
+### 5. 통합 검증 + `index.json` completed 마킹
 
 ```bash
 # cwd: <worktree root>
@@ -469,6 +487,14 @@ grep -rE "fbf-accent|FOS-BLOG · FOOTER" .next/server/app/ 2>/dev/null | head -3
 - RSS / Newsletter 클릭 시 비활성 (pointer-events-none) + tooltip "준비 중"
 - VisitorCount 가 Brand col 의 counter 안에 정상 표시
 - Categories 9개 hover 시 cat-color dot + arrow 노출
+
+마지막으로 `tasks/plan013-2-footer-redesign/index.json` 의 `status` 와 `phases[0].status` 를 `"completed"` 로 업데이트:
+
+```bash
+# cwd: <worktree root>
+jq '.status = "completed" | .phases[0].status = "completed"' tasks/plan013-2-footer-redesign/index.json > tasks/plan013-2-footer-redesign/index.json.tmp \
+  && mv tasks/plan013-2-footer-redesign/index.json.tmp tasks/plan013-2-footer-redesign/index.json
+```
 
 ## 성공 기준 (기계 명령만)
 
@@ -523,6 +549,16 @@ pnpm build
 ! grep -nE "as any" src/components/SiteFooter.tsx
 ! grep -nE "console\.(log|warn|error)" src/components/SiteFooter.tsx
 ! grep -nE "alert\(|confirm\(|prompt\(" src/components/SiteFooter.tsx
+
+# 11) category-meta canonical self-map
+grep -nE '^\s+ai:\s*"ai"' src/lib/category-meta.ts
+grep -nE '^\s+db:\s*"db"' src/lib/category-meta.ts
+grep -nE '^\s+js:\s*"js"' src/lib/category-meta.ts
+grep -nE '^\s+system:\s*"system"' src/lib/category-meta.ts
+
+# 12) index.json completed 마킹
+[ "$(jq -r .status tasks/plan013-2-footer-redesign/index.json)" = "completed" ]
+[ "$(jq -r '.phases[0].status' tasks/plan013-2-footer-redesign/index.json)" = "completed" ]
 ```
 
 ## PHASE_BLOCKED 조건
@@ -535,9 +571,27 @@ pnpm build
 ## 커밋 제외 (phase 내부)
 
 executor 는 커밋하지 않는다. team-lead 가 일괄 커밋:
+- `fix(category-meta): add canonical self-map for direct canonical-key lookups`
 - `feat(footer): add SiteFooter component (4-col + categories + connect)`
 - `feat(footer): integrate eyebrow status row + mesh accent + bottom stack`
 - `refactor(layout): replace inline footer with <SiteFooter />`
 - `feat(globals): add .fbf-accent gradient line rule`
+- `chore(tasks): mark plan013-2 completed`
 
-team-lead 가 PR 생성 시 RSS / Newsletter graceful fallback 에 대응하는 issue 2건 (`gh issue create`) 도 함께 등록 — 작업 4 참조.
+team-lead 가 PR 생성 시 RSS / Newsletter graceful fallback 에 대응하는 issue 2건도 함께 등록 (executor 책임 아님 — phase 본문 외):
+
+```bash
+gh issue create \
+  --title "RSS feed 라우트 신설 (/rss.xml)" \
+  --body "Footer 의 RSS 링크 활성화 위해 /rss.xml 라우트 + RSS 2.0 XML 생성 필요. plan013-2 에서 graceful fallback (disabled) 처리됨. 사용자 결정 필요: 직접 구현 vs feed 생성 라이브러리 (예: feed npm). category/series 필터 적용 여부."
+
+gh issue create \
+  --title "Newsletter 구독 기능 도입" \
+  --body "Footer 의 Newsletter 링크 활성화 위해 구독 폼 + 백엔드 (Buttondown / Mailchimp / 자체 SMTP) 결정 필요. plan013-2 에서 graceful fallback (disabled) 처리됨. HomeHero 의 subscribers stat 도 Newsletter 구현 후 실값 반영. 무료 플랜 비교 + 운영 비용 고려."
+```
+
+## NOTE (critic v1)
+
+- POLICY_LINKS 의 `arrow: l.path` 는 의도된 mockup 디자인 (정책 링크는 hover 시 path 가 표시되는 게 의도). `arrowMono: true` 로 mono font 분리 처리됨. 변경 안 함
+- `<span aria-disabled="true">` (RSS/Newsletter disabled) — minor a11y. `role="link"` 추가하면 SR 이 정확히 announce. 단 plain text fallback 으로도 시각/키보드 동작에 차이 없음. 향후 a11y 패스에서 일괄 처리 (별도 plan 또는 follow-up)
+- `BUILD_DATE = "2026.04.27"` 하드코딩 — 동적화는 별도 issue 로 위임 (env 또는 빌드시 주입)
