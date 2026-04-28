@@ -1,0 +1,25 @@
+{
+  "name": "plan016-posts-index-redesign",
+  "description": "/posts/latest + /posts/popular 인덱스 페이지 톤 통일 — sub-hero (eyebrow + h1 + meta), 1180px 컨테이너, PostsInfiniteList 버튼·종료 메시지 토큰화. mockup 불필요 (plan013 HomeHero + plan010 PostCard 패턴 재사용).",
+  "status": "pending",
+  "created_at": "2026-04-28",
+  "total_phases": 1,
+  "related_docs": [
+    "docs/adr.md",
+    "docs/design-inspiration.md"
+  ],
+  "depends_on": [
+    "plan009-design-tokens-foundation",
+    "plan010-card-list-redesign",
+    "plan013-header-hero-redesign"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "PostsListSubHero + latest/popular 헤더 교체 + InfiniteList 버튼 토큰화",
+      "model": "sonnet",
+      "status": "pending"
+    }
+  ]
+}
