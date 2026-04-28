@@ -119,7 +119,7 @@ const RAW_TO_CANONICAL: Record<string, CanonicalCategory> = {
 ```tsx
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { Github, Code2, Rss, Mail, ArrowUpRight } from "lucide-react";
+import { Github, Code2, Rss, Mail } from "lucide-react";
 import { VisitorCount } from "./VisitorCount";
 import { getCategoryColor } from "@/lib/category-meta";
 
@@ -215,7 +215,7 @@ export function SiteFooter() {
                 F
               </span>
               <span className="font-mono text-[14px] tracking-tight text-[var(--color-fg-primary)]">
-                fos-blog<span className="text-[var(--color-fg-muted)]">/dev-notes</span>
+                fos-blog<span className="text-[var(--color-fg-muted)]">/study</span>
               </span>
             </Link>
             <p className="mt-4 max-w-[36ch] text-[13px] leading-relaxed text-[var(--color-fg-secondary)]">
