@@ -7,8 +7,8 @@ import { env } from "@/env";
 import { OG_WIDTH, OG_HEIGHT } from "@/lib/og";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Header } from "@/components/Header";
-import { VisitorCount } from "@/components/VisitorCount";
 import { SidebarProvider } from "@/components/SidebarContext";
+import { SiteFooter } from "@/components/SiteFooter";
 import { FolderSidebarWrapper } from "@/app/components/FolderSidebarWrapper";
 
 const siteUrl = env.NEXT_PUBLIC_SITE_URL;
@@ -141,103 +141,7 @@ export default function RootLayout({
             <Header />
             <FolderSidebarWrapper />
             <main>{children}</main>
-            <footer className="border-t border-gray-200 dark:border-gray-800 py-12 mt-16">
-              <div className="container mx-auto px-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-                  {/* Brand */}
-                  <div>
-                    <div className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white mb-3">
-                      <span>📚</span>
-                      <span>FOS Study</span>
-                    </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      개발 학습 기록을 정리하는 블로그입니다.
-                    </p>
-                  </div>
-                  {/* Links */}
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
-                      바로가기
-                    </h3>
-                    <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                      <li>
-                        <a
-                          href="/"
-                          className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                        >
-                          홈
-                        </a>
-                      </li>
-                      <li>
-                        <a
-                          href="/categories"
-                          className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                        >
-                          카테고리
-                        </a>
-                      </li>
-                    </ul>
-                  </div>
-                  {/* Social */}
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
-                      소셜
-                    </h3>
-                    <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                      <li>
-                        <a
-                          href="https://github.com/jon890"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                        >
-                          GitHub
-                        </a>
-                      </li>
-                      <li>
-                        <a
-                          href="https://github.com/jon890/fos-study"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                        >
-                          Source Repository
-                        </a>
-                      </li>
-                    </ul>
-                  </div>
-                  {/* Policy */}
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
-                      정책
-                    </h3>
-                    <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                      <li>
-                        <a href="/about" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                          소개
-                        </a>
-                      </li>
-                      <li>
-                        <a href="/privacy" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                          개인정보처리방침
-                        </a>
-                      </li>
-                      <li>
-                        <a href="/contact" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                          연락처
-                        </a>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div className="pt-8 border-t border-gray-200 dark:border-gray-800 text-center space-y-3">
-                  <VisitorCount />
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    © 2025 FOS Study. Built with Next.js & Tailwind CSS
-                  </p>
-                </div>
-              </div>
-            </footer>
+            <SiteFooter />
           </div>
           </SidebarProvider>
         </ThemeProvider>
