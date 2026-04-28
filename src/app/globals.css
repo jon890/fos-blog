@@ -572,3 +572,15 @@ html:not(.dark) .shiki span {
 
 /* === Header brand-mark dot === */
 /* 인라인 className 으로 처리 — 별도 룰 불필요 */
+
+/* === Footer accent line === */
+.fbf-accent {
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in oklch, var(--color-brand-400), transparent 60%) 30%,
+    var(--color-brand-400) 50%,
+    color-mix(in oklch, var(--color-brand-400), transparent 60%) 70%,
+    transparent
+  );
+}
