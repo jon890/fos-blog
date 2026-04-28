@@ -297,6 +297,24 @@ git -C /Users/.../fos-blog/.claude/worktrees/{plan} status --short
 **Good**: 우회 도입 plan 은 항상 기존 테스트 입력값 점검. 예: rate-limit bypass 에 RFC1918 추가 시 sweep test IP 를 `10.x.x.x` → `100.64.x.x` (CGN 대역) 변경.
 **검출**: 테스트 입력값 grep 으로 우회 대상 포함 여부 확인.
 
+## 3-7. `passNode: true` 누락 — hast-util-to-jsx-runtime default false (PR #83)
+
+**증상**: `toJsxRuntime(tree, { Fragment, jsx, jsxs, components })` 만 쓰고 `passNode` 미명시. default 가 false 라서 components 핸들러의 `node` prop 이 모두 undefined → `node?.properties?.[...]` / `node?.tagName` 검사 코드 모두 무력화 → 코드블록 frame / mermaid 분기 / data-attribute 검사 silent 깨짐.
+**Good**: `toJsxRuntime(tree, { ..., passNode: true, components })`.
+**검출**: `grep -nE 'toJsxRuntime\(' src/ | xargs -I{} grep -L "passNode" {}` 가 비어 있어야 함. unified hast 트리 → React 변환 시 컴포넌트가 hast `node` 검사하면 무조건 명시.
+
+## 3-8. server-only 가드 + vitest node 환경 충돌 (PR #83)
+
+**증상**: `import "server-only"` 가드 모듈을 vitest 의 node 환경 (`environment: "node"`) 에서 직접 import 하면 throw. Next.js RSC 의 react-server condition 미적용 환경이라 server-only 패키지가 client import 로 오인 → 모든 테스트 즉시 실패.
+**Good**: 테스트 파일 상단에 `vi.mock("server-only", () => ({}))` 1줄 추가. 가드는 production 빌드에서만 의미 있고 vitest 는 우회.
+**검출**: `grep -l 'import "server-only"' src/` 결과 모듈을 import 하는 test 파일이 `vi.mock("server-only"` 도 포함하는지 cross-check.
+
+## 3-9. non-null assertion (`!`) 대신 타입 가드 (PR #83)
+
+**증상**: `if (isRelativeMd && basePath)` 안에서 `resolveMarkdownLink(href!, basePath)` 처럼 `!` 사용. `isRelativeMd` 가 true 면 href 가 non-null 임이 논리적 보장이지만 TS 가 추론 못 함. 안전성 우회 + lint 경고 가능.
+**Good**: 조건문에 `&& href` 추가해 3-way 타입 가드로 좁히기 — `if (isRelativeMd && basePath && href)` 후 `resolveMarkdownLink(href, basePath)`.
+**검출**: `grep -rn '![\\s]*,' src/components/markdown/` 등 비slash 위치의 `!` 점검.
+
 ## § 3 누적 규칙
 
 - `review-fix` 6.5단계에서 추출. 같은 PR 에서 ✅ 누적 / ❌ 누적 금지 분류 후 § 3 추가
