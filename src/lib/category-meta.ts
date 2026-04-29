@@ -43,7 +43,7 @@ export function toCanonicalCategory(raw: string): CanonicalCategory {
 
 /**
  * canonical 에서 oklch hue (degrees) 로 매핑.
- * Round 2 mockup 의 POSTS 데이터 hue 와 일치 — 토큰의 `--color-cat-*` 와도 일치.
+ * Round 2 mockup 의 POSTS 데이터 hue 와 일치 — 토큰의 color-cat 토큰 (canonical key 별) 와도 일치.
  */
 const CANONICAL_TO_HUE: Record<CanonicalCategory, number> = {
   ai: 285,
@@ -70,7 +70,9 @@ export function getCategoryColor(raw: string): string {
 }
 
 /**
- * Tailwind 클래스로 `text-[var(--color-cat-*)]` 를 쓰고 싶을 때 토큰 var 이름 반환.
+ * Tailwind arbitrary class 에서 토큰 참조 시 사용 (canonical 9개에 한해 토큰 존재).
+ * 주의: 이 주석에 Tailwind 클래스처럼 보이는 패턴 (대괄호, 별표, 중괄호) 을 쓰지 말 것.
+ * Tailwind v4 content scanner 가 클래스 후보로 추출해서 globals.css parse error 발생.
  * (canonical 9개에 한해 토큰 존재)
  */
 export function getCategoryTokenVar(raw: string): string {

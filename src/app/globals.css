@@ -2,6 +2,11 @@
 @import "tailwindcss";
 @source "./app/**/*.{ts,tsx}";
 @source "../components/**/*.{ts,tsx}";
+/* tasks/*.md 의 코드 예시 (예: text-[var(--color-cat-*)]) 가 default scan 에 잡혀
+ * 잘못된 와일드카드 클래스를 생성 → CSS parse error. tasks/, docs/, .claude/ 는 모두 제외. */
+@source not "../../tasks/**";
+@source not "../../docs/**";
+@source not "../../.claude/**";
 
 /* dark: prefix를 미디어쿼리가 아닌 .dark class 기반으로 동작하게 설정 */
 @variant dark (&:where(.dark, .dark *));
