@@ -18,7 +18,7 @@
 - **누락**: HomeHero 의 `dl.hero-meta grid-cols-2` 가 모바일 폭에서 stat 라벨이 길면 컬럼 초과
 - **방어**: CodeCard 가 grid/flex 부모 안에서 `min-w-0` 누락 시 자식 폭에 부모가 늘어남
 
-**범위 외**: legacy `/category/[...path]` (plan015 진행 중), 글 상세 페이지 그리드 자체 (이미 `min-w-0` 적용됨).
+**범위 외**: legacy `/category/[...path]` (plan015 진행 중), 글 상세 페이지 그리드 자체 (이미 `min-w-0` 적용됨), Footer / Navbar / 검색 모달 등 글로벌 위젯 (DevTools smoke 결과 회귀 발견 시 후속 plan 으로 분리).
 
 ---
 
@@ -26,7 +26,7 @@
 
 ### 1. `src/app/globals.css` — `.prose` word-break / overflow-wrap 추가
 
-`.prose` 영역의 inline code 와 긴 URL 이 wrap 되도록 규칙 추가. 위치: 기존 `.prose img { ... }` (line 153) 근처:
+`.prose` 영역의 inline code 와 긴 URL 이 wrap 되도록 규칙 추가. 위치: 기존 `.prose img { ... }` (line **158**) 근처:
 
 ```css
 /* prose 의 inline code / 긴 URL / 한글 단어 자동 줄바꿈
@@ -38,8 +38,10 @@
   overflow-wrap: anywhere;
   word-break: break-word;
 }
-.prose :where(code):not(:where([class~="not-prose"] *)) {
-  /* inline code 는 더 공격적으로 — 식별자 한가운데서도 wrap 가능 */
+/* inline code 는 더 공격적으로 — 식별자 한가운데서도 wrap.
+ * 기존 globals.css line 211 의 `.prose :not(pre) > code` 패턴을 그대로 사용해서
+ * `pre code` (CodeCard / shiki 토큰) 와의 selector 충돌 회피. */
+.prose :not(pre) > code {
   overflow-wrap: anywhere;
   word-break: break-all;
 }
@@ -47,26 +49,26 @@
 
 `break-word` vs `break-all` 차이: `break-all` 은 영문 단어 한가운데 wrap (모바일 inline code 에 적합), `break-word` 는 단어 경계 우선.
 
-`pre` / `code-card-body` 에는 영향 없음 — 이미 `overflow-x: auto` 로 wrap 대신 스크롤. 단, `:not(:where([class~="not-prose"] *))` 보장으로 `pre code` 의 token span 에는 적용 안 됨.
+**selector 선택 이유 (critic 지적 반영)**: `:where(code):not(:where([class~="not-prose"] *))` 패턴은 `not-prose` wrapper 가 없는 모든 `code` 에 적용 → CodeCard / Mermaid 의 `pre code` 토큰까지 break-all 이 걸려 코드 줄바꿈 사고 가능. 기존 line 211 의 `.prose :not(pre) > code` 패턴은 부모가 `pre` 인 경우를 정확히 제외 — 동일 selector 채택해 회귀 차단. CodeCard 코드 토큰은 영향 없음.
 
 **검증**: 추가 후 글 상세 페이지에 매우 긴 식별자 (`AbsolutelyVeryLongIdentifierNameThatCouldBeOverflowing`) inline code 를 포함한 더미 markdown 으로 모바일 뷰 wrap 확인.
 
 ### 2. `src/components/HomeHero.tsx` — `dl.hero-meta` 모바일 폴백
 
-기존:
+기존 (HomeHero.tsx:57, 정확한 className):
 ```tsx
-<dl className="hero-meta mt-10 grid grid-cols-2 gap-x-8 gap-y-4 font-mono ...">
+<dl className="hero-meta mt-10 grid grid-cols-2 gap-x-8 gap-y-4 font-mono text-[12px] md:grid-cols-4">
 ```
 
 `grid-cols-2` 가 모바일에서 stat 항목 4개를 2×2 로 배치하지만, 라벨 (`POSTS` `CATEGORIES` `SERIES` `SUBSCRIBERS`) 중 가장 긴 `SUBSCRIBERS` (11자) + 값 (`1.2k`) + gap-x-8 (32px) 이 175px 이상 차지 가능. 모바일 viewport 375 - px-6 (48px) = 327px 안에 2 컬럼 (각 ~163px) 압박.
 
-수정: 모바일에서만 1 컬럼 (`grid-cols-1`), `sm:` (640px+) 부터 `grid-cols-2`:
+수정: 모바일 1 컬럼 (`grid-cols-1`), `sm:` (640px+) 부터 2 컬럼, **`md:grid-cols-4` 보존** (768px+ 데스크톱 4컬럼 회귀 방지). `text-[12px]` 도 보존:
 
 ```tsx
-<dl className="hero-meta mt-10 grid grid-cols-1 gap-x-8 gap-y-4 font-mono ... sm:grid-cols-2">
+<dl className="hero-meta mt-10 grid grid-cols-1 gap-x-8 gap-y-4 font-mono text-[12px] sm:grid-cols-2 md:grid-cols-4">
 ```
 
-Tailwind `grid-cols-1` 은 명시 시 `sm:grid-cols-2` 가 정상 우선. `gap-x-8` 은 1 컬럼에서 효과 없음 (gap-y-4 만 적용 — OK).
+**중요 (critic 지적 반영)**: 기존에 이미 `md:grid-cols-4` 가 있어 데스크톱은 4컬럼이다. 이 클래스를 누락하면 데스크톱 레이아웃이 회귀하므로 executor 는 위 className 을 그대로 적용. Tailwind 우선순위: `grid-cols-1` (모바일) → `sm:grid-cols-2` (640px+) → `md:grid-cols-4` (768px+) 순으로 정상 cascade. `gap-x-8` 은 1 컬럼에서 효과 없음 (gap-y-4 만 적용 — OK).
 
 **대안 (B)**: 4 항목을 모바일에서 2×2 로 유지하되 라벨 단축 (`SUBS` 등) — UX 손상 → 채택 X.
 
@@ -84,7 +86,7 @@ CodeCard 자체는 figure → `code-card-body` (overflow-x: auto). 문제: figur
 }
 ```
 
-**위치**: 기존 `.prose .code-card { ... }` (line 229) 의 첫 줄에 `min-width: 0;` 추가.
+**위치**: 기존 `.prose .code-card { ... }` (line **234**) 의 첫 줄에 `min-width: 0;` 추가.
 
 ### 4. `src/app/posts/[...slug]/page.tsx` 본문 grid 의 article `min-w-0` 재확인 (회귀 차단)
 
@@ -103,8 +105,8 @@ grep -n "min-w-0" src/app/posts/\[...slug\]/page.tsx | head -3
 
 | 파일 | 변경 |
 |---|---|
-| `src/app/globals.css` | `.prose` word-break/overflow-wrap, `.prose :where(code)` break-all, `.code-card` min-width:0 |
-| `src/components/HomeHero.tsx` | `dl.hero-meta` `grid-cols-1 sm:grid-cols-2` |
+| `src/app/globals.css` | `.prose` word-break/overflow-wrap, `.prose :not(pre) > code` break-all, `.code-card` min-width:0 |
+| `src/components/HomeHero.tsx` | `dl.hero-meta` `grid-cols-1 sm:grid-cols-2 md:grid-cols-4` (md 보존) |
 | `src/app/posts/[...slug]/page.tsx` | `min-w-0` 점검 (이미 있으면 변경 없음) |
 | `src/app/category/[...path]/page.tsx` | `min-w-0` 점검 (이미 있으면 변경 없음) |
 
@@ -120,8 +122,8 @@ grep -n "overflow-wrap: anywhere" src/app/globals.css
 grep -n "word-break: break-all" src/app/globals.css
 grep -n "min-width: 0" src/app/globals.css | head -3
 
-# HomeHero 모바일 grid
-grep -n "grid-cols-1 .* sm:grid-cols-2" src/components/HomeHero.tsx
+# HomeHero 모바일 grid (md:grid-cols-4 보존 확인)
+grep -n "grid-cols-1 sm:grid-cols-2 md:grid-cols-4" src/components/HomeHero.tsx
 ```
 
 수동 smoke 는 phase 02 에서 (DevTools 모바일 뷰 + Lighthouse).
