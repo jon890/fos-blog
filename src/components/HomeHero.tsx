@@ -54,7 +54,7 @@ export function HomeHero({ postCount, categoryCount, seriesCount, subscriberCoun
           공부하면서 기록하고, 기록하면서 다시 배웁니다.
         </p>
 
-        <dl className="hero-meta mt-10 grid grid-cols-2 gap-x-8 gap-y-4 font-mono text-[12px] md:grid-cols-4">
+        <dl className="hero-meta mt-10 grid grid-cols-1 gap-x-8 gap-y-4 font-mono text-[12px] sm:grid-cols-2 md:grid-cols-4">
           <div>
             <dt className="text-[var(--color-fg-muted)] uppercase tracking-[0.06em]">posts</dt>
             <dd className="mt-1 text-[24px] font-semibold tracking-tight text-[var(--color-fg-primary)]">{postCount.toLocaleString()}</dd>
