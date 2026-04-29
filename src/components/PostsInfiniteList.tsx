@@ -121,7 +121,7 @@ export function PostsInfiniteList(props: Props) {
         {status === "error" && (
           <button
             onClick={loadMore}
-            className="px-4 py-2 rounded-xl bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+            className="px-4 py-2 rounded-lg bg-[var(--color-bg-elevated)] text-[var(--color-error)] hover:bg-[color-mix(in_oklch,var(--color-fg-primary)_5%,transparent)] border border-[var(--color-border-subtle)] hover:border-[var(--color-border-default)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-400)] font-mono text-[12px] uppercase tracking-[0.06em]"
           >
             재시도
           </button>
@@ -130,7 +130,7 @@ export function PostsInfiniteList(props: Props) {
         {status === "idle" && (
           <button
             onClick={loadMore}
-            className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="px-4 py-2 rounded-lg bg-[var(--color-bg-elevated)] text-[var(--color-fg-secondary)] hover:bg-[color-mix(in_oklch,var(--color-fg-primary)_5%,transparent)] hover:text-[var(--color-fg-primary)] border border-[var(--color-border-subtle)] hover:border-[var(--color-border-default)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-400)] font-mono text-[12px] uppercase tracking-[0.06em]"
           >
             더 보기
           </button>
@@ -138,7 +138,7 @@ export function PostsInfiniteList(props: Props) {
 
         {status === "done" && (
           <>
-            <p role="status" className="text-sm text-gray-500 dark:text-gray-400">
+            <p role="status" className="font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-fg-muted)]">
               더 이상 글이 없습니다.
             </p>
             <BackToTopButton variant="inline" />
