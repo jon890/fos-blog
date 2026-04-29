@@ -1,16 +1,9 @@
-interface SublinePart {
-  num: string | number;
-  suffix: string;
-}
+import { type SublinePart, isSublinePart } from "@/lib/subline";
 
 interface CategoriesSubHeroProps {
   eyebrow: string;
   title: string;
   sublines: Array<string | SublinePart>;
-}
-
-function isSublinePart(x: string | SublinePart): x is SublinePart {
-  return typeof x === "object";
 }
 
 export function CategoriesSubHero({ eyebrow, title, sublines }: CategoriesSubHeroProps) {

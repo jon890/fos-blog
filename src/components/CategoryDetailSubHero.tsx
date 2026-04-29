@@ -1,20 +1,12 @@
 import type { CSSProperties } from "react";
 import { getCategoryColor } from "@/lib/category-meta";
-
-interface SublinePart {
-  num: string | number;
-  suffix: string;
-}
+import { type SublinePart, isSublinePart } from "@/lib/subline";
 
 interface CategoryDetailSubHeroProps {
   eyebrow: string;
   title: string;
   sublines: ReadonlyArray<string | SublinePart>;
   categorySlug: string;
-}
-
-function isSublinePart(x: string | SublinePart): x is SublinePart {
-  return typeof x === "object";
 }
 
 export function CategoryDetailSubHero({

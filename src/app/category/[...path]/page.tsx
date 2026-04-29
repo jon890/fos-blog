@@ -189,7 +189,7 @@ export default async function FolderPage({ params }: FolderPageProps) {
                   title={p.title}
                   excerpt={p.description ?? ""}
                   href={`/posts/${encodeURIComponent(p.path)}`}
-                  updatedAt={p.updatedAt ?? new Date(0)}
+                  updatedAt={p.updatedAt ?? null}
                   categorySlug={category}
                 />
               ))}

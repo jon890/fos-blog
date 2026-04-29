@@ -8,7 +8,7 @@ interface PostListRowProps {
   title: string;
   excerpt: string;
   href: string;
-  updatedAt: Date;
+  updatedAt: Date | null;
   readingMinutes?: number;
   categorySlug: string;
 }
