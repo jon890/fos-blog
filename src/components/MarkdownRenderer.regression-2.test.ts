@@ -17,22 +17,28 @@ import { join } from "node:path";
 describe("MarkdownRenderer wrapper className — prose 클래스 회귀 가드", () => {
   const SOURCE_PATH = join(__dirname, "MarkdownRenderer.tsx");
   const source = readFileSync(SOURCE_PATH, "utf-8");
+  // describe 스코프에서 한 번만 정규식 매칭 — 두 it 블록이 공유.
+  // match 가 null 이어도 이 시점에서 throw 안 함 (첫 번째 it 가 명시적 가드).
+  const match = source.match(/className="([^"]*prose[^"]*)"/);
+  const className = match?.[1] ?? "";
+  const tokens = className.split(/\s+/).filter(Boolean);
+
+  it("wrapper div 에 prose 가 포함된 className 이 존재", () => {
+    expect(
+      match,
+      "MarkdownRenderer.tsx 의 wrapper div 에 prose 가 들어간 className 이 있어야 함",
+    ).toBeTruthy();
+  });
 
   it("wrapper className 에 unconditional 'prose' 클래스 포함 (md: 등 prefix 없는 단독)", () => {
-    const match = source.match(/className="([^"]*prose[^"]*)"/);
-    expect(match, "wrapper div 에 prose 가 들어간 className 이 있어야 함").toBeTruthy();
-    const tokens = match![1].split(/\s+/).filter(Boolean);
     // unconditional prose 가 토큰에 직접 있어야 (md:prose / sm:prose 같은 prefix 형은 제외)
     expect(
       tokens.includes("prose"),
-      `wrapper className 에 단독 "prose" 가 없음 — 모바일에서 globals.css 의 .prose 셀렉터 매칭 실패. 현재: ${match![1]}`,
+      `wrapper className 에 단독 "prose" 가 없음 — 모바일에서 globals.css 의 .prose 셀렉터 매칭 실패. 현재: ${className}`,
     ).toBe(true);
   });
 
   it("wrapper className 의 prose 토큰이 size modifier 와 결합된 형태가 아님 (단독 prose 존재)", () => {
-    // wrapper 의 className 토큰만 검사 — 다른 곳의 문자열 영향 없음
-    const match = source.match(/className="([^"]*prose[^"]*)"/);
-    const tokens = match![1].split(/\s+/).filter(Boolean);
     const proseTokens = tokens.filter((t) => t === "prose" || /:prose$/.test(t));
     // 단독 "prose" 가 토큰에 있어야 — md:prose / sm:prose 만 있으면 모바일에서 매칭 실패
     expect(
