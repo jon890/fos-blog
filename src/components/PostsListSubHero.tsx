@@ -4,7 +4,7 @@ interface PostsListSubHeroProps {
   eyebrow: string;
   title: string;
   meta: string;
-  accent?: "default" | "popular";
+  accent?: "popular";
 }
 
 export function PostsListSubHero({ eyebrow, title, meta, accent }: PostsListSubHeroProps) {
@@ -22,10 +22,7 @@ export function PostsListSubHero({ eyebrow, title, meta, accent }: PostsListSubH
           {title}
         </h1>
         {accent === "popular" && (
-          <Flame
-            className="h-6 md:h-7 w-auto"
-            style={{ color: "var(--color-cat-algorithm)" }}
-          />
+          <Flame className="h-6 md:h-7 w-auto text-[var(--color-cat-algorithm)]" />
         )}
       </div>
 
