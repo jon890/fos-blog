@@ -359,3 +359,15 @@ mockup 을 만들어주세요.
 - **plan014**: Density 토글 + 사이드바 + 검색 (shadcn Sheet/Dialog)
 - **plan015**: motion-one 마이크로 인터랙션
 - → **권장**: 각 plan 시작 전 별도 plan mode 세션에서 components.* 파일 추출/분석 → plan 작성 → build-with-teams 실행
+
+### 3계층 헤더 위계 (plan016)
+
+페이지 헤더의 정보 위계를 의도적으로 차등:
+
+| 레벨 | 컴포넌트 | 시각 무게 | 사용처 |
+|---|---|---|---|
+| Hero | `HomeHero` | 강 (mesh + 큰 텍스트 + 액션) | `/` (홈) |
+| SubHero | `PostsListSubHero` | 중 (eyebrow + h1 + meta, mesh 없음) | `/posts/latest`, `/posts/popular` |
+| ArticleHero | `ArticleHero` | 강 (article-specific mesh + TOC) | `/posts/[...path]` |
+
+**이유**: 인덱스 페이지는 카테고리·정렬 정보가 핵심이지 hero 자체가 콘텐츠는 아님 → mesh 없이 eyebrow + h1 만으로 충분. Hero ↔ ArticleHero 사이 중간 무게가 필요했음.

@@ -40,6 +40,7 @@ src/
 │
 ├── components/
 │   ├── PostsInfiniteList.tsx           [신규] "use client" — IntersectionObserver + 수동 버튼
+│   ├── PostsListSubHero.tsx            [plan016] 인덱스 eyebrow + h1 + meta + optional Flame accent
 │   ├── PostCardSkeleton.tsx            [신규] 스켈레톤 1개
 │   ├── BackToTopButton.tsx             [신규] 플로팅 + 인라인 공용
 │   └── SectionCTAButton.tsx            [신규] 홈 섹션 하단 "더 보기" 버튼
