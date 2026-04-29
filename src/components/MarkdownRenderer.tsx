@@ -14,7 +14,7 @@ export async function MarkdownRenderer({
 }: MarkdownRendererProps) {
   const tree = await parseMarkdownToHast(content);
   return (
-    <div className="prose-sm md:prose prose-gray dark:prose-invert max-w-none">
+    <div className="prose prose-sm md:prose-base prose-gray dark:prose-invert max-w-none">
       {toJsxRuntime(tree, {
         Fragment,
         jsx,
