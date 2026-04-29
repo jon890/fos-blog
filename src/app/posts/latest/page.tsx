@@ -3,6 +3,7 @@ import logger from "@/lib/logger";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { PostsInfiniteList, type PostItem } from "@/components/PostsInfiniteList";
 import { BackToTopButton } from "@/components/BackToTopButton";
+import { PostsListSubHero } from "@/components/PostsListSubHero";
 
 const log = logger.child({ module: "app/posts/latest/page" });
 
@@ -44,13 +45,8 @@ export default async function PostsLatestPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-          최신 글
-        </h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">업데이트 순</p>
-      </div>
+    <div className="container mx-auto px-4 max-w-[1180px]">
+      <PostsListSubHero eyebrow="INDEX · LATEST" title="최신 글" meta="업데이트 순" />
 
       <PostsInfiniteList
         mode="latest"
