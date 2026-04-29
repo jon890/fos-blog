@@ -1,0 +1,27 @@
+{
+  "name": "plan018-mobile-horizontal-scroll",
+  "description": "모바일 (375px) 에서 페이지 가로 스크롤 차단 — 근본 원인 위젯별 방어. body 안전망 (overflow-x: clip) 미사용, 의도된 위젯별 폭 제한으로 콘텐츠 손실 방지. 1단계 prose word-break / CodeCard min-w / hero-meta dl 모바일 폴백 + 2단계 Lighthouse 회귀 점검.",
+  "status": "pending",
+  "created_at": "2026-04-29",
+  "total_phases": 2,
+  "related_docs": [
+    "docs/adr.md"
+  ],
+  "depends_on": [],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "prose word-break + CodeCard parent min-w-0 + hero-meta dl mobile fallback",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "title": "DevTools 모바일 smoke + Lighthouse + index.json status=completed",
+      "model": "haiku",
+      "status": "pending"
+    }
+  ]
+}
