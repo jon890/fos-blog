@@ -1,6 +1,11 @@
 import { getRepositories } from "@/infra/db/repositories";
 import type { CategoryData } from "@/infra/db/types";
-import { CategoryList } from "@/components/CategoryList";
+import { Breadcrumb } from "@/components/Breadcrumb";
+import { CategoriesSubHero } from "@/components/CategoriesSubHero";
+import { CategoryFeatured } from "@/components/CategoryFeatured";
+import { CategoryCard } from "@/components/CategoryCard";
+import { CategoriesSection } from "@/components/CategoriesSection";
+import { formatYYYYMMDD } from "@/lib/time";
 import { Metadata } from "next";
 import { env } from "@/env";
 import logger from "@/lib/logger";
@@ -27,26 +32,70 @@ export const metadata: Metadata = {
 };
 
 export default async function CategoriesPage() {
-  let categories: CategoryData[] = [];
+  let categories: Array<CategoryData & { latestUpdatedAt: Date | null }> = [];
+
   try {
     const { category } = getRepositories();
-    categories = await category.getCategories();
+    categories = await category.getCategoriesWithLatest();
   } catch (error) {
-    log.warn({ err: error instanceof Error ? error : new Error(String(error)) }, "Database not available");
+    log.warn(
+      { err: error instanceof Error ? error : new Error(String(error)) },
+      "Database not available",
+    );
   }
 
-  return (
-    <div className="container mx-auto px-4 py-6 md:py-12">
-      <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-          카테고리
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          {categories.length}개의 카테고리에서 다양한 주제의 글을 확인하세요.
-        </p>
-      </div>
+  const top3 = categories.slice(0, 3);
+  const rest = categories.slice(3);
+  const totalCount = categories.reduce((sum, c) => sum + c.count, 0);
 
-      <CategoryList categories={categories} />
-    </div>
+  const maxLatestUpdatedAt =
+    categories.reduce<Date | null>((max, c) => {
+      if (!c.latestUpdatedAt) return max;
+      if (!max) return c.latestUpdatedAt;
+      return c.latestUpdatedAt > max ? c.latestUpdatedAt : max;
+    }, null);
+
+  return (
+    <>
+      <Breadcrumb items={[{ label: "fos-blog", href: "/" }, { label: "categories" }]} />
+      <CategoriesSubHero
+        eyebrow="INDEX · CATEGORIES"
+        title="카테고리"
+        sublines={[
+          { num: categories.length, suffix: "개 주제" },
+          { num: totalCount, suffix: "개의 글" },
+          `updated ${formatYYYYMMDD(maxLatestUpdatedAt)}`,
+        ]}
+      />
+      <main className="mx-auto max-w-[1180px] px-8 py-12 pb-20 space-y-14">
+        {top3.length > 0 && (
+          <CategoriesSection idx="01" title="Most active" meta="top 3 · 카테고리 전체 기준">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {top3.map((c, i) => (
+                <CategoryFeatured
+                  key={c.slug}
+                  category={c}
+                  rank={i + 1}
+                  latestUpdatedAt={c.latestUpdatedAt}
+                />
+              ))}
+            </div>
+          </CategoriesSection>
+        )}
+        {rest.length > 0 && (
+          <CategoriesSection
+            idx="02"
+            title="All categories"
+            meta={`${rest.length} canonical · alphabetical`}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {rest.map((c) => (
+                <CategoryCard key={c.slug} category={c} />
+              ))}
+            </div>
+          </CategoriesSection>
+        )}
+      </main>
+    </>
   );
 }
