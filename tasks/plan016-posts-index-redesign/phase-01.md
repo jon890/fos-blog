@@ -35,7 +35,7 @@ interface PostsListSubHeroProps {
 - eyebrow: `font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-fg-muted)]` + 1px brand line prefix (`h-px w-6 bg-[var(--color-brand-400)]`) — HomeHero 의 `hero-eyebrow` 와 동일 패턴
 - h1: `mt-4 text-[28px] md:text-[40px] font-semibold leading-[1.1] tracking-tight text-[var(--color-fg-primary)]` (HomeHero 보다 한 단계 작음 — 36/64 → 28/40)
 - meta: `mt-3 font-mono text-[12px] uppercase tracking-[0.06em] text-[var(--color-fg-muted)]` (단일 라인)
-- accent="popular" 일 때 h1 우측에 `<Flame>` lucide 아이콘 (h-6 md:h-7) — color `var(--color-cat-system)` (orange tone). h1 과 같은 baseline 으로 `inline-flex items-center gap-3`
+- accent="popular" 일 때 h1 우측에 `<Flame>` lucide 아이콘 (h-6 md:h-7) — color `var(--color-cat-algorithm)` (oklch 0.74/0.5 hue 25 = orange-red, fire tone). h1 과 같은 baseline 으로 `inline-flex items-center gap-3`. ※ critic 지적: `--color-cat-system` 은 hue 250 인디고라 부적합 → algorithm 토큰 사용
 - 하단 1px divider: `mt-8 h-px bg-[var(--color-border-subtle)]` (본문과 분리)
 
 Mesh / SVG 배경 **없음** — 의도적으로 가볍게.
@@ -64,7 +64,8 @@ PostsInfiniteList 와 BackToTopButton 은 그대로.
 
 **"더 보기" 버튼** (idle 상태, 라인 132–137):
 - `bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700` →
-- `bg-[var(--color-bg-elevated)] text-[var(--color-fg-secondary)] hover:bg-[var(--color-bg-subtle)] hover:text-[var(--color-fg-primary)] border border-[var(--color-border-subtle)] hover:border-[var(--color-border-default)]`
+- `bg-[var(--color-bg-elevated)] text-[var(--color-fg-secondary)] hover:bg-[color-mix(in_oklch,var(--color-fg-primary)_5%,transparent)] hover:text-[var(--color-fg-primary)] border border-[var(--color-border-subtle)] hover:border-[var(--color-border-default)]`
+  - ※ critic MINOR: light 모드에서 `--color-bg-elevated`/`--color-bg-subtle` 모두 #ffffff 라 hover bg 변화 미시 → `color-mix` 로 fg-primary 5% 오버레이 적용 (양 모드 모두 미세한 시각 변화 확보)
 - `focus-visible:ring-blue-500` → `focus-visible:ring-[var(--color-brand-400)]`
 - `rounded-xl` → `rounded-lg` (PostCard / CategoryCard 와 동일)
 - 폰트: `font-mono text-[12px] uppercase tracking-[0.06em]` 추가 — 키 패턴 통일
