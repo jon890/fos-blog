@@ -51,8 +51,9 @@ export default async function CategoriesPage() {
   const maxLatestUpdatedAt =
     categories.reduce<Date | null>((max, c) => {
       if (!c.latestUpdatedAt) return max;
-      if (!max) return c.latestUpdatedAt;
-      return c.latestUpdatedAt > max ? c.latestUpdatedAt : max;
+      const d = c.latestUpdatedAt instanceof Date ? c.latestUpdatedAt : new Date(c.latestUpdatedAt as unknown as string);
+      if (!max) return d;
+      return d > max ? d : max;
     }, null);
 
   return (
