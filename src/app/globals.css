@@ -624,6 +624,11 @@ html:not(.dark) .prose .code-card-body pre span {
   background: color-mix(in oklch, var(--cat-color), transparent 96%);
 }
 
+/* === ReadmeFrame body code color (plan015) === */
+.readme-body :where(code):not(:where([class~="not-prose"] *)) {
+  color: var(--cat-color);
+}
+
 /* === Footer accent line === */
 .fbf-accent {
   background: linear-gradient(
