@@ -32,6 +32,7 @@
 
 | Component | Role |
 |---|---|
+| `PostsListSubHero` | 페이지 eyebrow + h1 + meta + divider (server, plan016) |
 | `PostsInfiniteList` (mode=`"latest"`) | 클라이언트 — IntersectionObserver + 수동 버튼 + 끝 도달 UX |
 | `PostCard` | 각 글 카드 (visitCount 함께 표시) |
 | `PostCardSkeleton` | 로딩 스켈레톤 (3개) |
@@ -64,8 +65,8 @@
 ## Layout
 
 ```
-[Header]
-  └ "최신 글" h1 + "업데이트 순" 부제
+[Container max-w-[1180px]]
+  [PostsListSubHero eyebrow="INDEX · LATEST" title="최신 글" meta="업데이트 순"]
 [PostsInfiniteList mode="latest"]
   ├ PostCard × N  (누적)
   ├ [스켈레톤 × 3 | 인라인 "더 보기" 버튼 | "재시도" 버튼 | 끝 문구 + 인라인 "맨 위로"]

@@ -35,6 +35,7 @@
 
 | Component | Role |
 |---|---|
+| `PostsListSubHero` (accent=`"popular"`) | 페이지 eyebrow + h1 + Flame accent + meta + divider (server, plan016) |
 | `PostsInfiniteList` (mode=`"popular"`) | 클라이언트 — IntersectionObserver + 수동 버튼 + 끝 도달 UX |
 | `PostCard` | 각 글 카드 (visitCount 표시) |
 | `PostCardSkeleton` | 로딩 스켈레톤 (3개) |
@@ -67,8 +68,9 @@
 ## Layout
 
 ```
-[Header]
-  └ "인기 글" h1 + "방문수 순" 부제 + 🔥 Flame 아이콘
+[Container max-w-[1180px]]
+  [PostsListSubHero eyebrow="INDEX · POPULAR" title="인기 글" meta="방문수 순" accent="popular"]
+   └ h1 우측 Flame 아이콘 (--color-cat-algorithm, hue 25 orange-red)
 [PostsInfiniteList mode="popular"]
   ├ PostCard × N (visitCount 강조)
   ├ [스켈레톤 × 3 | 인라인 "더 보기" 버튼 | "재시도" 버튼 | 끝 문구 + 인라인 "맨 위로"]

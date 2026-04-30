@@ -3,7 +3,7 @@ import logger from "@/lib/logger";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { PostsInfiniteList, type PostItem } from "@/components/PostsInfiniteList";
 import { BackToTopButton } from "@/components/BackToTopButton";
-import { Flame } from "lucide-react";
+import { PostsListSubHero } from "@/components/PostsListSubHero";
 
 const log = logger.child({ module: "app/posts/popular/page" });
 
@@ -53,16 +53,8 @@ export default async function PostsPopularPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <div className="mb-8 flex items-center gap-2">
-        <Flame className="w-7 h-7 text-orange-500" />
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-            인기 글
-          </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">방문수 순</p>
-        </div>
-      </div>
+    <div className="container mx-auto px-4 max-w-[1180px]">
+      <PostsListSubHero eyebrow="INDEX · POPULAR" title="인기 글" meta="방문수 순" accent="popular" />
 
       <PostsInfiniteList
         mode="popular"
