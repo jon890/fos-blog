@@ -10,6 +10,8 @@ import {
 } from "@/lib/markdown";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { TableOfContents } from "@/components/TableOfContents";
+import { ReadingProgressBar } from "@/components/ReadingProgressBar";
+import { MobileTocButton } from "@/components/MobileTocButton";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 import { Comments } from "@/components/Comments";
 import { ArticleHero } from "@/components/ArticleHero";
@@ -112,7 +114,7 @@ export default async function PostPage({ params }: PostPageProps) {
   const title = extractTitle(content) || postData.title;
   const readTime = getReadingTime(stripped);
   const tocItems = generateTableOfContents(stripped).filter(
-    (i) => i.level === 2
+    (i) => i.level === 2 || i.level === 3
   );
 
   const { visit } = getRepositories();
@@ -156,6 +158,7 @@ export default async function PostPage({ params }: PostPageProps) {
 
   return (
     <>
+      <ReadingProgressBar />
       <ArticleJsonLd
         url={postUrl}
         title={title}
@@ -186,6 +189,8 @@ export default async function PostPage({ params }: PostPageProps) {
           <TableOfContents toc={tocItems} />
         </aside>
       </div>
+
+      <MobileTocButton toc={tocItems} />
 
       <ArticleFooter tags={frontMatter.tags} />
 
