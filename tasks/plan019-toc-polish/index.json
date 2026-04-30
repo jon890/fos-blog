@@ -1,0 +1,23 @@
+{
+  "name": "plan019-toc-polish",
+  "description": "글 상세 페이지 TOC 마무리 — (1) 상단 fixed 1px reading progress bar, (2) 모바일 우하단 floating TOC button + bottom sheet, (3) TOC 에 H3 들여쓰기 nesting 추가. plan009 토큰만 사용, 신규 토큰/라이브러리 없음.",
+  "status": "pending",
+  "created_at": "2026-04-30",
+  "total_phases": 1,
+  "related_docs": [
+    "docs/pages/post-detail.md"
+  ],
+  "depends_on": [
+    "plan011-article-page-redesign",
+    "plan012-code-block-redesign"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "ReadingProgressBar + MobileTocButton + TableOfContents H3 nesting + page 통합",
+      "model": "sonnet",
+      "status": "pending"
+    }
+  ]
+}
