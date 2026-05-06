@@ -361,6 +361,42 @@ function hexWithAlpha(hex: string, alpha: number): string {
 ```
 **검출**: `grep -rn 'parseInt.*16)' src/lib/` 로 hex 분해 후보 찾고, 함수 진입에 정규식 / length 가드 없으면 의심. 외부 입력 경로 (URL param / form / props) 가 닿는지 확인.
 
+## 3-15. react-hook-form + zod 의 create/edit 모드 schema 미분리 (PR #108)
+
+**증상**: 단일 zod schema 가 모든 필드 required 인데 edit 모드는 일부 필드만 입력 (예: `password` + `content` 만, `nickname` 은 read-only) → form 제출 시 누락 필드 validation 오류 발생.
+**Good**: `createSchema.pick({ ... })` 또는 `omit` 으로 mode 별 schema 분리 + props 를 discriminated union (`mode: "create" | "edit"`) 으로 강제. `useForm` resolver 가 mode 에 따라 분기.
+```ts
+const createSchema = z.object({ nickname, password, content });
+const editSchema = createSchema.pick({ password: true, content: true });
+const resolver = zodResolver(mode === "edit" ? editSchema : createSchema);
+```
+**검출**: `grep -rn 'zodResolver' src/components/` + 같은 컴포넌트가 `mode: "create" | "edit"` props 받으면서 schema 1개만 쓰면 의심.
+
+## 3-16. 서버 raw error 메시지를 클라이언트 toast 로 직접 노출 (PR #108)
+
+**증상**: `catch (error) { toast.error(error.message) }` 또는 `toast.error(data.message)` 로 서버 응답 메시지를 그대로 화면에 표시. SQL 구문 / 스택 / 내부 식별자 / DB 컬럼명 노출 위험.
+**Good**: 사용자 친화 일반 메시지만 toast, 상세는 콘솔 로그. 4xx 에서 의미 있는 코드는 화이트리스트 매핑.
+```ts
+const USER_FRIENDLY_ERRORS: Record<string, string> = {
+  PASSWORD_MISMATCH: "비밀번호가 일치하지 않습니다",
+};
+toast.error(USER_FRIENDLY_ERRORS[code] ?? "요청을 처리할 수 없습니다");
+```
+**검출**: `grep -rn 'toast.error.*\(error\|err\|data\)\.' src/components/` — error / data 의 message 필드를 toast 직접 전달이면 의심.
+
+## 3-17. Drizzle timestamp 컬럼이 API 응답 후 ISO string 직렬화 (PR #108)
+
+**증상**: 서버에서 Drizzle `comments.createdAt: timestamp` 가 `Date` 객체로 보이지만, `Response.json()` / `JSON.stringify` 직렬화 후 클라이언트는 ISO string 으로 받음. client 측 `(date: Date)` 시그니처 헬퍼에 넘기면 `date.getTime is not a function` 또는 런타임 NaN.
+**Good**: 클라이언트 시간 헬퍼는 `Date | string` 양쪽 수용 + invalid 가드.
+```ts
+function formatRelativeTime(dateOrIso: Date | string): string {
+  const date = typeof dateOrIso === "string" ? new Date(dateOrIso) : dateOrIso;
+  if (Number.isNaN(date.getTime())) return "";
+  // ...
+}
+```
+**검출**: `grep -rn 'createdAt\|updatedAt' src/components/` 후 Date 메서드 (`getTime()` / `toLocaleDateString()`) 직접 호출이 있으면 ISO string 케이스 처리 여부 확인.
+
 ## § 3 누적 규칙
 
 - `review-fix` 6.5단계에서 추출. 같은 PR 에서 ✅ 누적 / ❌ 누적 금지 분류 후 § 3 추가
