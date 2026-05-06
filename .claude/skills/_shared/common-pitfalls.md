@@ -321,6 +321,23 @@ git -C /Users/.../fos-blog/.claude/worktrees/{plan} status --short
 **Good**: map 바깥에 누산 변수 선언 + iter 안에서 `++`. React 함수 컴포넌트 안의 `let` 누산은 매 렌더 새로 초기화되므로 안전.
 **검출**: `grep -rn 'slice(0, idx' src/components/` — pagination 외 위치에 등장 시 의심.
 
+## 3-11. client component catch 의 console.error 만 두면 UX 침묵 (PR #105)
+
+**증상**: fetch / mutation 의 catch 블록에서 `console.error("X failed:", error)` 만 호출하고 결과 영역은 비우거나 빈 결과로 fallback. 사용자는 "결과 없음" 으로 오해 (실제로는 네트워크/서버 에러).
+**Good**: `errorState: string | null` state 추가 → catch 에서 setError → UI 의 결과 영역에 빈 결과와 별개 분기로 표시. 새 요청 시작 시 reset (`setError(null)`). server-side 응답이 ok 가 아닐 때도 throw 하여 catch 로 라우팅 (`if (!response.ok) throw ...`).
+**검출**: `grep -rn 'console.error.*failed' src/components/` — client component 의 catch 안 console.error 호출이 사용자 피드백 state 없이 단독 사용되면 재발 가능.
+
+## 3-12. useRef array 가 source 변경 시 stale 잔존 (PR #105)
+
+**증상**: `const refs = useRef<(T | null)[]>([])` 로 N 개 항목의 DOM ref 를 모으는데, `items` 가 새 배열로 교체된 후 `refs.current` 가 이전 길이 그대로 남아 hover/scroll 등 후속 effect 가 stale element 를 가리킴.
+**Good**: items 변경 시 ref 배열을 trim 하는 effect 명시.
+```ts
+useEffect(() => {
+  refs.current = refs.current.slice(0, items.length);
+}, [items]);
+```
+**검출**: `grep -rn 'useRef<.*\[\]>' src/components/` 로 ref array 후보를 찾고, 같은 컴포넌트에서 items state 가 자주 교체되는데 위 trim effect 가 없으면 의심.
+
 ## § 3 누적 규칙
 
 - `review-fix` 6.5단계에서 추출. 같은 PR 에서 ✅ 누적 / ❌ 누적 금지 분류 후 § 3 추가
