@@ -338,6 +338,29 @@ useEffect(() => {
 ```
 **검출**: `grep -rn 'useRef<.*\[\]>' src/components/` 로 ref array 후보를 찾고, 같은 컴포넌트에서 items state 가 자주 교체되는데 위 trim effect 가 없으면 의심.
 
+## 3-13. npm dep 제거 전 globals.css / config 의 직접 참조 grep 누락 (PR #107)
+
+**증상**: package.json 에서 npm dep 가 "코드에서 직접 import 안 보임" 이라는 이유로 제거. 실제로는 `src/app/globals.css` 의 `@import "pkg/dist/.../style.css"`, `tailwind.config`, `tsconfig paths`, `next.config` 같은 비-TS 진입점이 그 dep 를 의존하던 케이스 → turbopack/webpack 빌드 단계에서 resolve 실패. 단위 테스트는 통과하지만 build 가 깨진다 (PR #107 의 pretendard 가 "OG 폰트 static asset" 으로 오해되어 제거된 사례).
+**Good**: dep 제거 전 아래 grep 모두 0건이어야 안전:
+```bash
+grep -rn "<pkg-name>" src/app/globals.css src/app/*.css tailwind.config.* next.config.* tsconfig.json postcss.config.* eslint.config.*
+grep -rn "from ['\"]<pkg-name>" src/ scripts/
+```
+**Why**: TS import 만 보면 CSS / config 의존을 놓친다. fos-blog 의 `pretendard` 처럼 "UI 폰트 CSS import + OG 폰트 자산" 처럼 한 dep 가 두 용도일 때 위험.
+
+## 3-14. hex 입력 string 을 parseInt 로 분해할 때 형식 검증 누락 (PR #107)
+
+**증상**: `parseInt(hex.slice(1, 3), 16)` 로 RGB 분해. 짧은 hex (`#abc`) / 빈 문자열 / 비-hex 문자열 입력 시 `parseInt` 가 NaN 반환 → `rgba(NaN, NaN, NaN, alpha)` 같은 무효 CSS 생성. satori / canvas / CSS 어디든 silent 실패.
+**Good**: `^#[0-9a-fA-F]{6}$` 패턴 검증 후 비매치 시 안전한 fallback rgba 반환.
+```ts
+const HEX_PATTERN = /^#[0-9a-fA-F]{6}$/;
+function hexWithAlpha(hex: string, alpha: number): string {
+  if (!HEX_PATTERN.test(hex)) return `rgba(63, 186, 201, ${alpha})`; // brand fallback
+  // ... parseInt 분해
+}
+```
+**검출**: `grep -rn 'parseInt.*16)' src/lib/` 로 hex 분해 후보 찾고, 함수 진입에 정규식 / length 가드 없으면 의심. 외부 입력 경로 (URL param / form / props) 가 닿는지 확인.
+
 ## § 3 누적 규칙
 
 - `review-fix` 6.5단계에서 추출. 같은 PR 에서 ✅ 누적 / ❌ 누적 금지 분류 후 § 3 추가
