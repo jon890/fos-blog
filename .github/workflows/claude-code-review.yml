@@ -26,7 +26,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-      issues: read
+      issues: write
       id-token: write
 
     steps:
@@ -34,6 +34,16 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 1
+
+      # /review 트리거 댓글에 👀 이모지로 즉시 작업 시작 시그널
+      - name: /review 댓글에 시작 reaction 추가
+        if: github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
+            --method POST \
+            --field content=eyes || true
 
       - name: 이전 Claude 봇 댓글 삭제
         env:
@@ -378,3 +388,20 @@ jobs:
               3단계의 인라인 review JSON body 안의 `\n` 은 JSON parser 가 해석하므로 정상.
 
           claude_args: '--model claude-sonnet-4-6 --allowedTools "Agent,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*)" --disallowedTools "Read,Write,Edit,Glob,Grep,LS"'
+
+      # 작업 결과를 /review 댓글에 ✅/❌ reaction 으로 표시 (success/failure 분기, always 실행)
+      - name: /review 댓글에 종료 reaction 추가
+        if: github.event_name == 'issue_comment' && always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OUTCOME: ${{ job.status }}
+        run: |
+          # job.status: success | failure | cancelled
+          if [ "$OUTCOME" = "success" ]; then
+            CONTENT="+1"
+          else
+            CONTENT="-1"
+          fi
+          gh api "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
+            --method POST \
+            --field content="$CONTENT" || true
