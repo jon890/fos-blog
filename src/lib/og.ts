@@ -77,7 +77,9 @@ export const OG_LAYOUT = {
  * satori 는 oklch 미지원이라 직접 hex 박아 넣음.
  *
  * 키는 정규화된 짧은 alias 기준. categoryIcons 의 풀네임(database/javascript)은
- * OG_CATEGORY_ALIAS 로 흡수. 미등록 카테고리는 OG_CATEGORY_DEFAULT_HEX 로 fallback.
+ * OG_CATEGORY_ALIAS 로 흡수. 미등록 카테고리(architecture/finance/git/go/html/http/internet/
+ * interview/kafka/network/redis/resume/css/기술공유 등)는 OG_CATEGORY_DEFAULT_HEX(brand teal)
+ * 로 fallback — 향후 plan 에서 도메인 친화 색을 점진 확장 예정.
  */
 export const OG_CATEGORY_HEX: Record<string, string> = {
   ai: "#a4a3e2",        // oklch(0.74 0.09 285)
@@ -106,7 +108,12 @@ export function getCategoryHex(category: string): string {
   return OG_CATEGORY_HEX[key] ?? OG_CATEGORY_DEFAULT_HEX;
 }
 
+const HEX_PATTERN = /^#[0-9a-fA-F]{6}$/;
+
 export function hexWithAlpha(hex: string, alpha: number): string {
+  if (!HEX_PATTERN.test(hex)) {
+    return `rgba(63, 186, 201, ${alpha})`; // OG_CATEGORY_DEFAULT_HEX(#3fbac9) 의 rgba — satori 무효 CSS 회피
+  }
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);

@@ -70,4 +70,10 @@ describe("hexWithAlpha", () => {
   it("converts hex to rgba with given alpha", () => {
     expect(hexWithAlpha("#3fbac9", 0.12)).toBe("rgba(63, 186, 201, 0.12)");
   });
+
+  it("falls back to brand teal rgba when hex is malformed", () => {
+    expect(hexWithAlpha("not-a-hex", 0.3)).toBe("rgba(63, 186, 201, 0.3)");
+    expect(hexWithAlpha("#abc", 0.3)).toBe("rgba(63, 186, 201, 0.3)");
+    expect(hexWithAlpha("", 0.3)).toBe("rgba(63, 186, 201, 0.3)");
+  });
 });
