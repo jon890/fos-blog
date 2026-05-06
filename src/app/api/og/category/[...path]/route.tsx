@@ -10,6 +10,8 @@ import {
   OG_LAYOUT,
   loadOgFont,
   loadOgLogoDataUrl,
+  getCategoryHex,
+  hexWithAlpha,
 } from "@/lib/og";
 import type { FolderContentsResult } from "@/infra/db/types";
 
@@ -78,6 +80,7 @@ export async function GET(
   }
 
   const icon = categoryIcons[current] ?? DEFAULT_CATEGORY_ICON;
+  const categoryHex = getCategoryHex(current);
 
   try {
     return new ImageResponse(
@@ -90,19 +93,36 @@ export async function GET(
             flexDirection: "column",
             justifyContent: "center",
             alignItems: "flex-start",
-            background: `linear-gradient(135deg, ${OG_COLORS.bgGradientStart} 0%, ${OG_COLORS.bgGradientMid} 50%, ${OG_COLORS.bgGradientEnd} 100%)`,
+            background: OG_COLORS.bgBase,
             padding: OG_LAYOUT.padding,
             position: "relative",
           }}
         >
+          {/* 상단 brand teal 띠 */}
           <div
             style={{
-              fontSize: 22,
-              color: OG_COLORS.textSecondary,
-              marginBottom: 20,
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: OG_LAYOUT.brandBarHeight,
+              background: OG_COLORS.brand,
+            }}
+          />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              background: hexWithAlpha(categoryHex, 0.12),
+              border: `1px solid ${hexWithAlpha(categoryHex, 0.3)}`,
+              borderRadius: 24,
+              padding: "8px 20px",
+              fontSize: 24,
+              color: categoryHex,
+              marginBottom: 28,
             }}
           >
-            {breadcrumb}
+            {icon} {current}
           </div>
           <div
             style={{
@@ -113,7 +133,7 @@ export async function GET(
               marginBottom: 24,
             }}
           >
-            {icon} {current}
+            {breadcrumb}
           </div>
           <div
             style={{
@@ -121,7 +141,7 @@ export async function GET(
               color: OG_COLORS.textSecondary,
             }}
           >
-            {`${contents.posts.length}개의 글, ${contents.folders.length}개의 폴더`}
+            {`${current} — 글 ${contents.posts.length}개 정리 모음`}
           </div>
           {logo && (
             <img
@@ -143,7 +163,7 @@ export async function GET(
         width: OG_WIDTH,
         height: OG_HEIGHT,
         fonts: font
-          ? [{ name: "Noto Sans KR", data: font, weight: 700, style: "normal" }]
+          ? [{ name: "Pretendard", data: font, weight: 700, style: "normal" }]
           : [],
       }
     );

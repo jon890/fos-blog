@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { truncateForOg } from "./og";
+import {
+  truncateForOg,
+  getCategoryHex,
+  hexWithAlpha,
+  OG_CATEGORY_HEX,
+  OG_CATEGORY_DEFAULT_HEX,
+} from "./og";
 
 describe("truncateForOg", () => {
   it("returns text unchanged when shorter than max", () => {
@@ -39,5 +45,29 @@ describe("truncateForOg", () => {
     const input = "a".repeat(130);
     const result = truncateForOg(input);
     expect(result).toBe("a".repeat(120) + "...");
+  });
+});
+
+describe("getCategoryHex", () => {
+  it("returns OG_CATEGORY_HEX.js for 'js'", () => {
+    expect(getCategoryHex("js")).toBe(OG_CATEGORY_HEX.js);
+  });
+
+  it("resolves alias: 'javascript' → OG_CATEGORY_HEX.js", () => {
+    expect(getCategoryHex("javascript")).toBe(OG_CATEGORY_HEX.js);
+  });
+
+  it("resolves alias: 'database' → OG_CATEGORY_HEX.db", () => {
+    expect(getCategoryHex("database")).toBe(OG_CATEGORY_HEX.db);
+  });
+
+  it("returns OG_CATEGORY_DEFAULT_HEX for unknown category", () => {
+    expect(getCategoryHex("UNKNOWN")).toBe(OG_CATEGORY_DEFAULT_HEX);
+  });
+});
+
+describe("hexWithAlpha", () => {
+  it("converts hex to rgba with given alpha", () => {
+    expect(hexWithAlpha("#3fbac9", 0.12)).toBe("rgba(63, 186, 201, 0.12)");
   });
 });
