@@ -1,7 +1,7 @@
 {
   "name": "plan020-search-dialog-polish",
   "description": "검색 다이얼로그 UX 마무리 — plan009 토큰화 + debounce 300ms + ↑↓/Enter 키보드 네비게이션 + 결과 skeleton. SearchDialog 컴포넌트는 이미 존재 (⌘K + /api/search 결합 완료), 디자인 시스템 단절 + UX 미흡 부분만 보강.",
-  "status": "pending",
+  "status": "completed",
   "created_at": "2026-05-06",
   "total_phases": 1,
   "related_docs": [],
@@ -14,7 +14,7 @@
       "file": "phase-01.md",
       "title": "SearchDialog 토큰화 + debounce 300ms + 키보드 네비 + skeleton",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }
