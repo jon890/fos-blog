@@ -1,7 +1,7 @@
 {
   "name": "plan022-comments-redesign",
   "description": "댓글 영역 전면 리디자인 — shadcn (Form/Input/Textarea/Button/AlertDialog) + sonner Toast + react-hook-form + zod 도입. Nickname 이니셜 + plan021 OG 팔레트 7색 hash 기반 아바타 추가. Schema 변경 없음 (threading 미포함). plan020 SearchDialog 패턴 확장.",
-  "status": "pending",
+  "status": "completed",
   "created_at": "2026-05-06",
   "total_phases": 3,
   "related_docs": [
@@ -16,21 +16,21 @@
       "file": "phase-01.md",
       "title": "shadcn 컴포넌트 install + sonner Toaster 마운트 + Avatar/CommentItem 분리",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 2,
       "file": "phase-02.md",
       "title": "Comments.tsx 리팩토링 — react-hook-form + zod + 아바타 + plan009 토큰",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 3,
       "file": "phase-03.md",
       "title": "검증 + post-detail.md 갱신 + index.json status=completed",
       "model": "haiku",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }
