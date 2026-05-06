@@ -2,6 +2,7 @@ import { eq, desc } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { comments } from "../schema";
 import { BaseRepository } from "./BaseRepository";
+import { escapeHtml } from "@/lib/escape-html";
 
 export interface CommentData {
   id: number;
@@ -46,7 +47,7 @@ export class CommentRepository extends BaseRepository {
       postSlug: input.postSlug,
       nickname: input.nickname,
       password: hashedPassword,
-      content: input.content,
+      content: escapeHtml(input.content),
     });
 
     const insertId = result[0].insertId;
@@ -87,7 +88,7 @@ export class CommentRepository extends BaseRepository {
       throw new Error("비밀번호가 일치하지 않습니다.");
     }
 
-    await this.db.update(comments).set({ content }).where(eq(comments.id, id));
+    await this.db.update(comments).set({ content: escapeHtml(content) }).where(eq(comments.id, id));
 
     const updated = await this.db
       .select({
