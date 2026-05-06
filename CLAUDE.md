@@ -176,6 +176,10 @@ webtoon-maker-v1에서 검증된 3 레포 공통 규칙. 하네스 (`.claude/ski
 - **Explore agent는 최후 수단** — Grep/Glob/Read로 3번 이상 시도한 후에도 못 찾을 때만 사용
 - **가정 없이 주장하지 않기** — "dead code", "미사용" 같은 판단은 실제로 참조를 grep한 후에만 제기
 
+### 사용자 상호작용
+
+- **선택지를 제시할 때는 `AskUserQuestion` 도구 사용** — "A안 / B안 / C안" 식 선택을 평문으로 나열하지 말 것. 옵션이 사전에 명확하면 yes/no 도 `AskUserQuestion` 으로. 자유 형식 답이 필요한 진짜 open-ended 질문(e.g. "어떤 docs 를 더 보강할까요?") 만 평문 사용
+
 ### Task 작업 규칙 (build-with-teams 사용 시)
 
 - 각 phase는 **원자적 단일 책임** — 다른 관심사면 별도 phase로 분리. **작업 항목 5개 이하** 엄수
