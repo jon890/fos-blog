@@ -63,7 +63,10 @@ jobs:
             done
 
       - name: Claude 코드 리뷰 실행 (병렬 에이전트 + 인라인 리뷰)
-        uses: anthropics/claude-code-action@v1
+        # v1 floating tag 가 install.sh 에서 silently 교체된 binary tarball 로 깨진 후
+        # (issue anthropics/claude-code-action#1290, 2026-05-06 회귀) v1.0.111 로 pin.
+        # upstream 픽스 후 다시 v1 으로 풀 것.
+        uses: anthropics/claude-code-action@v1.0.111
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: "*"
