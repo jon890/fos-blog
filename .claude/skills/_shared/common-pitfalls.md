@@ -315,6 +315,12 @@ git -C /Users/.../fos-blog/.claude/worktrees/{plan} status --short
 **Good**: 조건문에 `&& href` 추가해 3-way 타입 가드로 좁히기 — `if (isRelativeMd && basePath && href)` 후 `resolveMarkdownLink(href, basePath)`.
 **검출**: `grep -rn '![\\s]*,' src/components/markdown/` 등 비slash 위치의 `!` 점검.
 
+## 3-10. derived counter 를 매 iter 재계산 (O(n²)) (PR #103)
+
+**증상**: `toc.map((item, idx) => ... toc.slice(0, idx+1).filter(t => t.level === 2).length ...)` 처럼 누산값을 map iter 안에서 slice + filter 로 다시 계산. 항목 수가 적어 실측 영향은 미미해도 **자매 컴포넌트가 단순 증분 (`let h2Counter = 0; if (!isH3) h2Counter++`) 을 쓰면 일관성 깨짐**.
+**Good**: map 바깥에 누산 변수 선언 + iter 안에서 `++`. React 함수 컴포넌트 안의 `let` 누산은 매 렌더 새로 초기화되므로 안전.
+**검출**: `grep -rn 'slice(0, idx' src/components/` — pagination 외 위치에 등장 시 의심.
+
 ## § 3 누적 규칙
 
 - `review-fix` 6.5단계에서 추출. 같은 PR 에서 ✅ 누적 / ❌ 누적 금지 분류 후 § 3 추가
