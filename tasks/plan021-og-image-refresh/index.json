@@ -1,7 +1,7 @@
 {
   "name": "plan021-og-image-refresh",
   "description": "OG 이미지 plan009 디자인 시스템 반영 — Noto Sans KR → Pretendard Bold 교체 + 자주색 그라디언트 → bg-base + brand teal accent + 카테고리 badge 9개 카테고리별 고유 색. satori (next/og) 는 oklch 미지원이라 hex precompute 매핑 추가.",
-  "status": "pending",
+  "status": "completed",
   "created_at": "2026-05-06",
   "total_phases": 1,
   "related_docs": [],
@@ -14,7 +14,7 @@
       "file": "phase-01.md",
       "title": "og.ts 토큰화 + Pretendard 폰트 교체 + 카테고리별 hex 매핑 + 두 라우트 업데이트",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }
