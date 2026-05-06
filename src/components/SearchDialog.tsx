@@ -23,21 +23,36 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const resultRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const selectedIndexRef = useRef(-1);
   const router = useRouter();
+
+  useEffect(() => {
+    selectedIndexRef.current = selectedIndex;
+  }, [selectedIndex]);
+
+  useEffect(() => {
+    resultRefs.current = resultRefs.current.slice(0, results.length);
+  }, [results]);
 
   const performSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults([]);
       setSelectedIndex(-1);
+      setSearchError(null);
       return;
     }
 
     setIsLoading(true);
+    setSearchError(null);
     try {
       const response = await fetch(
         `/api/search?q=${encodeURIComponent(searchQuery)}&limit=10`
       );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
       const data = await response.json();
       const newResults = data.results || [];
       setResults(newResults);
@@ -46,6 +61,7 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
       console.error("Search failed:", error);
       setResults([]);
       setSelectedIndex(-1);
+      setSearchError("검색 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +94,8 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
     };
   }, [isOpen, onClose]);
 
-  // 키보드 네비게이션 (ArrowDown/Up/Enter) — stale closure 방지를 위해 별도 effect
+  // 키보드 네비게이션 (ArrowDown/Up/Enter)
+  // selectedIndex 는 ref 로 참조해 dep array 에서 제외 — 키보드 이동 시마다 listener 재등록 회피
   useEffect(() => {
     const handleNavKeyDown = (e: KeyboardEvent) => {
       if (!isOpen || results.length === 0) return;
@@ -90,8 +107,9 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
         e.preventDefault();
         setSelectedIndex((prev) => (prev - 1 + results.length) % results.length);
       } else if (e.key === "Enter") {
-        if (selectedIndex >= 0 && selectedIndex < results.length) {
-          const path = results[selectedIndex].path;
+        const idx = selectedIndexRef.current;
+        if (idx >= 0 && idx < results.length) {
+          const path = results[idx].path;
           onClose();
           setQuery("");
           setResults([]);
@@ -105,7 +123,7 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
 
     document.addEventListener("keydown", handleNavKeyDown);
     return () => document.removeEventListener("keydown", handleNavKeyDown);
-  }, [isOpen, results, selectedIndex, onClose, router]);
+  }, [isOpen, results, onClose, router]);
 
   // 선택 항목이 바뀌면 스크롤로 보이게
   useEffect(() => {
@@ -171,8 +189,15 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
             </ul>
           )}
 
+          {/* 검색 에러 */}
+          {searchError && !isLoading && (
+            <div className="p-8 text-center text-[var(--color-fg-muted)]">
+              {searchError}
+            </div>
+          )}
+
           {/* 빈 결과 */}
-          {query && results.length === 0 && !isLoading && (
+          {!searchError && query && results.length === 0 && !isLoading && (
             <div className="p-8 text-center text-[var(--color-fg-muted)]">
               검색 결과가 없습니다.
             </div>
