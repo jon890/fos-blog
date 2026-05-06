@@ -34,6 +34,8 @@ export function TableOfContents({ toc }: TableOfContentsProps) {
 
   if (toc.length === 0) return null;
 
+  let h2Counter = 0;
+
   return (
     <nav className="sticky top-20 font-mono text-[12px]">
       {/* Header */}
@@ -47,8 +49,13 @@ export function TableOfContents({ toc }: TableOfContentsProps) {
       <ul className="space-y-0">
         {toc.map((item, idx) => {
           const isActive = activeSlug === item.slug;
+          const isH3 = item.level === 3;
+
+          if (!isH3) h2Counter++;
+          const counter = isH3 ? null : h2Counter;
+
           return (
-            <li key={`${item.slug}-${idx}`}>
+            <li key={`${item.slug}-${idx}`} className={isH3 ? "pl-6" : ""}>
               <a
                 href={`#${item.slug}`}
                 className={`flex items-start gap-2 border-l py-1.5 pl-3 transition-colors duration-150 ${
@@ -57,12 +64,16 @@ export function TableOfContents({ toc }: TableOfContentsProps) {
                     : "border-[var(--color-border-subtle)] text-[var(--color-fg-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-fg-primary)]"
                 }`}
               >
-                <span
-                  className={`shrink-0 ${isActive ? "text-[var(--color-brand-400)]" : "text-[var(--color-fg-faint)]"}`}
-                >
-                  {String(idx + 1).padStart(2, "0")}
+                {counter !== null && (
+                  <span
+                    className={`shrink-0 ${isActive ? "text-[var(--color-brand-400)]" : "text-[var(--color-fg-faint)]"}`}
+                  >
+                    {String(counter).padStart(2, "0")}
+                  </span>
+                )}
+                <span className={`leading-snug ${isH3 ? "text-[11px]" : ""}`}>
+                  {item.text}
                 </span>
-                <span className="leading-snug">{item.text}</span>
               </a>
             </li>
           );
