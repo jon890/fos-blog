@@ -1,0 +1,21 @@
+{
+  "name": "plan024-hero-mesh-gradient",
+  "description": "홈 hero 정적 SVG mesh 그라디언트 — plan009 mesh-stop 6색 토큰을 inline SVG radial-gradient blob 6개로 배치. 애니메이션 미포함 (정적). 성능 영향 최소 (SVG ~3KB inline).",
+  "status": "pending",
+  "created_at": "2026-05-06",
+  "total_phases": 1,
+  "related_docs": [],
+  "depends_on": [
+    "plan009-design-tokens-foundation",
+    "plan013-header-hero-redesign"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "HeroMesh SVG 컴포넌트 + HomeHero 통합",
+      "model": "sonnet",
+      "status": "pending"
+    }
+  ]
+}
