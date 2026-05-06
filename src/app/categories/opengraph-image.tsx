@@ -76,7 +76,7 @@ export default async function CategoriesOgImage() {
             flexDirection: "column",
             justifyContent: "center",
             alignItems: "flex-start",
-            background: `linear-gradient(135deg, ${OG_COLORS.bgGradientStart} 0%, ${OG_COLORS.bgGradientMid} 50%, ${OG_COLORS.bgGradientEnd} 100%)`,
+            background: OG_COLORS.bgBase,
             padding: OG_LAYOUT.padding,
             position: "relative",
           }}
@@ -128,7 +128,7 @@ export default async function CategoriesOgImage() {
       {
         ...size,
         fonts: font
-          ? [{ name: "Noto Sans KR", data: font, weight: 700, style: "normal" }]
+          ? [{ name: "Pretendard", data: font, weight: 700, style: "normal" }]
           : [],
       }
     );

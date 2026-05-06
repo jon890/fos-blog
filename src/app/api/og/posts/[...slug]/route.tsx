@@ -12,6 +12,8 @@ import {
   loadOgFont,
   loadOgLogoDataUrl,
   truncateForOg,
+  getCategoryHex,
+  hexWithAlpha,
 } from "@/lib/og";
 
 export const runtime = "nodejs";
@@ -81,6 +83,7 @@ export async function GET(
   const category = data?.post.category ?? "";
   const icon = categoryIcons[category] ?? DEFAULT_CATEGORY_ICON;
   const showBadge = Boolean(data && category);
+  const categoryHex = getCategoryHex(category);
 
   try {
     return new ImageResponse(
@@ -93,22 +96,33 @@ export async function GET(
             flexDirection: "column",
             justifyContent: "center",
             alignItems: "flex-start",
-            background: `linear-gradient(135deg, ${OG_COLORS.bgGradientStart} 0%, ${OG_COLORS.bgGradientMid} 50%, ${OG_COLORS.bgGradientEnd} 100%)`,
+            background: OG_COLORS.bgBase,
             padding: OG_LAYOUT.padding,
             position: "relative",
           }}
         >
+          {/* 상단 brand teal 띠 */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: OG_LAYOUT.brandBarHeight,
+              background: OG_COLORS.brand,
+            }}
+          />
           {showBadge && (
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                background: OG_COLORS.badgeBg,
-                border: `1px solid ${OG_COLORS.badgeBorder}`,
+                background: hexWithAlpha(categoryHex, 0.12),
+                border: `1px solid ${hexWithAlpha(categoryHex, 0.3)}`,
                 borderRadius: 24,
                 padding: "8px 20px",
                 fontSize: 24,
-                color: OG_COLORS.textPrimary,
+                color: categoryHex,
                 marginBottom: 28,
               }}
             >
@@ -159,7 +173,7 @@ export async function GET(
         width: OG_WIDTH,
         height: OG_HEIGHT,
         fonts: font
-          ? [{ name: "Noto Sans KR", data: font, weight: 700, style: "normal" }]
+          ? [{ name: "Pretendard", data: font, weight: 700, style: "normal" }]
           : [],
       }
     );
