@@ -62,17 +62,11 @@ import { Toaster } from "sonner";
 Nickname 이니셜 + plan009 카테고리 9색 hash 자동 선택:
 
 ```tsx
-const CAT_HEX_PALETTE = [
-  "#b3a4d4", // ai
-  "#d4a594", // algorithm
-  "#cdaf85", // db
-  "#8ec8a8", // devops
-  "#7ec5be", // java
-  "#bbb96d", // js
-  "#88b8d6", // react
-  "#d49d99", // next
-  "#9ab0d4", // system
-];
+import { OG_CATEGORY_HEX } from "@/lib/og";
+
+// plan021 의 OG_CATEGORY_HEX 를 단일 소스로 재사용 — 색상 변경 시 OG/Avatar 일관성 보장.
+// (record → array 변환은 hash 모듈로 안정적으로 인덱스화하기 위함)
+const AVATAR_PALETTE = Object.values(OG_CATEGORY_HEX);
 
 function hashNickname(nickname: string): number {
   let h = 0;
@@ -82,15 +76,21 @@ function hashNickname(nickname: string): number {
   return Math.abs(h);
 }
 
+const SIZE_CLASS: Record<number, string> = {
+  28: "h-7 w-7",
+  36: "h-9 w-9",
+};
+
 export function Avatar({ nickname, size = 36 }: { nickname: string; size?: number }) {
   const initial = nickname.trim().charAt(0).toUpperCase() || "?";
-  const color = CAT_HEX_PALETTE[hashNickname(nickname) % CAT_HEX_PALETTE.length];
+  const color = AVATAR_PALETTE[hashNickname(nickname) % AVATAR_PALETTE.length];
+  const sizeClass = SIZE_CLASS[size] ?? "h-9 w-9";
   return (
     <div
       role="img"
       aria-label={`${nickname} 아바타`}
-      style={{ width: size, height: size, background: `${color}26`, color, borderColor: `${color}80` }}
-      className="flex items-center justify-center rounded-full border font-semibold select-none"
+      style={{ background: `${color}26`, color, borderColor: `${color}80` }}
+      className={`${sizeClass} flex items-center justify-center rounded-full border font-semibold select-none`}
     >
       {initial}
     </div>
@@ -98,9 +98,9 @@ export function Avatar({ nickname, size = 36 }: { nickname: string; size?: numbe
 }
 ```
 
-`size` prop 으로 다양한 자리에서 재사용 (댓글 카드 36px, 답글 작성자 표시 28px 등).
+`size` prop 으로 다양한 자리에서 재사용 (댓글 카드 36px, 답글 작성자 표시 28px). 동적 색상만 inline style 유지, 크기는 `SIZE_CLASS` 매핑으로 Tailwind class 사용.
 
-**참고**: hex 값은 plan009 dark mode 카테고리 토큰의 sRGB hex 근사 (plan021 의 `OG_CATEGORY_HEX` 와 동일 출처). 후속 plan 에서 `OG_CATEGORY_HEX` 와 단일 소스로 통합 가능 — 이번 phase 는 인라인 유지. 이 의도를 컴포넌트 상단 주석으로 명시.
+**참고**: 팔레트는 plan021 `OG_CATEGORY_HEX` 의 `Object.values()` — 단일 소스. plan021 색상 갱신 시 자동 반영.
 
 ### 4. `src/components/comments/CommentItem.tsx` 분리
 
