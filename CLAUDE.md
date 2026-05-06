@@ -22,7 +22,9 @@ Next.js 16 developer blog that syncs Markdown from `jon890/fos-study` (GitHub) �
 | Database    | MySQL 8.4 (Docker) + Drizzle ORM 0.45.1                                |
 | GitHub API  | @octokit/rest 21.0.0                                                   |
 | Markdown    | unified (remark-parse + remark-gfm + remark-rehype) + rehype-pretty-code (shiki, dual theme) + rehype-slug + rehype-raw + hast-util-to-jsx-runtime + mermaid |
-| Logging     | pino (JSON) + pino-pretty (dev only)                                   |
+| Logging     | pino (JSON) + pino-pretty (dev only) — server only                     |
+| Forms       | react-hook-form 7.x + @hookform/resolvers + zod (CommentForm 등 client form) |
+| Toast       | sonner 2.x (client 알림, ThemeProvider 바깥 mount)                       |
 | Testing     | Vitest 4.1.0                                                           |
 | Package mgr | pnpm 9.15.0                                                            |
 
@@ -96,7 +98,7 @@ See `.env.example` for full list.
 - **Components:** PascalCase, named exports, no direct DB calls
 - **TypeScript:** strict mode, `@/*` path alias, `_` prefix for unused vars
 - **Tailwind:** `src/app/globals.css` must include `@source` for every dir with Tailwind classes
-- **Logging:** `logger.child({ module: '...' })` from `@/lib/logger` — no `console.log`. **예외**: `scripts/*.ts` 는 standalone 실행이라 path alias 미동작 → `console.log/error` 허용 (eslint.config.mjs 에서 globals 명시)
+- **Logging:** `logger.child({ module: '...' })` from `@/lib/logger` — no `console.log`. **예외**: ① `scripts/*.ts` 는 standalone 실행이라 path alias 미동작 → `console.log/error` 허용 (eslint.config.mjs 에서 globals 명시). ② `"use client"` 컴포넌트는 pino 가 server-only 라 `console.error` 만 사용 가능 (catch 블록의 dev 로그용 — 사용자 노출은 별도 toast/UI 로 처리, raw error 는 직접 노출 금지)
 - **Error handling:** `err: error instanceof Error ? error : new Error(String(error))`
 - **Tests:** co-located `*.test.ts`, Vitest, mock repositories with `vi.mock()`
 - **API routes:** Bearer token auth via `SYNC_API_KEY`
