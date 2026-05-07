@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 interface ArticleFooterProps {
   tags?: string[];
 }
@@ -12,12 +14,13 @@ export function ArticleFooter({ tags }: ArticleFooterProps) {
       </div>
       <div className="flex flex-wrap gap-2">
         {tags.map((tag) => (
-          <span
+          <Link
             key={tag}
-            className="rounded border border-[var(--color-border-subtle)] px-2.5 py-1 font-mono text-[11px] tracking-tight text-[var(--color-fg-secondary)]"
+            href={`/tag/${encodeURIComponent(tag)}`}
+            className="rounded border border-[var(--color-border-subtle)] px-2.5 py-1 font-mono text-[11px] tracking-tight text-[var(--color-fg-secondary)] transition-colors hover:border-[var(--color-brand-400)] hover:text-[var(--color-brand-400)]"
           >
             #{tag}
-          </span>
+          </Link>
         ))}
       </div>
     </footer>
