@@ -1,7 +1,7 @@
 {
   "name": "plan027-rss-feed",
   "description": "RSS feed 라우트 (issue #88) — /rss.xml 신설. 활성 글 최근 50개 RSS 2.0 형식. <link rel=\"alternate\" type=\"application/rss+xml\"> 메타 + robots.txt 명시. 카테고리별 RSS 는 OOS.",
-  "status": "pending",
+  "status": "completed",
   "created_at": "2026-05-07",
   "total_phases": 2,
   "related_docs": [],
@@ -12,14 +12,14 @@
       "file": "phase-01.md",
       "title": "/rss.xml route + RSS 2.0 XML 생성 + layout meta link",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 2,
       "file": "phase-02.md",
       "title": "검증 + index.json 마킹",
       "model": "haiku",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }
