@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import type { PostRepository } from "@/infra/db/repositories/PostRepository";
 import { createStatsService } from "./StatsService";
 
 function makePostRepo(overrides: {
@@ -16,7 +15,7 @@ function makePostRepo(overrides: {
 
 describe("StatsService.getAboutStats", () => {
   it("빈 DB일 때 기본값 반환", async () => {
-    const service = createStatsService({ post: makePostRepo({}) as unknown as PostRepository });
+    const service = createStatsService({ post: makePostRepo({}) });
     const stats = await service.getAboutStats();
     expect(stats).toEqual({ postCount: 0, categoryCount: 0, lastSyncAt: null });
   });
@@ -28,7 +27,7 @@ describe("StatsService.getAboutStats", () => {
       getDistinctActiveCategoryCount: vi.fn().mockResolvedValue(7),
       getLastActiveUpdatedAt: vi.fn().mockResolvedValue(lastSync),
     });
-    const service = createStatsService({ post: post as unknown as PostRepository });
+    const service = createStatsService({ post });
     const stats = await service.getAboutStats();
     expect(stats).toEqual({ postCount: 42, categoryCount: 7, lastSyncAt: lastSync });
   });

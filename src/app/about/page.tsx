@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { env } from "@/env";
 import logger from "@/lib/logger";
-import { getRepositories } from "@/infra/db/repositories";
-import { createStatsService } from "@/services/StatsService";
+import { createDefaultStatsService } from "@/services/StatsService";
 import { ProfileCard } from "@/components/about/ProfileCard";
 import { SiteStats } from "@/components/about/SiteStats";
 import { StackGrid, STACK } from "@/components/about/StackGrid";
@@ -116,18 +115,7 @@ function Section({ idx, label, right, children }: SectionProps) {
           <span className="idx">{idx}</span>
           <span>{label}</span>
         </span>
-        {right && (
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "var(--color-fg-faint)",
-              letterSpacing: 0,
-            }}
-          >
-            {right}
-          </span>
-        )}
+        {right && <span className="right">{right}</span>}
       </div>
       {children}
     </section>
@@ -136,7 +124,7 @@ function Section({ idx, label, right, children }: SectionProps) {
 
 async function fetchSiteStats() {
   try {
-    return await createStatsService(getRepositories()).getAboutStats();
+    return await createDefaultStatsService().getAboutStats();
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     log.warn({ component: "about", operation: "site-stats", err }, "site stats fetch failed, using fallback");

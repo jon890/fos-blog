@@ -1,4 +1,4 @@
-import type { PostRepository } from "@/infra/db/repositories/PostRepository";
+import { getRepositories } from "@/infra/db/repositories";
 
 export interface SiteStats {
   postCount: number;
@@ -6,8 +6,14 @@ export interface SiteStats {
   lastSyncAt: Date | null;
 }
 
+interface StatsPostRepository {
+  getActivePostCount(): Promise<number>;
+  getDistinctActiveCategoryCount(): Promise<number>;
+  getLastActiveUpdatedAt(): Promise<Date | null>;
+}
+
 interface StatsRepositories {
-  post: PostRepository;
+  post: StatsPostRepository;
 }
 
 export function createStatsService(repos: StatsRepositories) {
@@ -22,4 +28,8 @@ export function createStatsService(repos: StatsRepositories) {
       return { postCount, categoryCount, lastSyncAt };
     },
   };
+}
+
+export function createDefaultStatsService() {
+  return createStatsService(getRepositories());
 }

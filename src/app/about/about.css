@@ -117,6 +117,12 @@
   background: var(--color-border-subtle);
   margin-left: 4px;
 }
+.ab-section-head .right {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0;
+  color: var(--color-fg-faint);
+}
 
 /* ---------- ProfileCard ---------- */
 .ab-profile {
