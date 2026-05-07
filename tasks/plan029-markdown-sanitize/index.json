@@ -1,0 +1,29 @@
+{
+  "name": "plan029-markdown-sanitize",
+  "description": "Markdown 렌더 XSS 강화 (issues #84 + #79) — unified-pipeline 에 rehype-sanitize 도입. defaultSchema 확장으로 rehype-pretty-code 의 shiki span data-* + figure data-rehype-pretty-code-figure + heading id (rehype-slug) + footnote/GFM 표 등 정상 패턴 모두 보존. <script> / <iframe> / on* 핸들러 차단.",
+  "status": "pending",
+  "created_at": "2026-05-07",
+  "total_phases": 2,
+  "related_docs": [
+    "docs/adr.md"
+  ],
+  "depends_on": [
+    "plan014-markdown-server-component"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "rehype-sanitize 도입 + pretty-code/slug allowlist + 회귀 테스트",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "title": "검증 + ADR-020 갱신 + index.json 마킹",
+      "model": "haiku",
+      "status": "pending"
+    }
+  ]
+}
