@@ -178,7 +178,6 @@ export function SiteFooter() {
                 ttl="RSS feed"
                 sub="/rss.xml"
                 arrow="↗"
-                disabled // 미구현 — 별도 issue. graceful fallback.
               />
               <SocialItem
                 href="#newsletter"
