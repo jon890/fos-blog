@@ -68,6 +68,9 @@ export const sanitizeSchema: Schema = {
     span: [
       ...(defaultSchema.attributes?.span ?? []),
       "className",
+      // shiki 는 토큰별 색을 inline style 로 적용 (예: style="color: #abcdef") —
+      // CSS injection 잠재 위험이 있으나 syntax highlighting 동작에 필수.
+      // sanitize 후에도 보존되어야 하므로 의도적 allowlist.
       "style",
       ["data-line"],
       ["data-highlighted-line"],
@@ -85,6 +88,7 @@ export const sanitizeSchema: Schema = {
     pre: [
       ...(defaultSchema.attributes?.pre ?? []),
       "className",
+      // shiki/pretty-code 가 pre 컨테이너에도 inline style 을 둘 수 있음 (배경색 등) — span 과 동일 사유로 의도적 허용.
       "style",
       "tabIndex",
       ["data-language"],
@@ -130,7 +134,17 @@ async function buildProcessor() {
 
 ### 4. 회귀 테스트 — `src/components/markdown/sanitize.test.ts` 신규
 
-핵심 케이스 (각 케이스마다 `parseMarkdownToHast(md)` 호출 후 결과 hast 트리 검증):
+핵심 케이스 (각 케이스마다 `parseMarkdownToHast(md)` 호출 후 결과 hast 트리 검증).
+
+테스트 파일 상단 import 는 다음과 같이 작성 (executor 가 누락하지 않도록 명시):
+
+```ts
+import { describe, expect, it } from "vitest";
+import { toHtml } from "hast-util-to-html";
+import { parseMarkdownToHast } from "./unified-pipeline";
+```
+
+본문:
 
 ```ts
 describe("sanitize", () => {
@@ -142,7 +156,13 @@ describe("sanitize", () => {
     expect(html).not.toContain("alert(1)");
   });
 
-  it("iframe 태그 제거", async () => { /* <iframe src="..."></iframe> */ });
+  it("iframe 태그 제거", async () => {
+    const md = "본문\n\n<iframe src=\"https://evil.com\"></iframe>\n\n끝";
+    const tree = await parseMarkdownToHast(md);
+    const html = toHtml(tree);
+    expect(html).not.toContain("<iframe");
+    expect(html).not.toContain("evil.com");
+  });
 
   it("on* 이벤트 핸들러 제거", async () => {
     const md = `<a href="/x" onclick="alert(1)">link</a>`;
@@ -160,12 +180,16 @@ describe("sanitize", () => {
   });
 
   // 보존 케이스
-  it("코드 블록 shiki span data-line 보존", async () => {
+  it("코드 블록 shiki span data-line + pretty-code allowlist 정합성", async () => {
     const md = "```ts\nconst x = 1;\n```";
     const tree = await parseMarkdownToHast(md);
     const html = toHtml(tree);
     expect(html).toContain("data-line");
     expect(html).toContain("data-rehype-pretty-code-figure");
+    // allowlist 정합성 — pretty-code/shiki 가 출력하는 핵심 속성이 sanitize 후에도 살아남는지
+    expect(html).toContain("data-language");
+    expect(html).toContain("data-theme");
+    expect(html).toMatch(/class=/);
   });
 
   it("heading id (rehype-slug) 보존", async () => {
@@ -220,7 +244,32 @@ pnpm add -D hast-util-to-html
 
 기존 mermaid 블록은 어떻게 렌더되는지 확인 (코드 블록의 className 으로 처리되는지, 별도 SVG inline 인지). SVG inline 이면 schema 에 `svg` / `g` / `path` 등도 allowlist 필요할 가능성. 현재 `defaultSchema` 는 SVG 제한적 — 실제 mermaid 글 1개 렌더 결과 점검 후 schema 보강.
 
-이번 phase 의 work item 으로는 **점검만 수행** — 깨지면 schema 에 svg allowlist 추가, 깨지지 않으면 OOS.
+이번 phase 의 work item 으로는 **점검만 수행** — 깨지면 아래 시작 element 목록을 schema 에 추가, 깨지지 않으면 OOS.
+
+**SVG allowlist 시작점** (mermaid 출력에서 자주 등장하는 요소):
+
+```ts
+// sanitize-schema.ts 에 추가 후보
+tagNames: [
+  ...(defaultSchema.tagNames ?? []),
+  "svg", "g", "path", "text", "tspan",
+  "rect", "circle", "ellipse", "line", "polyline", "polygon",
+  "defs", "marker", "use", "style",
+],
+attributes: {
+  ...defaultSchema.attributes,
+  svg: ["xmlns", "viewBox", "width", "height", "preserveAspectRatio", "class", "style"],
+  g: ["transform", "class", "style"],
+  path: ["d", "fill", "stroke", "stroke-width", "stroke-dasharray", "marker-end", "marker-start", "class", "style"],
+  text: ["x", "y", "dx", "dy", "text-anchor", "dominant-baseline", "class", "style", "font-family", "font-size"],
+  tspan: ["x", "y", "dx", "dy", "class", "style"],
+  rect: ["x", "y", "width", "height", "rx", "ry", "fill", "stroke", "class", "style"],
+  circle: ["cx", "cy", "r", "fill", "stroke", "class", "style"],
+  marker: ["id", "viewBox", "refX", "refY", "markerWidth", "markerHeight", "orient"],
+},
+```
+
+executor 가 mermaid 글 렌더 결과 dump (`document.querySelector(".mermaid svg").outerHTML`) 후 누락 element/attribute 를 위 목록에 보강. style 허용은 mermaid 의 inline 색상 표현을 위해 필요 (shiki 와 동일 사유).
 
 ### 6. 자동 verification
 
