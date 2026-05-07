@@ -276,3 +276,15 @@ src/components/
 - **`ArticleFooter`** — tag chip 을 `<Link href="/tag/{encoded}">` 로 활성화.
 
 설계 의도 (정규화 테이블 회피, 50 limit, lowercase 만 등) 는 ADR-023 참조.
+
+---
+
+## RSS feed (plan027)
+
+신규 라우트:
+
+- **`GET /rss.xml`** (`src/app/rss.xml/route.ts`) — RSS 2.0 XML. `runtime = "nodejs"`, `revalidate = 600` (10분). Cache-Control `s-maxage=600, stale-while-revalidate=86400`. `escapeXml()` 인라인 헬퍼로 모든 사용자 입력 sanitize. `<atom:link rel="self">` 포함.
+- **`PostRepository.getRecentActive({ limit })`** — content + createdAt 포함 select, `isActive=true` 필터, `desc(createdAt)` 정렬. RSS description 추출 + pubDate 용. 기존 `getRecentPosts` (PostData 반환, updatedAt 정렬) 와 별도 — RSS 는 발행 시점 + 본문 둘 다 필요.
+- **`src/app/layout.tsx`** — `metadata.alternates.types` 에 `application/rss+xml` link 추가 → Next.js 가 `<link rel="alternate" type="application/rss+xml" href="/rss.xml">` 자동 생성.
+
+설계 의도 (RSS 2.0 vs Atom / pubDate=createdAt / 50 limit) 는 ADR-024 참조.
