@@ -389,6 +389,45 @@ jobs:
 
           claude_args: '--model claude-sonnet-4-6 --allowedTools "Agent,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*)" --disallowedTools "Read,Write,Edit,Glob,Grep,LS"'
 
+      # 게시된 인라인 댓글 중 dummy / 길이 미달 / 마커 부재 entry 를 자동 정리
+      # — Claude action 이 자연어 sanity check 를 무시하고 "test body" / "test2"
+      # 같은 placeholder 를 게시하는 사고 (PR #114 관측) 를 강제 차단.
+      # always 실행해도 안전: 정상 댓글은 패턴에 매치 안 됨.
+      - name: 게시된 인라인 댓글의 dummy / 미달 entry 자동 삭제
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          PR_NUMBER="${{ env.PR_NUMBER }}"
+
+          # claude[bot] 가 작성한 인라인 댓글만 검사
+          gh api "repos/$REPO/pulls/$PR_NUMBER/comments" \
+            --jq '.[] | select(.user.login == "claude[bot]") | "\(.id)\t\(.body)"' \
+            | while IFS=$'\t' read -r comment_id body; do
+              [ -z "$comment_id" ] && continue
+
+              # 정리 조건 (하나라도 만족하면 삭제):
+              # 1) 본문 길이 12자 미만
+              # 2) /^test\s*\d*$/i 같은 단순 placeholder (test, test1, test 2, sample, foo 등)
+              # 3) 🔴 / 🟡 severity 마커 부재 (정상 review 형식 미준수)
+              len=${#body}
+              should_delete=0
+
+              if [ "$len" -lt 12 ]; then
+                should_delete=1
+              elif printf '%s' "$body" | grep -qiE '^(test|sample|placeholder|foo|bar|example)[[:space:]]*[0-9]*$'; then
+                should_delete=1
+              elif ! printf '%s' "$body" | grep -qE '🔴|🟡'; then
+                should_delete=1
+              fi
+
+              if [ "$should_delete" = "1" ]; then
+                echo "dummy 인라인 댓글 자동 삭제: id=$comment_id body=\"$body\""
+                gh api "repos/$REPO/pulls/comments/$comment_id" --method DELETE || true
+              fi
+            done
+
       # 작업 결과를 /review 댓글에 ✅/❌ reaction 으로 표시 (success/failure 분기, always 실행)
       - name: /review 댓글에 종료 reaction 추가
         if: github.event_name == 'issue_comment' && always()
