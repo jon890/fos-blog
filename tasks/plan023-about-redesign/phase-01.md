@@ -61,9 +61,9 @@ mockup 의 가짜 통계/리스트는 실제 fos-blog 값으로 치환:
   ] as const;
   ```
 - **ProfileCard 통계**: GitHub API 의 `public_repos`, `followers` 두 개만 (mockup 의 `7y writing` 같은 임의값 제거)
-- **SiteStats**: 실 DB 조회 값
+- **SiteStats**: 실 DB 조회 값 (schema 확인: `posts.category` (varchar notnull), `posts.subcategory` (nullable), `posts.folders` (json array). `categoryPath` 컬럼은 없음)
   - `POSTS .total`: `posts.isActive=true` count
-  - `CATEGORIES .active`: distinct `categoryPath` count (schema 컬럼명 확인 후)
+  - `CATEGORIES .active`: `COUNT(DISTINCT category) WHERE isActive=true` (단순. sub 라인 `"distinct category"`)
   - `LAST SYNC .db`: `MAX(posts.updatedAt)` → `formatRelativeTime`. null 이면 큰 숫자 영역에 `—`, sub 라인에 `no sync yet`
 
 ## 컨벤션 / 기술 결정
@@ -73,7 +73,7 @@ mockup 의 가짜 통계/리스트는 실제 fos-blog 값으로 치환:
   - `.ab-avatar` 컨테이너에 radial gradient + initial 텍스트는 항상 존재
   - `next/image` 는 `.ab-avatar` 자식으로 absolute 배치 (mockup `position: relative` 컨테이너 활용)
 - **CSS 전략**: `::before`/`::after` hairline, `@keyframes ab-pulse`, `oklch(... ${hue})` 동적 색은 Tailwind arbitrary value 만으로 어색 → **`src/app/about/about.css` co-located CSS 파일** 신규 + `import "./about.css"` 로 page.tsx 에 주입. 클래스 prefix `ab-` 유지 (mockup 과 1:1 비교 용이).
-  - mockup 의 `.ab-shell.light { ... }` 토큰 재정의 블록은 제거 (plan009 가 `:root` / `[data-theme]` 으로 이미 처리)
+  - mockup 의 `.ab-shell.light { ... }` 토큰 재정의 블록은 제거 (plan009 가 `:root` (default = dark) / `:root:not(.dark)` (light override) 로 이미 처리. `[data-theme]` selector 도입 금지)
   - mockup 의 `.ab-shell.mobile` 클래스 분기는 `@media (max-width: 640px)` 로 변환 (page.tsx 가 `mobile` prop 안 넘김)
   - `--cat-color` 인라인 변수 패턴은 유지 (chip dot 색)
 - container max-width 1180px, padding `0 32px` (모바일 `0 20px`)
@@ -84,11 +84,17 @@ mockup 의 가짜 통계/리스트는 실제 fos-blog 값으로 치환:
 
 ### 1. `src/app/about/about.css` 신규
 
-`tasks/plan023-about-redesign/design-about.css` 를 베이스로 위 토큰 매핑 표대로 sed 수준 일괄 치환. 변경 사항:
-- `.ab-shell.light { ... }` 블록 제거
+`tasks/plan023-about-redesign/design-about.css` 를 베이스로 위 토큰 매핑 표대로 일괄 치환. 변경 사항:
+- `.ab-shell.light { ... }` 블록 제거 (plan009 의 `:root:not(.dark)` 가 처리)
 - `.ab-shell.mobile ...` 분기를 `@media (max-width: 640px) { ... }` 로 변환
 - 모든 색은 plan009 변수 직접 참조
 - `@keyframes ab-pulse` 그대로 유지
+- **신규 룰 추가** (mockup 에 부재 — `next/image` 자식 배치용):
+  ```css
+  .ab-avatar-initial { position: relative; z-index: 0; }
+  .ab-avatar-img { position: absolute; inset: 0; object-fit: cover; z-index: 1; border-radius: inherit; }
+  ```
+  `.ab-avatar` 의 grid + font 룰은 그대로 두고 (이니셜 위치 잡이용), 사진은 `inset:0` 으로 이니셜을 덮음.
 
 ### 2. `src/services/StatsService.ts` + 테스트 + factory 등록
 
@@ -157,7 +163,7 @@ mockup `.ab-profile` 그대로. props: `name`, `handle`, `bio`, `avatarUrl`, `ht
   <div className="ab-card ab-stat">
     <div className="ab-stat-eyebrow"><span>CATEGORIES</span><span className="right">active</span></div>
     <div className="ab-stat-num">{categoryCount}<span className="unit">paths</span></div>
-    <div className="ab-stat-sub">distinct category_path</div>
+    <div className="ab-stat-sub">distinct category</div>
   </div>
   <div className="ab-card ab-stat">
     <div className="ab-stat-eyebrow"><span>LAST SYNC</span><span className="right">db</span></div>
@@ -195,6 +201,18 @@ mockup `.ab-profile` 그대로. props: `name`, `handle`, `bio`, `avatarUrl`, `ht
   <span className="key">↗</span>
 </a>
 ```
+
+**`fetchGitHubProfile()` 추출 + 인증 헤더 추가** (현 `src/app/about/page.tsx:48` 의 함수가 unauthenticated 60/h 한계 → 5000/h 로):
+```ts
+async function fetchGitHubProfile() {
+  const res = await fetch("https://api.github.com/users/jon890", {
+    headers: { Authorization: `Bearer ${env.GITHUB_TOKEN}` },
+    next: { revalidate: 3600 },
+  });
+  // ...
+}
+```
+`env` 는 `@/env` 에서 import (이미 `GITHUB_TOKEN` required 등록됨).
 
 **`page.tsx` 통합** (Server Component):
 
@@ -244,48 +262,7 @@ export default async function AboutPage() {
 
 `<Section>` 은 page.tsx 안의 helper (별도 component 분리 X). `fetchGitHubProfile()` 는 기존 about/page.tsx 에 이미 있는 fetch 로직을 함수 추출 (인증 헤더 + revalidate=3600). 메타데이터 객체는 그대로 유지.
 
-### 6. 자동 verification
-
-```bash
-# cwd: <worktree root>
-pnpm lint
-pnpm type-check
-pnpm test --run
-pnpm build
-
-# 신규 파일
-test -f src/app/about/about.css
-test -f src/components/about/ProfileCard.tsx
-test -f src/components/about/SiteStats.tsx
-test -f src/components/about/StackGrid.tsx
-test -f src/components/about/LinksGrid.tsx
-test -f src/services/StatsService.ts
-test -f src/services/StatsService.test.ts
-
-# 하드코딩 색 0줄 (about 영역)
-! grep -nE "bg-white|bg-gray-|bg-blue-|text-gray-|text-blue-|text-white|border-gray-|focus:ring-blue|#[0-9a-fA-F]{3,6}\b" src/app/about/page.tsx src/components/about/*.tsx
-# about.css 는 plan009 var + oklch 만 (raw hex 0건)
-! grep -nE "#[0-9a-fA-F]{3,6}\b" src/app/about/about.css
-
-# Service factory 등록
-grep -n "createStatsService" src/services/index.ts
-
-# lucide 아이콘 사용 (mockup 인라인 SVG 가 아닌)
-grep -n 'from "lucide-react"' src/components/about/LinksGrid.tsx
-
-# RSS / Newsletter / X 링크 부재 (실 데이터만)
-! grep -nE "rss\.xml|newsletter|twitter" src/components/about/LinksGrid.tsx
-
-# Vercel / MDX / Redis 부재 (mockup placeholder 제거)
-! grep -nE "Vercel|\\bMDX\\b|Redis" src/components/about/StackGrid.tsx
-```
-
-수동 smoke (사용자 안내):
-- `pnpm dev` → `/about` 진입 → 다크/라이트 모드 양쪽에서 mockup 과 1:1 비교
-- pulse 애니메이션 (LAST SYNC 카드) 동작
-- chip hover transition (`translateY(-1px)` + border-color 변화)
-- LinksGrid hover 시 brand-400 으로 color shift + dot 발광
-- GitHub avatar 정상 로드 확인 (이니셜이 사진 뒤에 가려져 있으면 OK)
+> **검증/lint/build 게이트는 phase-02 로 통합** — phase-02 의 verification 섹션 참조. phase-01 은 코드 작성에 집중.
 
 ## Critical Files
 
