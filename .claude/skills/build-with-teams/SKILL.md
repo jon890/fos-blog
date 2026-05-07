@@ -41,6 +41,28 @@ gh pr list --state open --search "{plan}" --json number,title,headRefName
 
 > 세 검증 모두 통과해야 신규 실행. **PR 머지 전 단계에서 main 의 `index.json` 은 여전히 `pending` 이므로 1번만 보면 재실행 사고를 놓친다. 2·3번이 커버.**
 
+### task 단독 PR 이 이미 열려있는 경우 — 옵션 A (이어서 작업) 권장 흐름 (필수)
+
+위 2번 (FOUND) + 3번 (OPEN PR) 이 동시에 걸리고, 해당 PR 이 task 파일만 (코드 변경 0개) 머지 대기 중이라면 **옵션 A (이어서 작업)** 로 전환한다. 이는 차단이 아니라 **그 PR 을 그대로 결과물 통합 PR 로 사용**하는 흐름이다 (plan024/025 의 사후 정리 사고를 처음부터 회피).
+
+**판정 기준** — `gh pr view <N> --json files,additions,deletions` 결과:
+- `files` 가 `tasks/{plan}/...` 만 포함 + 코드 (`src/...`) 변경 0
+- `state` = OPEN
+→ 옵션 A 자동 권장 (사용자 confirm)
+
+**옵션 A 흐름**:
+1. **새 브랜치 만들지 말 것** — 기존 브랜치 그대로 사용
+2. worktree 체크아웃: `git worktree add .claude/worktrees/{plan} feat/{plan}` (`-b` 없음 → 기존 브랜치 사용)
+3. phase 실행 → 결과물 commit → **같은 브랜치**에 push (PR 에 commits 추가됨)
+4. PR 제목 `chore(task)` → `feat(...)` / `fix(...)` 로 갱신: `gh pr edit <N> --title "..."` + body 도 결과물 반영 후 갱신
+5. 마지막 phase 의 `status="completed"` 마킹은 같은 브랜치 안에서
+
+**옵션 A 회피해야 하는 상황**:
+- task PR 이 이미 코드 변경을 포함 (다른 사람이 부분 구현 push 중) → 사용자 confirm 후 변경 분류
+- task PR 의 base 가 main 이 아닌 경우 (드물게 stacked PR) → 별도 처리
+
+**옵션 B (별도 `-impl` 브랜치)** 는 plan024/025 처럼 task PR 과 결과물 PR 이 분리되어 사후 정리 비용이 발생하므로, task PR 이 이미 머지된 후에만 사용 (즉 옵션 A 가 불가한 상황). 사고 패턴이라 디폴트 금지.
+
 ### `completed` 마킹 ↔ 머지 커밋 정합 검증 (역방향)
 
 status 가 `completed` 인데 실제 머지 커밋이 origin/main 에 없으면 마킹 사고. 차단 전 한 번 더 확인:
