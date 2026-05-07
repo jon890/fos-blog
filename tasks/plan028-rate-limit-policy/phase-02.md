@@ -20,6 +20,8 @@ pnpm build
 
 기존 ADR-016 (Rate limit 정책) 본문 끝에 한 단락 추가 — `/api/sync` 만 제외, 나머지는 일반 한도 적용 결정. 트레이드오프 (option C/D 기각 사유) 1~2줄.
 
+**처리 순서 명기** (보안 specialist 지적): ADR-016 갱신 시 각 `/api/*` 엔드포인트에서의 처리 레이어 순서를 한 줄 명시 — `proxy(matcher) → rateLimit (proxy.ts 안에서) → 라우트 handler 의 입력 검증(Zod) → 비즈니스 로직`. 이 순서를 명문화하면 후속 작업자가 XSS/injection 입력 차단 책임이 어느 레이어인지 (입력 검증 = 라우트 handler) 혼동 없음.
+
 새 ADR 번호 부여 X — 기존 ADR-016 의 후속 결정이라 본문 갱신.
 
 ### 3. issue close 코멘트

@@ -149,3 +149,4 @@ test -f src/proxy.test.ts || grep -n "api/sync" src/proxy.test.ts
 | `/api/visit` 가 매 페이지 호출 → 1000/min 빠르게 소진 | 일반 사용자가 1분에 1000 페이지 접근은 비현실 — 한도 적정. RFC1918 / 봇 UA 우회 로직 그대로 작동 |
 | 테스트 모킹이 실제 matcher 동작 미검증 | 한계 명시 — 매뉴얼 smoke 로 보완. e2e 테스트는 별도 plan |
 | 사이트 운영자 (jon890) 본인이 댓글 작성 시 한도 차단 | RFC1918 / localhost 우회 가능 — 외부 접근 시는 1000/min 한도 안에 들어감. 일반 사용 영향 없음 |
+| **X-Forwarded-For 헤더 무조건 신뢰 시 rate limit 우회** (보안 specialist 지적) | 홈서버 환경은 nginx → Next.js 단일 reverse proxy. `rateLimit.ts` 의 IP 추출은 신뢰 가능한 직속 프록시(127.0.0.1) 가 설정한 헤더만 사용. 외부에서 직접 들어오는 요청의 X-Forwarded-For 는 무시하고 `request.headers.get('x-real-ip')` 또는 socket address 우선. 위 수동 smoke 의 X-Forwarded-For 헤더는 **로컬 테스트 시뮬레이션 한정** — 프로덕션에서는 신뢰 프록시 외 헤더는 무시되어야 함. phase 1 실행 시 `rateLimit.ts` 에 해당 검증 로직 또는 주석 보강 |
