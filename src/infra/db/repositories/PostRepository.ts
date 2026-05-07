@@ -300,6 +300,22 @@ export class PostRepository extends BaseRepository {
       .from(posts);
   }
 
+  async getDistinctActiveCategoryCount(): Promise<number> {
+    const result = await this.db
+      .select({ count: sql<string>`COUNT(DISTINCT ${posts.category})` })
+      .from(posts)
+      .where(eq(posts.isActive, true));
+    return Number(result[0]?.count ?? 0);
+  }
+
+  async getLastActiveUpdatedAt(): Promise<Date | null> {
+    const result = await this.db
+      .select({ maxUpdatedAt: sql<Date | null>`MAX(${posts.updatedAt})` })
+      .from(posts)
+      .where(eq(posts.isActive, true));
+    return result[0]?.maxUpdatedAt ?? null;
+  }
+
   async getAllWithContent(): Promise<
     Array<{ id: number; path: string; title: string; content: string | null }>
   > {

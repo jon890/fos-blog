@@ -1,165 +1,295 @@
-# Phase 01 — About 페이지 전면 리디자인
+# Phase 01 — About 페이지 전면 리디자인 (Claude Design mockup 반영)
 
 **Model**: sonnet
-**Goal**: `/about` 페이지를 plan009 디자인 시스템 + plan016 sub-hero 패턴으로 재구성. GitHub 프로필 fetch 유지, 신규로 사이트 통계 카드 추가.
+**Goal**: `/about` 페이지를 Claude Design mockup (`tasks/plan023-about-redesign/design-about.{css,jsx}`) 의 시각 사양 그대로 재구성. plan009 토큰 + plan016 sub-hero 패턴 유지. GitHub 프로필 fetch + DB 사이트 통계 양쪽 통합.
 
-## Context (자기완결)
+## 시각 레퍼런스 (필수 — 구현 전 반드시 읽기)
 
-`src/app/about/page.tsx` 211줄, plan009 단절 (`text-gray-*`, `text-blue-*`, `bg-gray-*`, `border-gray-*` 전반). GitHub API fetch (`https://api.github.com/users/jon890`) 로 name/avatar/bio/repos/followers 받아 표시.
+- `tasks/plan023-about-redesign/design-about.jsx` — 마크업 구조 + 데이터 형태
+- `tasks/plan023-about-redesign/design-about.css` — 정확한 spec (간격, 폰트 크기, transition, keyframe)
 
-**플젝 컨벤션**:
-- Server Component (`revalidate = 3600`) 유지
-- `next/image` 로 avatar
-- plan009 토큰만 사용 (`bg-[var(--color-bg-elevated)]`, `text-[var(--color-fg-primary|secondary|muted)]`, `border-[var(--color-border-subtle)]`, `text-[var(--color-brand-400)]`)
-- container max-width: `1180px` (plan016 컨벤션과 정합)
-- 하드코딩 색상 0줄 목표
+mockup 의 짧은 토큰명을 plan009 토큰으로 일괄 치환:
+
+| mockup | plan009 |
+|---|---|
+| `var(--bg-base)` | `var(--color-bg-base)` |
+| `var(--bg-elevated)` | `var(--color-bg-elevated)` |
+| `var(--bg-overlay)` | `var(--color-bg-overlay)` |
+| `var(--fg-primary)` | `var(--color-fg-primary)` |
+| `var(--fg-secondary)` | `var(--color-fg-secondary)` |
+| `var(--fg-muted)` | `var(--color-fg-muted)` |
+| `var(--fg-faint)` | `var(--color-fg-faint)` |
+| `var(--border-subtle)` | `var(--color-border-subtle)` |
+| `var(--border-default)` | `var(--color-border-default)` |
+| `var(--brand)` | `var(--color-brand-400)` |
+
+## 프로젝트 환경 (사전 확인 완료)
+
+- `lucide-react@^0.469.0` 설치됨 → `Github`, `Code`, `Mail` 아이콘 import 사용 (mockup 의 inline SVG 대신)
+- `next.config.ts` 의 `images.remotePatterns` 에 `avatars.githubusercontent.com` 이미 등록됨 → 추가 작업 없음
+- `formatRelativeTime` 은 `@/lib/format-time` 존재 (plan022)
+- RSS 라우트 부재 → LinksGrid 에서 제외 (Newsletter / X 도 미구현이라 제외)
+- `LICENSE` 파일 부재 → footer 에 "MIT" 문구 금지 (단순 `© ${year} jon890`)
+
+## 데이터 정합 (mockup placeholder → 실 데이터)
+
+mockup 의 가짜 통계/리스트는 실제 fos-blog 값으로 치환:
+
+- **STACK 리스트** (mockup 의 "Vercel / MDX / Redis" 는 본 프로젝트 무관 — 실 스택만):
+  ```ts
+  const STACK = [
+    { label: "Next.js 16",         hue: 0,   key: "framework" },
+    { label: "TypeScript",         hue: 220, key: "language" },
+    { label: "Tailwind v4",        hue: 195, key: "styling" },
+    { label: "Drizzle ORM",        hue: 90,  key: "data" },
+    { label: "MySQL 8",            hue: 55,  key: "db" },
+    { label: "Docker",             hue: 230, key: "infra" },
+    { label: "Octokit",            hue: 145, key: "github" },
+    { label: "rehype-pretty-code", hue: 250, key: "syntax" },
+    { label: "mermaid",            hue: 175, key: "diagram" },
+    { label: "Vitest",             hue: 120, key: "test" },
+    { label: "pino",               hue: 35,  key: "log" },
+    { label: "shadcn/ui",          hue: 280, key: "ui" },
+  ] as const;
+  ```
+- **LINKS** (실재하는 링크만):
+  ```ts
+  const LINKS = [
+    { ttl: "GitHub",  sub: "@jon890",          href: "https://github.com/jon890",            ico: Github },
+    { ttl: "Source",  sub: "jon890/fos-blog",  href: "https://github.com/jon890/fos-blog",   ico: Code },
+    { ttl: "Content", sub: "jon890/fos-study", href: "https://github.com/jon890/fos-study",  ico: Code },
+  ] as const;
+  ```
+- **ProfileCard 통계**: GitHub API 의 `public_repos`, `followers` 두 개만 (mockup 의 `7y writing` 같은 임의값 제거)
+- **SiteStats**: 실 DB 조회 값 (schema 확인: `posts.category` (varchar notnull), `posts.subcategory` (nullable), `posts.folders` (json array). `categoryPath` 컬럼은 없음)
+  - `POSTS .total`: `posts.isActive=true` count
+  - `CATEGORIES .active`: `COUNT(DISTINCT category) WHERE isActive=true` (단순. sub 라인 `"distinct category"`)
+  - `LAST SYNC .db`: `MAX(posts.updatedAt)` → `formatRelativeTime`. null 이면 큰 숫자 영역에 `—`, sub 라인에 `no sync yet`
+
+## 컨벤션 / 기술 결정
+
+- **Server Component** (`revalidate = 3600`) 유지
+- **Avatar 두 상태는 디자인의 일부** — mockup 의 gradient + 이니셜 컨테이너는 항상 렌더링되며, GitHub 프로필 fetch 가 성공하면 그 위에 `next/image` 가 채워진다. fetch 실패 / `avatarUrl` 부재 시 이니셜이 그대로 보이는 구조.
+  - `.ab-avatar` 컨테이너에 radial gradient + initial 텍스트는 항상 존재
+  - `next/image` 는 `.ab-avatar` 자식으로 absolute 배치 (mockup `position: relative` 컨테이너 활용)
+- **CSS 전략**: `::before`/`::after` hairline, `@keyframes ab-pulse`, `oklch(... ${hue})` 동적 색은 Tailwind arbitrary value 만으로 어색 → **`src/app/about/about.css` co-located CSS 파일** 신규 + `import "./about.css"` 로 page.tsx 에 주입. 클래스 prefix `ab-` 유지 (mockup 과 1:1 비교 용이).
+  - mockup 의 `.ab-shell.light { ... }` 토큰 재정의 블록은 제거 (plan009 가 `:root` (default = dark) / `:root:not(.dark)` (light override) 로 이미 처리. `[data-theme]` selector 도입 금지)
+  - mockup 의 `.ab-shell.mobile` 클래스 분기는 `@media (max-width: 640px)` 로 변환 (page.tsx 가 `mobile` prop 안 넘김)
+  - `--cat-color` 인라인 변수 패턴은 유지 (chip dot 색)
+- container max-width 1180px, padding `0 32px` (모바일 `0 20px`)
+- **하드코딩 색 0줄** — `#`, `rgb(...)`, `text-gray-*`, `bg-blue-*` 등 0건. 단 `oklch(0.74 0.09 ${hue})` 인라인 `--cat-color` 는 디자인 의도라 허용
+- **GitHub API**: `Authorization: Bearer ${process.env.GITHUB_TOKEN}` 헤더 + `next: { revalidate: 3600 }`. 인증 시 한도 5000/hour. 본 프로젝트 모든 GitHub fetch 와 동일한 패턴.
 
 ## 작업 항목
 
-### 1. `src/components/AboutSubHero.tsx` 신규
+### 1. `src/app/about/about.css` 신규
 
-`PostsListSubHero` 와 같은 톤의 sub-hero. props:
-- `eyebrow`: "ABOUT"
-- `title`: "FOS Study" 또는 "fos-blog"
-- `meta`: 한 줄 설명 (예: "한 명의 백엔드 엔지니어가 매일 쌓는 학습 노트")
+`tasks/plan023-about-redesign/design-about.css` 를 베이스로 위 토큰 매핑 표대로 일괄 치환. 변경 사항:
+- `.ab-shell.light { ... }` 블록 제거 (plan009 의 `:root:not(.dark)` 가 처리)
+- `.ab-shell.mobile ...` 분기를 `@media (max-width: 640px) { ... }` 로 변환
+- 모든 색은 plan009 변수 직접 참조
+- `@keyframes ab-pulse` 그대로 유지
+- **신규 룰 추가** (mockup 에 부재 — `next/image` 자식 배치용):
+  ```css
+  .ab-avatar-initial { position: relative; z-index: 0; }
+  .ab-avatar-img { position: absolute; inset: 0; object-fit: cover; z-index: 1; border-radius: inherit; }
+  ```
+  `.ab-avatar` 의 grid + font 룰은 그대로 두고 (이니셜 위치 잡이용), 사진은 `inset:0` 으로 이니셜을 덮음.
 
-레이아웃 동일 패턴:
+### 2. `src/services/StatsService.ts` + 테스트 + factory 등록
+
+```ts
+export interface SiteStats {
+  postCount: number;
+  categoryCount: number;
+  lastSyncAt: Date | null;
+}
+
+export function createStatsService(repos: Repositories) {
+  return {
+    async getAboutStats(): Promise<SiteStats> {
+      // posts.isActive=true count, distinct categoryPath count, MAX(updatedAt)
+    },
+  };
+}
+```
+
+- DB 조회 3개 쿼리 (드리즐). 빈 DB → `{ postCount: 0, categoryCount: 0, lastSyncAt: null }`.
+- `src/services/index.ts` 에 factory 등록 (기존 PostService 패턴 그대로)
+- `src/services/StatsService.test.ts`: vitest mock repositories — 빈 결과 / 정상 결과 두 케이스
+
+### 3. `src/components/about/ProfileCard.tsx` 신규
+
+mockup `.ab-profile` 그대로. props: `name`, `handle`, `bio`, `avatarUrl`, `htmlUrl`, `publicRepos`, `followers`.
+
 ```tsx
-<div className="py-10 md:py-14">
-  <div className="flex items-center gap-3">
-    <span className="h-px w-6 bg-[var(--color-brand-400)]" />
-    <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-fg-muted)]">
-      {eyebrow}
-    </span>
+<article className="ab-card ab-profile">
+  <div className="ab-avatar">
+    <span className="ab-avatar-initial">{name.charAt(0).toUpperCase()}</span>
+    {avatarUrl && (
+      <Image src={avatarUrl} alt={name} fill sizes="128px" className="ab-avatar-img" />
+    )}
   </div>
-  <h1 className="mt-4 text-[28px] md:text-[40px] font-semibold leading-[1.1] tracking-tight text-[var(--color-fg-primary)]">
-    {title}
-  </h1>
-  <p className="mt-3 font-mono text-[12px] uppercase tracking-[0.06em] text-[var(--color-fg-muted)]">
-    {meta}
-  </p>
-  <div className="mt-8 h-px bg-[var(--color-border-subtle)]" />
+  <div className="ab-profile-body">
+    <h2 className="ab-profile-name">
+      {name}<span className="handle">{handle}</span>
+    </h2>
+    <p className="ab-profile-bio">{bio}</p>
+    <div className="ab-profile-stats">
+      <span className="stat"><span className="num">{publicRepos}</span><span className="lbl">repos</span></span>
+      <span className="stat"><span className="num">{followers}</span><span className="lbl">followers</span></span>
+    </div>
+    <a className="ab-profile-cta" href={htmlUrl} target="_blank" rel="noopener noreferrer">
+      <span>{htmlUrl.replace(/^https?:\/\//, "")}</span>
+      <span className="arr">↗</span>
+    </a>
+  </div>
+</article>
+```
+
+`.ab-avatar-img` 는 `position: absolute; inset: 0;` 로 이니셜 위에 덮음. `avatarUrl` 없으면 이니셜만 보임 (디자인 명시 상태).
+
+### 4. `src/components/about/SiteStats.tsx` 신규
+
+3-card grid. props: `{ postCount, categoryCount, lastSyncAt }`.
+
+```tsx
+<div className="ab-stats">
+  <div className="ab-card ab-stat">
+    <div className="ab-stat-eyebrow"><span>POSTS</span><span className="right">total</span></div>
+    <div className="ab-stat-num">{postCount}<span className="unit">posts</span></div>
+    <div className="ab-stat-sub">{categoryCount} categories</div>
+  </div>
+  <div className="ab-card ab-stat">
+    <div className="ab-stat-eyebrow"><span>CATEGORIES</span><span className="right">active</span></div>
+    <div className="ab-stat-num">{categoryCount}<span className="unit">paths</span></div>
+    <div className="ab-stat-sub">distinct category</div>
+  </div>
+  <div className="ab-card ab-stat">
+    <div className="ab-stat-eyebrow"><span>LAST SYNC</span><span className="right">db</span></div>
+    <div className="ab-stat-num">
+      {lastSyncAt ? formatRelativeTime(lastSyncAt) : "—"}
+    </div>
+    <div className="ab-stat-sub">
+      <span className="pulse" />
+      <span>{lastSyncAt ? new Date(lastSyncAt).toISOString().slice(0, 10) : "no sync yet"}</span>
+    </div>
+  </div>
 </div>
 ```
 
-**결정 — 별도 컴포넌트 신규 (AboutSubHero.tsx)**: `PostsListSubHero` 의 `accent` prop 은 'popular' icon 전용으로 About 컨텍스트와 의미 불일치. 두 sub-hero 의 시각 패턴(eyebrow + title + meta + divider)은 유사하나 컨텍스트 분리가 명확. 향후 다른 페이지 (e.g. /tags) 에 sub-hero 가 더 추가될 때 공통화 검토 (별도 plan).
+### 5. `src/components/about/{StackGrid,LinksGrid}.tsx` + `src/app/about/page.tsx` 통합
 
-### 2. `src/components/about/ProfileCard.tsx` 신규
+**StackGrid**: 위 STACK 상수, mockup chip 패턴:
+```tsx
+<span className="ab-chip" style={{ "--cat-color": `oklch(0.74 0.09 ${s.hue})` } as React.CSSProperties}>
+  <span className="dot" />
+  <span className="ab-chip-label">{s.label}</span>
+  <span className="key">{s.key}</span>
+</span>
+```
+`.ab-chip-label` 의 ellipsis truncation 은 about.css 에서 처리.
 
-기존 GitHub 프로필 카드 영역 분리. props:
-- `name`, `bio`, `avatarUrl`, `htmlUrl`, `publicRepos`, `followers`
+**LinksGrid**: 위 LINKS, lucide 아이콘:
+```tsx
+<a className="ab-chip link" href={l.href} target="_blank" rel="noopener noreferrer">
+  <span className="ico"><l.ico size={16} /></span>
+  <span className="ab-chip-link-body">
+    <span className="ttl">{l.ttl}</span>
+    <span className="sub">{l.sub}</span>
+  </span>
+  <span className="key">↗</span>
+</a>
+```
 
-레이아웃:
-- 좌: `next/image` avatar 96~128px, rounded-full, `border border-[var(--color-border-subtle)]`
-- 우: name (h1, fg-primary), bio (fg-secondary), 통계 (`{publicRepos} repos · {followers} followers` — fg-muted), GitHub 링크 (brand-400)
-- 컨테이너: `bg-[var(--color-bg-elevated)] border border-[var(--color-border-subtle)] rounded-[12px] p-6 md:p-8`
+**`fetchGitHubProfile()` 추출 + 인증 헤더 추가** (현 `src/app/about/page.tsx:48` 의 함수가 unauthenticated 60/h 한계 → 5000/h 로):
+```ts
+async function fetchGitHubProfile() {
+  const res = await fetch("https://api.github.com/users/jon890", {
+    headers: { Authorization: `Bearer ${env.GITHUB_TOKEN}` },
+    next: { revalidate: 3600 },
+  });
+  // ...
+}
+```
+`env` 는 `@/env` 에서 import (이미 `GITHUB_TOKEN` required 등록됨).
 
-### 3. `src/components/about/SiteStats.tsx` 신규
-
-신규 카드 — 블로그 사이트 통계.
-
-데이터:
-- 총 글 수 (`postCount`): `getRepositories().post.countActive()` 또는 기존 helper
-- 카테고리 수 (`categoryCount`): `categoryIcons` 키 개수 또는 distinct query
-- 최근 sync 시점 (`lastSyncAt`): 가장 최근 `posts.updatedAt` MAX
-
-**구현 노트**:
-- About 페이지 자체가 server component 라 `getRepositories()` 직접 호출 가능
-- 통계 fetch 함수 1개 신규 (`getAboutStats()` in `src/services/StatsService.ts`) — 구조 일관성 위해 service 분리 필수
-- **Service factory 등록 필수**: `src/services/index.ts` 에 `createStatsService()` factory 함수 추가하여 기존 DI 패턴 일치 유지 (다른 service 와 동일하게)
-- 빈 DB 상태 fallback: `0 / 0 / 동기화 전`
-
-레이아웃:
-- 3 column grid (`grid grid-cols-3 gap-4`), 각 cell:
-  - eyebrow (font-mono uppercase 11px fg-muted): `POSTS` / `CATEGORIES` / `LAST SYNC`
-  - 큰 숫자 (semibold 32px fg-primary): `218`, `9`, `2시간 전` (`formatRelativeTime` from `@/lib/format-time` — plan022 에서 추가, `Date | string` 양쪽 수용)
-  - 컨테이너: `bg-[var(--color-bg-elevated)] border border-[var(--color-border-subtle)] rounded-[12px] p-5`
-
-### 4. `src/components/about/StackGrid.tsx` 신규
-
-기술 스택 정리 (현재 inline 으로 있는 부분을 카드 grid 로):
+**`page.tsx` 통합** (Server Component):
 
 ```tsx
-const STACK_ITEMS = [
-  { label: "Next.js", category: "react" },
-  { label: "TypeScript", category: "js" },
-  { label: "MySQL", category: "db" },
-  { label: "Drizzle ORM", category: "db" },
-  { label: "Tailwind CSS", category: "react" },
-  { label: "Docker", category: "devops" },
-  // ... 기존 about/page.tsx 의 스택 목록 그대로
-];
+import "./about.css";
+
+export const revalidate = 3600;
+
+export default async function AboutPage() {
+  const profile = await fetchGitHubProfile();
+  const stats = await createStatsService(getRepositories()).getAboutStats();
+
+  return (
+    <div className="ab-shell">
+      <header className="ab-subhero">
+        <div className="ab-container">
+          <span className="ab-eyebrow">ABOUT</span>
+          <h1 className="ab-title">FOS Study</h1>
+          <p className="ab-meta">
+            한 명의 백엔드 엔지니어가 매일 쌓는 학습 노트.
+            공부하면서 기록하고, 기록하면서 다시 배웁니다.
+          </p>
+        </div>
+      </header>
+      <main className="ab-container">
+        <Section idx="01" label="profile">
+          <ProfileCard {...profile} />
+        </Section>
+        <Section idx="02" label="site stats" right="snapshot">
+          <SiteStats {...stats} />
+        </Section>
+        <Section idx="03" label="stack" right={`${STACK.length} packages`}>
+          <StackGrid />
+        </Section>
+        <Section idx="04" label="links" right="external">
+          <LinksGrid />
+        </Section>
+        <div className="ab-end">
+          <span>fos-blog · /about</span>
+          <span>© {new Date().getFullYear()} jon890</span>
+        </div>
+      </main>
+    </div>
+  );
+}
 ```
 
-각 카드:
-- chip `bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] rounded-[8px] px-3 py-2`
-- 작은 dot `h-1.5 w-1.5 rounded-full` 카테고리별 색 (plan022 Avatar 의 `CAT_HEX_PALETTE` 와 일관)
-- 텍스트 `text-[var(--color-fg-secondary)] text-sm`
+`<Section>` 은 page.tsx 안의 helper (별도 component 분리 X). `fetchGitHubProfile()` 는 기존 about/page.tsx 에 이미 있는 fetch 로직을 함수 추출 (인증 헤더 + revalidate=3600). 메타데이터 객체는 그대로 유지.
 
-grid: `grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3`
-
-### 5. `src/app/about/page.tsx` 통합
-
-기존 page.tsx 를 컨테이너로 단순화 — section 구성:
-1. `<AboutSubHero ... />` (또는 PostsListSubHero 재사용)
-2. `<ProfileCard ... />` — GitHub fetch 결과 전달
-3. `<SiteStats ... />` — 사이트 통계 fetch 결과 전달
-4. `<StackGrid />`
-5. 링크 섹션 (GitHub / 블로그 / 이메일 등): `LinksGrid.tsx` 신규 또는 inline — 4번과 같은 chip 패턴
-
-container: `<div className="container mx-auto max-w-[1180px] px-4 py-12 md:py-16">`
-
-각 section 사이 `mt-12 md:mt-16`.
-
-기존 metadata 객체는 그대로 유지.
-
-### 6. 자동 verification
-
-```bash
-pnpm lint
-pnpm type-check
-pnpm test --run
-pnpm build
-
-# 잔존 하드코딩 색 0줄 (about 영역 전체)
-! grep -nE "bg-white|bg-gray-|bg-blue-|text-gray-|text-blue-|text-white|border-gray-|focus:ring-blue" src/app/about/page.tsx src/components/about/
-
-# 신규 컴포넌트
-test -d src/components/about
-test -f src/components/about/ProfileCard.tsx
-test -f src/components/about/SiteStats.tsx
-test -f src/components/about/StackGrid.tsx
-
-# stats service (있다면)
-test -f src/services/StatsService.ts || grep -n "getAboutStats" src/app/about/page.tsx
-```
-
-수동 smoke (사용자 안내):
-- `pnpm dev` → `/about` 진입 → 다크/라이트 모드 양쪽 시각 확인
-- GitHub fetch 실패 시 fallback (try/catch 의 catch 분기) 동작
-- 통계 카드의 숫자가 실제 DB 와 일치 (총 글 수)
+> **검증/lint/build 게이트는 phase-02 로 통합** — phase-02 의 verification 섹션 참조. phase-01 은 코드 작성에 집중.
 
 ## Critical Files
 
 | 파일 | 상태 |
 |---|---|
+| `src/app/about/about.css` | 신규 |
+| `src/app/about/page.tsx` | 대폭 수정 |
 | `src/components/about/ProfileCard.tsx` | 신규 |
 | `src/components/about/SiteStats.tsx` | 신규 |
 | `src/components/about/StackGrid.tsx` | 신규 |
-| `src/components/about/LinksGrid.tsx` (선택) | 신규 또는 inline |
-| `src/services/StatsService.ts` (선택) | 신규 |
-| `src/app/about/page.tsx` | 대폭 수정 |
+| `src/components/about/LinksGrid.tsx` | 신규 |
+| `src/services/StatsService.ts` | 신규 |
+| `src/services/StatsService.test.ts` | 신규 |
+| `src/services/index.ts` | factory 추가 |
 
 ## Out of Scope
 
-- Claude Design mockup 도착 시 layout 미세조정은 후속 review-fix 또는 별도 plan
-- 다국어 about (i18n)
 - About 의 OG 이미지 별도 생성 (현재 layout.tsx 의 default OG 사용)
+- 다국어 about (i18n)
+- Newsletter / X / RSS 링크 (모두 미구현)
+- mockup 의 "3 are draft-only", "main · #a3f9c1" 같은 가짜 메타
 
 ## Risks & Mitigations
 
 | 리스크 | 완화 |
 |---|---|
-| GitHub API rate limit | **인증 요청 필수** — `Authorization: Bearer ${process.env.GITHUB_TOKEN}` 헤더 사용 (5000/hour, 미인증 60/hour 의 ~83x). `revalidate = 3600` 은 보조 캐시 역할. 다중 컨테이너 재시작 / CDN 무효화 동시 fetch 시에도 한도 여유. ProfileCard fetch 구현: `fetch("https://api.github.com/users/jon890", { headers: { Authorization: \`Bearer ${process.env.GITHUB_TOKEN}\` }, next: { revalidate: 3600 } })` |
-| countActive 가 기존 repository 에 없음 | 있으면 그대로, 없으면 `db.select({ count: sql<number>\`count(*)\` }).from(posts).where(eq(posts.isActive, true))` inline 또는 service 추가 |
-| Stack 목록이 about/page.tsx 에 inline 으로 박혀 있어 중복 위험 | StackGrid 내부에 상수로 두고 about/page.tsx 에서는 import 만 — 단일 소스 |
+| GitHub API 일시 장애 | 인증 헤더 + revalidate=3600. 디자인 자체가 이니셜 컨테이너를 항상 렌더하고 그 위에 사진을 덮는 구조라 사진 누락 시 그래픽 깨짐 없음 |
+| `next/image` 의 fill + relative parent | `.ab-avatar` 가 `position: relative`, `next/image` 가 `position: absolute; inset: 0`. mockup 의 컨테이너 spec 그대로 |
+| `oklch(... ${hue})` 카테고리 색이 양쪽 모드에서 채도 차이 | mockup 채도 0.09 가 양쪽에서 충분히 분간 가능 (plan009 categoryIcons 와 일관) |
+| `formatRelativeTime` null 처리 | `lastSyncAt === null` 분기 명시. plan022 helper 가 `Date | string` 양쪽 수용하므로 null 만 추가 가드 |
