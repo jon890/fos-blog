@@ -52,7 +52,22 @@ export class PostRepository extends BaseRepository {
     }));
   }
 
-  async getRecentActive({ limit = 50 }: { limit?: number } = {}): Promise<PostData[]> {
+  async getRecentActive({ limit = 50 }: { limit?: number } = {}): Promise<
+    Array<
+      Pick<
+        PostData,
+        | "title"
+        | "path"
+        | "slug"
+        | "category"
+        | "subcategory"
+        | "folders"
+        | "description"
+        | "content"
+        | "createdAt"
+      >
+    >
+  > {
     const result = await this.db
       .select({
         title: posts.title,

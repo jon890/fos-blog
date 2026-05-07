@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { getRepositories } from "@/infra/db/repositories";
+import { createDefaultRSSService } from "@/services";
 import { extractDescription } from "@/lib/markdown";
+import { escapeXml } from "@/lib/xml";
 import { env } from "@/env";
 import logger from "@/lib/logger";
 
@@ -13,29 +14,10 @@ const SITE_URL = env.NEXT_PUBLIC_SITE_URL;
 const SITE_TITLE = "FOS Study";
 const SITE_DESCRIPTION = "한 명의 백엔드 엔지니어가 매일 쌓는 학습 노트";
 
-function escapeXml(unsafe: string): string {
-  return unsafe.replace(/[<>&'"]/g, (c) => {
-    switch (c) {
-      case "<":
-        return "&lt;";
-      case ">":
-        return "&gt;";
-      case "&":
-        return "&amp;";
-      case "'":
-        return "&apos;";
-      case '"':
-        return "&quot;";
-      default:
-        return c;
-    }
-  });
-}
-
 export async function GET() {
   try {
-    const { post } = getRepositories();
-    const posts = await post.getRecentActive({ limit: 50 });
+    const rss = createDefaultRSSService();
+    const posts = await rss.getRecentForFeed({ limit: 50 });
 
     const items = posts
       .map((p) => {
@@ -50,7 +32,7 @@ export async function GET() {
       <title>${escapeXml(p.title)}</title>
       <link>${escapeXml(url)}</link>
       <guid isPermaLink="true">${escapeXml(url)}</guid>
-      <pubDate>${pubDate}</pubDate>
+      <pubDate>${escapeXml(pubDate)}</pubDate>
       <category>${escapeXml(p.category)}</category>
       <description>${escapeXml(desc)}</description>
     </item>`;
@@ -64,7 +46,7 @@ export async function GET() {
     <link>${escapeXml(SITE_URL)}</link>
     <description>${escapeXml(SITE_DESCRIPTION)}</description>
     <language>ko-KR</language>
-    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+    <lastBuildDate>${escapeXml(new Date().toUTCString())}</lastBuildDate>
     <atom:link href="${escapeXml(SITE_URL)}/rss.xml" rel="self" type="application/rss+xml" />${items}
   </channel>
 </rss>`;

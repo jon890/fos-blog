@@ -37,3 +37,5 @@ export { SyncService } from "./SyncService";
 export { PostService } from "./PostService";
 export { createStatsService } from "./StatsService";
 export type { SiteStats } from "./StatsService";
+export { createRSSService, createDefaultRSSService } from "./RSSService";
+export type { RSSPostData } from "./RSSService";
