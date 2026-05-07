@@ -629,6 +629,22 @@ html:not(.dark) .prose .code-card-body pre span {
   color: var(--cat-color);
 }
 
+/* === Link underline draw (plan025) ===
+   적용은 별도 plan — 본 정의만 노출. prose 외 nav/card link 후보. */
+.link-draw {
+  text-decoration-line: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+  transition: text-decoration-color var(--duration-fast) var(--ease-out);
+}
+.link-draw:hover {
+  text-decoration-color: currentColor;
+}
+@media (prefers-reduced-motion: reduce) {
+  .link-draw { transition: none; }
+}
+
 /* === Footer accent line === */
 .fbf-accent {
   background: linear-gradient(

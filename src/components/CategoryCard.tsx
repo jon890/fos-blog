@@ -21,7 +21,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
           borderLeftColor: catColor,
         } as CSSProperties
       }
-      className="cat-card group relative flex flex-col gap-2 overflow-hidden rounded-lg border border-[var(--color-border-subtle)] border-l-2 bg-[var(--color-bg-elevated)] p-[22px] pb-5 transition-[transform,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--cat-color)]"
+      className="cat-card group relative flex flex-col gap-2 overflow-hidden rounded-lg border border-[var(--color-border-subtle)] border-l-2 bg-[var(--color-bg-elevated)] p-[22px] pb-5 transition-[transform,border-color] duration-[var(--duration-default)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:border-[var(--cat-color)] motion-reduce:transform-none motion-reduce:transition-none"
     >
       <div className="flex items-center justify-between gap-3">
         <span

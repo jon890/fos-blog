@@ -2,6 +2,8 @@
 import GithubSlugger from "github-slugger";
 import type { Element as HastElement, ElementContent, Text } from "hast";
 
+const HTML_TAG_RE = /<[^>]+>/g;
+
 export interface FrontMatter {
   title?: string;
   date?: string;
@@ -82,15 +84,17 @@ export function extractDescription(
   const { frontMatter, content: mainContent } = parseFrontMatter(content);
 
   if (frontMatter.description) {
-    return frontMatter.description as string;
+    return frontMatter.description.replace(HTML_TAG_RE, " ").replace(/\s+/g, " ").trim();
   }
 
   // Remove markdown syntax and get first paragraph
   const plainText = mainContent
+    .replace(HTML_TAG_RE, " ") // Remove HTML tags (<br>, <details> 등)
     .replace(/^#+\s+.+$/gm, "") // Remove headers
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Replace links with text
     .replace(/[*_`~]/g, "") // Remove formatting
     .replace(/\n+/g, " ") // Replace newlines with spaces
+    .replace(/\s+/g, " ") // Collapse repeated whitespace from tag removal
     .trim();
 
   if (plainText.length > maxLength) {

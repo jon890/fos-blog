@@ -1,0 +1,35 @@
+{
+  "name": "plan026-tags-system",
+  "description": "태그 시스템 (issue #72) — posts.tags JSON 컬럼 추가 + sync 시 frontmatter tags DB 저장 + PostRepository.getPostsByTag + /tag/[name] 상세 페이지 + ArticleFooter tag link 활성화. /tags 인덱스는 OOS.",
+  "status": "completed",
+  "created_at": "2026-05-07",
+  "total_phases": 3,
+  "related_docs": [
+    "docs/data-schema.md",
+    "docs/code-architecture.md"
+  ],
+  "depends_on": [],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "posts.tags JSON 컬럼 + drizzle migration + SyncService 확장",
+      "model": "sonnet",
+      "status": "completed"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "title": "PostRepository.getPostsByTag + /tag/[name] 페이지 + ArticleFooter tag link",
+      "model": "sonnet",
+      "status": "completed"
+    },
+    {
+      "number": 3,
+      "file": "phase-03.md",
+      "title": "검증 + data-schema.md 갱신 + index.json 마킹",
+      "model": "haiku",
+      "status": "completed"
+    }
+  ]
+}

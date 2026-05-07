@@ -263,3 +263,16 @@ src/components/
   - BLG1 db:push 금지 — `pnpm db:generate` → 커밋 → `pnpm db:migrate`
   - BLG2 구조화 로그 — §6 준수
   - BLG3 사일런트 실패 금지 — 500 + 에러 body
+
+---
+
+## 태그 시스템 (plan026)
+
+신규 라우트 + Repository 메서드:
+
+- **`GET /tag/[name]`** (`src/app/tag/[name]/page.tsx`) — tag 별 글 목록. ISR 300s. tag URL decode → `getPostsByTag(tag, { limit: 50 })` + `countPostsByTag`. count 0 이면 `notFound()`.
+- **`PostRepository.getPostsByTag(tag, { limit, offset })`** / **`countPostsByTag(tag)`** — `JSON_CONTAINS(posts.tags, JSON_QUOTE(?))` 쿼리. count 는 `sql<string>\`count(*)\`` + `Number()` (BLG6).
+- **`SyncService.normalizeTags(raw)`** — frontmatter 의 `tags` 를 `trim().toLowerCase()` + 빈 문자열 제거 + Set dedup 후 DB 저장.
+- **`ArticleFooter`** — tag chip 을 `<Link href="/tag/{encoded}">` 로 활성화.
+
+설계 의도 (정규화 테이블 회피, 50 limit, lowercase 만 등) 는 ADR-023 참조.

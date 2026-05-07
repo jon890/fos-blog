@@ -15,6 +15,7 @@
 - Unique: `path`
 - 기존 인덱스: `category_idx(category)`, `slug_idx(slug)`
 - `updatedAt timestamp` (defaultNow, onUpdateNow)
+- `tags JSON NOT NULL DEFAULT ('[]')` — frontmatter `tags` 추출 + sync 시 `trim().toLowerCase()` 정규화 (plan026)
 
 ### visit_stats (`src/infra/db/schema/visitStats.ts`)
 

@@ -25,7 +25,7 @@ export function CategoryFeatured({ category, rank, latestUpdatedAt }: CategoryFe
     <Link
       href={`/category/${encodeURIComponent(category.slug)}`}
       style={inlineStyle}
-      className="group relative flex flex-col min-h-[220px] rounded-lg border border-[var(--color-border-subtle)] border-l-2 p-7 pb-6 transition-[transform,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--cat-color)]"
+      className="group relative flex flex-col min-h-[220px] rounded-lg border border-[var(--color-border-subtle)] border-l-2 p-7 pb-6 transition-[transform,border-color] duration-[var(--duration-default)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:border-[var(--cat-color)] motion-reduce:transform-none motion-reduce:transition-none"
     >
       <span
         className="absolute top-3.5 right-4 font-mono text-[10px] tracking-[0.1em] text-[var(--color-fg-faint)]"

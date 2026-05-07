@@ -3,6 +3,13 @@
 **Model**: sonnet
 **Goal**: 카드/링크/버튼의 미세한 motion polish. 라이브러리 추가 없이 Tailwind arbitrary values + plan009 motion 토큰만 사용.
 
+> **실행 결과 (보수 노선 — 사용자 결정)**:
+> - ✅ 카드 3종 (PostCard / CategoryCard / CategoryFeatured) 의 `duration-200 ease-out` → 토큰 (`var(--duration-default)` / `var(--ease-out)`) + `motion-reduce:transform-none motion-reduce:transition-none` variant 추가
+> - ✅ button.tsx 에 `motion-reduce:transition-none motion-reduce:active:translate-y-0` 추가 (기존 `active:translate-y-px` 유지)
+> - ✅ globals.css 에 `.link-draw` utility 정의 + `prefers-reduced-motion` 가드
+> - ⏸ **보류 (회귀 위험)**: card `hover:shadow-[var(--shadow-popover)]` (border-color hover 일관성 유지), button `active:scale-[0.98]` (기존 translate-y 와 충돌), `.link-draw` 실제 적용 위치 (Header/ProfileCard 등 — 별도 plan 으로)
+> - ⏸ **보류**: universal `prefers-reduced-motion` reset (`*,*::before,*::after { animation-duration: 0.01ms ... }`) — 기존 hero-mesh/hero-caret 개별 가드로 충분, universal reset 은 의도된 motion(스피너 등)도 차단할 위험
+
 ## Context (자기완결)
 
 `src/app/globals.css` 에 plan009 motion 토큰 정의됨:
