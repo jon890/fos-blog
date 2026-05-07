@@ -42,7 +42,7 @@
 </div>
 ```
 
-`PostsListSubHero` 와 매우 유사 — 별도 컴포넌트 신규 vs `PostsListSubHero` 의 props 확장 후 재사용 중 택1. **재사용 권장** — PostsListSubHero 의 props 에 accent default (이미 존재) 그대로 사용 가능. 새 컴포넌트가 정말 필요한지 phase 시작 시 한 번 더 점검.
+**결정 — 별도 컴포넌트 신규 (AboutSubHero.tsx)**: `PostsListSubHero` 의 `accent` prop 은 'popular' icon 전용으로 About 컨텍스트와 의미 불일치. 두 sub-hero 의 시각 패턴(eyebrow + title + meta + divider)은 유사하나 컨텍스트 분리가 명확. 향후 다른 페이지 (e.g. /tags) 에 sub-hero 가 더 추가될 때 공통화 검토 (별도 plan).
 
 ### 2. `src/components/about/ProfileCard.tsx` 신규
 
@@ -65,13 +65,14 @@
 
 **구현 노트**:
 - About 페이지 자체가 server component 라 `getRepositories()` 직접 호출 가능
-- 통계 fetch 함수 1개 신규 (`getAboutStats()` in `src/services/StatsService.ts` 또는 inline) — 구조 일관성 위해 service 분리 권장
+- 통계 fetch 함수 1개 신규 (`getAboutStats()` in `src/services/StatsService.ts`) — 구조 일관성 위해 service 분리 필수
+- **Service factory 등록 필수**: `src/services/index.ts` 에 `createStatsService()` factory 함수 추가하여 기존 DI 패턴 일치 유지 (다른 service 와 동일하게)
 - 빈 DB 상태 fallback: `0 / 0 / 동기화 전`
 
 레이아웃:
 - 3 column grid (`grid grid-cols-3 gap-4`), 각 cell:
   - eyebrow (font-mono uppercase 11px fg-muted): `POSTS` / `CATEGORIES` / `LAST SYNC`
-  - 큰 숫자 (semibold 32px fg-primary): `218`, `9`, `2시간 전` (formatRelativeTime — plan022 와 같은 helper 재사용)
+  - 큰 숫자 (semibold 32px fg-primary): `218`, `9`, `2시간 전` (`formatRelativeTime` from `@/lib/format-time` — plan022 에서 추가, `Date | string` 양쪽 수용)
   - 컨테이너: `bg-[var(--color-bg-elevated)] border border-[var(--color-border-subtle)] rounded-[12px] p-5`
 
 ### 4. `src/components/about/StackGrid.tsx` 신규
@@ -159,6 +160,6 @@ test -f src/services/StatsService.ts || grep -n "getAboutStats" src/app/about/pa
 
 | 리스크 | 완화 |
 |---|---|
-| GitHub API rate limit (60/hour 미인증) | `revalidate = 3600` 으로 시간당 1회만 fetch — 영향 미미 |
+| GitHub API rate limit | **인증 요청 필수** — `Authorization: Bearer ${process.env.GITHUB_TOKEN}` 헤더 사용 (5000/hour, 미인증 60/hour 의 ~83x). `revalidate = 3600` 은 보조 캐시 역할. 다중 컨테이너 재시작 / CDN 무효화 동시 fetch 시에도 한도 여유. ProfileCard fetch 구현: `fetch("https://api.github.com/users/jon890", { headers: { Authorization: \`Bearer ${process.env.GITHUB_TOKEN}\` }, next: { revalidate: 3600 } })` |
 | countActive 가 기존 repository 에 없음 | 있으면 그대로, 없으면 `db.select({ count: sql<number>\`count(*)\` }).from(posts).where(eq(posts.isActive, true))` inline 또는 service 추가 |
 | Stack 목록이 about/page.tsx 에 inline 으로 박혀 있어 중복 위험 | StackGrid 내부에 상수로 두고 about/page.tsx 에서는 import 만 — 단일 소스 |
