@@ -39,7 +39,7 @@ export function PostCard({
       <Link
         href={postHref(post.slug)}
         style={inlineStyle}
-        className="group flex flex-col overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)] transition-[border-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--color-border-strong)]"
+        className="group flex flex-col overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)] transition-[border-color,transform] duration-[var(--duration-default)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:border-[var(--color-border-strong)] motion-reduce:transform-none motion-reduce:transition-none"
       >
         <div className="flex flex-1 flex-col gap-2 p-5">
           {showCategory && (
