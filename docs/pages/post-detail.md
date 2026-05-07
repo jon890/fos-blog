@@ -43,7 +43,7 @@
 | `ReadingProgressBar` | viewport 최상단 fixed 1px 진행 띠 (`z-50`, plan019). passive scroll/resize listener → 0~100 % width. brand-400 토큰 색상. `role="progressbar"` + `aria-valuenow` 접근성 메타. Header 의 하단 라인 reading progress 와 별개로 viewport 절대 최상단에서 동작 |
 | `MobileTocButton` | 모바일 전용 floating TOC FAB + bottom sheet (plan019, `md:hidden`). 우하단 원형 brand 버튼 (lucide `List`) → 클릭 시 fixed bottom sheet (`role="dialog" aria-modal="true"`) 펼침. ESC keydown / backdrop click 으로 닫기 (둘 다 useEffect cleanup 에서 listener 해제). 단순 fixed div + state — `<dialog>` element 미사용 (SSR hydration mismatch 회피 의도). H2/H3 nesting 동일 적용. `toc.length === 0` 시 자체 미렌더 |
 | `ArticleFooter` | `frontmatter.tags` 가 있는 경우만 렌더되는 태그 칩 영역 (graceful fallback) |
-| `Comments` | 댓글 섹션 (postPath 전달) |
+| `Comments` | 댓글 컨테이너 (plan022). 자식: `CommentForm` (작성/수정, react-hook-form + zod) / `CommentItem` (카드, nickname hash avatar + 상대 시간) / `DeleteConfirmDialog` (shadcn AlertDialog + password). 알림: sonner toast. 아바타 색상: `OG_CATEGORY_HEX` 7색 팔레트 hash — plan021 단일 소스. threading 미포함(의도적) |
 | `ArticleJsonLd` | JSON-LD 아티클 구조화 데이터 |
 | `BreadcrumbJsonLd` | JSON-LD 브레드크럼 |
 
@@ -136,7 +136,11 @@
 - `src/components/ReadingProgressBar.tsx` — viewport 최상단 1px 진행 띠 (plan019)
 - `src/components/MobileTocButton.tsx` — 모바일 floating TOC button + bottom sheet (plan019)
 - `src/components/Header.tsx` — `/posts/*` 한정 하단 라인 reading progress (별개 컴포넌트)
-- `src/components/Comments.tsx`
+- `src/components/Comments.tsx` — 댓글 컨테이너 (plan022)
+- `src/components/comments/CommentForm.tsx` — 작성/수정 통합 폼
+- `src/components/comments/CommentItem.tsx` — 댓글 카드
+- `src/components/comments/DeleteConfirmDialog.tsx` — 삭제 확인 다이얼로그
+- `src/components/comments/Avatar.tsx` — nickname hash 색상 아바타
 - `src/components/JsonLd.tsx`
 - `src/infra/db/repositories/PostRepository.ts`
 - `src/infra/db/repositories/VisitRepository.ts` — `getVisitCount(pagePath)`

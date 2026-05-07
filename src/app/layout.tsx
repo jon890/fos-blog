@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import Script from "next/script";
+import { Toaster } from "sonner";
 import "./globals.css";
 import { env } from "@/env";
 import { OG_WIDTH, OG_HEIGHT } from "@/lib/og";
@@ -145,6 +146,17 @@ export default function RootLayout({
           </div>
           </SidebarProvider>
         </ThemeProvider>
+        <Toaster
+          position="bottom-center"
+          theme="system"
+          toastOptions={{
+            classNames: {
+              toast: "bg-[var(--color-bg-elevated)] text-[var(--color-fg-primary)] border border-[var(--color-border-subtle)]",
+              success: "text-[var(--color-brand-400)]",
+              error: "text-red-400",
+            },
+          }}
+        />
       </body>
     </html>
   );

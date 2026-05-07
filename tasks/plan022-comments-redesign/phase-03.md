@@ -8,6 +8,7 @@
 ### 1. 통합 검증
 
 ```bash
+# cwd: <repo root>
 pnpm lint
 pnpm type-check
 pnpm test --run
@@ -22,7 +23,7 @@ pnpm build
 - 컴포넌트 분리: `Comments` (컨테이너) / `CommentForm` / `CommentItem` / `DeleteConfirmDialog` / `Avatar`
 - 폼 검증: react-hook-form + zod
 - 알림: sonner toast
-- 아바타: nickname hash 기반 9색 자동 선택
+- 아바타: nickname hash 기반 색상 자동 선택 (`OG_CATEGORY_HEX` 의 7색 팔레트 재사용 — plan021 단일 소스)
 - threading 미포함 (의도적 — schema 변경 회피)
 
 기존 내용이 자세히 들어가 있다면 짧게 (3~4줄) 압축. docs 작성 원칙 준수 — 컨텍스트 효율.
@@ -34,6 +35,7 @@ pnpm build
 ### 4. 자동 verification
 
 ```bash
+# cwd: <repo root>
 grep -n "plan022\|CommentForm\|Avatar" docs/pages/post-detail.md | head -5
 grep -n "\"completed\"" tasks/plan022-comments-redesign/index.json | wc -l  # 4 (top + 3 phases)
 ```

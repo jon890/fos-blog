@@ -43,7 +43,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     if (!updatedComment) {
       return NextResponse.json(
-        { error: "댓글을 찾을 수 없습니다." },
+        { code: "NOT_FOUND", error: "댓글을 찾을 수 없습니다." },
         { status: 404 }
       );
     }
@@ -51,7 +51,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ comment: updatedComment });
   } catch (error) {
     if (error instanceof Error && error.message === "비밀번호가 일치하지 않습니다.") {
-      return NextResponse.json({ error: error.message }, { status: 403 });
+      return NextResponse.json({ code: "PASSWORD_MISMATCH", error: error.message }, { status: 403 });
     }
     log.error({ err: error instanceof Error ? error : new Error(String(error)) }, "Failed to update comment");
     return NextResponse.json(
@@ -89,7 +89,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     if (!deleted) {
       return NextResponse.json(
-        { error: "댓글을 찾을 수 없습니다." },
+        { code: "NOT_FOUND", error: "댓글을 찾을 수 없습니다." },
         { status: 404 }
       );
     }
@@ -97,7 +97,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof Error && error.message === "비밀번호가 일치하지 않습니다.") {
-      return NextResponse.json({ error: error.message }, { status: 403 });
+      return NextResponse.json({ code: "PASSWORD_MISMATCH", error: error.message }, { status: 403 });
     }
     log.error({ err: error instanceof Error ? error : new Error(String(error)) }, "Failed to delete comment");
     return NextResponse.json(

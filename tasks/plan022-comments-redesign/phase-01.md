@@ -11,7 +11,7 @@
 - shadcn 컴포넌트는 `src/components/ui/` 에 자동 생성 (`pnpm dlx shadcn@latest add ...`)
 - 새 client component 는 "use client" 선언
 - Tailwind v4 + plan009 토큰 기준
-- "전면 리디자인" 결정 (사용자 2026-05-06): threading 미포함, avatar nickname 이니셜 + 9색 hash, full shadcn
+- "전면 리디자인" 결정 (사용자 2026-05-06): threading 미포함, avatar nickname 이니셜 + 7색 hash (OG 팔레트), full shadcn
 
 ## 작업 항목
 
@@ -59,7 +59,7 @@ import { Toaster } from "sonner";
 
 ### 3. `src/components/comments/Avatar.tsx` 신규
 
-Nickname 이니셜 + plan009 카테고리 9색 hash 자동 선택:
+Nickname 이니셜 + plan009 카테고리 hash 기반 자동 선택 (`OG_CATEGORY_HEX` 의 7색 팔레트 재사용):
 
 ```tsx
 import { OG_CATEGORY_HEX } from "@/lib/og";
@@ -132,6 +132,7 @@ export function CommentItem(_props: CommentItemProps) {
 ### 5. 검증
 
 ```bash
+# cwd: <repo root>
 pnpm lint
 pnpm type-check
 pnpm test --run
@@ -140,6 +141,7 @@ pnpm build
 
 자동 verification:
 ```bash
+# cwd: <repo root>
 test -f src/components/ui/input.tsx
 test -f src/components/ui/textarea.tsx
 test -f src/components/ui/form.tsx

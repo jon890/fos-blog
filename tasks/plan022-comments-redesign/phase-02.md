@@ -68,7 +68,15 @@ export type CommentFormProps =
 
 zod 의 `.max(5000)` 는 길이 검증만. content 가 HTML/script 를 포함하면 표시 시 위험. 두 면 가드:
 
-1. **저장 측**: `CommentRepository.createComment` / `updateComment` 호출 직전 `content` 를 escape 또는 strip-html. 기존 `src/infra/db/repositories/CommentRepository.ts` 의 write 메서드에 sanitization 가드가 없으면 phase-02 안에서 추가 (단순 `< → &lt; > → &gt; & → &amp;` escape 또는 `dompurify` 도입 결정). **executor 가 먼저 현재 구현 확인 후 보고** — 이미 가드 있으면 skip, 없으면 추가
+1. **저장 측**: `CommentRepository.createComment` / `updateComment` 호출 직전 `content` 를 escape. **team-lead 가 사전 검증으로 현재 가드 부재 확인됨** (line 49 / line 90 raw `content` insert/set). phase-02 안에서 단순 HTML escape 헬퍼 추가 (`& < > " '` → `&amp; &lt; &gt; &quot; &#39;` 5문자만, dompurify 같은 풀 라이브러리 도입 회피 — 댓글은 markdown 안 받고 plain text 라 5문자 escape 면 충분):
+```ts
+// src/lib/escape-html.ts (신규)
+const HTML_ESCAPE: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+export function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => HTML_ESCAPE[c]);
+}
+```
+`CommentRepository.createComment` / `updateComment` 의 `content` 인자에 escape 적용. 기존 댓글 read 시 별도 unescape 없음 (React 가 자동 escape 한 텍스트를 다시 escape 하지 않도록 — 단방향 저장 시점 escape).
 2. **표시 측**: `CommentItem.tsx` 가 `{comment.content}` 로 React 텍스트로 렌더 시 React 가 자동 escape — `dangerouslySetInnerHTML` 사용 금지. `whitespace-pre-wrap` 만 적용해 줄바꿈 보존
 
 ### 2. `src/components/comments/CommentItem.tsx` 본체 채우기
@@ -209,6 +217,7 @@ toast.error(USER_FRIENDLY_ERRORS[code] ?? "요청을 처리할 수 없습니다"
 ### 6. 자동 verification
 
 ```bash
+# cwd: <repo root>
 pnpm lint
 pnpm type-check
 pnpm test --run
