@@ -124,21 +124,23 @@ export default async function HomePage() {
         </section>
 
         {/* Categories Section */}
-        <section>
-          <div className="flex items-center justify-between mb-4 md:mb-8">
-            <h2 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">
-              카테고리
-            </h2>
-            <Link
-              href="/categories"
-              className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
-            >
-              모두 보기
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <CategoryList categories={categories.slice(0, 9)} />
-        </section>
+        {categories.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-4 md:mb-8">
+              <h2 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                카테고리
+              </h2>
+              <Link
+                href="/categories"
+                className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
+              >
+                모두 보기
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <CategoryList categories={categories.slice(0, 9)} />
+          </section>
+        )}
       </main>
     </>
   );

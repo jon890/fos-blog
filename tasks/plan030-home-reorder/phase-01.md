@@ -28,14 +28,11 @@ JSX 트리에서 Popular → Recent → Categories 순서로 재배치. 각 sect
 <CategoryList categories={categories.slice(0, 9)} />
 ```
 
-### 3. `src/components/CategoryList.tsx` grid 조정
+### 3. `src/components/CategoryList.tsx` grid 점검 (변경 가능성 낮음)
 
-기존 grid (PostCard 와 비슷한 패턴) 를 3×3 으로:
-- 모바일: `grid-cols-2` (2 × 5 → 마지막 1개는 단독)
-- 태블릿: `md:grid-cols-3` (3 × 3)
-- 데스크톱: `lg:grid-cols-3` (3 × 3)
+현재 `CategoryList.tsx` 는 이미 `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3` 적용됨 — **3×3 grid 자연스럽게 형성, 변경 불필요**. 수정 항목으로 두는 이유는 `md:grid-cols-3` 추가 여부 (현재 sm→lg 점프) 정도의 미세 조정 가능성. 실제 시각 점검 후 어색하지 않으면 변경 0.
 
-CategoryList 를 먼저 grep 으로 확인 후 결정. 만약 현재 `lg:grid-cols-2` 라면 `lg:grid-cols-3` 로 교체. 기존 카드 비율이 너무 wide 해 보이면 cell aspect 도 조정 검토 (OOS — 기존 톤 유지가 기본).
+기존 카드 비율이 너무 wide 해 보이면 cell aspect 조정 검토 (OOS — 기존 톤 유지가 기본).
 
 ### 4. 마지막 섹션 (카테고리) margin/spacing 조정
 
@@ -43,7 +40,7 @@ CategoryList 를 먼저 grep 으로 확인 후 결정. 만약 현재 `lg:grid-co
 
 ### 5. Empty state 처리
 
-기존 popular/recent 의 conditional 렌더 로직 (`length > 0`) 그대로 유지. 카테고리 빈 배열 (`categories.length === 0`) 일 때 섹션 자체 hide 또는 placeholder — 기존 동작 유지.
+기존 popular/recent 의 conditional 렌더 로직 (`length > 0`) 그대로 유지. **카테고리 섹션도 동일한 가드 추가** — `categories.length > 0 && (<section>...)` 로 빈 배열일 때 헤더만 노출되는 어색함 차단. (PR #122 review-fix 반영)
 
 ### 6. 자동 verification
 
@@ -53,8 +50,9 @@ pnpm type-check
 pnpm test --run
 pnpm build
 
-# 섹션 순서 — popularPosts JSX 가 categories JSX 보다 위에 위치
-node -e "const s = require('fs').readFileSync('src/app/page.tsx','utf8'); const a = s.indexOf('popularPosts.length'); const b = s.indexOf('CategoryList'); process.exit(a < b ? 0 : 1)"
+# 섹션 순서 — popularPosts JSX 가 CategoryList JSX 보다 위에 위치
+# 주의: 단순 indexOf("CategoryList") 는 import 라인을 잡아 false positive 발생 — JSX 태그 패턴으로 비교
+node -e "const s = require('fs').readFileSync('src/app/page.tsx','utf8'); const a = s.indexOf('popularPosts.length > 0 &&'); const b = s.indexOf('<CategoryList categories'); process.exit(a > 0 && b > 0 && a < b ? 0 : 1)"
 
 # 9 cap
 grep -n "categories\.slice(0, 9)" src/app/page.tsx
