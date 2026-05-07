@@ -141,6 +141,24 @@ description: 메타 설명
     expect(result.endsWith("...")).toBe(false);
     expect(result).toBe("짧은 내용");
   });
+
+  it("본문의 HTML 태그를 제거한다 (<br> / <details> 등)", () => {
+    const content = "첫 줄<br>두 번째 줄 그리고<details>숨김</details> 끝";
+    const result = extractDescription(content);
+    expect(result).not.toContain("<");
+    expect(result).not.toContain(">");
+    expect(result).toContain("첫 줄");
+    expect(result).toContain("끝");
+  });
+
+  it("frontmatter description 의 HTML 태그도 제거한다", () => {
+    const content = `---
+description: 한 줄<br>다음 줄
+---
+
+본문`;
+    expect(extractDescription(content)).toBe("한 줄 다음 줄");
+  });
 });
 
 // ===== getReadingTime =====
