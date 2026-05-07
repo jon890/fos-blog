@@ -279,6 +279,50 @@ export class PostRepository extends BaseRepository {
     return result[0].affectedRows;
   }
 
+  async getPostsByTag(
+    tag: string,
+    { limit = 50, offset = 0 }: { limit?: number; offset?: number } = {},
+  ): Promise<PostData[]> {
+    const normalized = tag.trim().toLowerCase();
+    const result = await this.db
+      .select({
+        title: posts.title,
+        path: posts.path,
+        slug: posts.slug,
+        category: posts.category,
+        subcategory: posts.subcategory,
+        folders: posts.folders,
+        description: posts.description,
+        createdAt: posts.createdAt,
+        updatedAt: posts.updatedAt,
+      })
+      .from(posts)
+      .where(
+        and(
+          eq(posts.isActive, true),
+          sql`JSON_CONTAINS(${posts.tags}, JSON_QUOTE(${normalized}))`,
+        ),
+      )
+      .orderBy(desc(posts.createdAt))
+      .limit(limit)
+      .offset(offset);
+    return result.map((p) => ({ ...p, folders: p.folders || [] }));
+  }
+
+  async countPostsByTag(tag: string): Promise<number> {
+    const normalized = tag.trim().toLowerCase();
+    const [{ count }] = await this.db
+      .select({ count: sql<string>`count(*)` })
+      .from(posts)
+      .where(
+        and(
+          eq(posts.isActive, true),
+          sql`JSON_CONTAINS(${posts.tags}, JSON_QUOTE(${normalized}))`,
+        ),
+      );
+    return Number(count);
+  }
+
   async create(newPost: NewPost) {
     await this.db.insert(posts).values(newPost);
   }

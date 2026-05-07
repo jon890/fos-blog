@@ -1,6 +1,15 @@
 import { PostRepository } from "@/infra/db/repositories/PostRepository";
 import { SyncLogRepository } from "@/infra/db/repositories/SyncLogRepository";
-import { extractDescription, extractTitle } from "@/lib/markdown";
+import { extractDescription, extractTitle, parseFrontMatter } from "@/lib/markdown";
+
+function normalizeTags(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const cleaned = raw
+    .filter((t): t is string => typeof t === "string")
+    .map((t) => t.trim().toLowerCase())
+    .filter((t) => t.length > 0);
+  return Array.from(new Set(cleaned));
+}
 import {
   type ChangedFile,
   type getChangedFilesSince,
@@ -155,6 +164,8 @@ export class SyncService {
       const content = rewriteImagePaths(fileData.content, file.path);
       const title = extractTitle(content) || filenameTitle;
       const description = extractDescription(content, 200);
+      const { frontMatter } = parseFrontMatter(content);
+      const tags = normalizeTags(frontMatter.tags);
 
       if (existing) {
         await this.postRepo.update(existing.id, {
@@ -165,6 +176,7 @@ export class SyncService {
           category: file.category,
           subcategory: file.subcategory,
           folders: file.folders,
+          tags,
           isActive: true,
           updatedAt: commitDates?.updatedAt ?? new Date(),
         });
@@ -178,6 +190,7 @@ export class SyncService {
           category: file.category,
           subcategory: file.subcategory,
           folders: file.folders,
+          tags,
           content,
           description,
           sha: fileData.sha,

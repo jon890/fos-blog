@@ -21,6 +21,7 @@ export const posts = mysqlTable(
     category: varchar("category", { length: 255 }).notNull(),
     subcategory: varchar("subcategory", { length: 255 }),
     folders: json("folders").$type<string[]>().default([]), // n-depth 폴더 경로 배열
+    tags: json("tags").$type<string[]>().notNull().default([]),
     content: text("content"),
     description: text("description"),
     sha: varchar("sha", { length: 64 }), // GitHub file SHA for change detection
