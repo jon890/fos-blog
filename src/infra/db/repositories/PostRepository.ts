@@ -52,6 +52,30 @@ export class PostRepository extends BaseRepository {
     }));
   }
 
+  async getRecentActive({ limit = 50 }: { limit?: number } = {}): Promise<PostData[]> {
+    const result = await this.db
+      .select({
+        title: posts.title,
+        path: posts.path,
+        slug: posts.slug,
+        category: posts.category,
+        subcategory: posts.subcategory,
+        folders: posts.folders,
+        description: posts.description,
+        content: posts.content,
+        createdAt: posts.createdAt,
+      })
+      .from(posts)
+      .where(eq(posts.isActive, true))
+      .orderBy(desc(posts.createdAt))
+      .limit(limit);
+
+    return result.map((p) => ({
+      ...p,
+      folders: p.folders || [],
+    }));
+  }
+
   async getRecentPostsCursor(params: {
     limit: number;
     cursor?: { updatedAt: Date; id: number };
