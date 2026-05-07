@@ -1,0 +1,30 @@
+{
+  "name": "plan023-about-redesign",
+  "description": "About 페이지 전면 리디자인 — plan009 토큰 + sub-hero (PostsListSubHero 패턴) + 프로필 카드 + 사이트 통계 + 기술 스택 grid + 링크 grid. GitHub 프로필 fetch 유지, 신규로 사이트 통계 (총 글 수 / 카테고리 수 / 최근 sync). Claude Design mockup 도착 시 phase 1 디자인 영역 갱신 가능.",
+  "status": "pending",
+  "created_at": "2026-05-06",
+  "total_phases": 2,
+  "related_docs": [
+    "docs/pages/about.md"
+  ],
+  "depends_on": [
+    "plan009-design-tokens-foundation",
+    "plan016-posts-index-redesign"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "AboutSubHero + 프로필 카드 + 사이트 통계 + 스택 grid + 링크 grid 재구성",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "title": "검증 + about.md 신규 docs + index.json 마킹",
+      "model": "haiku",
+      "status": "pending"
+    }
+  ]
+}
