@@ -242,7 +242,7 @@ team-lead 가 `docs/` 하위 문서 + `CLAUDE.md` 를 읽고 사용자와 논의
 - 모든 Bash 블록 앞에 `# cwd: ...` 주석
 - **마지막 phase 작업 목록에 `index.json` 의 `status="completed"` + 모든 phase `status="completed"` 업데이트를 포함** (task 파일 설계 단계에서 명시) — main 별도 커밋 회피
 
-task 파일 생성 후 커밋.
+task 파일 생성 후 커밋. **단 이 commit 을 별도 PR 로 push/머지 금지** — task 파일과 phase 결과물은 **반드시 같은 PR 에 묶는다**. 별도 PR 로 task 만 머지하면 (a) status="pending" 인 채로 main 에 task 가 들어가 추후 재실행 사고 + (b) 실제 결과물이 다른 PR 에서 머지되는 경우 task spec 과 코드 간 정합 검증이 누락된다 (실사례: fos-blog plan024 — task 가 PR #110 단독 머지, 결과물은 PR #81 에서 이미 머지된 상태로 사후 정리 필요). worktree 안에서 task 파일 commit → phase 실행/검증 → 같은 브랜치 push → 한 번에 PR 생성.
 
 **task 재분할 시 index.json 동시 갱신 강제 (필수 — webtoon-maker-v1 plan250 관측)**: critic REVISE 후 phase 파일을 재작성/추가/제거할 때 `index.json` 의 `total_phases` + `phases` 배열 + description 본문을 **반드시 같은 commit 으로 갱신**한다. phase 파일만 추가하고 index.json 미수정한 채 commit 하면 파이프라인이 신 phase 를 인식 못해 executor 가 구 phase 만 실행 → plan 핵심 누락 사고. team-lead 는 commit 직전 sanity check:
 
