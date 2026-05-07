@@ -1,0 +1,20 @@
+{
+  "name": "plan025-motion-microinteractions",
+  "description": "CSS only 마이크로 인터랙션 — PostCard/CategoryCard hover lift + link underline draw + button focus 폴리시. plan009 의 --duration-* / --ease-* 토큰 활용. prefers-reduced-motion 존중. 라이브러리 추가 없음.",
+  "status": "pending",
+  "created_at": "2026-05-06",
+  "total_phases": 1,
+  "related_docs": [],
+  "depends_on": [
+    "plan009-design-tokens-foundation"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "Card hover lift + link underline draw + button focus + reduced-motion 가드",
+      "model": "sonnet",
+      "status": "pending"
+    }
+  ]
+}
