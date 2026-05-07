@@ -49,6 +49,6 @@ export default [
     },
   },
   {
-    ignores: [".next/**", "node_modules/**", "out/**", "build/**", "dist/**"],
+    ignores: [".next/**", "node_modules/**", "out/**", "build/**", "dist/**", "tasks/**", ".claude/**"],
   },
 ];
