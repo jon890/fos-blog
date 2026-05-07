@@ -2,6 +2,36 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { migrate } from "drizzle-orm/mysql2/migrator";
 import mysql from "mysql2/promise";
 
+const MAX_RETRIES = 10;
+const INITIAL_DELAY_MS = 500;
+const MAX_DELAY_MS = 5_000;
+
+async function connectWithRetry(databaseUrl: string) {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const conn = await mysql.createConnection(databaseUrl);
+      await conn.query("SELECT 1");
+      if (attempt > 1) {
+        console.log(`[migrate] DB ready after ${attempt} attempts`);
+      }
+      return conn;
+    } catch (error) {
+      lastError = error;
+      const msg = error instanceof Error ? error.message : String(error);
+      const delay = Math.min(
+        INITIAL_DELAY_MS * Math.pow(2, attempt - 1),
+        MAX_DELAY_MS
+      );
+      console.log(
+        `[migrate] DB not ready (attempt ${attempt}/${MAX_RETRIES}): ${msg} — retry in ${delay}ms`
+      );
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+}
+
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
@@ -11,10 +41,10 @@ async function main() {
 
   let conn;
   try {
-    conn = await mysql.createConnection(databaseUrl);
+    conn = await connectWithRetry(databaseUrl);
   } catch (error) {
     console.error(
-      "[migrate] DB connection failed:",
+      "[migrate] DB connection failed after retries:",
       error instanceof Error ? error.message : String(error)
     );
     process.exit(1);
