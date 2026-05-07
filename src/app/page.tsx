@@ -74,27 +74,10 @@ export default async function HomePage() {
         subscriberCount={subscriberCount}
       />
       <main className="container mx-auto px-4 py-12 md:py-16">
-        {/* Categories Section */}
-        <section className="mb-8 md:mb-16">
-          <div className="flex items-center justify-between mb-4 md:mb-8">
-            <h2 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">
-              카테고리
-            </h2>
-            <Link
-              href="/categories"
-              className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
-            >
-              모두 보기
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <CategoryList categories={categories.slice(0, 6)} />
-        </section>
-
         {/* Popular Posts Section */}
         {popularPosts.length > 0 && (
-          <section className="mb-16">
-            <div className="flex items-center gap-2 mb-8">
+          <section className="mb-8 md:mb-16">
+            <div className="flex items-center gap-2 mb-4 md:mb-8">
               <Flame className="w-6 h-6 text-orange-500" />
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
                 인기 글
@@ -114,7 +97,7 @@ export default async function HomePage() {
         )}
 
         {/* Recent Posts Section */}
-        <section>
+        <section className="mb-8 md:mb-16">
           <div className="flex items-center justify-between mb-4 md:mb-8">
             <h2 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">
               최근 글
@@ -139,6 +122,25 @@ export default async function HomePage() {
             </div>
           )}
         </section>
+
+        {/* Categories Section */}
+        {categories.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-4 md:mb-8">
+              <h2 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                카테고리
+              </h2>
+              <Link
+                href="/categories"
+                className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
+              >
+                모두 보기
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <CategoryList categories={categories.slice(0, 9)} />
+          </section>
+        )}
       </main>
     </>
   );

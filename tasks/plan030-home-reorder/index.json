@@ -1,0 +1,20 @@
+{
+  "name": "plan030-home-reorder",
+  "description": "홈 섹션 순서 변경 + 카테고리 노출 9개로 확장. 현재 Hero → 카테고리(6) → 인기(6) → 최신(6) → 변경 후 Hero → 인기(6) → 최신(6) → 카테고리(9). CategoryList 의 grid 도 lg:grid-cols-3 (3×3) 로 조정. getCategories() 는 이미 postCount desc 정렬이라 추가 변경 없음.",
+  "status": "completed",
+  "created_at": "2026-05-07",
+  "total_phases": 1,
+  "related_docs": [
+    "docs/pages/home.md"
+  ],
+  "depends_on": [],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "page.tsx 섹션 순서 변경 + slice(0, 9) + CategoryList grid 3x3",
+      "model": "sonnet",
+      "status": "completed"
+    }
+  ]
+}
