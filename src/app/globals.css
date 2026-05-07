@@ -104,6 +104,19 @@
   --d-section-y: 96px;
   --d-card-pad: 24px;
   --d-row-gap: 16px;
+
+  /* prose typography / spacing (plan031, issue #75)
+   * 의도: 반복되거나 의미 단위인 값만 토큰화. 1회성 값은 inline 유지. */
+  --prose-h2-size: 28px;
+  --prose-h2-margin-top: 56px;
+  --prose-h2-margin-bottom: 16px;
+  --prose-meta-size: 12px;          /* h2::before / code-card-head / line-number */
+  --prose-label-size: 10px;         /* blockquote QUOTE / .lang */
+  --prose-block-margin: 24px 0;     /* blockquote / code-card 외곽 vertical margin */
+  --prose-blockquote-padding: 4px 0 4px 20px;
+  --prose-code-padding: 1px 6px;    /* inline code */
+  --prose-codeblock-header-padding: 10px 14px;
+  --prose-codeblock-padding: 16px 20px;
 }
 
 :root:not(.dark) {
@@ -185,10 +198,10 @@ code, kbd, samp, pre {
   counter-reset: prose-h2;
 }
 .prose h2 {
-  font-size: 28px;
+  font-size: var(--prose-h2-size);
   font-weight: 600;
   letter-spacing: -0.02em;
-  margin: 56px 0 16px;
+  margin: var(--prose-h2-margin-top) 0 var(--prose-h2-margin-bottom);
   color: var(--color-fg-primary);
   scroll-margin-top: 80px;
   counter-increment: prose-h2;
@@ -196,15 +209,15 @@ code, kbd, samp, pre {
 .prose h2::before {
   content: counter(prose-h2, decimal-leading-zero);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--prose-meta-size);
   color: var(--color-fg-muted);
   margin-right: 12px;
   letter-spacing: 0.04em;
 }
 .prose blockquote {
   border-left: 2px solid var(--color-brand-400);
-  padding: 4px 0 4px 20px;
-  margin: 24px 0;
+  padding: var(--prose-blockquote-padding);
+  margin: var(--prose-block-margin);
   font-size: 16px;
   color: var(--color-fg-primary);
   font-style: normal;
@@ -213,7 +226,7 @@ code, kbd, samp, pre {
   content: "QUOTE";
   display: block;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--prose-label-size);
   letter-spacing: 0.08em;
   color: var(--color-brand-400);
   margin-bottom: 8px;
@@ -223,7 +236,7 @@ code, kbd, samp, pre {
 .prose :not(pre) > code {
   font-family: var(--font-mono);
   font-size: 0.88em;
-  padding: 1px 6px;
+  padding: var(--prose-code-padding);
   border: 1px solid var(--color-border-subtle);
   border-radius: 4px;
   background: var(--color-bg-subtle);
@@ -253,17 +266,17 @@ code, kbd, samp, pre {
   border-radius: 8px;
   background: var(--color-bg-subtle);
   overflow: hidden;
-  margin: 24px 0;
+  margin: var(--prose-block-margin);
 }
 .prose .code-card-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
+  padding: var(--prose-codeblock-header-padding);
   background: var(--color-bg-base);
   border-bottom: 1px solid var(--color-border-subtle);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--prose-meta-size);
 }
 .prose .code-card-head .left {
   display: flex;
@@ -272,7 +285,7 @@ code, kbd, samp, pre {
   color: var(--color-fg-secondary);
 }
 .prose .code-card-head .lang {
-  font-size: 10px;
+  font-size: var(--prose-label-size);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 2px 6px;
@@ -304,7 +317,7 @@ code, kbd, samp, pre {
 }
 .prose .code-card-body pre {
   margin: 0;
-  padding: 16px 20px;
+  padding: var(--prose-codeblock-padding);
   background: transparent !important; /* keepBackground:false 와 결합 */
   border: none !important;
   /* fallback color — shiki 가 처리하지 못한 영역 (data-line 외부, plain text 등).
@@ -332,7 +345,7 @@ code, kbd, samp, pre {
   margin-right: 1.5ch;
   text-align: right;
   color: var(--color-fg-faint);
-  font-size: 12px;
+  font-size: var(--prose-meta-size);
 }
 @media (max-width: 767px) {
   .prose .code-card-body code[data-line-numbers] [data-line]::before {
