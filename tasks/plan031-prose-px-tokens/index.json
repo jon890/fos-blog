@@ -1,7 +1,7 @@
 {
   "name": "plan031-prose-px-tokens",
-  "description": "prose 확장 룰의 하드코딩 px 값 → 토큰화 (issue #75). plan011 의 H2 counter / blockquote / inline code / mermaid 격리 등에 28/56/16/24/20px 등이 직접 박혀 있음. plan009 의 spacing/typography 토큰 확장 + globals.css 의 prose 룰 토큰 참조로 교체. 시각 결과 동일 보존.",
-  "status": "pending",
+  "description": "prose 확장 룰의 하드코딩 px 값 → 토큰화 (issue #75). plan011 의 H2 counter / blockquote / inline code / mermaid 격리 등에 28/56/16/24/20px 등이 직접 박혀 있음. plan009 의 spacing/typography 토큰 확장 + globals.css 의 prose 룰 토큰 참조로 교체. 시각 결과 동일 보존. 1회성 / 의미 단위 단일 사용 px 는 inline 유지 (토큰 인플레 회피).",
+  "status": "completed",
   "created_at": "2026-05-07",
   "total_phases": 2,
   "related_docs": [
@@ -17,14 +17,14 @@
       "file": "phase-01.md",
       "title": "prose typography/spacing 토큰 추가 + 하드코딩 px 교체",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 2,
       "file": "phase-02.md",
       "title": "검증 + 시각 회귀 smoke + index.json 마킹",
       "model": "haiku",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }
