@@ -1,0 +1,55 @@
+{
+  "name": "plan036-docs-check-followup",
+  "description": "docs-check audit (2026-05-08) 발견 8건 (Critical 4 + Warning 4) 일괄 정리. ADR-022/023/024 Index+anchor 누락, data-schema.md 5개 테이블 미문서화 (folders/categories/comments/sync_logs/visit_logs), docs/pages/ contact/privacy/tag 부재, flow.md 라우트 보강, ADR-017/018 30줄 초과 슬리밍. 매트릭스 용어 정정은 PR #142 에서 선처리됨. 본 plan 은 docs-only — 코드 변경 없음.",
+  "status": "pending",
+  "created_at": "2026-05-08",
+  "total_phases": 5,
+  "related_docs": [
+    "docs/adr.md",
+    "docs/data-schema.md",
+    "docs/flow.md",
+    "docs/pages/contact.md",
+    "docs/pages/privacy.md",
+    "docs/pages/tag.md"
+  ],
+  "depends_on": [
+    "feat/docs-check-enhancement (PR #142)"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "ADR-022/023/024 Index 등재 + anchor 추가",
+      "model": "haiku",
+      "status": "pending"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "title": "docs/pages/ contact / privacy / tag 신규 작성",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 3,
+      "file": "phase-03.md",
+      "title": "data-schema.md 5개 테이블 추가 + flow.md 라우트 보강",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 4,
+      "file": "phase-04.md",
+      "title": "ADR-017 / ADR-018 슬리밍 (30줄 이하)",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 5,
+      "file": "phase-05.md",
+      "title": "검증 + docs-check 재실행 + index.json 마킹",
+      "model": "haiku",
+      "status": "pending"
+    }
+  ]
+}
