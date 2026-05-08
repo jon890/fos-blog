@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, inArray, isNotNull, like, or, sql } from "drizzle-orm";
-import { NewPost, Post, posts } from "../schema";
+import { NewPost, posts } from "../schema";
 import { UpdatePost } from "../schema/posts";
 import type { PostData } from "../types";
 import { BaseRepository } from "./BaseRepository";
@@ -440,17 +440,32 @@ export class PostRepository extends BaseRepository {
     return Number(result[0]?.count ?? 0);
   }
 
-  async getPostsBySeries(series: string): Promise<Post[]> {
-    return this.db
-      .select()
+  async getPostsBySeries(series: string): Promise<PostData[]> {
+    const result = await this.db
+      .select({
+        title: posts.title,
+        path: posts.path,
+        slug: posts.slug,
+        category: posts.category,
+        subcategory: posts.subcategory,
+        folders: posts.folders,
+        description: posts.description,
+        series: posts.series,
+        seriesOrder: posts.seriesOrder,
+      })
       .from(posts)
       .where(and(eq(posts.isActive, true), eq(posts.series, series)))
       .orderBy(asc(posts.seriesOrder));
+
+    return result.map((p) => ({
+      ...p,
+      folders: p.folders || [],
+    }));
   }
 
   async getSeriesNeighbors(
     post: PostData,
-  ): Promise<{ prev: Post | null; next: Post | null; total: number }> {
+  ): Promise<{ prev: PostData | null; next: PostData | null; total: number }> {
     if (!post.series || post.seriesOrder == null) {
       return { prev: null, next: null, total: 0 };
     }

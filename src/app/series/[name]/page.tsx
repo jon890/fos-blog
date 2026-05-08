@@ -34,10 +34,8 @@ export default async function SeriesPage({ params }: Props) {
   const { name } = await params;
   const series = decodeURIComponent(name);
   const { post } = getRepositories();
-  const rawPosts = await post.getPostsBySeries(series);
-  if (rawPosts.length === 0) notFound();
-
-  const seriesPosts = rawPosts.map((p) => ({ ...p, folders: p.folders ?? [] }));
+  const seriesPosts = await post.getPostsBySeries(series);
+  if (seriesPosts.length === 0) notFound();
 
   return (
     <div className="container mx-auto max-w-[1180px] px-4">
