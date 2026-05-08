@@ -7,8 +7,8 @@
 
 audit 결과 — 강화된 docs-check 의 30줄 BLOAT 검출이 다음 2개 ADR 잡음:
 
-- **ADR-017** (42줄, `docs/adr.md:318`): plan013 + plan013-2 추가 결정 누적 (SiteFooter 분리 / span aria-disabled 패턴 / BUILD_DATE 하드코딩 등). 디자인 시스템 핵심 결정 외 plan별 후속 메모가 본문에 누적.
-- **ADR-018** (33줄, `docs/adr.md:284`): Consequences 섹션의 Dockerfile 변경 내역 + Follow-ups 의 분산 락 검토 메모. Consequences 는 코드로 자명, Follow-ups 는 issue/backlog 성격.
+- **ADR-017** (44줄, `<a id="adr-017">` anchor 로 정확히 찾을 것): plan013 + plan013-2 추가 결정 누적 (SiteFooter 분리 / span aria-disabled 패턴 / BUILD_DATE 하드코딩 등). 디자인 시스템 핵심 결정 외 plan별 후속 메모가 본문에 누적.
+- **ADR-018** (35줄, `<a id="adr-018">` anchor 로 정확히 찾을 것): Consequences 섹션의 Dockerfile 변경 내역 + Follow-ups 의 분산 락 검토 메모. Consequences 는 코드로 자명, Follow-ups 는 issue/backlog 성격.
 
 ## 작업 항목
 
@@ -16,7 +16,7 @@ audit 결과 — 강화된 docs-check 의 30줄 BLOAT 검출이 다음 2개 ADR 
 
 다음 4단계로 압축:
 
-1. 현재 본문 Read (`/Users/nhn/personal/fos-blog/.claude/worktrees/plan036-docs-check-followup/docs/adr.md` 의 ADR-017 섹션) 후 핵심 결정 식별
+1. 현재 본문 Read (`docs/adr.md` 의 ADR-017 섹션 — `<a id="adr-017">` anchor 로 위치 식별) 후 핵심 결정 식별
 2. plan013 / plan013-2 추가 결정 중 **재현 가능한 의사결정 의도**만 보존 — 구현 결과(컴포넌트 파일명, props 시그니처) 제거
 3. 코드로 자명한 부분 (예: BUILD_DATE 하드코딩 위치) 제거 — 코드 grep 으로 충분
 4. 30줄 이하로 응축된 ADR-017 작성. 결정 / 맥락 / 대안 기각 3구조 명시

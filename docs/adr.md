@@ -15,11 +15,14 @@
 - [ADR-005](#adr-005) — 리스트 페이지 `noindex` (`/posts/latest|popular`)
 - [ADR-006](#adr-006) — IntersectionObserver 직접 구현 (의존성 0)
 - [ADR-010](#adr-010) — Markdown 본문 선두 H1 제거 (`stripLeadingH1`)
+- [ADR-022](#adr-022) — About 페이지 co-located CSS + 2-stage avatar
+- [ADR-024](#adr-024) — RSS feed (RSS 2.0 + pubDate=createdAt)
 
 ### 데이터 & API
 
 - [ADR-002](#adr-002) — 페이지네이션 (최신=cursor, 인기=offset+pagePath)
 - [ADR-004](#adr-004) — 무한 스크롤 데이터 fetch = API Route
+- [ADR-023](#adr-023) — 태그 시스템 (posts.tags JSON + JSON_CONTAINS)
 
 ### OG 이미지 & 공유
 
@@ -301,17 +304,7 @@
 - **Idempotency 보장**: 매 부팅마다 실행해도 안전
 - 별도 init container(`docker-compose depends_on`) 도 가능하지만 단일 컨테이너 인라인이 더 단순. 복잡도 낮은 1인 운영 환경에 적합
 
-**Consequences**:
-
-- `Dockerfile` production stage 에 `drizzle/` + `migrate.js` 복사 추가
-- 컨테이너 시작 로그에 `✓ migrations applied` 가시성
-- 마이그레이션 실패 시 컨테이너 부팅 실패 (fail-fast — 의도된 동작. 다음 컨테이너 기동 전 수동 개입 필요)
-- `start.sh` 의 docker compose up 만으로 모든 처리 완결 — 별도 step 불필요
-
-**Follow-ups**:
-
-- 추후 마이그레이션 lock (분산 환경) 필요 시 drizzle 의 `migrationsTable` 옵션 + 외부 락 검토. 현재 1 인스턴스라 불필요
-- 큰 마이그레이션은 수동 검토 후 commit (BLG1 db:push 금지 규칙은 그대로 유지)
+**Follow-up**: 다중 인스턴스 환경 도달 시 마이그레이션 락(분산) 검토. 현재 1 인스턴스라 불필요.
 
 ---
 
@@ -340,23 +333,8 @@
 - **한글 가독성 보존**: Pretendard 가 한글 dev-blog 사실상 표준. Geist 와 미세 매칭 양호
 - **Claude Design 활용**: mockup → 코드 분리로 시각 합의 후 구현 → iteration 비용 절감
 
-**Implementation 순서**: plan009 (토큰 + 폰트 + shadcn foundation) → plan010 (Card/List 컴포넌트 리디자인) → plan011+ (글 상세 / 홈 Hero / 검색 / 모션 등 — `docs/design-inspiration.md` 참조). 각 plan PR 마다 Lighthouse 회귀 자동 검증 (`.github/workflows/lighthouse.yml`).
 
-**plan013 추가 결정**:
-
-- **HeroMesh 구현 방식**: SVG `<radialGradient>` 3 stops + CSS `@keyframes mesh-rotate-slow` (60s/90s/75s linear) 채택. **Canvas 미채택 사유**: 라이트 모드 투명도 제어 + GPU 합성 레이어 비용이 정적 SVG 대비 과도, Lighthouse JS 비용 증가, prefers-reduced-motion 처리 까다로움. SVG + CSS 는 JS 0, 자연스러운 reduced-motion 지원, 토큰 (`--mesh-stop-*`) 으로 다크/라이트 색 전환 자동.
-- **SVG `<stop>` 색은 inline `style={{ stopColor: ... }}` 로**: SVG presentation attribute 의 `stopColor="var(--...)"` 는 var() 미해석 (CSS context 가 아님). inline style 로 전달해야 var() 정상 동작.
-- **Header brand mark 변경**: `📚 FOS Study` 이모지 → `● fos-blog/study` (Geist Mono + 시안 dot + glow). 이모지는 dev-blog 톤과 매치 안 됨, mono + dot 패턴이 Vercel/Linear 톤과 일관. dot 은 `--color-brand-400` 토큰 사용으로 다크/라이트 자동 전환.
-- **HomeHero `<dl>` 통계 4 슬롯**: posts/categories 는 실데이터, series/subscribers 는 placeholder ("—"). UI 그리드 균형 + 향후 채울 자리 명시 의도 — 비활성 슬롯이라 disabled style 명시.
-
-**plan013-2 추가 결정 (Footer)**:
-
-- **SiteFooter 컴포넌트 분리**: 기존 `layout.tsx` 인라인 footer → `src/components/SiteFooter.tsx` server component 로 추출. 4-column (Brand / Site+Policy / Categories / Connect) + Eyebrow status row + mesh accent + bottom built-with stack 으로 복잡도 증가 → layout.tsx 가독성 + 재사용성 확보. sub-component (`ColHead`/`FooterList`/`SocialItem`) 는 같은 파일 안 private 유지 — 재사용 범위 footer 한정이라 types/ 분리 불필요.
-- **미구현 기능 graceful fallback 패턴**: RSS feed (`/rss.xml`) / Newsletter 는 별도 issue 로 위임하되 Footer 의 자리 예약 의도로 visible 유지. 처리 방식: `disabled` prop → `<a>` 가 아닌 `<span aria-disabled="true" title="준비 중">` + `pointer-events-none opacity-40`. 클릭 차단하면서 UI 자리 보존 — "곧 나올 것" 신호. 구현 시점에 prop 만 제거.
-- **POLICY column arrow=path 패턴**: 정책 링크 (`/about`, `/privacy`, `/contact`) 의 hover decoration 은 `↗` 대신 경로 문자열 자체 (`arrowMono: true` mono font). 외부 링크 (Connect col 의 GitHub/Source ↗) 와 시각 차별화 + 내부 경로 명시. mockup 디자인 의도, helper 통일 권장 금지.
-- **BUILD_DATE 하드코딩 follow-up**: `const BUILD_DATE = "2026.04.27"` 빌드 타임 스탬프. `process.env.BUILD_DATE` 또는 `package.json.version` 기반 동적화는 별도 issue. Footer eyebrow row 의 `v0.1 · {BUILD_DATE} · seoul, kr` 표시용.
-- **category-meta canonical self-map 보강**: SiteFooter 가 lowercase canonical key (`"ai"`, `"db"`, `"js"`) 직접 호출 → 기존 `RAW_TO_CANONICAL` 은 raw key (`"AI"`, `"database"`, `"javascript"`) 만 매핑이라 fallback `"system"` 으로 잘못 처리됨 (3 카테고리 hue 오류). `RAW_TO_CANONICAL` 에 self-map 4 항목 (`ai/db/js/system`) 추가. `algorithm/devops/java/react/next` 는 raw==canonical 동일이라 자동.
-
+---
 
 <a id="adr-019"></a>
 
@@ -382,6 +360,7 @@
 
 > plan014 후속: shiki async highlighter 와 react-markdown sync 처리의 충돌 (`Error: 'runSync' finished async`) 발견 → 마크다운 변환을 react-markdown(sync) 에서 unified async 로 이전. ADR-020 참조.
 
+---
 
 <a id="adr-020"></a>
 
@@ -395,6 +374,7 @@
   - react-markdown 의 async 모드 — 라이브러리 미지원 (sync 전용 설계)
 - **트레이드오프**: react-markdown 의 `components` prop 사용 코드를 `hast-util-to-jsx-runtime` 형태로 일괄 이전 필요. 번들은 순수 감소 (react-markdown 제거, unified / remark-parse / remark-rehype / hast-util-to-jsx-runtime 은 transitive 였음 → direct dep promote 만).
 
+---
 
 <a id="adr-021"></a>
 
@@ -421,6 +401,10 @@
 
 **Scope 명시**: 이 ADR 의 정책은 댓글 영역 한정. 다른 client form (검색 dialog, 향후 로그인) 도입 시 이 결정을 ADR-021 의 패턴으로 따른다 (rhf + zod + sonner + USER_FRIENDLY_ERRORS).
 
+---
+
+<a id="adr-022"></a>
+
 ## ADR-022. About 페이지 — co-located CSS + 2-stage avatar (plan023)
 
 **Context**: plan023 에서 `/about` 을 Claude Design mockup 시각 사양으로 전면 리디자인. 기존 Tailwind utility-first 컨벤션과 다른 CSS 전략 + GitHub avatar 표시 방식 두 결정이 비자명.
@@ -436,6 +420,10 @@
 - **2-stage avatar**: GitHub API 일시 장애 / rate limit 시 페이지 그래픽 깨짐 방지. fallback 분기를 ProfileCard 안에 if/else 로 두는 대신 디자인 자체가 두 표시 상태를 항상 처리하도록 설계 — default (이니셜) → enhanced (사진 덮음). mockup 의 gradient + initial 컨테이너는 fallback 이 아니라 base layer 라는 의도.
 
 **Scope 명시**: 이 ADR 의 결정은 about 페이지 한정. 다른 페이지가 동일 패턴 도입 시 본 ADR 의 근거 (`::after` hairline / `@keyframes` / 동적 oklch / API 폴백) 가 모두 해당하는지 재검토.
+
+---
+
+<a id="adr-023"></a>
 
 ## ADR-023. 태그 시스템 — `posts.tags JSON` + `JSON_CONTAINS` (plan026)
 
@@ -457,6 +445,10 @@
 
 **Scope**: 본 ADR 결정은 plan026 한정. 글 수 1000+ / tag 100+ 도달 시 정규화 테이블 + 인덱스 재검토.
 
+---
+
+<a id="adr-024"></a>
+
 ## ADR-024. RSS feed — RSS 2.0 + `pubDate=createdAt` + 50 limit (plan027)
 
 **Context**: issue #88 — `/rss.xml` 라우트 신설. RSS reader 가 글 발행을 추적할 수 있게. 형식 / 정렬 / 한도 세 결정이 코드/git log 로 자명하지 않음.
@@ -475,3 +467,5 @@
 - **카테고리별 RSS (`/category/[name]/rss.xml`)** 기각: scope 큼 + 일반 RSS 가 카테고리 다양성 보존. 별도 plan 후보.
 
 **Scope**: 본 ADR 결정은 plan027 한정. 글 수가 1년 100+ 도달 시 limit / pagination 재검토.
+
+---

@@ -63,6 +63,8 @@ Notes (의사결정 의도가 있는 경우):
 
 기존 docs 가 plan014 변경 노트 성격이라면 상단 섹션을 "스키마 레퍼런스 + 변경 이력" 구조로 재정리. 변경 이력은 ADR 참조 또는 git log 로 위임 — docs 에서 narrative 제거.
 
+**중요 — 헤더 형식 통일**: step 5 verification 의 `^### \`[a-z_]+\`` 패턴과 매치되도록 **모든 테이블 섹션을 `### \`{table_name}\`` 형식으로 통일** (5개 신규 + 기존 `posts` / `visit_stats` 모두). 기존 헤더에 파일 경로 등 부가정보가 있다면 섹션 본문 첫 줄로 이동 (예: "스키마 파일: `src/infra/db/schema/{name}.ts`").
+
 ### 4. flow.md 에 contact / privacy / tag 라우트 추가
 
 `/contact`, `/privacy`, `/tag/[name]` 진입 경로 + 1-2 줄 설명. 기존 라우트 표 또는 그래프에 자연스럽게 삽입.

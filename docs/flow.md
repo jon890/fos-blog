@@ -91,6 +91,18 @@
 
 ---
 
+## 정적 / 보조 라우트
+
+AdSense 승인 요건(ADR-014) + 태그 탐색(ADR-023) 페이지.
+
+| 라우트 | 진입 경로 | 설명 |
+|---|---|---|
+| `/contact` | Footer 링크 / 직접 접근 | 이메일 + GitHub Issues 채널 안내. 정적 렌더 |
+| `/privacy` | Footer 링크 / 직접 접근 | 개인정보처리방침 (방문 통계 SHA-256 해시 / 댓글 bcrypt / Google AdSense 쿠키). ISR 24h |
+| `/tag/[name]` | PostCard 태그 chip 클릭 | `decodeURIComponent(name)` → `getPostsByTag` limit=50. total=0 이면 `notFound()`. ISR 5분 (ADR-023) |
+
+---
+
 ## 홈페이지 변경 포인트
 
 기존 `src/app/page.tsx`:
