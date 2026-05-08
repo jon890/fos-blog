@@ -36,13 +36,13 @@
 
 | Component | Role |
 |-----------|------|
-| `ArticleHero` | Hero 영역 — mesh 그라디언트 (카테고리 hue 변형 + plan009 토큰) + breadcrumb + 카테고리 art-tag + 제목 + 리드 + meta row (date · readtime · views) |
+| `ArticleHero` | Hero 영역 — mesh 그라디언트 (카테고리 hue 변형 + plan009 토큰) + breadcrumb + 카테고리 art-tag + 제목 + 리드 + meta row (date · readtime · views · series 링크). series prop 있을 때 `SERIES · {name} · {order}/{total}` 형태로 meta row 에 추가 표시 (plan033) |
 | `MarkdownRenderer` | 마크다운 본문 렌더링 (GFM, mermaid, syntax highlight via rehype-pretty-code + shiki dual theme). 외부 wrapper 는 `<div>` (글 페이지에서 article 중첩 회피). `components.figure` 핸들러가 pretty-code 의 figure 를 받아 `<CodeCard>` 로 교체. mermaid 는 `data-language === "mermaid"` 검사로 우회 (`<Mermaid>` 직접 반환) |
 | `CodeCard` | rehype-pretty-code 가 생성한 figure 코드 블록을 받아 frame (filename header / 언어 배지 / copy 버튼) 으로 wrap 하는 client component. shadcn Button (variant=ghost size=xs) + clipboard API + 2초 idle 복귀 + `aria-live="polite"` 스크린리더 통지 (plan012) |
 | `TableOfContents` | 사이드바 목차. mono 톤 + 번호 prefix (`01`/`02`, H2 카운터) + brand 좌측 라인 + active highlight + sticky top-20. **H2 + H3 표시** (page.tsx 에서 `level === 2 \|\| level === 3` filter, plan019). H3 는 `pl-6` 들여쓰기 + `text-[11px]` + 번호 미표시 nested 표현 |
 | `ReadingProgressBar` | viewport 최상단 fixed 1px 진행 띠 (`z-50`, plan019). passive scroll/resize listener → 0~100 % width. brand-400 토큰 색상. `role="progressbar"` + `aria-valuenow` 접근성 메타. Header 의 하단 라인 reading progress 와 별개로 viewport 절대 최상단에서 동작 |
 | `MobileTocButton` | 모바일 전용 floating TOC FAB + bottom sheet (plan019, `md:hidden`). 우하단 원형 brand 버튼 (lucide `List`) → 클릭 시 fixed bottom sheet (`role="dialog" aria-modal="true"`) 펼침. ESC keydown / backdrop click 으로 닫기 (둘 다 useEffect cleanup 에서 listener 해제). 단순 fixed div + state — `<dialog>` element 미사용 (SSR hydration mismatch 회피 의도). H2/H3 nesting 동일 적용. `toc.length === 0` 시 자체 미렌더 |
-| `ArticleFooter` | `frontmatter.tags` 가 있는 경우만 렌더되는 태그 칩 영역 (graceful fallback) |
+| `ArticleFooter` | tags 칩 + series chip (`/series/[name]` 링크) + prev/next 시리즈 카드 nav. tags/series/prev/next 모두 없으면 미렌더 (graceful fallback). prev/next 카드는 시리즈 글이 2개 이상일 때 표시 (plan033) |
 | `Comments` | 댓글 컨테이너 (plan022). 자식: `CommentForm` (작성/수정, react-hook-form + zod) / `CommentItem` (카드, nickname hash avatar + 상대 시간) / `DeleteConfirmDialog` (shadcn AlertDialog + password). 알림: sonner toast. 아바타 색상: `OG_CATEGORY_HEX` 7색 팔레트 hash — plan021 단일 소스. threading 미포함(의도적) |
 | `ArticleJsonLd` | JSON-LD 아티클 구조화 데이터 |
 | `BreadcrumbJsonLd` | JSON-LD 브레드크럼 |

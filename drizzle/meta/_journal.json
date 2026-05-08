@@ -43,6 +43,13 @@
       "when": 1778133904665,
       "tag": "0005_nervous_human_torch",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1778219204772,
+      "tag": "0006_amused_professor_monster",
+      "breakpoints": true
     }
   ]
 }

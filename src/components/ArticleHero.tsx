@@ -14,6 +14,7 @@ interface ArticleHeroProps {
   readTimeMinutes: number;
   viewCount: number;
   breadcrumb: { label: string; href?: string }[];
+  series?: { name: string; order: number; total: number } | null;
 }
 
 export function ArticleHero({
@@ -24,6 +25,7 @@ export function ArticleHero({
   readTimeMinutes,
   viewCount,
   breadcrumb,
+  series,
 }: ArticleHeroProps) {
   const catColor = getCategoryColor(category);
   const catHue = getCategoryHue(category);
@@ -123,6 +125,17 @@ export function ArticleHero({
           <span>{readTimeMinutes} min read</span>
           <span className="text-[var(--color-fg-faint)]">·</span>
           <span>{viewCount.toLocaleString()} views</span>
+          {series && (
+            <>
+              <span className="text-[var(--color-fg-faint)]">·</span>
+              <Link
+                href={`/series/${encodeURIComponent(series.name)}`}
+                className="font-mono text-[12px] text-[var(--color-fg-muted)] transition-colors hover:text-[var(--color-brand-400)]"
+              >
+                SERIES · {series.name} · {series.order}/{series.total}
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

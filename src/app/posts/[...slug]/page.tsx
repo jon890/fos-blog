@@ -95,10 +95,11 @@ export default async function PostPage({ params }: PostPageProps) {
   const resolvedParams = await params;
   const slug = resolvedParams.slug.map(decodeURIComponent).join("/");
 
+  const { post: postRepo, visit } = getRepositories();
+
   let data: { content: string; post: PostData } | null = null;
   try {
-    const { post } = getRepositories();
-    data = await post.getPost(slug);
+    data = await postRepo.getPost(slug);
   } catch {
     notFound();
   }
@@ -117,7 +118,28 @@ export default async function PostPage({ params }: PostPageProps) {
     (i) => i.level === 2 || i.level === 3
   );
 
-  const { visit } = getRepositories();
+  const seriesNeighbors =
+    postData.series && postData.seriesOrder != null
+      ? await postRepo.getSeriesNeighbors(postData)
+      : { prev: null, next: null, total: 0 };
+
+  // seriesOrder == 0 이 valid 한 경우를 위해 != null 사용
+  const seriesMeta =
+    postData.series && postData.seriesOrder != null && seriesNeighbors.total > 0
+      ? {
+          name: postData.series,
+          order: postData.seriesOrder,
+          total: seriesNeighbors.total,
+        }
+      : null;
+
+  const prevInSeries = seriesNeighbors.prev
+    ? { title: seriesNeighbors.prev.title, slug: seriesNeighbors.prev.slug }
+    : null;
+  const nextInSeries = seriesNeighbors.next
+    ? { title: seriesNeighbors.next.title, slug: seriesNeighbors.next.slug }
+    : null;
+
   const viewCount = await visit.getVisitCount(postData.path);
   const desc = extractDescription(content);
 
@@ -178,6 +200,7 @@ export default async function PostPage({ params }: PostPageProps) {
         readTimeMinutes={readTime}
         viewCount={viewCount}
         breadcrumb={heroBreadcrumb}
+        series={seriesMeta}
       />
 
       <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-8 px-6 py-12 md:grid-cols-[1fr_minmax(0,820px)_240px] md:gap-12 md:py-16">
@@ -192,7 +215,12 @@ export default async function PostPage({ params }: PostPageProps) {
 
       <MobileTocButton toc={tocItems} />
 
-      <ArticleFooter tags={frontMatter.tags} />
+      <ArticleFooter
+        tags={frontMatter.tags}
+        series={postData.series}
+        prevInSeries={prevInSeries}
+        nextInSeries={nextInSeries}
+      />
 
       <div className="mx-auto max-w-[880px] px-6 pb-12">
         <Comments postSlug={postData.path} />

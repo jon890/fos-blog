@@ -167,6 +167,32 @@ export class SyncService {
       const { frontMatter } = parseFrontMatter(content);
       const tags = normalizeTags(frontMatter.tags);
 
+      const rawSeries =
+        typeof frontMatter.series === "string" ? frontMatter.series.trim() : "";
+      const rawOrder = frontMatter.seriesOrder;
+
+      let series: string | null = null;
+      let seriesOrder: number | null = null;
+
+      if (rawSeries) {
+        const parsedOrder =
+          typeof rawOrder === "number"
+            ? rawOrder
+            : typeof rawOrder === "string" && rawOrder.trim() !== ""
+              ? Number(rawOrder)
+              : NaN;
+
+        if (Number.isFinite(parsedOrder) && parsedOrder >= 0) {
+          series = rawSeries;
+          seriesOrder = Math.trunc(parsedOrder);
+        } else {
+          log.warn(
+            { path: file.path, series: rawSeries, rawOrder },
+            "frontmatter 'series' 있으나 'seriesOrder' 누락/유효하지 않음 — series 메타 무시",
+          );
+        }
+      }
+
       if (existing) {
         await this.postRepo.update(existing.id, {
           title,
@@ -177,6 +203,8 @@ export class SyncService {
           subcategory: file.subcategory,
           folders: file.folders,
           tags,
+          series,
+          seriesOrder,
           isActive: true,
           updatedAt: commitDates?.updatedAt ?? new Date(),
         });
@@ -191,6 +219,8 @@ export class SyncService {
           subcategory: file.subcategory,
           folders: file.folders,
           tags,
+          series,
+          seriesOrder,
           content,
           description,
           sha: fileData.sha,

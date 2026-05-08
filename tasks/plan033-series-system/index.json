@@ -1,7 +1,7 @@
 {
   "name": "plan033-series-system",
   "description": "시리즈 시스템 (issue #127) — frontmatter series + seriesOrder 추출 → posts.series VARCHAR + seriesOrder INT 저장. /series/[name] 상세 페이지 + ArticleHero Series 메타 + ArticleFooter prev/next 카드 + tags 옆 series chip + HomeHero seriesCount 실값 연결. /series 인덱스는 OOS (tag 패턴 일관). phase-02 가 5개 초과로 critic REVISE 받아 Repository+page (phase-02) 와 UI (phase-03) 로 분할.",
-  "status": "pending",
+  "status": "completed",
   "created_at": "2026-05-08",
   "total_phases": 4,
   "related_docs": [
@@ -19,28 +19,28 @@
       "file": "phase-01.md",
       "title": "posts.series + seriesOrder 컬럼 + drizzle migration + SyncService 추출",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 2,
       "file": "phase-02.md",
       "title": "PostRepository series 메서드 + /series/[name] 페이지 + posts page 데이터 fetch",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 3,
       "file": "phase-03.md",
       "title": "ArticleHero series 메타 + ArticleFooter chip/prev-next 카드 + HomeHero seriesCount 실값",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 4,
       "file": "phase-04.md",
       "title": "검증 + docs 갱신 + index.json 마킹",
       "model": "haiku",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }

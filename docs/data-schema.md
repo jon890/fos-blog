@@ -16,6 +16,9 @@
 - 기존 인덱스: `category_idx(category)`, `slug_idx(slug)`
 - `updatedAt timestamp` (defaultNow, onUpdateNow)
 - `tags JSON NOT NULL DEFAULT ('[]')` — frontmatter `tags` 추출 + sync 시 `trim().toLowerCase()` 정규화 (plan026)
+- `series VARCHAR(255) NULL` — frontmatter `series` 추출. 없으면 NULL (plan033)
+- `series_order INT NULL` — frontmatter `seriesOrder` 추출. series 있는데 seriesOrder 누락 시 둘 다 NULL + log.warn (plan033)
+- 인덱스: `series_idx(series)` (plan033)
 
 ### visit_stats (`src/infra/db/schema/visitStats.ts`)
 

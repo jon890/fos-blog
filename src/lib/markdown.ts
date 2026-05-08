@@ -9,6 +9,8 @@ export interface FrontMatter {
   date?: string;
   description?: string;
   tags?: string[];
+  series?: string;
+  seriesOrder?: number | string;
   [key: string]: unknown;
 }
 

@@ -38,14 +38,16 @@ export default async function HomePage() {
   let popularPosts: Array<PostData & { visitCount: number }> = [];
   let visitCounts: Record<string, number> = {};
   let postCountTotal = 0;
+  let seriesCount = 0;
 
   try {
     const { category, post, visit } = getRepositories();
-    [categories, recentPosts, popularPosts, postCountTotal] = await Promise.all([
+    [categories, recentPosts, popularPosts, postCountTotal, seriesCount] = await Promise.all([
       category.getCategories(),
       post.getRecentPosts(6),
       getPopularPosts(6),
       post.getActivePostCount(),
+      post.countSeries(),
     ]);
 
     const postPaths = recentPosts.map((p) => p.path);
@@ -57,7 +59,6 @@ export default async function HomePage() {
   }
 
   const categoryCount = categories.length;
-  const seriesCount: number | null = null;
   const subscriberCount: number | null = null;
 
   return (
