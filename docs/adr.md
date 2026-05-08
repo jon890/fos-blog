@@ -486,7 +486,7 @@
 
 1. **단일 테이블 컬럼** (별도 `series` 테이블 기각) — `posts.series VARCHAR(255) NULL` + `posts.series_order INT NULL` 두 컬럼 추가. 218 글 규모 + series 가 post 의 attribute 수준이라 별도 테이블 join 비용 회피. `tags JSON` (N:M, plan026) 와 모델링 차이 — series 는 post:series = N:1.
 2. **`series` + `seriesOrder` 양쪽 모두 있어야 series 인정** — frontmatter 한쪽만 있으면 둘 다 NULL + `log.warn` drop. 이유: order 없는 series 는 prev/next 의미 없음. sync 단계에서 빠르게 drop 해 down-stream 코드 (Repository / page / Hero / Footer) 가 양쪽 동시 존재만 가정 → 분기 단순화.
-3. **`seriesOrder == null` 가드 (`!seriesOrder` 기각)** — `series_order = 0` 이 valid 한 1번째 글 케이스. truthy 체크는 0 을 missing 으로 오인. `==`/`!=` 명시 사용 (`==='/`!==` 사용 금지). `posts/[...slug]/page.tsx` 인라인 주석으로도 보존.
+3. **`seriesOrder == null` 가드 (`!seriesOrder` 기각)** — `series_order = 0` 이 valid 한 1번째 글 케이스. truthy 체크는 0 을 missing 으로 오인. `==` / `!=` 명시 사용 (`===` / `!==` 사용 금지 — `null` 과 `undefined` 둘 다 잡아야 함). `posts/[...slug]/page.tsx` 인라인 주석으로도 보존.
 4. **`/series/[name]` 만 (`/series` 인덱스 기각)** — tag 패턴과 일관 (`/tag` 인덱스도 OOS). 모든 시리즈 목록은 HomeHero `seriesCount` stat 으로만 노출. sitemap.xml 도 미포함 (tag 일관).
 5. **`series_idx` 단일 컬럼 인덱스** — 218 글 규모에서 무시 가능하나 향후 확장 대비 명시. `(series, series_order)` 복합 인덱스 미채택 — 시리즈당 글 수 (평균 3~5) 가 작아 series 필터 후 in-memory order 정렬 비용 무시.
 
