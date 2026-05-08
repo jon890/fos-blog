@@ -204,9 +204,9 @@ export function createMarkdownComponents(basePath: string): Partial<Components> 
       </blockquote>
     ),
     table: ({ children, ...props }) => (
-      <div className="my-4 overflow-x-auto">
+      <div className="prose-table-wrapper my-4 -mx-4 overflow-x-auto md:mx-0">
         <table
-          className="min-w-full border border-gray-200 dark:border-gray-800 rounded-lg"
+          className="min-w-[32rem] mx-4 border border-gray-200 dark:border-gray-800 rounded-lg md:mx-0 md:min-w-full"
           {...props}
         >
           {children}

@@ -146,7 +146,7 @@
 - `src/infra/db/repositories/VisitRepository.ts` — `getVisitCount(pagePath)`
 - `src/lib/markdown.ts` — 본문 처리 + plan012 hast 헬퍼 (`extractRawText` / `findChildText` / `findCodeProp`)
 - `src/lib/category-meta.ts` — `getCategoryColor` / `getCategoryHue` / `toCanonicalCategory` (plan010)
-- `src/app/globals.css` — plan009 토큰 + plan011 prose 확장 (H2 counter / blockquote QUOTE / inline code / mermaid 격리) + plan012 코드 블록 frame (`.code-card` / shiki dual theme)
+- `src/app/globals.css` — plan009 토큰 + plan011 prose 확장 (H2 counter / blockquote QUOTE / inline code / mermaid 격리) + plan012 코드 블록 frame (`.code-card` / shiki dual theme) + plan035 모바일 가독성 (inline code keep-all / code-card-body pre overflow-x)
 
 ---
 
@@ -158,3 +158,4 @@
 - `ReadingProgressBar` 는 신규 토큰 추가 없이 plan009 토큰 (`--color-brand-400`) 만 사용. `<dialog>` element 가 아닌 `role="dialog"` div 채택 이유는 SSR hydration mismatch 회피 + bottom sheet 애니메이션/배경 처리 자유도 확보 (plan019 risks 표 참조)
 - **조회수 증가**는 `src/proxy.ts` Node Runtime middleware (실 동작은 `src/middleware/visit.ts`) 에서 upsert. **표시**는 page.tsx 가 server-side `getVisitCount(post.path)` 로 fetch 하여 `<ArticleHero viewCount={…}/>` 에 전달 (plan011 이전의 client `<PostViewCount>` 패턴은 폐기)
 - prose 의 H2 CSS counter 는 `.prose` 단일 셀렉터에서 reset 되므로, 페이지 내 prose 컨테이너는 1개로 유지해야 번호가 어긋나지 않음
+- **모바일 (390px) 본문 가독성 정책 (plan035)** — (a) inline code 는 `word-break: keep-all` + `overflow-wrap: anywhere` 로 token 단위 wrap 보존 (식별자가 글자 단위로 깨지지 않게, 단일 token 이 viewport 보다 길면만 끊김). (b) GFM 테이블은 `components.table` override 가 `-mx-4 overflow-x-auto md:mx-0` wrapper + `min-w-[32rem]` 로 모바일 가로 스크롤 제공, 데스크톱은 `md:min-w-full` 로 기존 동작 유지. (c) 코드 블록은 `.prose .code-card-body pre` 가 자체 `overflow-x: auto` 를 가져 부모 `.code-card` 의 `overflow: hidden` 안에서도 가로 스크롤 동작 (issue #136 #137 #138)
