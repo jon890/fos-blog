@@ -113,7 +113,7 @@
   --prose-meta-size: 12px;          /* h2::before / code-card-head / line-number */
   --prose-label-size: 10px;         /* blockquote QUOTE / .lang */
   --prose-block-margin: 24px 0;     /* blockquote / code-card 외곽 vertical margin */
-  --prose-blockquote-padding: 4px 0 4px 20px;
+  --prose-blockquote-padding: 8px 16px 8px 20px;
   --prose-code-padding: 1px 6px;    /* inline code */
   --prose-codeblock-header-padding: 10px 14px;
   --prose-codeblock-padding: 16px 20px;
