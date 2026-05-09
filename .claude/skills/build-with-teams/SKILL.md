@@ -410,6 +410,13 @@ executor 완료 후 team-lead → docs-verifier 에게 검증 요청. self-shutd
    - 제거된 함수/컴포넌트가 `docs/flow.md`, `docs/code-architecture.md`, `docs/pages/*.md` 에 언급되는지
    - 변경된 UI 흐름이 docs 다이어그램과 불일치하는지
    - `grep -rn "제거된키워드" docs/` 로 dead reference 검출
+7. **OPEN PR 의 미머지 변경 동시 검토 (필수 — plan036 시간차 사고 관측)**: docs 재작성 plan (예: data-schema 전면 재작성, flow 라우트 표 개편) 의 docs-verifier 는 origin/main 만 보면 안 됨. 동일 파일을 변경하는 OPEN PR 들의 변경분도 함께 검토해야 합병 후 빠진 항목 (예: plan036 이 plan033 의 series 컬럼을 누락) 이 발생 안 함. 검증:
+   ```bash
+   # docs/data-schema.md / docs/adr.md / docs/flow.md 등 핵심 docs 를 변경하는 OPEN PR 목록
+   gh pr list --state open --json number,headRefName,files --jq '.[] | select(.files[].path | startswith("docs/")) | {number, headRefName, files: [.files[].path]}'
+   # 각 OPEN PR 의 docs 변경분이 본 plan 의 재작성 결과에 통합/충돌 없는지 확인
+   ```
+   누락 발견 시 UPDATE_NEEDED — team-lead 가 OPEN PR 정보를 본 plan 결과에 통합하거나, 머지 순서를 PR description 에 명시 후 사후 통합.
 
 판정:
 - **PASS** → 9단계로
