@@ -197,6 +197,9 @@ webtoon-maker-v1에서 검증된 3 레포 공통 규칙. 하네스 (`.claude/ski
 - **반복·중복 제거** — 같은 내용을 두 문서에 쓰지 않는다
 - **의사결정 의도 보존** — "왜 이렇게 했는가" 반드시 기록
 - **구현 세부사항은 코드에, docs에는 "무엇을·왜"만**
+- **용어 회피**: "매트릭스" / "matrix" 사용 금지 — "표" / "분류 표" / "영향 표" / "선택 표" 등으로 표기. 발견 시 docs-check 가 UPDATE_NEEDED 로 잡음
+- **자기-면제 금지**: code-reviewer / docs-verifier 회신에 "재검사 불필요" / "trivial 면제" 같은 자기-면제 문구 등장 시 team-lead 는 무시하고 재검사 강제 (build-with-teams SKILL.md "자기-면제 금지" 섹션)
+- **docs 의 단일 진실원**: planning SKILL "거울 구조 원칙" 준수 — 같은 체크리스트를 두 곳에 유지하지 않음. `fos-blog-docs-verifier` agent 의 검증 항목은 planning 의 "문서 책임 표" 거울로만 운영
 
 ### Git & PR Conventions
 

@@ -1,0 +1,31 @@
+{
+  "name": "plan035-mobile-readability-fix",
+  "description": "모바일 (390px) 본문 가독성 일괄 수정 — issues #136 #137 #138. (1) inline code 가 token 중간에 글자 단위로 wrap 되던 문제 (#136), (2) 테이블이 좁은 cell 폭에 강제 압축되고 가로 스크롤 불가 (#137), (3) 코드 블록 overflow-x:visible 회귀로 긴 라인 잘려보임 (#138). agent-browser iPhone 14 emulation 으로 실측 검증된 문제들. 사용자 핵심 사용 시나리오 (아침 모바일 글 읽기).",
+  "status": "completed",
+  "created_at": "2026-05-08",
+  "total_phases": 2,
+  "related_docs": [
+    "docs/pages/post-detail.md"
+  ],
+  "depends_on": [
+    "plan011-article-page-redesign",
+    "plan012-code-block-redesign",
+    "plan018-mobile-horizontal-scroll"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "inline code wrap 정책 + 테이블 wrapper + 코드 블록 overflow-x 일괄 수정 + 회귀 테스트",
+      "model": "sonnet",
+      "status": "completed"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "title": "검증 + 모바일 smoke 가이드 + 3개 이슈 close + 마킹",
+      "model": "haiku",
+      "status": "completed"
+    }
+  ]
+}

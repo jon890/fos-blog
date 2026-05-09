@@ -113,7 +113,7 @@
   --prose-meta-size: 12px;          /* h2::before / code-card-head / line-number */
   --prose-label-size: 10px;         /* blockquote QUOTE / .lang */
   --prose-block-margin: 24px 0;     /* blockquote / code-card 외곽 vertical margin */
-  --prose-blockquote-padding: 4px 0 4px 20px;
+  --prose-blockquote-padding: 8px 16px 8px 20px;
   --prose-code-padding: 1px 6px;    /* inline code */
   --prose-codeblock-header-padding: 10px 14px;
   --prose-codeblock-padding: 16px 20px;
@@ -231,7 +231,9 @@ code, kbd, samp, pre {
   color: var(--color-brand-400);
   margin-bottom: 8px;
 }
-/* inline code 는 더 공격적으로 — 식별자 한가운데서도 wrap.
+/* inline code — token 단위 wrap 보존 (plan035 #136).
+ * `word-break: keep-all` 로 식별자 (`EXPLAIN`, `created_at`) 가 글자 단위로 깨지지 않게.
+ * `overflow-wrap: anywhere` 는 viewport 보다 긴 단일 token (200+ chars hash 등) fallback.
  * `pre code` (CodeCard / shiki 토큰) 와의 selector 충돌 회피. */
 .prose :not(pre) > code {
   font-family: var(--font-mono);
@@ -241,8 +243,8 @@ code, kbd, samp, pre {
   border-radius: 4px;
   background: var(--color-bg-subtle);
   color: var(--color-brand-400);
+  word-break: keep-all;
   overflow-wrap: anywhere;
-  word-break: break-all;
 }
 .prose ul li::marker {
   content: "— ";
@@ -320,6 +322,11 @@ code, kbd, samp, pre {
   padding: var(--prose-codeblock-padding);
   background: transparent !important; /* keepBackground:false 와 결합 */
   border: none !important;
+  /* plan035 #138 — pre 자체에 가로 스크롤 활성. 부모 .code-card 의 overflow:hidden 이
+   * .code-card-body 의 wrapping 만으로는 scrollWidth>clientWidth 케이스 (모바일 긴 SQL) 를
+   * 수용하지 못해 라인이 잘려 보이던 회귀를 회복. */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   /* fallback color — shiki 가 처리하지 못한 영역 (data-line 외부, plain text 등).
    * 토큰 span 은 아래 .code-card-body pre span 규칙이 var(--shiki-{light|dark}) 로 override. */
   color: var(--color-fg-secondary);

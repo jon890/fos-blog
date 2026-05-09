@@ -1,142 +1,191 @@
-# Data Schema — 변경사항
+# Data Schema — 스키마 레퍼런스
 
-**작성일:** 2026-04-19
-**관련:** [prd.md](./prd.md) · [adr.md](./adr.md#adr-001)
-
----
-
-## 1. 현재 스키마 (변경 없음)
-
-`posts`, `visit_stats` 테이블 자체는 변경하지 않는다.
-
-### posts (`src/infra/db/schema/posts.ts`)
-
-- PK: `id (autoincrement)`
-- Unique: `path`
-- 기존 인덱스: `category_idx(category)`, `slug_idx(slug)`
-- `updatedAt timestamp` (defaultNow, onUpdateNow)
-- `tags JSON NOT NULL DEFAULT ('[]')` — frontmatter `tags` 추출 + sync 시 `trim().toLowerCase()` 정규화 (plan026)
-- `series VARCHAR(255) NULL` — frontmatter `series` 추출. 없으면 NULL (plan033)
-- `series_order INT NULL` — frontmatter `seriesOrder` 추출. series 있는데 seriesOrder 누락 시 둘 다 NULL + log.warn (plan033)
-- 인덱스: `series_idx(series)` (plan033)
-
-### visit_stats (`src/infra/db/schema/visitStats.ts`)
-
-- PK: `id (autoincrement)`
-- 기존 인덱스: `visit_stats_page_path_idx(page_path, unique)`
-- `visit_count int NOT NULL DEFAULT 0`
+**관련:** [prd.md](./prd.md) · [adr.md](./adr.md)
 
 ---
 
-## 2. 추가 인덱스 (마이그레이션 필요)
+## 전체 스키마
 
-### Index A: `posts` 최신 정렬 cursor 페이징 지원
+7개 테이블. 스키마 소스: `src/infra/db/schema/*.ts`.
 
-```ts
-// src/infra/db/schema/posts.ts
-index("posts_updated_at_id_idx").on(
-  sql`${table.updatedAt} DESC`,
-  sql`${table.id} DESC`,
-),
-```
+### `posts`
 
-- **목적**: `WHERE is_active = 1 ORDER BY updated_at DESC, id DESC LIMIT 10` 및 cursor 조건 `(updated_at, id) < (?, ?)` 의 빠른 평가
-- **없으면**: filesort 발생 → 200개 규모에서는 감내 가능하나 성장 시 degrade
-- **주의**: drizzle-orm 0.45.1은 column-level `.desc()` index chain의 SQL 방향 직렬화가 불안정 → raw `sql\`${col} DESC\``템플릿 채택 (생성 SQL에`DESC` 키워드 실측 확인)
+스키마 파일: `src/infra/db/schema/posts.ts`
 
-### Index B: `visit_stats` 인기 정렬 offset 페이징 지원
+용도: GitHub fos-study 리포에서 sync 된 마크다운 글 메타데이터 + 본문.
 
-```ts
-// src/infra/db/schema/visitStats.ts
-index("visit_stats_count_path_idx").on(
-  sql`${table.visitCount} DESC`,
-  sql`${table.pagePath} ASC`,
-),
-```
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| `id` | int | PK, autoincrement | |
+| `title` | varchar(500) | NOT NULL | |
+| `path` | varchar(500) | NOT NULL, UNIQUE | canonical GitHub 파일 경로 (고유 키) |
+| `slug` | varchar(500) | NOT NULL | URL slug |
+| `category` | varchar(255) | NOT NULL | 최상위 카테고리명 |
+| `subcategory` | varchar(255) | | 서브카테고리명 |
+| `folders` | json | DEFAULT '[]' | n-depth 폴더 경로 배열 |
+| `tags` | json | NOT NULL DEFAULT '[]' | frontmatter tags (plan026, ADR-023) |
+| `series` | varchar(255) | NULL | frontmatter series 이름 (plan033, ADR-025) |
+| `series_order` | int | NULL | frontmatter seriesOrder. series 있는데 seriesOrder 누락 시 둘 다 NULL + log.warn drop (plan033, ADR-025) |
+| `content` | text | | 마크다운 원문 |
+| `description` | text | | 발췌 설명 |
+| `sha` | varchar(64) | | GitHub file SHA (변경 감지용) |
+| `is_active` | boolean | NOT NULL DEFAULT true | soft delete 플래그 |
+| `created_at` | timestamp | NOT NULL DEFAULT NOW | |
+| `updated_at` | timestamp | NOT NULL DEFAULT NOW ON UPDATE | |
 
-- **목적**: `ORDER BY visit_count DESC, page_path ASC LIMIT 10 OFFSET ?` 의 빠른 평가 + **동점일 때 순서 안정화** (ADR-002)
-- **없으면**: visit_count 동점 시 페이지 간 중복/누락 가능
+인덱스:
+- `category_idx` on `(category)`
+- `slug_idx` on `(slug)`
+- `series_idx` on `(series)` — 시리즈 글 조회 (plan033, ADR-025)
+- `posts_updated_at_id_idx` on `(updated_at DESC, id DESC)` — 최신글 cursor 페이징 (ADR-002)
 
----
-
-## 3. 마이그레이션 절차 (CLAUDE.md 규칙 준수)
-
-```bash
-# cwd: /Users/nhn/personal/fos-blog
-# 1) 스키마 파일 수정 (위 두 인덱스 추가)
-# 2) SQL 파일 생성 (절대 db:push 쓰지 말 것 — BLG1)
-pnpm db:generate
-# 3) git add drizzle/<new_sql_file> src/infra/db/schema/*.ts
-# 4) 로컬 적용
-pnpm db:migrate
-```
-
-**배포**: 홈서버에서 컨테이너 기동 시 자동 apply되지 않으므로 배포 런북에 `pnpm db:migrate` 실행 단계 포함되어야 함 (기존 관례 따름).
+Notes:
+- `path` = unique key (slug 이 아닌 path 기준 업서트)
+- `is_active = false` = soft delete — 모든 조회에 `WHERE is_active = 1` 필수
 
 ---
 
-## 4. Repository 신규 메서드
+### `visit_stats`
 
-### PostRepository
+스키마 파일: `src/infra/db/schema/visitStats.ts`
 
-```ts
-// Cursor 기반 최신글 (ADR-002)
-async getRecentPostsCursor(params: {
-  limit: number;                          // 10
-  cursor?: { updatedAt: Date; id: number };  // 최초 호출은 undefined
-}): Promise<PostData[]>
-```
+용도: 글/페이지별 방문 수 집계 (일별 중복 제거 후 누적).
 
-**SQL 의미**:
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| `id` | int | PK, autoincrement | |
+| `page_path` | varchar(500) | NOT NULL, UNIQUE | |
+| `visit_count` | int | NOT NULL DEFAULT 0 | |
+| `updated_at` | timestamp | DEFAULT NOW ON UPDATE | |
 
-```sql
-SELECT ... FROM posts
-WHERE is_active = 1
-  AND (cursor IS NULL
-       OR (updated_at, id) < (:cursorUpdatedAt, :cursorId))
-ORDER BY updated_at DESC, id DESC
-LIMIT :limit
-```
-
-※ Drizzle에서 tuple 비교는 `sql` 템플릿으로 표현 — 구현은 `code-architecture.md` 참조.
-
-### VisitRepository
-
-```ts
-// Offset 기반 인기글 경로 (ADR-002)
-async getPopularPostPathsOffset(params: {
-  limit: number;   // 10
-  offset: number;  // 0, 10, 20, ...
-}): Promise<Array<{ path: string; visitCount: number }>>
-
-// 정렬 안정성 확보를 위한 total count
-async getPopularPostPathsTotal(): Promise<number>
-```
-
-**SQL 의미**:
-
-```sql
-SELECT page_path, visit_count
-FROM visit_stats
-ORDER BY visit_count DESC, page_path ASC
-LIMIT :limit OFFSET :offset
-```
-
-`hasMore` 계산은 API Route 레이어에서 `offset + popularPaths.length < total` 로 판정 (비활성 포스트로 `items`가 줄어도 `visit_stats` 기준으로 진행).
+인덱스:
+- `visit_stats_page_path_idx` on `(page_path)` UNIQUE
+- `visit_stats_count_path_idx` on `(visit_count DESC, page_path ASC)` — 인기글 offset 페이징 + 동점 안정화 (ADR-002)
 
 ---
 
-## 5. 반환 DTO
+### `visit_logs`
 
-| 필드                                                             | 출처                               | 비고                 |
-| ---------------------------------------------------------------- | ---------------------------------- | -------------------- |
-| `title, path, slug, category, subcategory, folders, description` | `posts`                            | 기존 `PostData` 동일 |
-| `visitCount`                                                     | `visit_stats.visit_count` (또는 0) | 두 페이지 모두 포함  |
+스키마 파일: `src/infra/db/schema/visitLogs.ts`
+
+용도: 하루 단위 중복 방문 판별용 raw 로그. IP 주소는 SHA-256 해시로만 저장.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| `id` | int | PK, autoincrement | |
+| `page_path` | varchar(500) | NOT NULL | |
+| `ip_hash` | varchar(64) | NOT NULL | SHA-256 해시 (원본 IP 복원 불가) |
+| `visited_date` | date | NOT NULL | 날짜 단위 중복 키 |
+| `created_at` | timestamp | DEFAULT NOW | |
+
+인덱스:
+- `visit_page_ip_date_idx` on `(page_path, ip_hash, visited_date)` — 하루 1회 카운트 중복 방지 쿼리
+
+Notes:
+- `(page_path, ip_hash, visited_date)` 조합이 이미 존재하면 `visit_stats.visit_count` 를 증가하지 않음
 
 ---
 
-## 6. 변경 제외
+### `folders`
 
-- `visitStats` 테이블에 아직 등록되지 않은 글은 인기 목록에 **나타나지 않음** — 의도적 동작 (PRD §7 인기글 AC 3)
-- 신규 테이블 없음
-- 컬럼 추가/삭제 없음
+스키마 파일: `src/infra/db/schema/folders.ts`
+
+용도: GitHub 리포 폴더 트리. 카테고리 진입 시 README.md 본문 표시용.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| `id` | int | PK, autoincrement | |
+| `path` | varchar(500) | NOT NULL, UNIQUE | GitHub 폴더 경로 |
+| `readme` | text | | README.md 원문 |
+| `sha` | varchar(64) | | README file SHA (변경 감지용) |
+| `created_at` | timestamp | DEFAULT NOW | |
+| `updated_at` | timestamp | DEFAULT NOW ON UPDATE | |
+
+인덱스:
+- `path_idx` on `(path)`
+
+---
+
+### `categories`
+
+스키마 파일: `src/infra/db/schema/categories.ts`
+
+용도: 카테고리 표시명 / slug / 아이콘 / 글 수 집계 캐시.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| `id` | int | PK, autoincrement | |
+| `name` | varchar(255) | NOT NULL, UNIQUE | 표시명 |
+| `slug` | varchar(255) | NOT NULL, UNIQUE | URL slug |
+| `icon` | varchar(50) | | 아이콘 식별자 |
+| `post_count` | int | NOT NULL DEFAULT 0 | 글 수 집계 캐시 |
+| `created_at` | timestamp | DEFAULT NOW | |
+| `updated_at` | timestamp | DEFAULT NOW ON UPDATE | |
+
+인덱스:
+- `slug_idx` on `(slug)`
+
+---
+
+### `comments`
+
+스키마 파일: `src/infra/db/schema/comments.ts`
+
+용도: 글별 댓글. 닉네임 공개 + 비밀번호 bcrypt 해시 저장 (ADR-021).
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| `id` | int | PK, autoincrement | |
+| `post_slug` | varchar(500) | NOT NULL | 포스트 경로 (논리적 FK → `posts.path`) |
+| `nickname` | varchar(100) | NOT NULL | 공개 표시명 |
+| `password` | varchar(255) | NOT NULL | bcrypt 해시 (원본 복원 불가) |
+| `content` | text | NOT NULL | `escapeHtml()` 단방향 escape 저장 (ADR-021) |
+| `created_at` | timestamp | DEFAULT NOW | |
+| `updated_at` | timestamp | DEFAULT NOW ON UPDATE | |
+
+인덱스:
+- `post_slug_idx` on `(post_slug)` — 글별 댓글 목록 조회
+
+Notes:
+- 물리적 FK 없음 (논리적 관계만) — sync 로 post 삭제 시 댓글은 보존
+- `content` 는 저장 시 1회 `escapeHtml()` 적용, read 시 unescape 없음 (React JSX 가 자동 escape)
+
+---
+
+### `sync_logs`
+
+스키마 파일: `src/infra/db/schema/syncLogs.ts`
+
+용도: `/api/sync` 실행 이력 기록. 성공/실패 + 처리 건수 + HEAD commit SHA.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| `id` | int | PK, autoincrement | |
+| `status` | varchar(50) | NOT NULL | `'success'` \| `'failed'` |
+| `posts_added` | int | DEFAULT 0 | |
+| `posts_updated` | int | DEFAULT 0 | |
+| `posts_deleted` | int | DEFAULT 0 | |
+| `commit_sha` | varchar(64) | | sync 된 HEAD commit SHA |
+| `error` | text | | 실패 시 에러 메시지 |
+| `synced_at` | timestamp | DEFAULT NOW | |
+
+Notes:
+- 인덱스 없음 (append-only, 최근 N건 조회만 사용)
+
+---
+
+## 인덱스 결정 (plan014 ADR-002)
+
+`posts` cursor 페이징 + `visit_stats` offset 페이징을 위한 복합 인덱스 — 상단 각 테이블 섹션에 포함.
+
+Drizzle 0.45.1 에서 column-level `.desc()` index chain 의 SQL 방향 직렬화가 불안정 → `sql\`${col} DESC\`` 템플릿 채택 (실측 확인 필요시 migration SQL 참조).
+
+---
+
+## Repository 메서드 요약
+
+구현 상세는 `code-architecture.md` 참조. 주요 시그니처:
+
+- `PostRepository.getRecentPostsCursor({ limit, cursor? })` — cursor `(updatedAt, id)` 기반 최신글
+- `VisitRepository.getPopularPostPathsOffset({ limit, offset })` — offset 기반 인기글
+- `PostRepository.getPostsByTag(tag, { limit })` — `JSON_CONTAINS` 쿼리 (ADR-023)
