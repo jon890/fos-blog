@@ -1,0 +1,27 @@
+{
+  "name": "plan037-sync-self-healing-metadata",
+  "description": "Sync 의 metadata drift 자가 치유 (issue #145) — short-circuit path 에서도 updateCategories + syncFolderReadmes 호출. 동시에 CategoryRepository.replaceAll (DELETE+INSERT) 을 syncAll (UPSERT + orphan DELETE) 로 교체해 id 안정성 + 변경 없는 row 미터치. 다음 sync 1회로 잔존 카테고리 (go/css/react) 자동 정리.",
+  "status": "pending",
+  "created_at": "2026-05-09",
+  "total_phases": 2,
+  "related_docs": [
+    "docs/code-architecture.md"
+  ],
+  "depends_on": [],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "CategoryRepository.syncAll (UPSERT + orphan DELETE) + SyncService short-circuit metadata recompute + 회귀 테스트",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "title": "검증 + code-architecture.md 갱신 + #145 close + index.json 마킹",
+      "model": "haiku",
+      "status": "pending"
+    }
+  ]
+}
