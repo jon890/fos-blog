@@ -302,3 +302,10 @@ src/components/
 - **`HomeHero`** — `seriesCount` 실값 연결 (`countSeries()`).
 
 설계 의도 (RSS 2.0 vs Atom / pubDate=createdAt / 50 limit) 는 ADR-024 참조.
+
+---
+
+## sync 자가 치유 metadata (plan037)
+
+- **`CategoryRepository.syncAll(stats)`** — UPSERT (`onDuplicateKeyUpdate` on `name`) + orphan DELETE (`notInArray(categories.name, currentNames)`). 기존 `replaceAll` (DELETE all + INSERT all) 대체. id 안정성 + 변경 없는 row 의 `updatedAt` 미터치. `stats.length === 0` 분기로 빈 입력 시 전체 row 삭제 명시.
+- **`SyncService.sync` short-circuit path** — `lastSyncedSha === headSha` 분기에서도 `metadataSyncService.updateCategories()` + `syncFolderReadmes()` 호출. posts 변경 없어도 categories drift (예: GitHub 측 디렉터리 통째 삭제 후 sync) 자가 치유. 응답 shape (`upToDate: true, deleted: 0`) 는 그대로 — metadata 재계산은 caller-invisible 부수효과.

@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, notInArray, sql } from "drizzle-orm";
 import { categoryIcons, DEFAULT_CATEGORY_ICON } from "../constants";
 import { categories, posts } from "../schema";
 import type { CategoryData } from "../types";
@@ -46,13 +46,30 @@ export class CategoryRepository extends BaseRepository {
     return categoryIcons[category] || DEFAULT_CATEGORY_ICON;
   }
 
-  async replaceAll(
-    stats: Array<{ name: string; slug: string; icon: string; postCount: number }>,
+  async syncAll(
+    stats: Array<{ name: string; slug: string; icon: string | null; postCount: number }>,
   ): Promise<void> {
     await this.db.transaction(async (tx) => {
-      await tx.delete(categories);
-      for (const stat of stats) {
-        await tx.insert(categories).values(stat);
+      if (stats.length > 0) {
+        await tx
+          .insert(categories)
+          .values(stats)
+          .onDuplicateKeyUpdate({
+            set: {
+              slug: sql`VALUES(${categories.slug})`,
+              icon: sql`VALUES(${categories.icon})`,
+              postCount: sql`VALUES(${categories.postCount})`,
+            },
+          });
+      }
+
+      const currentNames = stats.map((s) => s.name);
+      if (currentNames.length === 0) {
+        await tx.delete(categories);
+      } else {
+        await tx
+          .delete(categories)
+          .where(notInArray(categories.name, currentNames));
       }
     });
   }

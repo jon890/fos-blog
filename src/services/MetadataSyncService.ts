@@ -21,7 +21,7 @@ export class MetadataSyncService {
 
   async updateCategories(): Promise<void> {
     const stats = await this.postRepo.getCategoryStats();
-    await this.categoryRepo.replaceAll(
+    await this.categoryRepo.syncAll(
       stats.map((s) => ({
         name: s.category,
         slug: s.category,

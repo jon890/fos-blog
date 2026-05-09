@@ -12,7 +12,7 @@ function makeMocks() {
   } as unknown as PostRepository;
 
   const categoryRepo = {
-    replaceAll: vi.fn().mockResolvedValue(undefined),
+    syncAll: vi.fn().mockResolvedValue(undefined),
   } as unknown as CategoryRepository;
 
   const folderRepo = {
@@ -33,7 +33,7 @@ describe("MetadataSyncService.updateCategories", () => {
     vi.clearAllMocks();
   });
 
-  it("getCategoryStats 결과를 replaceAll에 올바르게 매핑한다", async () => {
+  it("getCategoryStats 결과를 syncAll에 올바르게 매핑한다", async () => {
     const { postRepo, categoryRepo, folderRepo, githubApi } = makeMocks();
 
     vi.mocked(postRepo.getCategoryStats).mockResolvedValue([
@@ -45,7 +45,7 @@ describe("MetadataSyncService.updateCategories", () => {
     await service.updateCategories();
 
     expect(postRepo.getCategoryStats).toHaveBeenCalledOnce();
-    expect(categoryRepo.replaceAll).toHaveBeenCalledWith([
+    expect(categoryRepo.syncAll).toHaveBeenCalledWith([
       { name: "AI", slug: "AI", icon: "🤖", postCount: 5 },
       { name: "database", slug: "database", icon: "🗄️", postCount: 3 },
     ]);
@@ -61,12 +61,12 @@ describe("MetadataSyncService.updateCategories", () => {
     const service = new MetadataSyncService(categoryRepo, folderRepo, postRepo, githubApi);
     await service.updateCategories();
 
-    expect(categoryRepo.replaceAll).toHaveBeenCalledWith([
+    expect(categoryRepo.syncAll).toHaveBeenCalledWith([
       { name: "unknown-topic", slug: "unknown-topic", icon: "📁", postCount: 2 },
     ]);
   });
 
-  it("카테고리가 없으면 빈 배열로 replaceAll을 호출한다", async () => {
+  it("post 가 0 건이면 syncAll([]) 호출되어 모든 카테고리 row 삭제", async () => {
     const { postRepo, categoryRepo, folderRepo, githubApi } = makeMocks();
 
     vi.mocked(postRepo.getCategoryStats).mockResolvedValue([]);
@@ -74,6 +74,6 @@ describe("MetadataSyncService.updateCategories", () => {
     const service = new MetadataSyncService(categoryRepo, folderRepo, postRepo, githubApi);
     await service.updateCategories();
 
-    expect(categoryRepo.replaceAll).toHaveBeenCalledWith([]);
+    expect(categoryRepo.syncAll).toHaveBeenCalledWith([]);
   });
 });
