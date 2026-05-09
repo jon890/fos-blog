@@ -211,6 +211,18 @@ type(scope): description
 
 예시: `feat(sync): add retry with exponential backoff`, `fix(db): prevent duplicate post insertion`, `docs(task): add layered architecture ADR`
 
+**브랜치 네이밍 규칙** — 작업 성격에 따라 prefix 분리:
+
+| PR 종류 | 브랜치 prefix | 예시 |
+|---|---|---|
+| task 정의 (`tasks/plan{N}-...` 디렉터리 생성 + index.json + phase 파일) | `tasks/` | `tasks/plan038-foo` |
+| 구현 (build-with-teams 또는 수동 phase 실행 결과) | `feat/` | `feat/plan038-foo-impl` |
+| 단발성 버그 수정 (plan 우회) | `fix/` | `fix/blockquote-padding` |
+| 정리 / 의존성 / 빌드 등 메타 | `chore/` | `chore/cleanup-stray` |
+| 문서 단독 변경 | `docs/` | `docs/adr-016-update` |
+
+이 형식에서 절대 벗어나지 않는다. 특히 task 정의 PR 에 `feat/` 를 쓰지 않는다 — 기능 추가가 아니라 메타 작업이라 의미 충돌.
+
 ---
 
 ## Summary for Agents
