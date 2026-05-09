@@ -70,7 +70,9 @@ export class SyncService {
       );
 
       if (lastSyncedSha === headSha) {
-        log.info("이미 최신 상태입니다.");
+        log.info("이미 최신 상태 — posts 변경 없음, metadata 만 재계산");
+        await this.metadataSyncService.updateCategories();
+        await this.metadataSyncService.syncFolderReadmes();
         const titles = await this.postService.retitleAll();
         return {
           added: 0,

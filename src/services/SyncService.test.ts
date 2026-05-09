@@ -75,6 +75,8 @@ describe("SyncService.sync", () => {
     expect(result.upToDate).toBe(true);
     expect(result.commitSha).toBe(sha);
     expect(syncLogRepo.create).not.toHaveBeenCalled();
+    expect(metadataSyncService.updateCategories).toHaveBeenCalledTimes(1);
+    expect(metadataSyncService.syncFolderReadmes).toHaveBeenCalledTimes(1);
   });
 
   it("lastSyncedSha가 없으면 performFullSync를 호출한다", async () => {
