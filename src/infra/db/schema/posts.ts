@@ -22,6 +22,8 @@ export const posts = mysqlTable(
     subcategory: varchar("subcategory", { length: 255 }),
     folders: json("folders").$type<string[]>().default([]), // n-depth 폴더 경로 배열
     tags: json("tags").$type<string[]>().notNull().default([]),
+    series: varchar("series", { length: 255 }),
+    seriesOrder: int("series_order"),
     content: text("content"),
     description: text("description"),
     sha: varchar("sha", { length: 64 }), // GitHub file SHA for change detection
@@ -36,6 +38,7 @@ export const posts = mysqlTable(
       sql`${table.updatedAt} DESC`,
       sql`${table.id} DESC`,
     ),
+    index("series_idx").on(table.series),
   ],
 );
 

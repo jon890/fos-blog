@@ -9,6 +9,9 @@ export interface FrontMatter {
   date?: string;
   description?: string;
   tags?: string[];
+  series?: string;
+  /** YAML 파서가 `seriesOrder: 2` 를 number 로, `seriesOrder: "2"` 를 string 으로 반환할 수 있어 둘 다 허용. SyncService 에서 `Number()` + `Number.isFinite` 로 정규화. */
+  seriesOrder?: number | string;
   [key: string]: unknown;
 }
 

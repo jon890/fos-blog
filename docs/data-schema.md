@@ -24,6 +24,8 @@
 | `subcategory` | varchar(255) | | 서브카테고리명 |
 | `folders` | json | DEFAULT '[]' | n-depth 폴더 경로 배열 |
 | `tags` | json | NOT NULL DEFAULT '[]' | frontmatter tags (plan026, ADR-023) |
+| `series` | varchar(255) | NULL | frontmatter series 이름 (plan033, ADR-025) |
+| `series_order` | int | NULL | frontmatter seriesOrder. series 있는데 seriesOrder 누락 시 둘 다 NULL + log.warn drop (plan033, ADR-025) |
 | `content` | text | | 마크다운 원문 |
 | `description` | text | | 발췌 설명 |
 | `sha` | varchar(64) | | GitHub file SHA (변경 감지용) |
@@ -34,6 +36,7 @@
 인덱스:
 - `category_idx` on `(category)`
 - `slug_idx` on `(slug)`
+- `series_idx` on `(series)` — 시리즈 글 조회 (plan033, ADR-025)
 - `posts_updated_at_id_idx` on `(updated_at DESC, id DESC)` — 최신글 cursor 페이징 (ADR-002)
 
 Notes:

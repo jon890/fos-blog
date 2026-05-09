@@ -75,7 +75,7 @@ Categories Section (최대 9개, 3×3 grid → 헤더 우측 "모두 보기" 링
 
 > plan030: 인기/최신을 카테고리보다 위로 올려 신규 방문자가 콘텐츠를 먼저 만나도록 재배치. 카테고리는 6→9로 확장하여 3×3 grid 로 표시.
 
-> plan013 이전: 별도 Hero Section + Stats Section 으로 분리되어 있었음. 현재는 `<HomeHero>` 한 컴포넌트로 통합 — eyebrow, h1, lead, 4 stats `<dl>` (posts/categories/series·subscribers placeholder).
+> plan013 이전: 별도 Hero Section + Stats Section 으로 분리되어 있었음. 현재는 `<HomeHero>` 한 컴포넌트로 통합 — eyebrow, h1, lead, 4 stats `<dl>` (posts/categories/series/subscribers). `seriesCount` 는 `PostRepository.countSeries()` 실값 연결 (plan033). `subscriberCount` 는 여전히 null placeholder.
 
 ---
 

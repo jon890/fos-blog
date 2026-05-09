@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, like, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, like, or, sql } from "drizzle-orm";
 import { NewPost, posts } from "../schema";
 import { UpdatePost } from "../schema/posts";
 import type { PostData } from "../types";
@@ -164,6 +164,8 @@ export class PostRepository extends BaseRepository {
         subcategory: post.subcategory,
         folders: post.folders || [],
         description: post.description,
+        series: post.series,
+        seriesOrder: post.seriesOrder,
         createdAt: post.createdAt,
         updatedAt: post.updatedAt,
       },
@@ -436,5 +438,52 @@ export class PostRepository extends BaseRepository {
       .from(posts)
       .where(eq(posts.isActive, true));
     return Number(result[0]?.count ?? 0);
+  }
+
+  async getPostsBySeries(series: string): Promise<PostData[]> {
+    const result = await this.db
+      .select({
+        title: posts.title,
+        path: posts.path,
+        slug: posts.slug,
+        category: posts.category,
+        subcategory: posts.subcategory,
+        folders: posts.folders,
+        description: posts.description,
+        series: posts.series,
+        seriesOrder: posts.seriesOrder,
+      })
+      .from(posts)
+      .where(and(eq(posts.isActive, true), eq(posts.series, series)))
+      .orderBy(asc(posts.seriesOrder));
+
+    return result.map((p) => ({
+      ...p,
+      folders: p.folders || [],
+    }));
+  }
+
+  async getSeriesNeighbors(
+    post: PostData,
+  ): Promise<{ prev: PostData | null; next: PostData | null; total: number }> {
+    if (!post.series || post.seriesOrder == null) {
+      return { prev: null, next: null, total: 0 };
+    }
+    const all = await this.getPostsBySeries(post.series);
+    const idx = all.findIndex((p) => p.path === post.path);
+    if (idx === -1) return { prev: null, next: null, total: all.length };
+    return {
+      prev: idx > 0 ? all[idx - 1] : null,
+      next: idx < all.length - 1 ? all[idx + 1] : null,
+      total: all.length,
+    };
+  }
+
+  async countSeries(): Promise<number> {
+    const [{ count }] = await this.db
+      .select({ count: sql<string>`count(distinct ${posts.series})` })
+      .from(posts)
+      .where(and(eq(posts.isActive, true), isNotNull(posts.series)));
+    return Number(count);
   }
 }

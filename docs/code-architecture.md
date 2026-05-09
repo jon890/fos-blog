@@ -287,4 +287,18 @@ src/components/
 - **`PostRepository.getRecentActive({ limit })`** — content + createdAt 포함 select, `isActive=true` 필터, `desc(createdAt)` 정렬. RSS description 추출 + pubDate 용. 기존 `getRecentPosts` (PostData 반환, updatedAt 정렬) 와 별도 — RSS 는 발행 시점 + 본문 둘 다 필요.
 - **`src/app/layout.tsx`** — `metadata.alternates.types` 에 `application/rss+xml` link 추가 → Next.js 가 `<link rel="alternate" type="application/rss+xml" href="/rss.xml">` 자동 생성.
 
+---
+
+## 시리즈 시스템 (plan033)
+
+신규 라우트 + Repository 메서드:
+
+- **`GET /series/[name]`** (`src/app/series/[name]/page.tsx`) — 시리즈별 글 목록. ISR 300s. URL decode → `getPostsBySeries(series)`. 0건이면 `notFound()`. `<ol>` + 번호 표시 (순서 의미 있음).
+- **`PostRepository.getPostsBySeries(series)`** — `eq(posts.series, series)` + `asc(posts.seriesOrder)` 정렬. `Post[]` 반환.
+- **`PostRepository.getSeriesNeighbors(post)`** — 같은 시리즈 전체 로드 후 `path` 기준 인접 글 반환. `{ prev, next, total }`.
+- **`PostRepository.countSeries()`** — `count(distinct series)` + `isNotNull(series)`. HomeHero stat 용.
+- **`ArticleHero`** — series prop 추가. meta row 에 `SERIES · {name} · {order}/{total}` 링크 표시.
+- **`ArticleFooter`** — series chip + prev/next 카드 nav 추가. slug 인코딩은 PostCard 의 `postHref` 패턴과 동일.
+- **`HomeHero`** — `seriesCount` 실값 연결 (`countSeries()`).
+
 설계 의도 (RSS 2.0 vs Atom / pubDate=createdAt / 50 limit) 는 ADR-024 참조.
