@@ -7,6 +7,7 @@ import type { PostService } from "./PostService";
 import type { PostRepository } from "@/infra/db/repositories/PostRepository";
 import type { SyncLogRepository } from "@/infra/db/repositories/SyncLogRepository";
 import type {
+  ChangedFile,
   getChangedFilesSince,
   getCurrentHeadSha,
   getDirectoryContents,
@@ -39,6 +40,7 @@ function makeMocks() {
   const postRepo = {
     getAllForSync: vi.fn().mockResolvedValue([]),
     deactivateByIds: vi.fn().mockResolvedValue(0),
+    deactive: vi.fn().mockResolvedValue(true),
   } as unknown as PostRepository;
 
   const syncLogRepo = {
@@ -114,6 +116,23 @@ describe("SyncService.sync", () => {
     expect(syncLogRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({ status: "success" }),
     );
+  });
+
+  it("incremental sync — README.md (EXCLUDED) 가 removed 이벤트로 들어와도 deactive 호출", async () => {
+    const { postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi } = makeMocks();
+    const headSha = "newsha";
+    const lastSha = "oldsha";
+
+    vi.mocked(githubApi.getCurrentHeadSha).mockResolvedValue(headSha);
+    vi.mocked(syncLogRepo.getLatest).mockResolvedValue({ commitSha: lastSha } as SyncLog);
+    vi.mocked(githubApi.getChangedFilesSince).mockResolvedValue([
+      { status: "removed", filename: "css/FlexBox/README.md" },
+    ] as ChangedFile[]);
+
+    const service = new SyncService(postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi);
+    await service.sync();
+
+    expect(postRepo.deactive).toHaveBeenCalledWith("css/FlexBox/README.md");
   });
 
   it("에러 발생 시 syncLogRepo.create({ status: 'failed' })를 호출하고 에러를 다시 던진다", async () => {

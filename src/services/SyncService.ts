@@ -256,13 +256,11 @@ export class SyncService {
 
     for (const file of changedFiles) {
       if (file.status === "removed") {
-        if (shouldSyncFile(file.filename)) {
-          const ok = await this.postRepo.deactive(file.filename);
-          if (ok) deleted++;
-          log.info({ filename: file.filename }, `삭제: ${file.filename}`);
-        }
+        const ok = await this.postRepo.deactive(file.filename);
+        if (ok) deleted++;
+        log.info({ filename: file.filename }, `삭제: ${file.filename}`);
       } else if (file.status === "renamed") {
-        if (file.previous_filename && shouldSyncFile(file.previous_filename)) {
+        if (file.previous_filename) {
           const ok = await this.postRepo.deactive(file.previous_filename);
           if (ok) deleted++;
           log.info({ filename: file.previous_filename }, `이름 변경(삭제): ${file.previous_filename}`);
