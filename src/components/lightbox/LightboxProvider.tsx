@@ -39,7 +39,8 @@ export function LightboxProvider({ children }: { children: React.ReactNode }) {
       src: n.dataset.lightboxSrc || "",
       alt: n.dataset.lightboxAlt || "",
     }));
-    const index = Math.max(0, nodes.indexOf(initialEl));
+    const index = nodes.indexOf(initialEl);
+    if (index === -1) return; // trigger 요소가 scope 밖이면 미오픈 (방어)
     setState({ images, index });
   }, []);
 

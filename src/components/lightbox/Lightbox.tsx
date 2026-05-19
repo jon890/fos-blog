@@ -17,15 +17,25 @@ export function Lightbox({ images, index, onClose, onGoto }: LightboxProps) {
   const current = images[index];
   const hasMultiple = images.length > 1;
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   const prev = hasMultiple ? images[(index - 1 + images.length) % images.length] : null;
   const next = hasMultiple ? images[(index + 1) % images.length] : null;
 
+  // mount/unmount 전용 — 이전 포커스 캡처 + scroll lock + unmount 시 trigger 복귀
   useEffect(() => {
-    // focus return: open 시점의 이전 포커스 저장 후 unmount 시 복귀
-    const previousFocus = document.activeElement as HTMLElement | null;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
     closeButtonRef.current?.focus();
+    document.body.style.overflow = "hidden";
 
+    return () => {
+      document.body.style.overflow = "";
+      previousFocusRef.current?.focus();
+    };
+  }, []);
+
+  // keyboard handler — index 변경 시 latest closure 반영
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();
@@ -37,13 +47,7 @@ export function Lightbox({ images, index, onClose, onGoto }: LightboxProps) {
     };
 
     document.addEventListener("keydown", handleKeyDown);
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-      previousFocus?.focus();
-    };
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [index, hasMultiple, onClose, onGoto]);
 
   return (
