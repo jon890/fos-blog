@@ -1,0 +1,34 @@
+{
+  "name": "plan040-skill-consolidation",
+  "description": "사용 빈도 0 인 commit-and-push + self-healing-teams 스킬 폐기. 잔존 가치는 각각 CLAUDE.md Git & PR Conventions 섹션 + build-with-teams/SKILL.md 본문에 흡수. hooks 및 self-healing-postmortem agent 는 유지",
+  "status": "pending",
+  "created_at": "2026-05-19",
+  "total_phases": 3,
+  "related_docs": [
+    "CLAUDE.md",
+    ".claude/skills/build-with-teams/SKILL.md"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "commit-and-push 폐기 + CLAUDE.md Git & PR Conventions 보강",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "title": "self-healing-teams 폐기 + build-with-teams 본문 흡수",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 3,
+      "file": "phase-03.md",
+      "title": "통합 검증 + 폐기 잔재 grep + index.json completed 마킹",
+      "model": "haiku",
+      "status": "pending"
+    }
+  ]
+}
