@@ -132,6 +132,20 @@ team-lead 가 "이전 세션이 그랬으니까 / 익숙한 패턴이라서" 같
 | **code-reviewer** | `oh-my-claudecode:code-reviewer` | sonnet | 코드 품질 검사 (PASS/FIX_NEEDED), AI slop/금지사항 탐지 |
 | **docs-verifier** | `oh-my-claudecode:architect` | opus | 코드↔docs 정합성 검증 (PASS/UPDATE_NEEDED/VIOLATION) |
 
+## 자주 발생하는 마찰 패턴 (재발 방지 참조)
+
+build-with-teams 운영에서 반복 관측된 5가지 마찰. 각 절차 단계에서 대응 가드를 적용.
+
+| # | 패턴 | 증상 | 대응 위치 |
+|---|---|---|---|
+| **F1** | sub-agent self-shutdown | code-reviewer / architect 가 idle 알림 직후 자체 종료, verdict 미수신 | "팀원 self-shutdown 패턴 대응" 섹션 |
+| **F2** | SendMessage 회신 누락 | sub-agent 가 평가를 자기 화면에만 출력, team-lead inbox 미도달 | "팀원 SendMessage 회신 강제" 섹션 |
+| **F3** | bare Agent 스폰 (team_name 누락) | TeamCreate 없이 Agent({subagent_type: critic}) → 라우팅 불가 | `.claude/hooks/agent-spawn-guard.sh` (PreToolUse 자동 차단) |
+| **F4** | critic v2 stale verdict | REVISE 후 v2 commit 송신해도 v1 평가 반복 송신 | "critic v2 재평가 강제 재읽기" (5. critic 평가 섹션) |
+| **F5** | wrong-branch 학습 commit | 학습 누적 파일이 PR 브랜치에 박힘 | `.claude/hooks/branch-contamination-guard.sh` (PreToolUse 자동 차단) |
+
+각 패턴의 대응은 본 SKILL.md 절차 내 또는 hook 으로 분산되어 있다. 본 표는 *목록 + 라우팅* 만 제공.
+
 ### 정식 팀원 스폰 규칙 (필수)
 
 critic / executor / code-reviewer / docs-verifier는 반드시 **TeamCreate로 생성한 팀의 정식 멤버**로 스폰. 일회성 `Agent` 호출(team_name 없이) 금지.
@@ -195,6 +209,13 @@ team-lead 는 critic 평가가 끝나기 전에 워크트리 상태(`git log`, `
 `oh-my-claudecode:code-reviewer` / `oh-my-claudecode:architect` (docs-verifier 용도) 는 `run_in_background: true` + idle prompt 로 스폰해도 **idle 알림 직후 자체 shutdown 하는 경향**이 관측됨. critic 은 응답 후 idle 유지에 성공.
 
 **우회**: 검사 대상 결과물이 준비된 시점에 즉시 새로 spawn (idle 대기 의존 금지). team-lead 는 code-reviewer / docs-verifier 가 죽었다는 시스템 알림을 받으면 침묵 말고 **새로 스폰 + 즉시 검사 지시 메시지** 묶음으로 처리.
+
+**판정 시간 규칙 (heartbeat)**: SendMessage 송신 후 **90s** 안에 verdict SendMessage 회신이 오지 않고 idle 알림만 2회 이상 도착하면 self-shutdown 의심.
+team-lead 는 즉시 다음 순서로 처리:
+
+- 같은 sub-agent 에 강제 재요청 SendMessage 1회
+- 그래도 무응답이면 새로 spawn + 동일 작업 메시지 묶음 송신
+- 3회 누적 실패 → `AskUserQuestion` 으로 에스컬레이션 ("다른 모델 재시도 / team-lead 직접 처리 / plan abort")
 
 ### executor cwd 격리 (필수 — main repo 오염 방지)
 
@@ -441,6 +462,25 @@ executor 완료 후 team-lead → docs-verifier 에게 검증 요청. self-shutd
 5. push + `gh pr create` (main 대상). CI 실패가 plan 외부에 있으면 description 에 의존 PR 번호 + 머지 순서 명시
 6. **즉시 팀 shutdown** (SendMessage `shutdown_request`) + worktree 정리 + team-lead 누적 노하우 보고
 7. 사용자가 GitHub 에서 PR 머지 → completed 상태 자동 main 반영. main 후속 작업 0개
+
+#### M4. Post-mortem 학습 누적 (선택 — 사용자 confirm 후)
+
+PR 생성 + 팀 종료 직전에 `self-healing-postmortem` 커스텀 agent (`.claude/agents/self-healing-postmortem.md`, haiku) 를 spawn 해 본 plan 의 마찰/회복 패턴을 추출한다.
+
+spawn 입력:
+
+- 본 plan 의 git log (PR 브랜치)
+- sub-agent 통신 transcript 요약 (critic 사이클 횟수 / 재시도 / 무응답 사건)
+- team-lead 가 마주친 분기점 (AskUserQuestion 답변 포함)
+
+agent 산출: 재현 가능 + 추상화 가능 + 검증 가능 패턴 1-3 개의 마크다운 draft.
+누적 위치는 agent 가 라우팅 제안 (`.claude/skills/_shared/common-pitfalls.md` BLG# / 본 SKILL.md / `docs/adr.md` / `docs/pages/*.md` 중 하나).
+
+**승인 게이트** (필수): team-lead 가 사용자에게 `AskUserQuestion` 으로 확인 후 main 직접 commit.
+본 PR 브랜치 commit 금지 — `branch-contamination-guard.sh` 가 자동 차단.
+
+호출 자체는 선택 — plan 규모가 작거나 새 마찰이 없으면 skip.
+"노하우 누적" 섹션의 누적 가치 판단 기준을 따른다.
 
 ## worktree 기반 격리 실행 (필수)
 

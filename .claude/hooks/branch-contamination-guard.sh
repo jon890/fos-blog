@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# self-healing-teams M4 가드 — Branch contamination guard
+# build-with-teams — Branch contamination guard (F5 마찰 패턴 대응)
 # Block `git commit` that includes skill/ADR learning files when current branch ≠ main.
 # Reason: 학습 누적 (BLG#, ADR, build-with-teams.md 갱신) 은 반드시 main 직접 commit.
 #         PR 브랜치 / fix 브랜치에 박히면 PR scope 이탈 + 머지 시점 충돌.
@@ -21,7 +21,7 @@ case "$CMD" in
 esac
 
 # 보호 대상 학습 파일 목록 (재발 시 fos-blog 외 레포에서도 prefix 만 바꾸면 재사용 가능)
-PROTECTED_GLOB='\.claude/skills/_shared/common-pitfalls\.md|\.claude/skills/build-with-teams/SKILL\.md|\.claude/skills/self-healing-teams/SKILL\.md|docs/adr\.md'
+PROTECTED_GLOB='\.claude/skills/_shared/common-pitfalls\.md|docs/adr\.md'
 
 # git -C 가 명령에 있으면 그 경로의 git status 사용. 없으면 cwd 의 git.
 # 배열로 관리하여 eval 없이 안전하게 전개 (경로 공백 / 명령 주입 방지).
@@ -50,7 +50,7 @@ if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
 fi
 
 cat >&2 <<EOF
-🛑 self-healing-teams M4 guard: 학습 누적 파일을 main 외 브랜치 ($BRANCH) 에 commit 시도 차단.
+🛑 build-with-teams (F5): 학습 누적 파일을 main 외 브랜치 ($BRANCH) 에 commit 시도 차단.
 
 대상 파일 (commit 에 포함됨):
 $(printf '%s\n' "$STAGED" | grep -E "$PROTECTED_GLOB" | sed 's/^/  - /')
@@ -59,7 +59,7 @@ $(printf '%s\n' "$STAGED" | grep -E "$PROTECTED_GLOB" | sed 's/^/  - /')
   git switch main && git pull --ff-only origin main
   # 그 다음에 학습 누적 commit + push origin main
 
-이유: BLG# / ADR / SKILL.md 학습은 PR scope 외. 다른 브랜치에 박히면 머지 충돌 + PR 본문 오염.
-참조: self-healing-teams/SKILL.md "F5", build-with-teams.md L417.
+이유: BLG# / ADR 학습은 PR scope 외. 다른 브랜치에 박히면 머지 충돌 + PR 본문 오염.
+참조: build-with-teams/SKILL.md "자주 발생하는 마찰 패턴" F5 + "노하우 누적" 섹션.
 EOF
 exit 2
