@@ -1,6 +1,6 @@
 {
   "name": "plan046-pitfalls-format-unify",
-  "description": "common-pitfalls.md 의 BLG1~BLG24 형식 통일 + § 기호 제거 + `소진` 어색 표현 (dooray-cli 정책) 교체 + 인덱스 표 추가. BLG 항목들이 한 줄 bullet 안에 증상/Good/검출/Why 를 모두 압축한 형식 일탈 상태 (다른 섹션은 ## N-M. 헤더 형식). 안 1 (형식 통일) 만 처리, 파일 분할 (안 2) 은 plan047 분리. § / 소진 정리는 본 plan 의 다른 4개 외부 참조 파일 (.claude/agents/, .claude/skills/, docs/) 도 함께 처리.",
+  "description": "common-pitfalls.md 의 BLG1~BLG25 형식 통일 + § 기호 제거 + `소진` 어색 표현 (dooray-cli 정책) 교체 + 인덱스 표 추가. BLG 항목들이 한 줄 bullet 안에 증상/Good/검출/Why 를 모두 압축한 형식 일탈 상태 (다른 섹션은 ## N-M. 헤더 형식, 섹션 3 은 3-1~3-20). 안 1 (형식 통일) 만 처리, 파일 분할 (안 2) 은 plan047 분리. BLG 번호는 1~25 그대로 보존하면서 본문 내 출현 순서만 순차 정렬. § / 소진 정리는 본 plan 의 외부 참조 파일 (.claude/agents/self-healing-postmortem.md, .claude/skills/planning/SKILL.md, .claude/skills/planning/task-create.md, docs/adr.md, docs/code-architecture.md) 도 함께 처리.",
   "status": "pending",
   "created_at": "2026-05-19",
   "total_phases": 2,
@@ -12,14 +12,14 @@
     {
       "number": 1,
       "file": "phase-01.md",
-      "title": "BLG1~BLG24 헤더 + sub-bullet 형식 재작성 + § 제거 (common-pitfalls.md 본문)",
+      "title": "BLG1~BLG25 헤더 + sub-bullet 형식 재작성 + § 제거 (common-pitfalls.md 본문)",
       "model": "sonnet",
       "status": "pending"
     },
     {
       "number": 2,
       "file": "phase-02.md",
-      "title": "인덱스 표 추가 + 외부 참조 4개 파일 § 정리 + 검증 + 마킹",
+      "title": "인덱스 표 추가 + 외부 참조 5개 파일 § 정리 + 검증 + 마킹",
       "model": "sonnet",
       "status": "pending"
     }
