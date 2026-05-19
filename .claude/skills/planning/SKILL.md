@@ -163,13 +163,84 @@ task 파일을 **사용자에게 제출하기 전**에 반드시 [`common-pitfal
 
 각 단계에서 사용자와 의사결정이 완료되면, 8단계를 기다리지 않고 **즉시 docs에 반영**한다. 이는 논의가 길어질 때 결정 사항이 유실되는 것을 방지하고, 다음 대화에서도 결정 맥락을 참조할 수 있게 한다.
 
+## task 생성 직후 자동 검증 (필수)
+
+task 파일을 작성한 직후, 사용자에게 보고 + git commit 하기 전에 아래 grep 명령들을 실행해 `common-pitfalls.md § 1` 의 자동화 가능한 5개 패턴을 검출한다.
+위반 발견 시 사용자에게 `AskUserQuestion` 으로 보고하고 "수정 / skip / 이번만 면제" 선택을 받는다. AI 가 임의로 자동 수정하지 않는다 — 의도 보존 우선.
+
+### 자동 검출 5 패턴 (grep)
+
+```bash
+# cwd: <repo root>
+PLAN=plan{N}-{slug}   # 본 task 의 디렉터리
+
+# 1-2: "전체" 표현 (파일 범위 부정확)
+grep -nE "전체\s*(수정|변경|적용|교체|리팩토링|삭제)" tasks/$PLAN/phase-*.md
+# 기대: 0건. 발견 시 구체 파일 목록으로 대체 필요
+
+# 1-4: Bash 블록의 cwd 주석 누락
+awk '
+  /^```bash/ { in_block=1; lines=""; start_line=NR; next }
+  /^```/ && in_block {
+    if (lines !~ /# cwd:/) print FILENAME ":" start_line " — Bash 블록 cwd 주석 누락"
+    in_block=0; next
+  }
+  in_block { lines = lines "\n" $0 }
+' tasks/$PLAN/phase-*.md
+# 기대: 0건
+
+# 1-5: 인간 의존 검증 (코드 블록 외 prose 라인만)
+awk '
+  /^```/ { in_code = !in_code; next }
+  !in_code && /수동 검토|눈으로 확인|직접 확인|육안/ { print FILENAME ":" NR ": " $0 }
+' tasks/$PLAN/phase-*.md
+# 기대: 0건. 단 "수동 smoke" 는 dev server 동작 확인이라 OK — 정규식이 잡지 않음
+# 참고: 코드 블록 안의 grep 패턴 문자열 (자기 정의) 은 의도적으로 제외
+
+# 1-8: 마지막 phase 에 index.json completed 마킹 지시 누락
+LAST_PHASE=$(ls tasks/$PLAN/phase-*.md | sort | tail -1)
+grep -E "index\.json.*completed|status.*completed" "$LAST_PHASE" > /dev/null || \
+  echo "$LAST_PHASE — index.json completed 마킹 지시 누락"
+# 기대: 출력 없음
+
+# 1-9: macOS BSD sed \b 미지원 (코드 블록 외 prose 라인만 — 코드 블록 안의 정의는 면제)
+awk '
+  /^```/ { in_code = !in_code; next }
+  !in_code && /sed[[:space:]].*\\b/ { print FILENAME ":" NR ": " $0 }
+' tasks/$PLAN/phase-*.md
+# 기대: 0건. 발견 시 perl -i -pe 's/\bfoo\b/.../g' 로 대체 필요
+```
+
+5개 grep 모두 0 건 출력 시 통과. 1건이라도 발견되면 다음 흐름.
+
+### 위반 발견 시 처리 (사용자 confirm 우선)
+
+위반된 패턴과 위치를 정리해 `AskUserQuestion` 호출:
+
+- 옵션 1: **수정** — AI 가 위반 라인을 패턴별 권장 대안으로 교체 후 다시 본 섹션 grep 재실행 (재귀, 최대 2회)
+- 옵션 2: **skip** — 이번 위반은 의도된 표현. critic / build-with-teams 단계에서 다시 판단
+- 옵션 3: **면제** — 본 plan 한정 면제 사유를 phase 파일 "의도 메모 (왜)" 에 명시 후 통과
+
+사용자가 일괄 처리를 원하면 (예: "5건 다 수정해줘") 옵션 1 을 즉시 적용.
+
+### 사람 판단 필요 4 패턴 (자동 검출 불가 — 본 섹션 grep 범위 외)
+
+아래 패턴은 도메인 의존이라 grep 결정 검출 불가. task 작성 시 사람 (AI) 이 직접 self-check.
+
+- **1-1 수치 추측**: "약 30개" / "100줄" 같은 수치가 실측 명령 결과인지 확인. `git diff --stat | wc -l` 등 실측 명령을 plan 에 인용
+- **1-3 이전 plan / main 커밋 상호작용**: `git log origin/main --oneline -20 -- <scope-dir>/` 결과 중 plan 범위와 겹치는 변경이 있는지, 있다면 "어느 쪽이 final" 명시
+- **1-6 외부 상태 gate**: PR / 배포 / push 단계 앞에 상태 확인 명령 (`gh pr view {N} --json state`) 가 있는지
+- **1-7 4면 가드**: load-bearing 불변식 도입 시 Migration / Repository / Mapper / UI 4면 모두 가드 명시되어 있는지
+
+이 4 패턴은 task 작성 self-check 체크리스트 (본 SKILL.md "Critic 패턴 사전 해소" 섹션 + common-pitfalls.md § 1) 로 보완.
+
 ## 완료 후 (필수 수행 절차)
 
 8단계가 끝나면 **항상 아래 순서를 그대로 수행** — 사용자의 별도 지시를 기다리지 않는다.
 
 1. **docs 반영 완료 확인** — `docs/adr.md` / `docs/flow.md` / `docs/data-schema.md` / `docs/code-architecture.md` / `docs/pages/{page}.md` / `CLAUDE.md` 중 해당하는 문서에 이번 결정이 모두 기록됐는지 점검
 2. **task 파일 생성** — `tasks/plan{N}-{kebab-slug}/` 디렉터리 + `index.json` + phase 파일들 작성. 상세 규칙은 [`task-create.md`](./task-create.md) 참조 (index.json 스키마 / model 라우팅 / phase 작성 체크리스트 / 마지막 2 phase 표준). CLAUDE.md "Task 작업 규칙" 도 준수 — 원자적 단일 책임, phase 당 작업 5개 이하, 자기완결 프롬프트, **마지막 phase 에 index.json status="completed" 마킹 명시**
-3. **`common-pitfalls.md` 의 P1~P9 + 패턴 소진 체크리스트 사전 해소** — task 제출 전 self-check
+3. **자동 검증 실행** — 위 "task 생성 직후 자동 검증" 섹션의 5 패턴 grep 모두 0 건 확인. 위반 시 AskUserQuestion 흐름. 4 패턴 (사람 판단) 은 별도 self-check
 4. **branch 확인** — `git branch --show-current` 가 `main` 이어야 함. PR 브랜치에서 작업 중이면 stash 후 main 으로 switch
 5. **git commit** — docs 변경 + task 파일을 **한 커밋** 으로 묶어 생성
 6. **git push origin main** — 원격에 즉시 반영 (force push 금지)
