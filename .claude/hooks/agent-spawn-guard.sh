@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# self-healing-teams M2 — Protocol guard
+# build-with-teams — Protocol guard (F3 마찰 패턴 대응)
 # Block Agent({subagent_type: critic|executor|code-reviewer|architect}) without team_name.
 # Reason: build-with-teams 의 정식 팀원은 TeamCreate 로 등록 후 SendMessage 사이클에 참여해야 함.
 # Exit 2 = block + show stderr to assistant.
@@ -20,7 +20,7 @@ case "$SUBAGENT" in
   oh-my-claudecode:critic|oh-my-claudecode:executor|oh-my-claudecode:code-reviewer|oh-my-claudecode:architect)
     if [ -z "$TEAM_NAME" ]; then
       cat >&2 <<'EOF'
-🛑 self-healing-teams M2: critic/executor/code-reviewer/architect 스폰 시 team_name 필수.
+🛑 build-with-teams (F3): critic/executor/code-reviewer/architect 스폰 시 team_name 필수.
 
 먼저 TeamCreate 로 팀 등록 후
   Agent({

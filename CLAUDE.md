@@ -298,6 +298,72 @@ type(scope): description
 
 이 형식에서 절대 벗어나지 않는다. 특히 task 정의 PR 에 `feat/` 를 쓰지 않는다 — 기능 추가가 아니라 메타 작업이라 의미 충돌.
 
+#### 금지 파일 목록 (커밋 차단 대상)
+
+다음 파일은 git 추적 / 커밋 금지. 발견 시 즉시 stop:
+
+- `.env` / `.env.local` / `.env*.local` — 환경 시크릿
+- `*.pem` / `id_rsa` / `credentials.*` / `secrets.*` — 키/자격증명
+- `.next/` / `node_modules/` / `.omc/` — 빌드/도구 산출물
+
+의심 시 stop 후 사용자에게 확인.
+
+`drizzle/` 디렉터리는 **커밋 필수** (위 "DB 스키마 변경 규칙" 의 SQL 커밋 정책 참조).
+단 자동 생성 SQL 의 **수동 편집은 금지** — `pnpm db:generate` 산출물만 staged.
+`drizzle/AGENTS.md` 는 수동 작성 가능 (예외).
+
+#### `package.json` ↔ `pnpm-lock.yaml` 동시 커밋
+
+`pnpm-lock.yaml` 변경 (`pnpm add` / `pnpm remove` / `pnpm update` 결과) 은 **반드시 `package.json` 변경과 같은 커밋에 포함**.
+분리하면 CI 의 `--frozen-lockfile` 단계가 실패.
+
+검출:
+
+```bash
+git status --short | grep -E "^(M|A) pnpm-lock\.yaml" && \
+  ! git diff --cached --name-only | grep -q "package\.json"
+# 출력 있으면 (lockfile staged + package.json 미포함) → stop
+```
+
+#### PR 본문 포맷
+
+`gh pr create --body` HEREDOC 으로 다음 포맷:
+
+```markdown
+## Summary
+- {핵심 변경 한 줄}
+- {핵심 변경 한 줄}
+
+## Test plan
+- [ ] {검증 방법 — 자동 또는 수동}
+- [ ] {검증 방법}
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+```
+
+`Summary` 는 변경의 *왜* 와 *무엇*.
+`Test plan` 은 reviewer 가 머지 전 확인할 항목.
+항목 0 개면 PR 본문 생략 (단발 docs PR 등 예외 명시).
+
+#### 의미 단위 atomic 커밋
+
+여러 관심사를 한 커밋에 섞지 않는다. 관심사별 분리 예시:
+
+- 기능 변경 파일 → `feat: ...`
+- 스킬/설정 파일 → `chore: ...`
+- 문서 변경 → `docs: ...`
+
+다만 **강하게 연관된 파일은 함께** — 예: `package.json` + `pnpm-lock.yaml`, schema 변경 + 그에 따른 `drizzle/*.sql`.
+
+커밋 단위 검증:
+
+```bash
+# 한 커밋에 src/ 변경 + docs/ 변경 + .claude/ 변경이 모두 있으면 분리 후보
+git show --stat HEAD | tail -20
+```
+
+보호 규칙 (`main`/`master` 직접 push 금지 / `--force` / `--no-verify` 금지) 은 user `~/.claude/CLAUDE.md` 가 단일 소스 — 본 섹션에서 중복 작성하지 않는다.
+
 ---
 
 ## Summary for Agents
