@@ -100,7 +100,7 @@ See `.env.example` for full list.
 - **Tailwind:** `src/app/globals.css` must include `@source` for every dir with Tailwind classes
 - **Logging:** `logger.child({ module: '...' })` from `@/lib/logger` — no `console.log`. **예외**: ① `scripts/*.ts` 는 standalone 실행이라 path alias 미동작 → `console.log/error` 허용 (eslint.config.mjs 에서 globals 명시). ② `"use client"` 컴포넌트는 pino 가 server-only 라 `console.error` 만 사용 가능 (catch 블록의 dev 로그용 — 사용자 노출은 별도 toast/UI 로 처리, raw error 는 직접 노출 금지)
 - **Error handling:** `err: error instanceof Error ? error : new Error(String(error))`
-- **Tests:** co-located `*.test.ts`, Vitest, mock repositories with `vi.mock()`
+- **Tests:** co-located `*.test.ts`, Vitest, mock repositories with `vi.mock()`. **Component DOM 테스트** (plan039 이후): `@testing-library/react` + `jsdom` 도입 — 파일 상단 `// @vitest-environment jsdom` directive 사용 (vitest.config.ts 의 `environment: "node"` 전역 변경 회피, 기존 node 환경 테스트와 격리)
 - **API routes:** Bearer token auth via `SYNC_API_KEY`
 
 ---

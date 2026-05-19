@@ -433,6 +433,36 @@ span: [
 **Why**: hast-util-sanitize 의 attributes 배열은 entry 들이 합집합 (OR). 좁히는 의도라면 기존 광역 entry 와 충돌. 라이브러리 동작 미파악 + 의도된 광역 허용 (shiki style/className) 무지 시 회귀.
 **검출**: code-reviewer / critic 점검 시점 — sanitize schema 에 같은 키 (`span`, `pre` 등) 의 entry 가 단순 문자열 + 튜플 모두 있으면 의도 확인. `grep -nE '^\s*\["?className"?' src/components/markdown/sanitize-schema.ts` 결과가 있으면 단순 entry 중복 여부 검토.
 
+## 3-20. 모달 `fixed inset-0` 컨테이너 + 내부 `absolute` 버튼 클릭 가로채기 (plan039)
+
+**증상**: 자체 구현 모달/lightbox 에서 `fixed inset-0 z-[100]` outer 컨테이너 + 내부 `absolute` 위치 버튼들 (`top-4 right-4` 등) + viewport 를 덮는 콘텐츠 컨테이너 (`w-full h-full`) 가 모두 `z-index: auto` 인 상태로 공존. DOM 순서상 뒤에 페인트되는 콘텐츠 컨테이너가 버튼 위 영역의 마우스 클릭을 가로채 닫기/네비 버튼이 마우스로 작동 안 함. 키보드 (ESC/화살표) 만 동작 → "테스트는 통과, 사용자 클릭 안 됨" 위양성.
+
+**Bad**:
+```tsx
+<div className="fixed inset-0 z-[100]" onClick={handleBgClick}>
+  <button className="absolute top-4 right-4">닫기</button>     {/* z-index: auto */}
+  <button className="absolute left-4 top-1/2">prev</button>    {/* z-index: auto */}
+  <div className="relative w-full h-full flex ...">            {/* DOM 뒤 = 위에 페인트 */}
+    <img className="max-w-full max-h-full object-contain" />
+  </div>
+</div>
+```
+
+**Good**: 절대 위치 버튼/카운터에 `z-10` 명시 + viewport 덮는 콘텐츠 컨테이너에 `pointer-events-none` + 실제 상호작용 요소에 `pointer-events-auto`.
+```tsx
+<div className="fixed inset-0 z-[100]" onClick={handleBgClick}>
+  <button className="absolute top-4 right-4 z-10">닫기</button>
+  <button className="absolute left-4 top-1/2 z-10">prev</button>
+  <div className="relative w-full h-full flex ... pointer-events-none">
+    <img className="max-w-full max-h-full object-contain pointer-events-auto" />
+  </div>
+</div>
+```
+
+**Why**: `fixed` 부모는 새 stacking context 생성 — 내부의 `z-index: auto` 들은 같은 레벨에서 DOM 순서로 페인트. 뒤 element 가 앞 element 위에 그려짐. `pointer-events-none` 은 클릭을 자식으로 위임 (단 자식 중 `pointer-events-auto` 만 수신) — 배경 클릭 close 도 함께 정상화 (`e.target === e.currentTarget` 조건이 실 브라우저에서 충족).
+
+**검출**: code-reviewer 점검 시점 — `fixed inset-0` 또는 `absolute inset-0` 컨테이너 안에 `absolute` 위치 버튼이 2개 이상 + viewport 덮는 자식 (`w-full h-full` / `inset-0`) 이 공존하면 z-index/pointer-events 명시 여부 확인. `grep -A 5 "fixed inset-0" src/**/*.tsx` 후 absolute children 의 `z-` 클래스 유무.
+
 ## § 3 누적 규칙
 
 - `review-fix` 6.5단계에서 추출. 같은 PR 에서 ✅ 누적 / ❌ 누적 금지 분류 후 § 3 추가

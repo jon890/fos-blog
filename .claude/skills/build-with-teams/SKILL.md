@@ -380,6 +380,8 @@ critic 평가 관점:
 
 단순 "재평가 부탁" 만 보내면 critic 이 캐시된 v1 결과를 재전송 가능. critic 회신이 v1 과 동일 내용이면 즉시 강제 재읽기 메시지 송신 (이번 세션 plan007-2 에서 1회 발생, 위 패턴으로 즉시 회복).
 
+**일반화 — code-reviewer / docs-verifier 도 동일 패턴 발생 (fos-blog plan039 관측)**: critic 뿐 아니라 FIX_NEEDED / UPDATE_NEEDED 후 v2 재검사 시점에도 sub-agent 가 v1 평가 사본을 재송하는 사고 관측. 위 3가지 (Read 강제 + 라인별 확인 포인트 + "직전 메시지는 첫 평가 사본일 수 있음" 명시) 를 **code-reviewer / docs-verifier 재요청에도 동일 적용**. team-lead 가 동일 가드 패턴을 일관 사용.
+
 ### 6. executor 실행
 
 critic APPROVE 후 executor 를 `run_in_background: true`, `mode: "bypassPermissions"` 로 스폰. critic 승인 + docs-verifier 검증의 이중 안전망이 있으므로 executor 는 권한 확인 없이 실행.
