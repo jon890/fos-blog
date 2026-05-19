@@ -1,12 +1,32 @@
 {
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/agent-spawn-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/branch-contamination-guard.sh"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "cd /Users/nhn/personal/fos-blog && pnpm lint && pnpm type-check && pnpm test 2>&1 | tail -20"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && pnpm lint && pnpm type-check && pnpm test 2>&1 | tail -20"
           }
         ]
       }
