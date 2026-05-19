@@ -246,10 +246,11 @@ src/components/
 └── markdown/
     ├── unified-pipeline.ts           # server-only, processor lazy singleton (Promise 공유로 race 방지)
     ├── pretty-code-options.ts        # rehype-pretty-code 옵션 (dual theme, bypassInlineCode)
+    ├── sanitize-schema.ts            # rehype-sanitize allowlist (shiki data-* / figure / heading id, clobberPrefix="") — ADR-026
     └── components.tsx                # createMarkdownComponents factory (figure→CodeCard, pre→Mermaid 분기)
 ```
 
-**규칙**: `src/components/markdown/*` 는 server-only 모듈 (`import "server-only"` 가드). client 에서 import 시 빌드 에러. components mapping 으로 server tree 안에 client island 자연스럽게 주입 (RSC 표준 패턴). `react-markdown` 의존성 제거 — ADR-020 참조.
+**규칙**: `src/components/markdown/*` 는 server-only 모듈 (`import "server-only"` 가드). client 에서 import 시 빌드 에러. components mapping 으로 server tree 안에 client island 자연스럽게 주입 (RSC 표준 패턴). `react-markdown` 의존성 제거 — ADR-020 참조. unified chain 말미에 `rehype-sanitize` 가 `<script>` / `<iframe>` / `on*` / `javascript:` URL 을 차단 — ADR-026.
 
 ---
 
