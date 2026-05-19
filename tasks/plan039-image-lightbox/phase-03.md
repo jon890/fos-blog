@@ -115,6 +115,6 @@ grep -c '"status": "completed"' tasks/plan039-image-lightbox/index.json
 
 ## 의도 메모 (왜)
 
-- **회귀 테스트 5케이스**: open/close/keyboard/wrap-around/single-image-edge — lightbox 의 핵심 인터랙션 모두 커버. 향후 lightbox 동작 변경 시 회귀 즉시 감지
+- **회귀 테스트 6케이스**: open/close/keyboard/wrap-around/single-image-edge/linked-image — lightbox 의 핵심 인터랙션 모두 커버. 향후 lightbox 동작 변경 시 회귀 즉시 감지
 - **next/image mock**: JSDOM 에 native Image 호환 없음 + next/image SSR 분기 노이즈 — 단순 `<img>` 로 mock 이 테스트 의도에 충분
 - **수동 smoke 명시 보고**: dev server smoke 는 critic 가 자동 검증 못 함. executor 의 명시적 PASS 회신이 docs-verifier 의 marker
