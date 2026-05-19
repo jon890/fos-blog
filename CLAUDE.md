@@ -21,7 +21,7 @@ Next.js 16 developer blog that syncs Markdown from `jon890/fos-study` (GitHub) �
 | Styling     | Tailwind CSS 4.1 + @tailwindcss/typography + shadcn/ui                 |
 | Database    | MySQL 8.4 (Docker) + Drizzle ORM 0.45.1                                |
 | GitHub API  | @octokit/rest 21.0.0                                                   |
-| Markdown    | unified (remark-parse + remark-gfm + remark-rehype) + rehype-pretty-code (shiki, dual theme) + rehype-slug + rehype-raw + hast-util-to-jsx-runtime + mermaid |
+| Markdown    | unified (remark-parse + remark-gfm + remark-math + remark-rehype) + rehype-pretty-code (shiki, dual theme) + rehype-slug + rehype-raw + rehype-katex (output:"html") + rehype-sanitize + hast-util-to-jsx-runtime + mermaid |
 | Logging     | pino (JSON) + pino-pretty (dev only) — server only                     |
 | Forms       | react-hook-form 7.x + @hookform/resolvers + zod (CommentForm 등 client form) |
 | Toast       | sonner 2.x (client 알림, ThemeProvider 바깥 mount)                       |
