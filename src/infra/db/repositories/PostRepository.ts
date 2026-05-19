@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNotNull, like, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, like, ne, or, sql } from "drizzle-orm";
 import { NewPost, posts } from "../schema";
 import { UpdatePost } from "../schema/posts";
 import type { PostData } from "../types";
@@ -7,6 +7,14 @@ import { env } from "@/env";
 import logger from "@/lib/logger";
 
 const log = logger.child({ module: "infra/db/repositories/PostRepository" });
+
+function tagIntersectionSize(a: string[], b: string[]): number {
+  if (a.length === 0 || b.length === 0) return 0;
+  const set = new Set(a.map((t) => t.toLowerCase()));
+  let count = 0;
+  for (const t of b) if (set.has(t.toLowerCase())) count++;
+  return count;
+}
 
 export class PostRepository extends BaseRepository {
   async getPostsByCategory(category: string): Promise<PostData[]> {
@@ -477,6 +485,66 @@ export class PostRepository extends BaseRepository {
       next: idx < all.length - 1 ? all[idx + 1] : null,
       total: all.length,
     };
+  }
+
+  async getRelatedPosts(slug: string, limit = 4): Promise<PostData[]> {
+    const current = await this.db
+      .select({ id: posts.id, category: posts.category, tags: posts.tags })
+      .from(posts)
+      .where(and(eq(posts.path, slug), eq(posts.isActive, true)))
+      .limit(1);
+
+    const cur = current[0];
+    if (!cur) return [];
+
+    const currentTags = cur.tags ?? [];
+
+    const candidates = await this.db
+      .select({
+        title: posts.title,
+        path: posts.path,
+        slug: posts.slug,
+        category: posts.category,
+        subcategory: posts.subcategory,
+        folders: posts.folders,
+        description: posts.description,
+        series: posts.series,
+        seriesOrder: posts.seriesOrder,
+        createdAt: posts.createdAt,
+        updatedAt: posts.updatedAt,
+        tags: posts.tags,
+      })
+      .from(posts)
+      .where(
+        and(
+          eq(posts.isActive, true),
+          eq(posts.category, cur.category),
+          ne(posts.id, cur.id),
+        ),
+      )
+      .orderBy(desc(posts.createdAt))
+      .limit(limit * 4);
+
+    const scored = candidates.map((p) => ({
+      post: p,
+      score: tagIntersectionSize(p.tags ?? [], currentTags),
+    }));
+
+    scored.sort((a, b) => b.score - a.score);
+
+    return scored.slice(0, limit).map(({ post: p }) => ({
+      title: p.title,
+      path: p.path,
+      slug: p.slug,
+      category: p.category,
+      subcategory: p.subcategory,
+      folders: p.folders || [],
+      description: p.description,
+      series: p.series,
+      seriesOrder: p.seriesOrder,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+    }));
   }
 
   async countSeries(): Promise<number> {
