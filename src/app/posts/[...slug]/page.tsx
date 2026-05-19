@@ -16,6 +16,7 @@ import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 import { Comments } from "@/components/Comments";
 import { ArticleHero } from "@/components/ArticleHero";
 import { ArticleFooter } from "@/components/ArticleFooter";
+import { RelatedPosts } from "@/components/RelatedPosts";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { env } from "@/env";
@@ -140,7 +141,10 @@ export default async function PostPage({ params }: PostPageProps) {
     ? { title: seriesNeighbors.next.title, slug: seriesNeighbors.next.slug }
     : null;
 
-  const viewCount = await visit.getVisitCount(postData.path);
+  const [viewCount, relatedPosts] = await Promise.all([
+    visit.getVisitCount(postData.path),
+    postRepo.getRelatedPosts(postData.path, 4),
+  ]);
   const desc = extractDescription(content);
 
   const postUrl = `${siteUrl}/posts/${postData.path
@@ -221,6 +225,8 @@ export default async function PostPage({ params }: PostPageProps) {
         prevInSeries={prevInSeries}
         nextInSeries={nextInSeries}
       />
+
+      <RelatedPosts posts={relatedPosts} />
 
       <div className="mx-auto max-w-[880px] px-6 pb-12">
         <Comments postSlug={postData.path} />

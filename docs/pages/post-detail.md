@@ -17,6 +17,7 @@
 | Source | Method | Returns |
 |--------|--------|---------|
 | PostRepository | `getPost(slug)` | `{ content: string, post: PostData }` |
+| PostRepository | `getRelatedPosts(path, 4)` | `PostData[]` — 같은 카테고리 + tag 교집합 desc, fallback: 카테고리 최근 글 |
 | VisitRepository | `getVisitCount(post.path)` | `number` (조회수 — server-side) |
 
 `slug` = URL 세그먼트 배열을 `join("/")` (decodeURIComponent 처리)
@@ -44,6 +45,7 @@
 | `ReadingProgressBar` | viewport 최상단 fixed 1px 진행 띠 (`z-50`, plan019). passive scroll/resize listener → 0~100 % width. brand-400 토큰 색상. `role="progressbar"` + `aria-valuenow` 접근성 메타. Header 의 하단 라인 reading progress 와 별개로 viewport 절대 최상단에서 동작 |
 | `MobileTocButton` | 모바일 전용 floating TOC FAB + bottom sheet (plan019, `md:hidden`). 우하단 원형 brand 버튼 (lucide `List`) → 클릭 시 fixed bottom sheet (`role="dialog" aria-modal="true"`) 펼침. ESC keydown / backdrop click 으로 닫기 (둘 다 useEffect cleanup 에서 listener 해제). 단순 fixed div + state — `<dialog>` element 미사용 (SSR hydration mismatch 회피 의도). H2/H3 nesting 동일 적용. `toc.length === 0` 시 자체 미렌더 |
 | `ArticleFooter` | tags 칩 + series chip (`/series/[name]` 링크) + prev/next 시리즈 카드 nav. tags/series/prev/next 모두 없으면 미렌더 (graceful fallback). prev/next 카드는 시리즈 글이 2개 이상일 때 표시 (plan033) |
+| `RelatedPosts` | "이런 글도" 섹션 (plan034). `posts.length > 0` 일 때만 렌더 (0개이면 `null` 반환하여 섹션 자체 사라짐). `PostRepository.getRelatedPosts` 로 조회한 같은 카테고리 관련 글 최대 4개를 2열 그리드로 표시 |
 | `Comments` | 댓글 컨테이너 (plan022). 자식: `CommentForm` (작성/수정, react-hook-form + zod) / `CommentItem` (카드, nickname hash avatar + 상대 시간) / `DeleteConfirmDialog` (shadcn AlertDialog + password). 알림: sonner toast. 아바타 색상: `OG_CATEGORY_HEX` 7색 팔레트 hash — plan021 단일 소스. threading 미포함(의도적) |
 | `ArticleJsonLd` | JSON-LD 아티클 구조화 데이터 |
 | `BreadcrumbJsonLd` | JSON-LD 브레드크럼 |
@@ -107,6 +109,9 @@
 │ <ArticleFooter> (tags 있을 때만)                        │
 └────────────────────────────────────────────────────────┘
 ┌────────────────────────────────────────────────────────┐
+│ <RelatedPosts /> (관련 글 1개 이상일 때만, plan034)      │
+└────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
 │ <Comments>                                              │
 └────────────────────────────────────────────────────────┘
 ```
@@ -133,6 +138,7 @@
 - `src/app/posts/[...slug]/page.tsx`
 - `src/components/ArticleHero.tsx`
 - `src/components/ArticleFooter.tsx`
+- `src/components/RelatedPosts.tsx` — "이런 글도" 섹션 (plan034)
 - `src/components/MarkdownRenderer.tsx`
 - `src/components/CodeCard.tsx` — 코드 블록 frame wrapper (plan012)
 - `src/components/TableOfContents.tsx` — H2 numbered + H3 nested (plan019)
