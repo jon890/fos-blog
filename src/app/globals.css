@@ -1,4 +1,5 @@
 @import "pretendard/dist/web/static/pretendard.css";
+@import "katex/dist/katex.min.css";
 @import "tailwindcss";
 @source "./app/**/*.{ts,tsx}";
 @source "../components/**/*.{ts,tsx}";
@@ -663,6 +664,17 @@ html:not(.dark) .prose .code-card-body pre span {
 }
 @media (prefers-reduced-motion: reduce) {
   .link-draw { transition: none; }
+}
+
+/* KaTeX 수식 색을 본문 텍스트 색으로 inherit (라이트/다크 양쪽 자연) — plan044 */
+.prose .katex,
+.prose .katex * {
+  color: inherit;
+}
+/* 단 invalid LaTeX 오류 표시는 KaTeX 의 빨간색을 유지 — 위 inherit override 가 가려지는 것 복원 (plan044) */
+.prose .katex-error,
+.prose .katex-error * {
+  color: #cc0000;
 }
 
 /* === Footer accent line === */

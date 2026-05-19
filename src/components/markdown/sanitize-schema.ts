@@ -48,6 +48,8 @@ export const sanitizeSchema: Schema = {
       "data-highlighted-line",
       "data-highlighted-chars",
       "data-chars-id",
+      // KaTeX (plan044) — output:"html" 모드의 fallback 영역 aria-hidden 보존
+      "aria-hidden",
     ],
     figure: [
       ...(defaultSchema.attributes?.figure ?? []),

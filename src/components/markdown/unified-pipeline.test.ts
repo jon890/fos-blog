@@ -4,6 +4,7 @@ import { describe, it, expect, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import type { Root, Element, RootContent } from "hast";
+import { toHtml } from "hast-util-to-html";
 import { parseMarkdownToHast } from "./unified-pipeline";
 
 // hast 트리 탐색 헬퍼 — Element.children(ElementContent[]) ⊂ RootContent[]
@@ -64,5 +65,40 @@ describe("rehype-pretty-code output structure (regression guard for plan017)", (
     const rawClassName = pre?.properties?.className;
     const className = Array.isArray(rawClassName) ? rawClassName : [];
     expect(className).not.toContain("shiki");
+  });
+});
+
+describe("KaTeX math rendering (plan044)", () => {
+  it("인라인 수식 $x^2$ 가 span.katex 으로 변환", async () => {
+    const md = "이것은 $x^2$ 수식.";
+    const tree = await parseMarkdownToHast(md);
+    const html = toHtml(tree);
+    expect(html).toContain('class="katex"');
+    expect(html).toContain("x");
+  });
+
+  it("블록 수식 $$...$$ 가 span.katex-display 으로 변환", async () => {
+    // remark-math 는 $$ 가 독립 줄일 때 mathFlow(display) 로 인식
+    const md = "$$\n\\int_0^1 x\\,dx\n$$";
+    const tree = await parseMarkdownToHast(md);
+    const html = toHtml(tree);
+    expect(html).toContain("katex-display");
+  });
+
+  it("invalid LaTeX 은 빨간 텍스트 fallback (throwOnError: false)", async () => {
+    const md = "$\\frac{1}$";
+    const tree = await parseMarkdownToHast(md);
+    const html = toHtml(tree);
+    // rehype-katex 버전마다 fallback 표현이 다름: className `katex-error` 또는 inline `color:#cc0000`.
+    // 둘 중 하나라도 출현하면 OK. 위 await 가 throw 안 한 사실 자체가 throwOnError:false 동작을 증명.
+    expect(html).toMatch(/katex-error|color\s*:\s*#?cc0000/i);
+  });
+
+  it("KaTeX 출력 className 이 sanitize 통과 (katex prefix)", async () => {
+    const md = "$a + b$";
+    const tree = await parseMarkdownToHast(md);
+    const html = toHtml(tree);
+    // sanitize 후에도 katex 클래스 유지
+    expect(html).toMatch(/class="[^"]*katex[^"]*"/);
   });
 });
