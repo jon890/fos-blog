@@ -24,17 +24,17 @@ esac
 PROTECTED_GLOB='\.claude/skills/_shared/common-pitfalls\.md|\.claude/skills/build-with-teams/SKILL\.md|\.claude/skills/self-healing-teams/SKILL\.md|docs/adr\.md'
 
 # git -C 가 명령에 있으면 그 경로의 git status 사용. 없으면 cwd 의 git.
+# 배열로 관리하여 eval 없이 안전하게 전개 (경로 공백 / 명령 주입 방지).
+git_flags=()
 if [[ "$CMD" =~ git[[:space:]]+-C[[:space:]]+([^[:space:]]+) ]]; then
-  GIT_DIR_FLAG="-C ${BASH_REMATCH[1]}"
-else
-  GIT_DIR_FLAG=""
+  git_flags=(-C "${BASH_REMATCH[1]}")
 fi
 
 # 현재 staged 파일 목록 (이미 add 된 것). git commit -a / -am 케이스도 working tree 변경분 포함하도록 추가 검사.
-STAGED=$(eval git $GIT_DIR_FLAG diff --cached --name-only 2>/dev/null || true)
+STAGED=$(git "${git_flags[@]}" diff --cached --name-only 2>/dev/null || true)
 # -a 또는 -am 옵션이면 unstaged tracked 도 함께 commit 됨
 if [[ "$CMD" =~ git[[:space:]]+([^[:space:]]+[[:space:]]+)?commit[[:space:]]+(.*-a) ]]; then
-  UNSTAGED=$(eval git $GIT_DIR_FLAG diff --name-only 2>/dev/null || true)
+  UNSTAGED=$(git "${git_flags[@]}" diff --name-only 2>/dev/null || true)
   STAGED="$STAGED"$'\n'"$UNSTAGED"
 fi
 
@@ -44,7 +44,7 @@ if ! printf '%s\n' "$STAGED" | grep -qE "$PROTECTED_GLOB"; then
 fi
 
 # 현재 브랜치 확인
-BRANCH=$(eval git $GIT_DIR_FLAG branch --show-current 2>/dev/null || true)
+BRANCH=$(git "${git_flags[@]}" branch --show-current 2>/dev/null || true)
 if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
   exit 0
 fi
