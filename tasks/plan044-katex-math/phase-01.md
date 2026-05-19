@@ -30,7 +30,7 @@ pnpm add remark-math rehype-katex katex
 
 ### 2. `src/components/markdown/unified-pipeline.ts` — plugin 통합
 
-현재 chain (L13-20):
+현재 chain (`buildProcessor()` 내부, L16-23 — plan029 머지 직후 상태):
 ```ts
 unified()
   .use(remarkParse)
@@ -38,20 +38,22 @@ unified()
   .use(remarkRehype, { allowDangerousHtml: true })
   .use(rehypeRaw)
   .use(rehypeSlug)
-  .use(rehypePrettyCode, PRETTY_CODE_OPTIONS);
+  .use(rehypePrettyCode, PRETTY_CODE_OPTIONS)
+  .use(rehypeSanitize, sanitizeSchema); // ← chain 말미 (plan029)
 ```
 
-변경:
+변경 후 (rehypeSanitize 라인은 **반드시 유지** — 삭제 시 plan029 회귀):
 ```ts
 unified()
   .use(remarkParse)
   .use(remarkGfm)
-  .use(remarkMath)                                      // ← 추가 (remark 단계)
+  .use(remarkMath)                                              // ← 추가 (remark 단계)
   .use(remarkRehype, { allowDangerousHtml: true })
   .use(rehypeRaw)
-  .use(rehypeKatex, { throwOnError: false, output: "html" })  // ← 추가 (rehype 단계, sanitize 전)
+  .use(rehypeKatex, { throwOnError: false, output: "html" })    // ← 추가 (rehype 단계, sanitize 전)
   .use(rehypeSlug)
-  .use(rehypePrettyCode, PRETTY_CODE_OPTIONS);
+  .use(rehypePrettyCode, PRETTY_CODE_OPTIONS)
+  .use(rehypeSanitize, sanitizeSchema);                         // ← 그대로 유지 (chain 말미)
 ```
 
 상단 import 추가:
@@ -122,17 +124,22 @@ node -e 'console.log(require("./package.json").dependencies["remark-math"], requ
 grep -cE "remarkMath|rehypeKatex" src/components/markdown/unified-pipeline.ts
 # 기대: ≥ 4 (import 2개 + .use() 2개)
 
-# 3. plugin 순서 — remarkMath 가 remarkRehype 전, rehypeKatex 가 remarkRehype 후
+# 3. plugin 순서 — remarkMath < remarkRehype < rehypeKatex < rehypeSanitize
 awk '
   /remarkRehype/ { rr=NR }
   /remarkMath/ { rm=NR }
   /rehypeKatex/ { rk=NR }
+  /rehypeSanitize/ { rs=NR }
   END {
-    if (rm < rr && rk > rr) print "순서 OK"
-    else print "순서 오류: remarkMath=" rm " remarkRehype=" rr " rehypeKatex=" rk
+    if (rm < rr && rk > rr && rs > rk) print "순서 OK"
+    else print "순서 오류: remarkMath=" rm " remarkRehype=" rr " rehypeKatex=" rk " rehypeSanitize=" rs
   }
 ' src/components/markdown/unified-pipeline.ts
 # 기대: "순서 OK"
+
+# 3-b. plan029 회귀 방지 — rehypeSanitize 라인이 chain 에 그대로 보존
+grep -cE "rehypeSanitize.*sanitizeSchema" src/components/markdown/unified-pipeline.ts
+# 기대: 1 (plan029 의 한 줄이 그대로 유지)
 
 # 4. globals.css 의 import + color override
 grep -cE "katex/dist/katex(\.min)?\.css" src/app/globals.css

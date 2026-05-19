@@ -40,8 +40,9 @@ describe("KaTeX math rendering (plan044)", () => {
     const md = "$\\frac{1}$";  // 분모 누락
     const tree = await parseMarkdownToHast(md);
     const html = toHtml(tree);
-    expect(html).toContain("katex-error");  // KaTeX 의 error class
-    // 빌드 깨지지 않음 — 위 await 가 throw 면 fail
+    // rehype-katex 버전마다 fallback 표현이 다름: className `katex-error` 또는 inline `color:#cc0000`.
+    // 둘 중 하나라도 출현하면 OK. 위 await 가 throw 안 한 사실 자체가 throwOnError:false 동작을 증명.
+    expect(html).toMatch(/katex-error|color\s*:\s*#?cc0000/i);
   });
 
   it("KaTeX 출력 className 이 sanitize 통과 (katex prefix)", async () => {
@@ -54,10 +55,12 @@ describe("KaTeX math rendering (plan044)", () => {
 });
 ```
 
-상단 import 추가 (없으면):
+상단 import 추가 (기존 test 파일의 vitest + parseMarkdownToHast import 아래에 추가):
 ```ts
 import { toHtml } from "hast-util-to-html";
 ```
+
+기존 test 파일은 이미 상단에 `vi.mock("server-only", () => ({}));` 가드를 두고 있어 `parseMarkdownToHast` import 가 vitest node 환경에서도 안전 — 추가 mock 불필요.
 
 `hast-util-to-html` 이 dependencies 에 없으면 추가:
 ```bash
@@ -77,19 +80,8 @@ pnpm test --run
 pnpm build
 # 모두 exit 0 + KaTeX 4 케이스 PASS
 
-# 잔재 점검 — KaTeX 출력이 sanitize 단계에서 stripping 당하는지
-node -e '
-import("./src/components/markdown/unified-pipeline.ts").then(async ({ parseMarkdownToHast }) => {
-  const tree = await parseMarkdownToHast("$x^2$");
-  const html = (await import("hast-util-to-html")).toHtml(tree);
-  if (!html.includes("katex")) {
-    console.error("FAIL: KaTeX 클래스 strip 됨");
-    process.exit(1);
-  }
-  console.log("KaTeX 통합 OK");
-}).catch(e => { console.error(e); process.exit(1); });
-'
-# 기대: "KaTeX 통합 OK" (server-only 가드로 인해 실행 안 되면 vitest 케이스만 의지)
+# sanitize strip 회귀 검증은 위 4번째 vitest 케이스 ("KaTeX 출력 className 이 sanitize 통과") 가 담당.
+# 별도 node -e TS import 는 Node 단독으로 .ts 실행 불가 (tsx 필요) — vitest 결과로 충분.
 ```
 
 ### 3. 수동 smoke + index.json 마킹
@@ -138,4 +130,4 @@ grep -c '"status": "completed"' tasks/plan044-katex-math/index.json
 
 - **4 테스트 케이스**: 인라인 / 블록 / invalid / sanitize 통과 — KaTeX 통합의 핵심 회귀 모두 커버. 다크모드 색은 CSS 라 unit test 어려움 → 수동 smoke 로 위임
 - **`hast-util-to-html` devDependency**: 테스트에서 hast tree 를 HTML 문자열로 변환해 검증. 운영 코드는 hast tree 를 jsx-runtime 으로 React element 변환 (toHtml 안 씀). 따라서 devDependency
-- **invalid LaTeX 가 katex-error 클래스**: rehype-katex 의 throwOnError:false 동작 — 빌드 안 깨짐 + 사용자 즉시 인지. 이 동작이 회귀하면 (예: throw 로 변경) 빌드 실패 사고
+- **invalid LaTeX fallback**: rehype-katex 의 throwOnError:false 동작 — 빌드 안 깨짐 + 사용자 즉시 인지. 버전마다 fallback 표현이 다름 (`katex-error` className 또는 inline `color:#cc0000`) — 정규식으로 둘 다 허용. 이 동작이 회귀하면 (예: throw 로 변경) 빌드 실패 사고
