@@ -397,6 +397,42 @@ function formatRelativeTime(dateOrIso: Date | string): string {
 ```
 **검출**: `grep -rn 'createdAt\|updatedAt' src/components/` 후 Date 메서드 (`getTime()` / `toLocaleDateString()`) 직접 호출이 있으면 ISO string 케이스 처리 여부 확인.
 
+## 3-18. task spec 의 외부 라이브러리 import 경로 인용이 실제 코드와 mismatch (plan044)
+
+**증상**: task phase 파일이 외부 라이브러리의 비슷한 이름 패키지를 잘못 인용 (예: `from "hast-util-sanitize"` vs 실제 `from "rehype-sanitize"`). executor 가 spec 그대로 따르면 새 import 추가 + 타입 불일치 + 기존 schema 와 별개 변수 생성으로 회귀.
+**Bad**:
+```ts
+// phase spec
+import { defaultSchema } from "hast-util-sanitize";  // ← 실제 코드는 rehype-sanitize 에서 export
+```
+**Good**: task 생성 시 실제 파일을 Read 해 import 경로를 그대로 인용. critic 의 "실제 코드와 일치 여부" 점검 항목으로 사전 차단.
+**Why**: hast-util-sanitize 는 lower-level (rehype-sanitize 가 내부 사용). 두 패키지 모두 `defaultSchema` 를 export 하지만 타입 시그니처가 미세 차이. 잘못 import 하면 (a) 새 라이브러리 의존 추가 (b) 기존 schema 와 별개 객체 생성 (c) 타입 mismatch.
+**검출**: critic 평가 시점 — task spec 의 모든 `from "..."` 인용을 worktree 의 실제 파일과 grep 대조. `grep -nE "from ['\"][^'\"]+['\"]" tasks/{plan}/phase-*.md | sort -u` 후 각 import 가 실제 코드에 존재하는지 확인.
+
+## 3-19. sanitize schema 의 `["className", /^regex/]` 튜플이 기존 단순 `"className"` 과 OR 동작이라 무용 (plan044)
+
+**증상**: rehype-sanitize / hast-util-sanitize 의 `attributes.span` 같은 배열에 기존 단순 문자열 `"className"` (모든 값 통과) 과 함께 `["className", /^katex/]` (regex 좁힘) 튜플을 추가해도 효과 없음. 두 entry 가 OR 로 합쳐져 결국 단순 문자열이 모든 값을 먼저 통과시킴.
+**Bad**:
+```ts
+span: [
+  ...defaultSchema.attributes.span ?? [],
+  "className",                  // 모든 className 통과 (기존, shiki 토큰 색 보존)
+  ["className", /^katex/],      // ← 효과 없음 — OR 동작으로 위 entry 가 우선
+],
+```
+**Good**: 기존 광역 entry 가 이미 커버하면 추가 entry 불요. 좁히고 싶으면 기존 단순 entry 제거 필요 — 단 그러면 shiki 토큰 등 의도된 패턴이 같이 깨질 위험 평가 필수.
+```ts
+// regex 추가 대신 KaTeX 가 실제로 필요로 하는 추가 속성만 명시
+span: [
+  ...defaultSchema.attributes.span ?? [],
+  "className",
+  "style",
+  "aria-hidden",                // ← KaTeX html fallback 영역만 신규 entry
+],
+```
+**Why**: hast-util-sanitize 의 attributes 배열은 entry 들이 합집합 (OR). 좁히는 의도라면 기존 광역 entry 와 충돌. 라이브러리 동작 미파악 + 의도된 광역 허용 (shiki style/className) 무지 시 회귀.
+**검출**: code-reviewer / critic 점검 시점 — sanitize schema 에 같은 키 (`span`, `pre` 등) 의 entry 가 단순 문자열 + 튜플 모두 있으면 의도 확인. `grep -nE '^\s*\["?className"?' src/components/markdown/sanitize-schema.ts` 결과가 있으면 단순 entry 중복 여부 검토.
+
 ## § 3 누적 규칙
 
 - `review-fix` 6.5단계에서 추출. 같은 PR 에서 ✅ 누적 / ❌ 누적 금지 분류 후 § 3 추가
