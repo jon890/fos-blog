@@ -1,7 +1,7 @@
 {
   "name": "plan043-docs-check-mirror",
   "description": "docs-check skill 에 거울 구조 자동 grep 검증 3종 추가. (a) ADR 과대화 (코드 10줄+ / 파일 경로 3+), (b) page docs Related Files 정합 (실제 파일 존재), (c) 문서 책임 표 위반 (ADR 에 page docs 전용 헤딩). 모두 docs-check 호출 시점에만 실행 (hook 없음)",
-  "status": "pending",
+  "status": "completed",
   "created_at": "2026-05-19",
   "total_phases": 2,
   "related_docs": [
@@ -13,14 +13,14 @@
       "file": "phase-01.md",
       "title": "docs-check/SKILL.md 에 거울 구조 grep 검증 3종 추가",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 2,
       "file": "phase-02.md",
       "title": "fos-blog 현 docs 에 dogfood + index.json 마킹",
       "model": "haiku",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }
