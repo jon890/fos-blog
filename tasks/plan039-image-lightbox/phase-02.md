@@ -58,7 +58,7 @@ grep -nE "<Image\b" src/components/markdown/components.tsx
 
 ### 2. `src/app/posts/[...slug]/page.tsx` — article 안 LightboxProvider mount
 
-현재 L208-210:
+현재 L212-214:
 ```tsx
 <article className="min-w-0">
   <MarkdownRenderer content={stripped} basePath={slug} />

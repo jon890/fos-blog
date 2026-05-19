@@ -43,6 +43,12 @@ describe("LightboxProvider", () => {
   it("배경 클릭 시 닫힌다", async () => {
     // dialog 영역 외 클릭 (currentTarget === target) → 닫힘
   });
+
+  it("linked image (`<a><LightboxImage/></a>`) 클릭 시 lightbox 미오픈", async () => {
+    // <a href="..."><LightboxImage src=".." alt=".." /></a> 구조 mount
+    // 이미지 클릭 → role="dialog" 가 렌더되지 않음 (링크 네비게이션 우선)
+    // closest("a") 가드 동작 검증
+  });
 });
 ```
 
@@ -70,7 +76,7 @@ grep -L '"use client"' src/components/lightbox/*.tsx | wc -l
 # 신규 테스트 파일 존재 + 케이스 수
 ls src/components/lightbox/*.test.tsx
 grep -c "it(" src/components/lightbox/LightboxProvider.test.tsx
-# 기대: ≥ 5
+# 기대: ≥ 6 (open/close/keyboard nav/wrap-around/single-image/linked-image)
 ```
 
 ### 3. 수동 smoke (Critic 가 확인할 수 없음 — executor 가 명시 보고)
