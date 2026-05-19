@@ -23,6 +23,7 @@
 - [ADR-002](#adr-002) — 페이지네이션 (최신=cursor, 인기=offset+pagePath)
 - [ADR-004](#adr-004) — 무한 스크롤 데이터 fetch = API Route
 - [ADR-023](#adr-023) — 태그 시스템 (posts.tags JSON + JSON_CONTAINS)
+- [ADR-025](#adr-025) — 시리즈 시스템 (posts.series VARCHAR + series_order INT + 양쪽 필수, plan033)
 
 ### OG 이미지 & 공유
 
@@ -469,6 +470,9 @@
 **Scope**: 본 ADR 결정은 plan027 한정. 글 수가 1년 100+ 도달 시 limit / pagination 재검토.
 
 ---
+
+<a id="adr-025"></a>
+
 ## ADR-025. 시리즈 시스템 — `posts.series VARCHAR + series_order INT` + 양쪽 필수 정책 (plan033)
 
 **Context**: issue #127 — 다회 포스트 시리즈를 묶어 prev/next 네비게이션 + 시리즈 인덱스 페이지 제공. 데이터 모델, 누락 처리, URL 패턴, 인덱스 전략 4 결정이 코드/git log 로 자명하지 않음.
