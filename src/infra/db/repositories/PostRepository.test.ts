@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { PostRepository } from "./PostRepository";
+import { PostRepository, tagIntersectionSize } from "./PostRepository";
 import type { DbInstance } from "./BaseRepository";
 
 function makeDb(rows: unknown[] = []) {
@@ -69,5 +69,37 @@ describe("PostRepository.getRecentPostsCursor", () => {
     const { repo } = makeRepo([row]);
     const result = await repo.getRecentPostsCursor({ limit: 10 });
     expect(result[0].folders).toEqual([]);
+  });
+});
+
+describe("tagIntersectionSize", () => {
+  it("양쪽 빈 배열 → 0", () => {
+    expect(tagIntersectionSize([], [])).toBe(0);
+  });
+
+  it("한쪽만 빈 배열 → 0", () => {
+    expect(tagIntersectionSize(["a"], [])).toBe(0);
+    expect(tagIntersectionSize([], ["a"])).toBe(0);
+  });
+
+  it("교집합 0 → 0", () => {
+    expect(tagIntersectionSize(["a", "b"], ["c", "d"])).toBe(0);
+  });
+
+  it("교집합 1", () => {
+    expect(tagIntersectionSize(["a", "b"], ["b", "c"])).toBe(1);
+  });
+
+  it("교집합 n (전체 일치)", () => {
+    expect(tagIntersectionSize(["a", "b", "c"], ["a", "b", "c"])).toBe(3);
+  });
+
+  it("대소문자 정규화 (대소문자 다른 같은 태그 → 교집합 1)", () => {
+    expect(tagIntersectionSize(["React"], ["react"])).toBe(1);
+    expect(tagIntersectionSize(["TypeScript", "Next.js"], ["typescript", "NEXT.JS"])).toBe(2);
+  });
+
+  it("b 안의 중복은 a 와 매칭될 때마다 카운트 (현재 구현 동작 명세)", () => {
+    expect(tagIntersectionSize(["a"], ["a", "a"])).toBe(2);
   });
 });

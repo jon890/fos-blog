@@ -8,7 +8,7 @@ import logger from "@/lib/logger";
 
 const log = logger.child({ module: "infra/db/repositories/PostRepository" });
 
-function tagIntersectionSize(a: string[], b: string[]): number {
+export function tagIntersectionSize(a: string[], b: string[]): number {
   if (a.length === 0 || b.length === 0) return 0;
   const set = new Set(a.map((t) => t.toLowerCase()));
   let count = 0;
@@ -488,63 +488,73 @@ export class PostRepository extends BaseRepository {
   }
 
   async getRelatedPosts(slug: string, limit = 4): Promise<PostData[]> {
-    const current = await this.db
-      .select({ id: posts.id, category: posts.category, tags: posts.tags })
-      .from(posts)
-      .where(and(eq(posts.path, slug), eq(posts.isActive, true)))
-      .limit(1);
+    try {
+      const current = await this.db
+        .select({ id: posts.id, category: posts.category, tags: posts.tags })
+        .from(posts)
+        .where(and(eq(posts.path, slug), eq(posts.isActive, true)))
+        .limit(1);
 
-    const cur = current[0];
-    if (!cur) return [];
+      const cur = current[0];
+      if (!cur) return [];
 
-    const currentTags = cur.tags ?? [];
+      const currentTags = cur.tags ?? [];
 
-    const candidates = await this.db
-      .select({
-        title: posts.title,
-        path: posts.path,
-        slug: posts.slug,
-        category: posts.category,
-        subcategory: posts.subcategory,
-        folders: posts.folders,
-        description: posts.description,
-        series: posts.series,
-        seriesOrder: posts.seriesOrder,
-        createdAt: posts.createdAt,
-        updatedAt: posts.updatedAt,
-        tags: posts.tags,
-      })
-      .from(posts)
-      .where(
-        and(
-          eq(posts.isActive, true),
-          eq(posts.category, cur.category),
-          ne(posts.id, cur.id),
-        ),
-      )
-      .orderBy(desc(posts.createdAt))
-      .limit(limit * 4);
+      // limit 의 4배까지 후보를 fetch 한 뒤 태그 교집합 점수로 재정렬.
+      // 점수 동점은 createdAt desc (stable sort) 로 자연 정렬.
+      const candidates = await this.db
+        .select({
+          title: posts.title,
+          path: posts.path,
+          slug: posts.slug,
+          category: posts.category,
+          subcategory: posts.subcategory,
+          folders: posts.folders,
+          description: posts.description,
+          series: posts.series,
+          seriesOrder: posts.seriesOrder,
+          createdAt: posts.createdAt,
+          updatedAt: posts.updatedAt,
+          tags: posts.tags,
+        })
+        .from(posts)
+        .where(
+          and(
+            eq(posts.isActive, true),
+            eq(posts.category, cur.category),
+            ne(posts.id, cur.id),
+          ),
+        )
+        .orderBy(desc(posts.createdAt))
+        .limit(limit * 4);
 
-    const scored = candidates.map((p) => ({
-      post: p,
-      score: tagIntersectionSize(p.tags ?? [], currentTags),
-    }));
+      const scored = candidates.map((p) => ({
+        post: p,
+        score: tagIntersectionSize(p.tags ?? [], currentTags),
+      }));
 
-    scored.sort((a, b) => b.score - a.score);
+      scored.sort((a, b) => b.score - a.score);
 
-    return scored.slice(0, limit).map(({ post: p }) => ({
-      title: p.title,
-      path: p.path,
-      slug: p.slug,
-      category: p.category,
-      subcategory: p.subcategory,
-      folders: p.folders || [],
-      description: p.description,
-      series: p.series,
-      seriesOrder: p.seriesOrder,
-      createdAt: p.createdAt,
-      updatedAt: p.updatedAt,
-    }));
+      return scored.slice(0, limit).map(({ post: p }) => ({
+        title: p.title,
+        path: p.path,
+        slug: p.slug,
+        category: p.category,
+        subcategory: p.subcategory,
+        folders: p.folders || [],
+        description: p.description,
+        series: p.series,
+        seriesOrder: p.seriesOrder,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      }));
+    } catch (error) {
+      log.error(
+        { err: error instanceof Error ? error : new Error(String(error)) },
+        "getRelatedPosts failed",
+      );
+      return [];
+    }
   }
 
   async countSeries(): Promise<number> {
