@@ -43,6 +43,12 @@ describe("LightboxProvider", () => {
   it("배경 클릭 시 닫힌다", async () => {
     // dialog 영역 외 클릭 (currentTarget === target) → 닫힘
   });
+
+  it("linked image (`<a><LightboxImage/></a>`) 클릭 시 lightbox 미오픈", async () => {
+    // <a href="..."><LightboxImage src=".." alt=".." /></a> 구조 mount
+    // 이미지 클릭 → role="dialog" 가 렌더되지 않음 (링크 네비게이션 우선)
+    // closest("a") 가드 동작 검증
+  });
 });
 ```
 
@@ -70,7 +76,7 @@ grep -L '"use client"' src/components/lightbox/*.tsx | wc -l
 # 신규 테스트 파일 존재 + 케이스 수
 ls src/components/lightbox/*.test.tsx
 grep -c "it(" src/components/lightbox/LightboxProvider.test.tsx
-# 기대: ≥ 5
+# 기대: ≥ 6 (open/close/keyboard nav/wrap-around/single-image/linked-image)
 ```
 
 ### 3. 수동 smoke (Critic 가 확인할 수 없음 — executor 가 명시 보고)
@@ -109,6 +115,6 @@ grep -c '"status": "completed"' tasks/plan039-image-lightbox/index.json
 
 ## 의도 메모 (왜)
 
-- **회귀 테스트 5케이스**: open/close/keyboard/wrap-around/single-image-edge — lightbox 의 핵심 인터랙션 모두 커버. 향후 lightbox 동작 변경 시 회귀 즉시 감지
+- **회귀 테스트 6케이스**: open/close/keyboard/wrap-around/single-image-edge/linked-image — lightbox 의 핵심 인터랙션 모두 커버. 향후 lightbox 동작 변경 시 회귀 즉시 감지
 - **next/image mock**: JSDOM 에 native Image 호환 없음 + next/image SSR 분기 노이즈 — 단순 `<img>` 로 mock 이 테스트 의도에 충분
 - **수동 smoke 명시 보고**: dev server smoke 는 critic 가 자동 검증 못 함. executor 의 명시적 PASS 회신이 docs-verifier 의 marker

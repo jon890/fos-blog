@@ -17,6 +17,7 @@ import { Comments } from "@/components/Comments";
 import { ArticleHero } from "@/components/ArticleHero";
 import { ArticleFooter } from "@/components/ArticleFooter";
 import { RelatedPosts } from "@/components/RelatedPosts";
+import { LightboxProvider } from "@/components/lightbox/LightboxProvider";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { env } from "@/env";
@@ -210,7 +211,9 @@ export default async function PostPage({ params }: PostPageProps) {
       <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-8 px-6 py-12 md:grid-cols-[1fr_minmax(0,820px)_240px] md:gap-12 md:py-16">
         <div className="hidden md:block" aria-hidden />
         <article className="min-w-0">
-          <MarkdownRenderer content={stripped} basePath={slug} />
+          <LightboxProvider>
+            <MarkdownRenderer content={stripped} basePath={slug} />
+          </LightboxProvider>
         </article>
         <aside className="hidden md:block">
           <TableOfContents toc={tocItems} />

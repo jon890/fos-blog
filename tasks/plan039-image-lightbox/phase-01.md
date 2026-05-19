@@ -114,12 +114,17 @@ export function LightboxImage({ src, alt }: { src: string; alt: string }) {
       data-lightbox-image
       data-lightbox-src={src}
       data-lightbox-alt={alt}
-      onClick={() => ref.current && open(ref.current)}
+      onClick={(e) => {
+        // linked image (`[![alt](src)](url)`) 안에서는 lightbox 비활성 — 링크 네비게이션 우선
+        if (e.currentTarget.closest("a")) return;
+        if (ref.current) open(ref.current);
+      }}
       className="block cursor-zoom-in"
       role="button"
       aria-label={`${alt || "이미지"} 확대`}
       tabIndex={0}
       onKeyDown={(e) => {
+        if (e.currentTarget.closest("a")) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           ref.current && open(ref.current);
@@ -144,6 +149,9 @@ export function LightboxImage({ src, alt }: { src: string; alt: string }) {
 - `<span>` 래퍼 (`<div>` 는 prose 의 `<p>` 자식으로 들어가면 hydration mismatch — markdown 의 img 는 `<p>` 안에 inline 위치) — `display: block` 으로 보이는 동작은 동일
 - `cursor-zoom-in` 으로 인터랙션 힌트
 - 키보드 접근: tabIndex + Enter/Space 활성화
+- **linked image 가드**: `e.currentTarget.closest("a")` 검사로 `[![alt](src)](url)` 패턴 클릭 시 lightbox 비활성 — 링크 네비게이션 우선. blog post 의 흔한 패턴.
+- **extra wrapper div 의도** (`LightboxProvider` 의 `<div ref={articleRef}>`): prose 스타일이 descendant selector (`prose img`, `prose p`) 기반이라 안전. `prose > *` / `:first-child` 가산 셀렉터 사용 안 함.
+- **인접 ±1 prefetch (`className="hidden"`)**: browser best-effort fetch — display:none img 도 보통 fetch 되지만 deprioritize 가능. 실패 시 lightbox 가 lazy 로딩으로 자연 회귀. SLA 아님.
 
 ---
 
