@@ -243,14 +243,18 @@ src/components/
 ├── MarkdownRenderer.tsx              # server, async — unified.process() + hast-util-to-jsx-runtime
 ├── CodeCard.tsx                      # client island, clipboard 복사
 ├── Mermaid.tsx                       # client island, SVG 렌더
+├── lightbox/                         # client island, 본문 이미지 클릭 확대 (plan039)
+│   ├── Lightbox.tsx                  # 모달 본체 + ESC/ArrowKey + 인접 ±1 prefetch
+│   ├── LightboxImage.tsx             # next/image wrapper + 클릭/키보드 트리거 + linked image 가드
+│   └── LightboxProvider.tsx          # Context + article scope DOM 쿼리
 └── markdown/
     ├── unified-pipeline.ts           # server-only, processor lazy singleton (Promise 공유로 race 방지)
     ├── pretty-code-options.ts        # rehype-pretty-code 옵션 (dual theme, bypassInlineCode)
     ├── sanitize-schema.ts            # rehype-sanitize allowlist (shiki data-* / figure / heading id / KaTeX aria-hidden, clobberPrefix="") — ADR-026 / ADR-027
-    └── components.tsx                # createMarkdownComponents factory (figure→CodeCard, pre→Mermaid 분기)
+    └── components.tsx                # createMarkdownComponents factory (figure→CodeCard, pre→Mermaid, img→LightboxImage 분기)
 ```
 
-**규칙**: `src/components/markdown/*` 는 server-only 모듈 (`import "server-only"` 가드). client 에서 import 시 빌드 에러. components mapping 으로 server tree 안에 client island 자연스럽게 주입 (RSC 표준 패턴). `react-markdown` 의존성 제거 — ADR-020 참조. unified chain 말미에 `rehype-sanitize` 가 `<script>` / `<iframe>` / `on*` / `javascript:` URL 을 차단 — ADR-026.
+**규칙**: `src/components/markdown/*` 는 server-only 모듈 (`import "server-only"` 가드). client 에서 import 시 빌드 에러. components mapping 으로 server tree 안에 client island 자연스럽게 주입 (RSC 표준 패턴). `react-markdown` 의존성 제거 — ADR-020 참조. unified chain 말미에 `rehype-sanitize` 가 `<script>` / `<iframe>` / `on*` / `javascript:` URL 을 차단 — ADR-026. `img` 핸들러는 `LightboxImage` 로 라우팅되어 `<article>` 안에서 클릭 시 lightbox 확대 — plan039 / `LightboxProvider` 가 article scope 정의.
 
 ---
 
