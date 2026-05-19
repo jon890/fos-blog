@@ -1,3 +1,5 @@
+import "server-only";
+
 import { defaultSchema, type Options as Schema } from "rehype-sanitize";
 
 /**
@@ -32,8 +34,8 @@ export const sanitizeSchema: Schema = {
     code: [
       ...(defaultSchema.attributes?.code ?? []),
       "className",
-      ["data-language"],
-      ["data-theme"],
+      "data-language",
+      "data-theme",
     ],
     span: [
       ...(defaultSchema.attributes?.span ?? []),
@@ -42,18 +44,18 @@ export const sanitizeSchema: Schema = {
       // CSS injection 잠재 위험이 있으나 syntax highlighting 동작에 필수.
       // sanitize 후에도 보존되어야 하므로 의도적 allowlist.
       "style",
-      ["data-line"],
-      ["data-highlighted-line"],
-      ["data-highlighted-chars"],
-      ["data-chars-id"],
+      "data-line",
+      "data-highlighted-line",
+      "data-highlighted-chars",
+      "data-chars-id",
     ],
     figure: [
       ...(defaultSchema.attributes?.figure ?? []),
-      ["data-rehype-pretty-code-figure"],
+      "data-rehype-pretty-code-figure",
     ],
     figcaption: [
       ...(defaultSchema.attributes?.figcaption ?? []),
-      ["data-rehype-pretty-code-title"],
+      "data-rehype-pretty-code-title",
     ],
     pre: [
       ...(defaultSchema.attributes?.pre ?? []),
@@ -61,13 +63,13 @@ export const sanitizeSchema: Schema = {
       // shiki/pretty-code 가 pre 컨테이너에도 inline style 을 둘 수 있음 (배경색 등) — span 과 동일 사유로 의도적 허용.
       "style",
       "tabIndex",
-      ["data-language"],
-      ["data-theme"],
+      "data-language",
+      "data-theme",
     ],
     div: [
       ...(defaultSchema.attributes?.div ?? []),
       "className",
-      ["data-rehype-pretty-code-fragment"],
+      "data-rehype-pretty-code-fragment",
     ],
     // heading id (rehype-slug)
     h1: [...(defaultSchema.attributes?.h1 ?? []), "id"],
