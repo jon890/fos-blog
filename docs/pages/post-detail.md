@@ -37,7 +37,8 @@
 | Component | Role |
 |-----------|------|
 | `ArticleHero` | Hero 영역 — mesh 그라디언트 (카테고리 hue 변형 + plan009 토큰) + breadcrumb + 카테고리 art-tag + 제목 + 리드 + meta row (date · readtime · views · series 링크). series prop 있을 때 `SERIES · {name} · {order}/{total}` 형태로 meta row 에 추가 표시 (plan033) |
-| `MarkdownRenderer` | 마크다운 본문 렌더링 (GFM, mermaid, syntax highlight via rehype-pretty-code + shiki dual theme). 외부 wrapper 는 `<div>` (글 페이지에서 article 중첩 회피). `components.figure` 핸들러가 pretty-code 의 figure 를 받아 `<CodeCard>` 로 교체. mermaid 는 `data-language === "mermaid"` 검사로 우회 (`<Mermaid>` 직접 반환) |
+| `MarkdownRenderer` | 마크다운 본문 렌더링 (GFM, mermaid, syntax highlight via rehype-pretty-code + shiki dual theme). 외부 wrapper 는 `<div>` (글 페이지에서 article 중첩 회피). `components.figure` 핸들러가 pretty-code 의 figure 를 받아 `<CodeCard>` 로 교체. mermaid 는 `data-language === "mermaid"` 검사로 우회 (`<Mermaid>` 직접 반환). 본문 `img` 는 `<LightboxImage>` 로 감싸 클릭 시 lightbox 확대 (plan039) |
+| `LightboxProvider` / `LightboxImage` / `Lightbox` | 본문 이미지 클릭 시 viewport 풀스크린 확대 모달 (plan039). Provider 가 `<article>` 안 `<MarkdownRenderer>` 를 감싸 scope 정의. MarkdownRenderer 의 `img` 컴포넌트가 자동으로 `<LightboxImage>` 래퍼 사용. ESC / 배경 클릭 / 우상단 X 로 닫기, 화살표 키 + 좌우 버튼으로 글 안 이미지 prev/next 순회 (modulo wrap-around). 인접 ±1 이미지는 open 직후 hidden `<img>` mount 로 prefetch. backdrop `bg-black/85 backdrop-blur-sm` 다크/라이트 공통. mermaid SVG 확대는 OOS — 후속 plan |
 | `CodeCard` | rehype-pretty-code 가 생성한 figure 코드 블록을 받아 frame (filename header / 언어 배지 / copy 버튼) 으로 wrap 하는 client component. shadcn Button (variant=ghost size=xs) + clipboard API + 2초 idle 복귀 + `aria-live="polite"` 스크린리더 통지 (plan012) |
 | `TableOfContents` | 사이드바 목차. mono 톤 + 번호 prefix (`01`/`02`, H2 카운터) + brand 좌측 라인 + active highlight + sticky top-20. **H2 + H3 표시** (page.tsx 에서 `level === 2 \|\| level === 3` filter, plan019). H3 는 `pl-6` 들여쓰기 + `text-[11px]` + 번호 미표시 nested 표현 |
 | `ReadingProgressBar` | viewport 최상단 fixed 1px 진행 띠 (`z-50`, plan019). passive scroll/resize listener → 0~100 % width. brand-400 토큰 색상. `role="progressbar"` + `aria-valuenow` 접근성 메타. Header 의 하단 라인 reading progress 와 별개로 viewport 절대 최상단에서 동작 |
@@ -59,6 +60,7 @@
 - **태그 칩**: 표시용 (라우팅은 issue #72 에서 결정 예정)
 - **스크롤**: ① Header 하단 reading progress fill 이 `/posts/*` 에서만 동작 ② viewport 최상단 `ReadingProgressBar` 가 모든 디바이스에서 0~100 % width 로 진행률 표시 (plan019, 둘은 독립)
 - **모바일 TOC**: 우하단 FAB 클릭 → bottom sheet (max-h 70vh, scroll). ESC / 백드롭 클릭으로 닫힘 (plan019)
+- **본문 이미지 클릭**: viewport 풀스크린 lightbox (plan039). 여러 장이면 ←/→ 키 또는 좌우 버튼으로 순회 (wrap-around). ESC / 배경 / 우상단 X 로 종료. 모바일에서도 동일 동작 — pinch zoom 은 OOS
 
 ---
 
@@ -70,6 +72,7 @@
 | `progress` (Header) | `Header` | `/posts/*` 한정 scroll position → 0~1 ratio. passive listener, `isArticle === false` 일 때 등록 안 함 |
 | `progress` (Bar) | `ReadingProgressBar` | viewport 절대 최상단 1px 띠. scroll/resize passive listener 양쪽 cleanup, 0~100 % width (plan019). Header progress 와 독립 |
 | `open` | `MobileTocButton` | bottom sheet 펼침 상태. open 인 동안에만 keydown(ESC) listener 등록 → cleanup 에서 해제 (plan019) |
+| `lightbox state` | `LightboxProvider` | open 시점에 article scope 의 `[data-lightbox-image]` 노드를 DOM 순서로 수집해 `{ images, index }` state 보관. close 시 null. body overflow lock 은 `Lightbox` 컴포넌트의 useEffect cleanup 으로 관리 (plan020 SearchDialog 패턴 재사용, plan039) |
 
 > TOC 의 collapse toggle (`isCollapsed`) 은 plan011 에서 제거됨 — sticky 사이드바에 항상 노출되어 collapse 가 불필요. plan019 에서 H3 nesting 추가 후에도 유지 (H3 들여쓰기 + 작은 글씨로 노이즈 최소화).
 
@@ -137,6 +140,9 @@
 - `src/components/MobileTocButton.tsx` — 모바일 floating TOC button + bottom sheet (plan019)
 - `src/components/Header.tsx` — `/posts/*` 한정 하단 라인 reading progress (별개 컴포넌트)
 - `src/components/Comments.tsx` — 댓글 컨테이너 (plan022)
+- `src/components/lightbox/LightboxProvider.tsx` — context + DOM scope + open state (plan039)
+- `src/components/lightbox/Lightbox.tsx` — 모달 본체 + 키보드 + 인접 ±1 prefetch (plan039)
+- `src/components/lightbox/LightboxImage.tsx` — next/image wrapper + 클릭 트리거 (plan039)
 - `src/components/comments/CommentForm.tsx` — 작성/수정 통합 폼
 - `src/components/comments/CommentItem.tsx` — 댓글 카드
 - `src/components/comments/DeleteConfirmDialog.tsx` — 삭제 확인 다이얼로그
