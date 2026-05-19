@@ -14,8 +14,21 @@ export type RSSPostData = Pick<
   | "createdAt"
 >;
 
+export type RSSPostDataLite = Pick<
+  PostData,
+  | "title"
+  | "path"
+  | "slug"
+  | "category"
+  | "subcategory"
+  | "folders"
+  | "description"
+  | "createdAt"
+>;
+
 interface RSSPostRepository {
   getRecentActive(args: { limit?: number }): Promise<RSSPostData[]>;
+  getRecentActiveLite(args: { limit?: number }): Promise<RSSPostDataLite[]>;
 }
 
 interface RSSRepositories {
@@ -28,6 +41,11 @@ export function createRSSService(repos: RSSRepositories) {
       RSSPostData[]
     > {
       return repos.post.getRecentActive({ limit });
+    },
+    async getRecentForFeedLite({
+      limit = 50,
+    }: { limit?: number } = {}): Promise<RSSPostDataLite[]> {
+      return repos.post.getRecentActiveLite({ limit });
     },
   };
 }

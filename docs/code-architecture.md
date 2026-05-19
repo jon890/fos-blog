@@ -285,7 +285,7 @@ src/components/
 신규 라우트:
 
 - **`GET /rss.xml`** (`src/app/rss.xml/route.ts`) — RSS 2.0 XML. `runtime = "nodejs"`, `revalidate = 600` (10분). Cache-Control `s-maxage=600, stale-while-revalidate=86400`. `escapeXml()` 인라인 헬퍼로 모든 사용자 입력 sanitize. `<atom:link rel="self">` 포함.
-- **`PostRepository.getRecentActiveLite({ limit })`** (plan045) — `description` + `createdAt` 만 select, `isActive=true` 필터, `desc(createdAt)` 정렬. content 컬럼 미포함 — 캐시 미스 시 DB 트래픽 ~수MB → ~수KB 로 감소. RSS feed 가 description 만 사용하므로 content fallback 불요. description null 인 글은 빈 description 으로 RSS 출력 (suppress 안 함). 기존 `getRecentActive` 는 deprecated — 다른 호출자 없으면 제거 가능.
+- **`PostRepository.getRecentActiveLite({ limit })`** (plan045) — `content` 컬럼 미포함 (title/path/slug/category/subcategory/folders/description/createdAt select), `isActive=true` 필터, `desc(createdAt)` 정렬. 캐시 미스 시 DB 트래픽 ~수MB → ~수KB 로 감소. RSS feed 가 description 만 사용하므로 content fallback 불요. description null 인 글은 빈 description 으로 RSS 출력 (suppress 안 함). 기존 `getRecentActive` 는 deprecated — 다른 호출자 없으면 제거 가능.
 - **`src/app/layout.tsx`** — `metadata.alternates.types` 에 `application/rss+xml` link 추가 → Next.js 가 `<link rel="alternate" type="application/rss+xml" href="/rss.xml">` 자동 생성.
 - **Rate limit**: `/rss.xml` 은 `proxy.ts` matcher 의 catch-all 영역에 포함 — `rateLimit` middleware (1000/min/IP fixed window, RFC1918/봇 우회) 자연 적용. `sitemap.xml` 만 exclusions 에 명시되어 있음 — RSS 는 동일 정책 적용.
 - **Thundering herd**: 현재는 별도 mutex 없이 Next.js `revalidate=600` 만 의존. RSS reader polling 빈도 (보통 1시간+) 와 캐시 hit rate 가 충분히 높아 동시 다수 미스 사고 미관측. 향후 트래픽 증가 시 Promise singleton mutex 도입 검토 (plan025 unified-pipeline 의 `processorPromise` 패턴 재활용 가능).

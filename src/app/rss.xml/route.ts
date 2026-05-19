@@ -17,7 +17,7 @@ const SITE_DESCRIPTION = "한 명의 백엔드 엔지니어가 매일 쌓는 학
 export async function GET() {
   try {
     const rss = createDefaultRSSService();
-    const posts = await rss.getRecentForFeed({ limit: 50 });
+    const posts = await rss.getRecentForFeedLite({ limit: 50 });
 
     const items = posts
       .map((p) => {
@@ -25,7 +25,7 @@ export async function GET() {
           .split("/")
           .map(encodeURIComponent)
           .join("/")}`;
-        const desc = extractDescription(p.content ?? p.description ?? "", 300);
+        const desc = extractDescription(p.description ?? "", 300);
         const pubDate = (p.createdAt ?? new Date()).toUTCString();
         return `
     <item>
