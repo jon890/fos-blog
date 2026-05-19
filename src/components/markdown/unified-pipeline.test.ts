@@ -68,7 +68,7 @@ describe("rehype-pretty-code output structure (regression guard for plan017)", (
   });
 });
 
-describe("KaTeX math rendering (plan044)", () => {
+describe("KaTeX math rendering", () => {
   it("인라인 수식 $x^2$ 가 span.katex 으로 변환", async () => {
     const md = "이것은 $x^2$ 수식.";
     const tree = await parseMarkdownToHast(md);

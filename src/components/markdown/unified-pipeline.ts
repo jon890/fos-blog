@@ -24,7 +24,7 @@ async function buildProcessor() {
     .use(rehypeKatex, { output: "html" }) // throwOnError: rehype-katex 7.x 가 내부 기본값 false 로 고정 (Options 타입에서 Omit)
     .use(rehypeSlug)
     .use(rehypePrettyCode, PRETTY_CODE_OPTIONS)
-    .use(rehypeSanitize, sanitizeSchema); // ← chain 말미 (plan029)
+    .use(rehypeSanitize, sanitizeSchema); // ← chain 말미 (slug + pretty-code 출력 검증)
 }
 
 type UnifiedProcessor = Awaited<ReturnType<typeof buildProcessor>>;

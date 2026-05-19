@@ -666,12 +666,12 @@ html:not(.dark) .prose .code-card-body pre span {
   .link-draw { transition: none; }
 }
 
-/* KaTeX 수식 색을 본문 텍스트 색으로 inherit (라이트/다크 양쪽 자연) — plan044 */
+/* KaTeX 수식 색을 본문 텍스트 색으로 inherit (라이트/다크 양쪽 자연) */
 .prose .katex,
 .prose .katex * {
   color: inherit;
 }
-/* 단 invalid LaTeX 오류 표시는 KaTeX 의 빨간색을 유지 — 위 inherit override 가 가려지는 것 복원 (plan044) */
+/* 단 invalid LaTeX 오류 표시는 KaTeX 의 빨간색을 유지 — 위 inherit override 가 가려지는 것 복원 */
 .prose .katex-error,
 .prose .katex-error * {
   color: #cc0000;
