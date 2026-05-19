@@ -348,6 +348,7 @@ critic 평가 관점:
 5. 성공 기준이 충분한가?
 6. **실제 코드와 일치하는가?** (파일 존재, 함수명, 줄 수 검증)
 7. **`common-pitfalls.md` 의 모든 패턴이 사전 해소되었는가?**
+8. **흡수/통합 plan 의 경우 — 흡수 대상이 기존 docs 의 다른 섹션과 정합한가?** (skill 폐기 + docs 흡수 / docs 재작성 plan 에서 task spec 자체가 기존 docs 의 다른 섹션과 모순될 수 있다. plan040 사례: task spec 의 "금지 파일 목록" 안에 `drizzle/` 항목이 같은 CLAUDE.md 의 "DB 스키마 변경 규칙" 의 "drizzle/ 커밋 필수" 와 모순. docs-verifier 가 사후에 잡았지만 critic 이 사전 차단했어야 함)
 
 판정:
 - **APPROVE** → 6단계로
