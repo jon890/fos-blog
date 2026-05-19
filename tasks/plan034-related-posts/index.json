@@ -1,0 +1,29 @@
+{
+  "name": "plan034-related-posts",
+  "description": "관련 글 추천 (issue #128) — 글 상세 페이지 ArticleFooter 아래 / Comments 위에 4개 카드. 매칭 알고리즘 1차: 같은 카테고리 + 공통 태그 (tag intersection desc, createdAt desc). 태그 교집합 없으면 같은 카테고리 최근 글 fallback. 임베딩/의미 유사도는 OOS (별도 issue).",
+  "status": "pending",
+  "created_at": "2026-05-08",
+  "total_phases": 2,
+  "related_docs": [
+    "docs/pages/post-detail.md"
+  ],
+  "depends_on": [
+    "plan026-tags-system"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "PostRepository.getRelatedPosts + RelatedPosts 컴포넌트 + 글 상세 페이지 통합",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "title": "검증 + post-detail.md 갱신 + index.json 마킹",
+      "model": "haiku",
+      "status": "pending"
+    }
+  ]
+}
