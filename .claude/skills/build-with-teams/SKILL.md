@@ -457,6 +457,26 @@ executor 완료 후 team-lead → docs-verifier 에게 검증 요청. self-shutd
    # 각 OPEN PR 의 docs 변경분이 본 plan 의 재작성 결과에 통합/충돌 없는지 확인
    ```
    누락 발견 시 UPDATE_NEEDED — team-lead 가 OPEN PR 정보를 본 plan 결과에 통합하거나, 머지 순서를 PR description 에 명시 후 사후 통합.
+8. **ADR index ↔ anchor 정합성 (필수 — plan033 / plan044 drift 관측)**: 새 ADR 추가 또는 docs/adr.md 변경 plan 에서 docs-verifier 는 다음 두 가지를 함께 확인.
+   - 모든 `## ADR-{N}` 헤더 위에 `<a id="adr-{n}"></a>` 앵커가 있는지 (`[ADR-{N}](#adr-{n})` 링크 점프용)
+   - 모든 ADR 이 "ADR Index" 의 적절한 카테고리에 등재되었는지 (분류 + 1줄 요약)
+
+   검증:
+   ```bash
+   # ADR 본문 헤더 vs anchor 누락
+   diff <(grep -oE '^## ADR-[0-9]+' docs/adr.md | sed 's/^## ADR-/adr-/' | tr 'A-Z' 'a-z') \
+        <(grep -oE '<a id="adr-[0-9]+"' docs/adr.md | sed 's/<a id="//; s/"$//')
+   # 출력 있으면 anchor 누락 또는 잉여 — UPDATE_NEEDED
+
+   # ADR 본문 헤더 vs index 등재 누락
+   diff <(grep -oE '^## ADR-[0-9]+' docs/adr.md | sed 's/^## //') \
+        <(grep -oE '\[ADR-[0-9]+\]' docs/adr.md | sed 's/^\[//; s/\]$//' | sort -u)
+   # 출력 있으면 index 미등재 — UPDATE_NEEDED
+   ```
+
+   부수 발견 (다른 plan 의 drift) 은 본 PR scope 외로 표기 후 별도 docs PR 분리 권장. 실사례:
+   - plan033 — ADR-025 anchor + index 모두 누락 (plan044 의 docs-verifier 가 사후 발견)
+   - plan029 — ADR-026 index 누락 (plan044 의 docs-verifier 가 사후 발견)
 
 판정:
 - **PASS** → 9단계로
@@ -573,9 +593,13 @@ git worktree add .claude/worktrees/{plan이름} -b feat/{plan이름} origin/main
 cd .claude/worktrees/{plan이름}
 pnpm install                # 의존성 설치
 pnpm db:generate            # Drizzle schema 변경이 있으면 타입 재생성 (선택)
+# .env 는 git ignored — main repo 의 .env 를 symlink 로 공유 (build / type-check 가 env validation 통과 필요)
+[ -f .env ] || ln -sf "$(cd .. && pwd | sed 's|/\.claude/worktrees||')/.env" .env
 ```
 
-**worktree 정리**: 메인 워킹 디렉토리로 돌아가서 `git worktree remove .claude/worktrees/{plan이름}` + 로컬 브랜치 정리 `git branch -D feat/{plan이름}` (PR 머지 후엔 안전).
+**`.env` symlink 의 이유 (필수 — plan044 관측)**: `src/env.ts` 의 zod 검증이 production build 단계에서 강제 실행되므로 worktree 에 `.env` 가 없으면 `pnpm build` 가 `Invalid environment variables` 로 실패한다. `.gitignore` 가 `.env` 를 추적 제외하기 때문에 worktree 생성 시 자동 복사 안 됨. symlink 가 가장 안전 (main repo 의 `.env` 가 변경되면 worktree 도 자동 반영, 별도 동기화 불필요).
+
+**worktree 정리**: 메인 워킹 디렉토리로 돌아가서 `git worktree remove .claude/worktrees/{plan이름}` + 로컬 브랜치 정리 `git branch -D feat/{plan이름}` (PR 머지 후엔 안전). symlink `.env` 는 worktree 와 함께 제거됨.
 
 이렇게 하면 여러 plan 을 **동시 병렬 실행**해도 서로 간섭하지 않는다.
 
