@@ -277,7 +277,7 @@ pnpm lint && pnpm tsc --noEmit && pnpm test --passWithNoTests
 
 ## 5단계: Commit & Push
 
-commit 메시지는 이 프로젝트의 컨벤션을 따른다 (commit-and-push 스킬 참조):
+commit 메시지는 이 프로젝트의 컨벤션을 따른다 (`CLAUDE.md` "Git & PR Conventions" 참조):
 
 ```
 🩹 Fix(<scope>): <변경 내용 요약>
