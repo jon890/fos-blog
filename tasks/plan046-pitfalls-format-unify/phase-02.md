@@ -17,7 +17,7 @@
 | **섹션 1. plan 작성** | | | team-lead, critic |
 | 1-1 | 수치 추측 (파일 수 / 줄 수) | 파일 수, 줄 수, 카운트 | plan 작성 |
 | 1-2 | 파일 범위 부정확 | 파일 범위, scope | plan 작성 |
-| ... (1-3 ~ 1-9 + 소진 체크리스트) | | | |
+| ... (1-3 ~ 1-9 + 사전 점검 체크리스트) | | | |
 | **섹션 2. team 운영** | | | team-lead |
 | 2-1 | 팀원 SendMessage 회신 누락 | SendMessage, idle | team 운영 |
 | ... (2-2 ~ 2-10) | | | |
@@ -36,13 +36,13 @@ executor 가 본문에서 각 항목 1줄씩 추출해서 표 완성. 형식 일
 - "키워드" 는 본문에서 grep 가능한 핵심 토큰 2-3개
 - "호출 시점" 은 본 phase 본문 (plan 작성 / team 운영 / code review)
 
-### 2. 외부 참조 4개 파일 § 정리
+### 2. 외부 참조 4개 파일 § + 소진 정리
 
-다음 파일에서 `§` 등장 정리:
+다음 파일에서 `§` + `소진` 등장 정리:
 
 ```bash
 # cwd: <worktree root>
-grep -rln "§" .claude/agents/ .claude/skills/ docs/
+grep -rln "§\|소진" .claude/agents/ .claude/skills/ docs/
 ```
 
 예상 파일 (현재 grep 결과 기준):
@@ -52,22 +52,23 @@ grep -rln "§" .claude/agents/ .claude/skills/ docs/
 - `docs/code-architecture.md`
 - `docs/adr.md`
 
-각 파일에서 § 등장을 다음 패턴으로 교체:
+각 파일에서 `§` / `소진` 등장을 다음 패턴으로 교체:
 
 | 기존 | 교체 |
 |---|---|
 | `§ 1` / `§ 2` / `§ 3` / `§ 4` | `섹션 1` / `섹션 2` / `섹션 3` / `섹션 4` |
 | `§ N-M` (예: `§ 1-5`) | `1-5` (섹션 prefix 자명) |
 | `§ 4.fos-blog` 같은 직접 참조 | "섹션 4 (레포별 +α)" 로 풀어쓰기 |
+| `소진 체크리스트` / `사전에 소진` 등 | `사전 점검 체크리스트` / `사전 해소` (dooray-cli 정책 — 자원 고갈 비유 회피) |
 
-`common-pitfalls.md` 안에서 § 가 0건임은 phase-01 에서 이미 검증.
+`common-pitfalls.md` 안에서 § / 소진 가 0건임은 phase-01 에서 이미 검증.
 
 ### 3. 통합 검증
 
 ```bash
 # cwd: <worktree root>
-# 모든 § 등장 0건
-grep -rn "§" .claude/ docs/   # 결과 없어야 함
+# 모든 § / 소진 등장 0건 (외부 참조 파일 + common-pitfalls.md 모두)
+grep -rn "§\|소진" .claude/ docs/   # 결과 없어야 함
 
 # 인덱스 표 ↔ 본문 BLG 개수 정합
 grep -cE "^\| BLG[0-9]+" .claude/skills/_shared/common-pitfalls.md   # 24

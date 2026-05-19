@@ -1,6 +1,6 @@
 {
   "name": "plan046-pitfalls-format-unify",
-  "description": "common-pitfalls.md 의 BLG1~BLG24 형식 통일 + § 기호 제거 + 인덱스 표 추가. BLG 항목들이 한 줄 bullet 안에 증상/Good/검출/Why 를 모두 압축한 형식 일탈 상태 (다른 섹션은 ## N-M. 헤더 형식). 안 1 (형식 통일) 만 처리, 파일 분할 (안 2) 은 plan047 분리.",
+  "description": "common-pitfalls.md 의 BLG1~BLG24 형식 통일 + § 기호 제거 + `소진` 어색 표현 (dooray-cli 정책) 교체 + 인덱스 표 추가. BLG 항목들이 한 줄 bullet 안에 증상/Good/검출/Why 를 모두 압축한 형식 일탈 상태 (다른 섹션은 ## N-M. 헤더 형식). 안 1 (형식 통일) 만 처리, 파일 분할 (안 2) 은 plan047 분리. § / 소진 정리는 본 plan 의 다른 4개 외부 참조 파일 (.claude/agents/, .claude/skills/, docs/) 도 함께 처리.",
   "status": "pending",
   "created_at": "2026-05-19",
   "total_phases": 2,
