@@ -2,9 +2,11 @@ import "server-only";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 import remarkRehype from "remark-rehype";
 import rehypeSlug from "rehype-slug";
 import rehypeRaw from "rehype-raw";
+import rehypeKatex from "rehype-katex";
 import rehypePrettyCode from "rehype-pretty-code";
 import rehypeSanitize from "rehype-sanitize";
 import type { Root as HastRoot } from "hast";
@@ -16,8 +18,10 @@ async function buildProcessor() {
   return unified()
     .use(remarkParse)
     .use(remarkGfm)
+    .use(remarkMath)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
+    .use(rehypeKatex, { output: "html" }) // throwOnError: rehype-katex 7.x 가 내부 기본값 false 로 고정 (Options 타입에서 Omit)
     .use(rehypeSlug)
     .use(rehypePrettyCode, PRETTY_CODE_OPTIONS)
     .use(rehypeSanitize, sanitizeSchema); // ← chain 말미 (slug + pretty-code 출력 검증)

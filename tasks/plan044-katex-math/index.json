@@ -1,7 +1,7 @@
 {
   "name": "plan044-katex-math",
   "description": "KaTeX 수식 렌더 도입 (issue #130) — unified-pipeline 에 remark-math + rehype-katex 추가. 인라인 ($x^2$) + 블록 ($$...$$) 수식 모두 지원. throwOnError: false 로 invalid LaTeX 은 빨간 텍스트 fallback. 다크모드는 color: inherit 으로 본문 색 따라감. KaTeX CSS 는 globals.css @import 전역 로드 (~50KB gzip).",
-  "status": "pending",
+  "status": "completed",
   "created_at": "2026-05-19",
   "total_phases": 3,
   "related_docs": [
@@ -16,21 +16,21 @@
       "file": "phase-01.md",
       "title": "의존성 추가 + unified-pipeline 통합 + globals.css 토큰 정의",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 2,
       "file": "phase-02.md",
       "title": "sanitize allowlist 에 KaTeX 출력 element 추가",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 3,
       "file": "phase-03.md",
       "title": "회귀 테스트 + 통합 검증 + index.json completed 마킹",
       "model": "haiku",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }

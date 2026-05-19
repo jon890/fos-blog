@@ -246,7 +246,7 @@ src/components/
 └── markdown/
     ├── unified-pipeline.ts           # server-only, processor lazy singleton (Promise 공유로 race 방지)
     ├── pretty-code-options.ts        # rehype-pretty-code 옵션 (dual theme, bypassInlineCode)
-    ├── sanitize-schema.ts            # rehype-sanitize allowlist (shiki data-* / figure / heading id, clobberPrefix="") — ADR-026
+    ├── sanitize-schema.ts            # rehype-sanitize allowlist (shiki data-* / figure / heading id / KaTeX aria-hidden, clobberPrefix="") — ADR-026 / ADR-027
     └── components.tsx                # createMarkdownComponents factory (figure→CodeCard, pre→Mermaid 분기)
 ```
 
