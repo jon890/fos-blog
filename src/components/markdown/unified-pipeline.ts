@@ -6,8 +6,10 @@ import remarkRehype from "remark-rehype";
 import rehypeSlug from "rehype-slug";
 import rehypeRaw from "rehype-raw";
 import rehypePrettyCode from "rehype-pretty-code";
+import rehypeSanitize from "rehype-sanitize";
 import type { Root as HastRoot } from "hast";
 import { PRETTY_CODE_OPTIONS } from "./pretty-code-options";
+import { sanitizeSchema } from "./sanitize-schema";
 
 // unified().use()... 의 실제 반환 타입을 그대로 캡처 (Processor 제네릭 파라미터 수동 지정 회피)
 async function buildProcessor() {
@@ -17,7 +19,8 @@ async function buildProcessor() {
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
     .use(rehypeSlug)
-    .use(rehypePrettyCode, PRETTY_CODE_OPTIONS);
+    .use(rehypePrettyCode, PRETTY_CODE_OPTIONS)
+    .use(rehypeSanitize, sanitizeSchema); // ← chain 말미 (slug + pretty-code 출력 검증)
 }
 
 type UnifiedProcessor = Awaited<ReturnType<typeof buildProcessor>>;

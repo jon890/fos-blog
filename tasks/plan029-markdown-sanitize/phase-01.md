@@ -25,6 +25,10 @@ unified()
 
 **Option A 채택** — `rehype-sanitize` 를 chain 말미에 추가. `defaultSchema` 를 확장해 shiki / pretty-code / slug 의 data-* + className 을 allowlist 에 등록.
 
+## 사이클 컨텍스트
+
+PR #119 (2026-05-07) 가 task 파일만 머지된 사고로 plan 이 status pending 으로 재오픈됨 (커밋 `a5ac874`). 실제 sanitize 구현은 본 사이클에서 처음 수행. main 의 `src/components/markdown/` 하위에 sanitize 흔적 없음 — 신규 도입.
+
 ## 작업 항목
 
 ### 1. 의존성 추가
@@ -57,6 +61,12 @@ import { defaultSchema, type Schema } from "rehype-sanitize";
  */
 export const sanitizeSchema: Schema = {
   ...defaultSchema,
+  // figure/figcaption 은 defaultSchema.tagNames 에 미포함 — rehype-pretty-code 컨테이너 보존을 위해 추가.
+  tagNames: [
+    ...(defaultSchema.tagNames ?? []),
+    "figure",
+    "figcaption",
+  ],
   attributes: {
     ...defaultSchema.attributes,
     code: [
@@ -136,11 +146,17 @@ async function buildProcessor() {
 
 핵심 케이스 (각 케이스마다 `parseMarkdownToHast(md)` 호출 후 결과 hast 트리 검증).
 
-테스트 파일 상단 import 는 다음과 같이 작성 (executor 가 누락하지 않도록 명시):
+**server-only 가드 우회 (필수)** — `unified-pipeline.ts:1` 의 `import "server-only"` 가 vitest node 환경에서 throw 함. 기존 `unified-pipeline.test.ts:4` 와 동일하게 `vi.mock("server-only", () => ({}))` 을 파일 상단 (import 직후) 에 추가.
+
+테스트 파일 상단:
 
 ```ts
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { toHtml } from "hast-util-to-html";
+
+// vitest node 환경에서 server-only 가드 우회
+vi.mock("server-only", () => ({}));
+
 import { parseMarkdownToHast } from "./unified-pipeline";
 ```
 
@@ -240,38 +256,7 @@ pnpm add -D hast-util-to-html
 
 또는 hast tree 직접 traverse 로 검증.
 
-### 5. mermaid 호환 점검
-
-기존 mermaid 블록은 어떻게 렌더되는지 확인 (코드 블록의 className 으로 처리되는지, 별도 SVG inline 인지). SVG inline 이면 schema 에 `svg` / `g` / `path` 등도 allowlist 필요할 가능성. 현재 `defaultSchema` 는 SVG 제한적 — 실제 mermaid 글 1개 렌더 결과 점검 후 schema 보강.
-
-이번 phase 의 work item 으로는 **점검만 수행** — 깨지면 아래 시작 element 목록을 schema 에 추가, 깨지지 않으면 OOS.
-
-**SVG allowlist 시작점** (mermaid 출력에서 자주 등장하는 요소):
-
-```ts
-// sanitize-schema.ts 에 추가 후보
-tagNames: [
-  ...(defaultSchema.tagNames ?? []),
-  "svg", "g", "path", "text", "tspan",
-  "rect", "circle", "ellipse", "line", "polyline", "polygon",
-  "defs", "marker", "use", "style",
-],
-attributes: {
-  ...defaultSchema.attributes,
-  svg: ["xmlns", "viewBox", "width", "height", "preserveAspectRatio", "class", "style"],
-  g: ["transform", "class", "style"],
-  path: ["d", "fill", "stroke", "stroke-width", "stroke-dasharray", "marker-end", "marker-start", "class", "style"],
-  text: ["x", "y", "dx", "dy", "text-anchor", "dominant-baseline", "class", "style", "font-family", "font-size"],
-  tspan: ["x", "y", "dx", "dy", "class", "style"],
-  rect: ["x", "y", "width", "height", "rx", "ry", "fill", "stroke", "class", "style"],
-  circle: ["cx", "cy", "r", "fill", "stroke", "class", "style"],
-  marker: ["id", "viewBox", "refX", "refY", "markerWidth", "markerHeight", "orient"],
-},
-```
-
-executor 가 mermaid 글 렌더 결과 dump (`document.querySelector(".mermaid svg").outerHTML`) 후 누락 element/attribute 를 위 목록에 보강. style 허용은 mermaid 의 inline 색상 표현을 위해 필요 (shiki 와 동일 사유).
-
-### 6. 자동 verification
+### 5. 자동 verification
 
 ```bash
 pnpm lint
@@ -288,9 +273,9 @@ grep -n "rehypeSanitize" src/components/markdown/unified-pipeline.ts
 수동 smoke (사용자 안내):
 - `pnpm dev` → 글 상세 페이지 진입:
   - 코드 블록 syntax highlight 정상 (shiki 토큰별 색)
-  - mermaid 다이어그램 렌더 (있는 글)
   - heading id anchor (TOC 클릭 → 스크롤 이동)
   - GFM 표 / footnote 정상
+  - mermaid 다이어그램 — 본 phase OOS, 별도 follow-up plan 에서 SVG allowlist 처리 (Out of Scope 참조)
 
 ## Critical Files
 
@@ -304,7 +289,7 @@ grep -n "rehypeSanitize" src/components/markdown/unified-pipeline.ts
 ## Out of Scope
 
 - 댓글 본문 sanitize (Comments 는 현재 Markdown 렌더 안 함 — plain text)
-- mermaid SVG schema 완전 정의 (위 항목 5 점검 결과에 따라 OOS 또는 IN)
+- **mermaid SVG schema (명시적 OOS)** — `defaultSchema` 가 `svg` tagNames 미포함 → mermaid 다이어그램이 sanitize 후 strip 가능. 본 phase 는 처리 안 함. mermaid 클라이언트 렌더 (`mermaid` 라이브러리가 client-side 에서 `<pre class="mermaid">` 텍스트를 SVG 로 변환) 흐름을 별도 follow-up plan 에서 검증 + SVG allowlist 작성. 본 PR 머지 후 mermaid 글 1개 수동 smoke 로 회귀 여부 확인 → 깨지면 follow-up plan 생성
 - rehypeRaw 자체 제거 (Option B — fos-study 글의 raw HTML 사용 영향 예측 비용 큼)
 - 글 작성 시 자동 lint (CI 단)
 
@@ -313,7 +298,7 @@ grep -n "rehypeSanitize" src/components/markdown/unified-pipeline.ts
 | 리스크 | 완화 |
 |---|---|
 | pretty-code data-* allowlist 누락으로 syntax highlight 색이 깨짐 | 회귀 테스트 (작업 4) 의 "코드 블록 shiki span data-line 보존" 케이스 + 수동 smoke |
-| mermaid SVG schema 누락 시 다이어그램 깨짐 | 작업 5 점검 — 깨지면 schema 에 svg/g/path/text/rect/circle 등 추가. mermaid 글 1개를 회귀 테스트에 추가 |
+| mermaid SVG schema 누락 시 다이어그램 깨짐 | 명시적 OOS — 본 PR 머지 후 mermaid 글 1개 smoke 로 회귀 확인 → 깨지면 follow-up plan |
 | GFM footnote / task list 등 추가 element 누락 | defaultSchema 가 이미 `<sup>`, `<input type="checkbox">` 포함 — 회귀 테스트로 검증 |
 | Lighthouse Accessibility 점수 변동 (heading id 누락 등) | id allowlist 명시 (작업 2) — Lighthouse CI 자동 체크 |
 | 기존 글의 raw `<details>` / `<sub>` 등 깨짐 | defaultSchema 가 details/summary/sub/sup 모두 포함 — 영향 없음. 의심 시 fos-study grep 으로 사용 element 확인 |
