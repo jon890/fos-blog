@@ -11,7 +11,7 @@ type HastChild = {
     [key: string]: unknown;
   };
 };
-import Image from "next/image";
+import { LightboxImage } from "@/components/lightbox/LightboxImage";
 import { CodeCard } from "../CodeCard";
 import { Mermaid } from "../Mermaid";
 import { resolveMarkdownLink } from "@/lib/resolve-markdown-link";
@@ -236,16 +236,7 @@ export function createMarkdownComponents(basePath: string): Partial<Components> 
     ),
     img: ({ src, alt }) => {
       if (typeof src !== "string" || !src) return null;
-      return (
-        <Image
-          src={src}
-          alt={alt || ""}
-          width={0}
-          height={0}
-          sizes="100vw"
-          className="my-4 rounded-lg shadow-lg w-full h-auto"
-        />
-      );
+      return <LightboxImage src={src} alt={alt || ""} />;
     },
     hr: ({ ...props }) => (
       <hr className="my-8 border-gray-200 dark:border-gray-800" {...props} />
