@@ -255,7 +255,7 @@ src/components/
 
 ## 8. 실패/회귀 방지
 
-- **Common Pitfalls (`.claude/skills/_shared/common-pitfalls.md`) 사전 소진**:
+- **Common Pitfalls (`.claude/skills/_shared/common-pitfalls.md`) 사전 해소**:
   - P2 파일 범위: 본 문서 §2 트리로 명시
   - P4 cwd: 구현 phase에서 모든 bash 블록에 `# cwd:` 주석
   - P5 기계적 검증: 테스트 명령만 사용 (pnpm test, pnpm type-check, pnpm lint)
