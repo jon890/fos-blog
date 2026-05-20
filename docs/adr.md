@@ -244,7 +244,7 @@
 
 **도메인 신청 단위**: AdSense 는 루트 도메인(`fosworld.co.kr`) 으로만 신청 가능 — 서브도메인(`blog.*`) 단독 입력 불가. 등록 정책: 루트 승인 → 사이트 메뉴에서 서브도메인 추가 → 별도 심사 없이 광고 노출.
 
-**신청 전략**: 현재 ADR-013 의 301 리디렉션을 **그대로 두고** `fosworld.co.kr` 신청. AdSense 봇이 redirect 추적 후 `blog.*` 콘텐츠를 평가할 가능성이 높음. 거절 시 `6.conf` 의 `location /` 을 임시 `proxy_pass` 환원(양도메인 동일 서빙) → 재신청 → 승인 후 301 복구. 절차/롤백은 `docs/adsense-checklist.md` §2 참조.
+**신청 전략**: 현재 ADR-013 의 301 리디렉션을 **그대로 두고** `fosworld.co.kr` 신청. AdSense 봇이 redirect 추적 후 `blog.*` 콘텐츠를 평가할 가능성이 높음. 거절 시 `6.conf` 의 `location /` 을 임시 `proxy_pass` 환원(양도메인 동일 서빙) → 재신청 → 승인 후 301 복구. 절차/롤백은 `docs/adsense-checklist.md` 섹션 2 참조.
 
 ---
 
@@ -270,7 +270,7 @@
 
 ## ADR-016. Rate Limiting — Next.js middleware in-memory fixed window
 
-**Context**: 외부 다량 요청으로 홈서버 자원 소진 사고. NPM `limit_req` 미설정 + 앱 레벨 보호 부재.
+**Context**: 외부 다량 요청으로 홈서버 자원 고갈 사고. NPM `limit_req` 미설정 + 앱 레벨 보호 부재.
 
 **Decision**:
 - Fixed window 60초/IP, 분당 **1000 요청** (PR #76 hotfix 완화 + plan007-2 본질 fix)
