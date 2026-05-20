@@ -165,7 +165,7 @@ task 파일을 **사용자에게 제출하기 전**에 반드시 [`common-pitfal
 
 ## task 생성 직후 자동 검증 (필수)
 
-task 파일을 작성한 직후, 사용자에게 보고 + git commit 하기 전에 아래 grep 명령들을 실행해 `common-pitfalls.md § 1` 의 자동화 가능한 5개 패턴을 검출한다.
+task 파일을 작성한 직후, 사용자에게 보고 + git commit 하기 전에 아래 grep 명령들을 실행해 `common-pitfalls.md 섹션 1` 의 자동화 가능한 5개 패턴을 검출한다.
 위반 발견 시 사용자에게 `AskUserQuestion` 으로 보고하고 "수정 / skip / 이번만 면제" 선택을 받는다. AI 가 임의로 자동 수정하지 않는다 — 의도 보존 우선.
 
 ### 자동 검출 5 패턴 (grep)
@@ -232,7 +232,7 @@ awk '
 - **1-6 외부 상태 gate**: PR / 배포 / push 단계 앞에 상태 확인 명령 (`gh pr view {N} --json state`) 가 있는지
 - **1-7 4면 가드**: load-bearing 불변식 도입 시 Migration / Repository / Mapper / UI 4면 모두 가드 명시되어 있는지
 
-이 4 패턴은 task 작성 self-check 체크리스트 (본 SKILL.md "Critic 패턴 사전 해소" 섹션 + common-pitfalls.md § 1) 로 보완.
+이 4 패턴은 task 작성 self-check 체크리스트 (본 SKILL.md "Critic 패턴 사전 해소" 섹션 + common-pitfalls.md 섹션 1) 로 보완.
 
 ## 완료 후 (필수 수행 절차)
 

@@ -216,7 +216,7 @@ log.error(
 
 ---
 
-## 7. 테스트 전략 (PRD §7 AC 10)
+## 7. 테스트 전략 (PRD 섹션 7 AC 10)
 
 ### 필수 (A)
 
@@ -261,12 +261,12 @@ src/components/
 ## 8. 실패/회귀 방지
 
 - **Common Pitfalls (`.claude/skills/_shared/common-pitfalls.md`) 사전 해소**:
-  - P2 파일 범위: 본 문서 §2 트리로 명시
+  - P2 파일 범위: 본 문서 섹션 2 트리로 명시
   - P4 cwd: 구현 phase에서 모든 bash 블록에 `# cwd:` 주석
   - P5 기계적 검증: 테스트 명령만 사용 (pnpm test, pnpm type-check, pnpm lint)
   - P7 4면 검사 — 신규 불변식 없음 (기존 `is_active` 기반 필터 유지)
   - BLG1 db:push 금지 — `pnpm db:generate` → 커밋 → `pnpm db:migrate`
-  - BLG2 구조화 로그 — §6 준수
+  - BLG2 구조화 로그 — 섹션 6 준수
   - BLG3 사일런트 실패 금지 — 500 + 에러 body
 
 ---
