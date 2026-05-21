@@ -80,23 +80,23 @@ export function PostCard({
     <Link
       href={postHref(post.slug)}
       style={inlineStyle}
-      className="group relative grid grid-cols-[64px_1fr_auto] items-baseline gap-4 border-t border-[var(--color-border-subtle)] py-5 last:border-b md:grid-cols-[80px_1fr_180px_100px] md:gap-6 md:py-6"
+      className="group @container relative grid grid-cols-[64px_1fr_auto] items-baseline gap-4 border-t border-[var(--color-border-subtle)] py-5 last:border-b @md:grid-cols-[80px_1fr_180px_100px] @md:gap-6 @md:py-6"
     >
       <span className="self-center font-mono text-[11px] uppercase tracking-[0.06em] text-[var(--color-fg-faint)]">
         {num ? `— ${num}` : "—"}
       </span>
 
       <div className="min-w-0">
-        <div className="text-[16px] font-medium leading-snug tracking-tight text-[var(--color-fg-primary)] transition-colors duration-150 group-hover:text-[var(--color-brand-400)] md:text-[17px]">
+        <div className="text-[16px] font-medium leading-snug tracking-tight text-[var(--color-fg-primary)] transition-colors duration-150 group-hover:text-[var(--color-brand-400)] @md:text-[17px]">
           {post.title}
         </div>
         {post.description && (
-          <div className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-[var(--color-fg-secondary)] md:text-[14px]">
+          <div className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-[var(--color-fg-secondary)] @md:text-[14px]">
             {post.description}
           </div>
         )}
         {/* 모바일에선 cat/meta 를 본문 아래로 내림 */}
-        <div className="mt-2 flex items-center gap-3 font-mono text-[11px] text-[var(--color-fg-muted)] md:hidden">
+        <div className="mt-2 flex items-center gap-3 font-mono text-[11px] text-[var(--color-fg-muted)] @md:hidden">
           {showCategory && (
             <span
               className="inline-flex items-center gap-1.5 uppercase tracking-[0.04em]"
@@ -117,7 +117,7 @@ export function PostCard({
 
       {showCategory && (
         <div
-          className="hidden self-center items-center gap-2 font-mono text-[11px] uppercase tracking-[0.04em] md:flex"
+          className="hidden self-center items-center gap-2 font-mono text-[11px] uppercase tracking-[0.04em] @md:flex"
           style={{ color: "var(--cat-color)" }}
         >
           <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
@@ -125,7 +125,7 @@ export function PostCard({
         </div>
       )}
 
-      <div className="hidden self-center text-right font-mono text-[11px] leading-relaxed text-[var(--color-fg-muted)] md:block">
+      <div className="hidden self-center text-right font-mono text-[11px] leading-relaxed text-[var(--color-fg-muted)] @md:block">
         {formatDate(post.createdAt)}
         {viewCount !== undefined && (
           <>
