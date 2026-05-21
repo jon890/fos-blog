@@ -2,18 +2,11 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import type { SeriesInfo } from "@/infra/db/types";
 import { getCategoryColor, toCanonicalCategory } from "@/lib/category-meta";
+import { formatDate } from "@/lib/date-utils";
+import { seriesHref } from "@/lib/path-utils";
 
 interface SeriesCardProps {
   series: SeriesInfo;
-}
-
-function seriesHref(name: string): string {
-  return `/series/${encodeURIComponent(name)}`;
-}
-
-function formatDate(date: Date | null | undefined): string {
-  if (!date || Number.isNaN(date.getTime())) return "";
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
 }
 
 export function SeriesCard({ series }: SeriesCardProps) {
