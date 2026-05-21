@@ -23,6 +23,7 @@
 | VisitRepository | `getPopularPostPaths(limit*3)` | 인기 글 경로 + 조회수 |
 | PostRepository | `getPostsByPaths(paths)` | 인기 글 상세 데이터 |
 | VisitRepository | `getPostVisitCounts(postPaths)` | 최근 글 조회수 맵 |
+| PostRepository | `getAllSeries(4)` | 시리즈 섹션 — 최근 업데이트 4개 (plan047) |
 
 **ISR:** `revalidate = 60`  
 **Static params:** 없음
@@ -39,6 +40,7 @@
 | `HeroMesh` (plan013) | SVG `<radialGradient>` + CSS slow rotate 배경 mesh (server, prefers-reduced-motion 자동 처리) |
 | `CategoryList` | 카테고리 그리드 (최대 9개 표시, lg 3×3) |
 | `PostCard` | 인기 글 / 최근 글 카드 |
+| `SeriesCard` (plan047) | 시리즈 섹션 카드 |
 | `WebsiteJsonLd` | JSON-LD 구조화 데이터 |
 
 ---
@@ -49,7 +51,9 @@
 - **카테고리 섹션 "모두 보기" 링크**: `/categories` 이동
 - **"인기 글 더 보기" CTA 버튼** (섹션 하단): `/posts/popular` 이동
 - **"최신 글 더 보기" CTA 버튼** (섹션 하단): `/posts/latest` 이동
+- **"시리즈 더 보기" CTA 버튼** (섹션 하단, plan047): `/series` 이동
 - **PostCard 클릭**: `/posts/<path>` 이동
+- **SeriesCard 클릭** (plan047): `/series/<name>` 이동
 
 ※ 카테고리 섹션은 헤더 우측 "모두 보기 →" 링크, 글 섹션은 섹션 하단 큰 CTA 버튼 — [ADR-003](../adr.md#adr-003)
 
@@ -68,6 +72,8 @@
 HomeHero (eyebrow + h1<em> + caret + lead + <dl> 4 stats)  ← plan013, HeroMesh 배경 포함
 Popular Posts Section (인기 글, 조회수 있을 때만 표시)
   └ 섹션 하단 CTA 버튼 "인기 글 더 보기 →"
+Series Section (시리즈 4개, 시리즈 0건 시 hide)  ← plan047
+  └ 섹션 하단 CTA 버튼 "시리즈 더 보기 →"
 Recent Posts Section (최근 6개)
   └ 섹션 하단 CTA 버튼 "최신 글 더 보기 →"
 Categories Section (최대 9개, 3×3 grid → 헤더 우측 "모두 보기" 링크)  ← plan030
@@ -86,6 +92,7 @@ Categories Section (최대 9개, 3×3 grid → 헤더 우측 "모두 보기" 링
 - `src/components/HeroMesh.tsx` (plan013)
 - `src/components/CategoryList.tsx`
 - `src/components/PostCard.tsx`
+- `src/components/SeriesCard.tsx` (plan047)
 - `src/components/SectionCTAButton.tsx`
 - `src/components/JsonLd.tsx`
 - `src/infra/db/repositories/CategoryRepository.ts`

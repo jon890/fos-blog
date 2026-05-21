@@ -77,6 +77,33 @@
 
 ---
 
+## 주요 흐름 3: 홈/네비 → 시리즈 발견 (plan047)
+
+```
+[Header navigation "03 / 시리즈"]   또는   [메인 페이지 "시리즈" 섹션]
+              │                                    │
+              └──────────────┬─────────────────────┘
+                             ▼
+                       [/series 인덱스]
+                       (latestUpdatedAt DESC 정렬, 카드 grid)
+                             │
+                             ├─ SeriesCard 클릭 → [/series/<name>]
+                             │       │
+                             │       └─ 시리즈 글 목록 (seriesOrder ASC)
+                             │              │
+                             │              └─ PostCard 클릭 → /posts/<path>
+                             │
+                             └─ 시리즈 0건: "아직 등록된 시리즈가 없습니다" 빈 상태
+```
+
+진입점:
+
+- 전역 (모든 페이지): Header `navLinks` "03 / 시리즈"
+- 메인 페이지: "인기 글" 과 "최근 글" 사이 "시리즈" 섹션 (최근 업데이트 4개) + "시리즈 더 보기" CTA
+- 글 상세 (기존, plan033): `ArticleHero` / `ArticleFooter` 의 series 링크 → `/series/<name>`
+
+---
+
 ## 엣지 케이스
 
 | 상황                                     | 처리                                                                                                              |
@@ -100,6 +127,7 @@ AdSense 승인 요건(ADR-014) + 태그 탐색(ADR-023) 페이지.
 | `/contact` | Footer 링크 / 직접 접근 | 이메일 + GitHub Issues 채널 안내. 정적 렌더 |
 | `/privacy` | Footer 링크 / 직접 접근 | 개인정보처리방침 (방문 통계 SHA-256 해시 / 댓글 bcrypt / Google AdSense 쿠키). ISR 24h |
 | `/tag/[name]` | PostCard 태그 chip 클릭 | `decodeURIComponent(name)` → `getPostsByTag` limit=50. total=0 이면 `notFound()`. ISR 5분 (ADR-023) |
+| `/series` | Header "03 / 시리즈" / 메인 시리즈 섹션 CTA | `getAllSeries()` → SeriesCard grid. 0건이면 빈 상태 메시지. ISR 5분 (plan047) |
 
 ---
 

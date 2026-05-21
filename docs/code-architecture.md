@@ -310,6 +310,22 @@ src/components/
 
 설계 의도 (RSS 2.0 vs Atom / pubDate=createdAt / 50 limit) 는 ADR-024 참조.
 
+### 시리즈 발견성 (plan047)
+
+plan033 의 OOS 였던 `/series` 인덱스 + 전역 진입점 추가.
+
+- **`GET /series`** (`src/app/series/page.tsx`) — 시리즈 인덱스. ISR 300s. 카드 grid (`md:grid-cols-2`). 시리즈가 0건이면 `PostsListSubHero` + "아직 등록된 시리즈가 없습니다" 빈 상태.
+- **`PostRepository.getAllSeries(limit?)`** — 2 쿼리로 N+1 회피.
+  - (1) `GROUP BY series` aggregate — `(name, postCount, latestUpdatedAt, minSeriesOrder)` 수집, `MAX(updatedAt) DESC` 정렬
+  - (2) `(series, series_order) IN (...)` 로 각 시리즈의 첫 글 fetch (`seriesOrder` 가 `minSeriesOrder` 인 row)
+  - 메모리에서 `SeriesInfo` 로 조합. limit 미지정 시 전체 반환.
+- **`SeriesInfo` 타입** (`src/infra/db/types.ts`) — `{ name, postCount, latestUpdatedAt, firstPost: { title, description, category, slug, path } }`.
+- **`SeriesCard`** (`src/components/SeriesCard.tsx`) — 신규 컴포넌트. PostCard variant 가 아니라 별도 (ADR-028). 카테고리 chip · "N posts" 메타 · 시리즈명 · 첫 글 description (line-clamp-2) · latestUpdatedAt.
+- **`Header`** — `navLinks` 에 `{ href: "/series", label: "03 / 시리즈", icon: Layers }` 추가.
+- **메인 페이지 `src/app/page.tsx`** — 인기 글 / 최근 글 사이에 "시리즈" 섹션. `getAllSeries(4)` 호출 결과를 `SeriesCard` grid (`md:grid-cols-2`) 로. 시리즈 0건이면 섹션 자체 hide. "시리즈 더 보기" CTA → `/series`.
+
+설계 의도 (별 컴포넌트 분리) 는 ADR-028 참조.
+
 ---
 
 ## sync 자가 치유 metadata (plan037)
