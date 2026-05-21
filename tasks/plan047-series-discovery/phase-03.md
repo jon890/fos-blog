@@ -66,6 +66,12 @@ import { SeriesCard } from "@/components/SeriesCard";
 import type { SeriesInfo, CategoryData, PostData } from "@/infra/db/types";
 ```
 
+`src/app/page.tsx` 의 기존 lucide-react import 확장 (현재 `ArrowRight, Flame` 만):
+
+```tsx
+import { ArrowRight, Flame, Layers } from "lucide-react";
+```
+
 #### 2b. JSX 섹션 추가
 
 기존 Popular Posts 섹션 닫는 `</section>` 직후, Recent Posts 섹션 열기 전에 삽입:
