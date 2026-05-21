@@ -11,8 +11,6 @@ interface PostCardProps {
   variant?: "row" | "grid";
   showCategory?: boolean;
   viewCount?: number;
-  /** row variant 에서 좌측에 표시되는 정렬 번호 (없으면 미표시) */
-  index?: number;
 }
 
 function getCategoryIcon(category: string): string {
@@ -28,7 +26,6 @@ export function PostCard({
   variant = "row",
   showCategory = true,
   viewCount,
-  index,
 }: PostCardProps) {
   const catColor = getCategoryColor(post.category);
   const canonical = toCanonicalCategory(post.category);
@@ -74,70 +71,67 @@ export function PostCard({
   }
 
   // variant === "row" (기본, Editorial row list)
-  const num = typeof index === "number" ? String(index + 1).padStart(3, "0") : null;
-
+  // @container 는 후손에게만 query scope 를 제공하므로 별도 래퍼에 부여한다
   return (
-    <Link
-      href={postHref(post.slug)}
-      style={inlineStyle}
-      className="group @container relative grid grid-cols-[64px_1fr_auto] items-baseline gap-4 border-t border-[var(--color-border-subtle)] py-5 last:border-b @md:grid-cols-[80px_1fr_180px_100px] @md:gap-6 @md:py-6"
-    >
-      <span className="self-center font-mono text-[11px] uppercase tracking-[0.06em] text-[var(--color-fg-faint)]">
-        {num ? `— ${num}` : "—"}
-      </span>
-
-      <div className="min-w-0">
-        <div className="text-[16px] font-medium leading-snug tracking-tight text-[var(--color-fg-primary)] transition-colors duration-150 group-hover:text-[var(--color-brand-400)] @md:text-[17px]">
-          {post.title}
+    <div className="@container last:border-b last:border-[var(--color-border-subtle)]">
+      <Link
+        href={postHref(post.slug)}
+        style={inlineStyle}
+        className="group relative grid grid-cols-[1fr_auto] items-baseline gap-4 border-t border-[var(--color-border-subtle)] py-5 @lg:grid-cols-[1fr_180px_100px] @lg:gap-6 @lg:py-6"
+      >
+        <div className="min-w-0">
+          <div className="text-[16px] font-medium leading-snug tracking-tight text-[var(--color-fg-primary)] transition-colors duration-150 group-hover:text-[var(--color-brand-400)] @lg:text-[17px]">
+            {post.title}
+          </div>
+          {post.description && (
+            <div className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-[var(--color-fg-secondary)] @lg:text-[14px]">
+              {post.description}
+            </div>
+          )}
+          {/* 모바일에선 cat/meta 를 본문 아래로 내림 */}
+          <div className="mt-2 flex items-center gap-3 font-mono text-[11px] text-[var(--color-fg-muted)] @lg:hidden">
+            {showCategory && (
+              <span
+                className="inline-flex items-center gap-1.5 uppercase tracking-[0.04em]"
+                style={{ color: "var(--cat-color)" }}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
+                {getCategoryIcon(post.category)} {canonical}
+              </span>
+            )}
+            {viewCount !== undefined && (
+              <span className="inline-flex items-center gap-1">
+                <Eye className="h-3 w-3" />
+                {viewCount.toLocaleString()}
+              </span>
+            )}
+          </div>
         </div>
-        {post.description && (
-          <div className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-[var(--color-fg-secondary)] @md:text-[14px]">
-            {post.description}
+
+        {showCategory && (
+          <div
+            className="hidden self-center items-center gap-2 font-mono text-[11px] uppercase tracking-[0.04em] @lg:flex"
+            style={{ color: "var(--cat-color)" }}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
+            <span>{canonical}</span>
           </div>
         )}
-        {/* 모바일에선 cat/meta 를 본문 아래로 내림 */}
-        <div className="mt-2 flex items-center gap-3 font-mono text-[11px] text-[var(--color-fg-muted)] @md:hidden">
-          {showCategory && (
-            <span
-              className="inline-flex items-center gap-1.5 uppercase tracking-[0.04em]"
-              style={{ color: "var(--cat-color)" }}
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-              {getCategoryIcon(post.category)} {canonical}
-            </span>
-          )}
+
+        <div className="hidden self-center text-right font-mono text-[11px] leading-relaxed text-[var(--color-fg-muted)] @lg:block">
+          {formatDate(post.createdAt)}
           {viewCount !== undefined && (
-            <span className="inline-flex items-center gap-1">
-              <Eye className="h-3 w-3" />
-              {viewCount.toLocaleString()}
-            </span>
+            <>
+              <br />
+              <span className="inline-flex items-center gap-1">
+                <Eye className="h-3 w-3" />
+                {viewCount.toLocaleString()}
+              </span>
+            </>
           )}
         </div>
-      </div>
-
-      {showCategory && (
-        <div
-          className="hidden self-center items-center gap-2 font-mono text-[11px] uppercase tracking-[0.04em] @md:flex"
-          style={{ color: "var(--cat-color)" }}
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-          <span>{canonical}</span>
-        </div>
-      )}
-
-      <div className="hidden self-center text-right font-mono text-[11px] leading-relaxed text-[var(--color-fg-muted)] @md:block">
-        {formatDate(post.createdAt)}
-        {viewCount !== undefined && (
-          <>
-            <br />
-            <span className="inline-flex items-center gap-1">
-              <Eye className="h-3 w-3" />
-              {viewCount.toLocaleString()}
-            </span>
-          </>
-        )}
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 }
 
