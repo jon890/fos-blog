@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import { getRepositories } from "@/infra/db/repositories";
+import logger from "@/lib/logger";
 import { PostsListSubHero } from "@/components/PostsListSubHero";
 import { SeriesCard } from "@/components/SeriesCard";
+import type { SeriesInfo } from "@/infra/db/types";
 import { env } from "@/env";
+
+const log = logger.child({ module: "app/series/page" });
 
 const siteUrl = env.NEXT_PUBLIC_SITE_URL;
 
@@ -21,8 +25,17 @@ export const metadata: Metadata = {
 };
 
 export default async function SeriesIndexPage() {
-  const { post } = getRepositories();
-  const seriesList = await post.getAllSeries();
+  let seriesList: SeriesInfo[] = [];
+
+  try {
+    const { post } = getRepositories();
+    seriesList = await post.getAllSeries();
+  } catch (error) {
+    log.warn(
+      { err: error instanceof Error ? error : new Error(String(error)) },
+      "Database not available"
+    );
+  }
 
   return (
     <div className="container mx-auto max-w-[1180px] px-4">

@@ -38,7 +38,7 @@ export interface FolderContentsResult {
 export interface SeriesInfo {
   name: string;
   postCount: number;
-  latestUpdatedAt: Date;
+  latestUpdatedAt: Date | null;
   firstPost: {
     title: string;
     description: string | null;

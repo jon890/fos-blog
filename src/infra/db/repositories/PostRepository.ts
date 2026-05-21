@@ -599,7 +599,7 @@ export class PostRepository extends BaseRepository {
       .select({
         series: posts.series,
         postCount: sql<string>`count(*)`,
-        latestUpdatedAt: sql<Date>`max(${posts.updatedAt})`,
+        latestUpdatedAt: sql<Date | null>`max(${posts.updatedAt})`,
         minSeriesOrder: sql<number>`min(${posts.seriesOrder})`,
       })
       .from(posts)
