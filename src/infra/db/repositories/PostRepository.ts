@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, inArray, isNotNull, like, ne, or, sql } from "drizzle-orm";
 import { NewPost, posts } from "../schema";
 import { UpdatePost } from "../schema/posts";
-import type { PostData } from "../types";
+import type { PostData, SeriesInfo } from "../types";
 import { BaseRepository } from "./BaseRepository";
 import { env } from "@/env";
 import logger from "@/lib/logger";
@@ -592,6 +592,70 @@ export class PostRepository extends BaseRepository {
       );
       return [];
     }
+  }
+
+  async getAllSeries(limit?: number): Promise<SeriesInfo[]> {
+    const baseQuery = this.db
+      .select({
+        series: posts.series,
+        postCount: sql<string>`count(*)`,
+        latestUpdatedAt: sql<Date | null>`max(${posts.updatedAt})`,
+        minSeriesOrder: sql<number>`min(${posts.seriesOrder})`,
+      })
+      .from(posts)
+      .where(and(eq(posts.isActive, true), isNotNull(posts.series)))
+      .groupBy(posts.series)
+      .orderBy(sql`max(${posts.updatedAt}) desc`);
+
+    const aggregates =
+      typeof limit === "number" ? await baseQuery.limit(limit) : await baseQuery;
+    if (aggregates.length === 0) return [];
+
+    const tuples = aggregates.map(
+      (a) => sql`(${a.series}, ${a.minSeriesOrder})`,
+    );
+
+    const firstPosts = await this.db
+      .select({
+        title: posts.title,
+        description: posts.description,
+        category: posts.category,
+        slug: posts.slug,
+        path: posts.path,
+        series: posts.series,
+        seriesOrder: posts.seriesOrder,
+      })
+      .from(posts)
+      .where(
+        and(
+          eq(posts.isActive, true),
+          sql`(${posts.series}, ${posts.seriesOrder}) IN (${sql.join(tuples, sql`, `)})`,
+        ),
+      );
+
+    const firstPostByName = new Map(
+      firstPosts.flatMap((p) => (p.series === null ? [] : [[p.series, p] as const])),
+    );
+
+    return aggregates.flatMap((a) => {
+      if (a.series === null) return [];
+      const first = firstPostByName.get(a.series);
+      if (!first) return [];
+      return [
+        {
+          name: a.series,
+          postCount: Number(a.postCount),
+          latestUpdatedAt: a.latestUpdatedAt,
+          firstPost: {
+            title: first.title,
+            description: first.description,
+            category: first.category,
+            slug: first.slug,
+            path: first.path,
+          },
+        },
+      ];
+    });
   }
 
   async countSeries(): Promise<number> {

@@ -48,7 +48,9 @@ export interface SeriesInfo {
 ```ts
 async getAllSeries(limit?: number): Promise<SeriesInfo[]> {
   // 1. 시리즈별 aggregate — postCount, latestUpdatedAt, minSeriesOrder 수집
-  let aggregateQuery = this.db
+  // Drizzle query builder 의 type narrowing 이슈 회피를 위해 inline chain 사용
+  // (기존 repo 의 getPostsByTag 등 동일 패턴)
+  const baseQuery = this.db
     .select({
       series: posts.series,
       postCount: sql<string>`count(*)`,
@@ -60,11 +62,8 @@ async getAllSeries(limit?: number): Promise<SeriesInfo[]> {
     .groupBy(posts.series)
     .orderBy(sql`max(${posts.updatedAt}) desc`);
 
-  if (typeof limit === "number") {
-    aggregateQuery = aggregateQuery.limit(limit);
-  }
-
-  const aggregates = await aggregateQuery;
+  const aggregates =
+    typeof limit === "number" ? await baseQuery.limit(limit) : await baseQuery;
   if (aggregates.length === 0) return [];
 
   // 2. 각 시리즈의 첫 글 (seriesOrder = minSeriesOrder) fetch
@@ -212,3 +211,4 @@ grep -n "interface SeriesInfo" src/infra/db/types.ts
 | MySQL row constructor IN 문법 호환성 | MySQL 5.7+ 지원. 본 프로젝트 8.4 → 문제 없음. 단 drizzle sql tag 로 직접 작성 — drizzle 의 자동 placeholder 가 row constructor 를 올바로 직렬화하는지 type-check 단계에서 검증 |
 | seriesOrder NULL 인 row 가 minSeriesOrder 에 섞임 | aggregate 단계의 `isNotNull(posts.series)` 가 series 자체를 필터. seriesOrder NULL 인 시리즈 글은 sync 시점에 series 도 null 로 떨어짐 (SyncService 정책, plan033). 따라서 안전 |
 | 시리즈명 NULL 으로 들어와 Map key 가 깨짐 | aggregate WHERE 절에 `isNotNull(posts.series)` 명시 — a.series 는 항상 non-null |
+| `SeriesInfo.latestUpdatedAt: Date` non-null 타입이 SQL MAX 의 nullable 결과와 충돌 | `aggregates.length === 0` 시 early return → 이후 MAX 는 그룹이 비어있지 않음이 보장되므로 항상 non-null. drizzle `sql<Date>` 단언은 이 invariant 에 의존 |

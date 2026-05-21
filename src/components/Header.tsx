@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./ThemeToggle";
 import { SearchDialog } from "./SearchDialog";
-import { Book, Github, Home, Menu, X, Search, PanelLeft } from "lucide-react";
+import { Book, Github, Home, Layers, Menu, X, Search, PanelLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSidebar } from "./SidebarContext";
 import type { CSSProperties } from "react";
@@ -48,6 +48,7 @@ export function Header() {
   const navLinks = [
     { href: "/", label: "01 / 홈", icon: Home },
     { href: "/categories", label: "02 / 카테고리", icon: Book },
+    { href: "/series", label: "03 / 시리즈", icon: Layers },
   ];
 
   const isActive = (href: string) => {

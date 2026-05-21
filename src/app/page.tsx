@@ -1,15 +1,16 @@
 import { getRepositories } from "@/infra/db/repositories";
-import type { CategoryData, PostData } from "@/infra/db/types";
+import type { CategoryData, PostData, SeriesInfo } from "@/infra/db/types";
 import { env } from "@/env";
 import logger from "@/lib/logger";
 
 const log = logger.child({ module: "app/page" });
 import { CategoryList } from "@/components/CategoryList";
 import { PostCard } from "@/components/PostCard";
+import { SeriesCard } from "@/components/SeriesCard";
 import { SectionCTAButton } from "@/components/SectionCTAButton";
 import { WebsiteJsonLd } from "@/components/JsonLd";
 import { HomeHero } from "@/components/HomeHero";
-import { ArrowRight, Flame } from "lucide-react";
+import { ArrowRight, Flame, Layers } from "lucide-react";
 import Link from "next/link";
 
 const siteUrl = env.NEXT_PUBLIC_SITE_URL;
@@ -39,15 +40,17 @@ export default async function HomePage() {
   let visitCounts: Record<string, number> = {};
   let postCountTotal = 0;
   let seriesCount = 0;
+  let seriesList: SeriesInfo[] = [];
 
   try {
     const { category, post, visit } = getRepositories();
-    [categories, recentPosts, popularPosts, postCountTotal, seriesCount] = await Promise.all([
+    [categories, recentPosts, popularPosts, postCountTotal, seriesCount, seriesList] = await Promise.all([
       category.getCategories(),
       post.getRecentPosts(6),
       getPopularPosts(6),
       post.getActivePostCount(),
       post.countSeries(),
+      post.getAllSeries(4),
     ]);
 
     const postPaths = recentPosts.map((p) => p.path);
@@ -94,6 +97,24 @@ export default async function HomePage() {
               ))}
             </div>
             <SectionCTAButton href="/posts/popular" label="인기 글 더 보기" />
+          </section>
+        )}
+
+        {/* Series Section */}
+        {seriesList.length > 0 && (
+          <section className="mb-8 md:mb-16">
+            <div className="flex items-center gap-2 mb-4 md:mb-8">
+              <Layers className="w-6 h-6 text-[var(--color-brand-400)]" />
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                시리즈
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {seriesList.map((s) => (
+                <SeriesCard key={s.name} series={s} />
+              ))}
+            </div>
+            <SectionCTAButton href="/series" label="시리즈 더 보기" />
           </section>
         )}
 

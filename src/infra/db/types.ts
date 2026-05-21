@@ -34,3 +34,16 @@ export interface FolderContentsResult {
   posts: PostData[];
   readme: string | null;
 }
+
+export interface SeriesInfo {
+  name: string;
+  postCount: number;
+  latestUpdatedAt: Date | null;
+  firstPost: {
+    title: string;
+    description: string | null;
+    category: string;
+    slug: string;
+    path: string;
+  };
+}

@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { categoryIcons, DEFAULT_CATEGORY_ICON } from "@/infra/db/constants";
 import type { PostData } from "@/infra/db/types";
 import { getCategoryColor, toCanonicalCategory } from "@/lib/category-meta";
+import { formatDate } from "@/lib/date-utils";
 import { Eye } from "lucide-react";
 
 interface PostCardProps {
@@ -135,7 +136,3 @@ export function PostCard({
   );
 }
 
-function formatDate(date: Date | null | undefined): string {
-  if (!date || Number.isNaN(date.getTime())) return "";
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
-}

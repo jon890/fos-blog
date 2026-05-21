@@ -72,6 +72,128 @@ describe("PostRepository.getRecentPostsCursor", () => {
   });
 });
 
+describe("PostRepository.getAllSeries", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const aggDate = new Date("2024-02-01T00:00:00Z");
+  const aggDateOlder = new Date("2024-01-01T00:00:00Z");
+
+  function buildAggChain(rows: unknown[]) {
+    const chain: Record<string, unknown> = {};
+    chain.from = vi.fn().mockReturnValue(chain);
+    chain.where = vi.fn().mockReturnValue(chain);
+    chain.groupBy = vi.fn().mockReturnValue(chain);
+    chain.orderBy = vi.fn().mockReturnValue(chain);
+    chain.limit = vi.fn().mockResolvedValue(rows);
+    chain.then = (
+      onfulfilled: (v: unknown) => unknown,
+      onrejected?: (e: unknown) => unknown,
+    ) => Promise.resolve(rows).then(onfulfilled, onrejected);
+    return chain;
+  }
+
+  function buildFirstPostChain(rows: unknown[]) {
+    const chain: Record<string, unknown> = {};
+    chain.from = vi.fn().mockReturnValue(chain);
+    chain.where = vi.fn().mockResolvedValue(rows);
+    return chain;
+  }
+
+  function makeRepoForSeries(aggregates: unknown[], firstPosts: unknown[]) {
+    const aggChain = buildAggChain(aggregates);
+    const fpChain = buildFirstPostChain(firstPosts);
+    let callCount = 0;
+    const db = {
+      select: vi.fn().mockImplementation(() => {
+        callCount++;
+        return callCount === 1 ? aggChain : fpChain;
+      }),
+    };
+    return { repo: new PostRepository(db as unknown as DbInstance), aggChain };
+  }
+
+  it("집계 결과 없으면 빈 배열 반환", async () => {
+    const { repo } = makeRepoForSeries([], []);
+    const result = await repo.getAllSeries();
+    expect(result).toEqual([]);
+  });
+
+  it("시리즈별 postCount + latestUpdatedAt + firstPost 반환", async () => {
+    const aggregates = [
+      { series: "A", postCount: "3", latestUpdatedAt: aggDate, minSeriesOrder: 1 },
+    ];
+    const firstPosts = [
+      {
+        title: "First A",
+        description: "desc A",
+        category: "cat",
+        slug: "first-a",
+        path: "cat/first-a.md",
+        series: "A",
+        seriesOrder: 1,
+      },
+    ];
+    const { repo } = makeRepoForSeries(aggregates, firstPosts);
+    const result = await repo.getAllSeries();
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("A");
+    expect(result[0].postCount).toBe(3);
+    expect(result[0].latestUpdatedAt).toBe(aggDate);
+    expect(result[0].firstPost.path).toBe("cat/first-a.md");
+  });
+
+  it("집계 정렬(latestUpdatedAt DESC) 순서 유지", async () => {
+    const aggregates = [
+      { series: "B", postCount: "2", latestUpdatedAt: aggDate, minSeriesOrder: 1 },
+      { series: "A", postCount: "3", latestUpdatedAt: aggDateOlder, minSeriesOrder: 1 },
+    ];
+    const firstPosts = [
+      {
+        title: "First A",
+        description: null,
+        category: "cat",
+        slug: "first-a",
+        path: "cat/first-a.md",
+        series: "A",
+        seriesOrder: 1,
+      },
+      {
+        title: "First B",
+        description: null,
+        category: "cat",
+        slug: "first-b",
+        path: "cat/first-b.md",
+        series: "B",
+        seriesOrder: 1,
+      },
+    ];
+    const { repo } = makeRepoForSeries(aggregates, firstPosts);
+    const result = await repo.getAllSeries();
+    expect(result[0].name).toBe("B");
+    expect(result[1].name).toBe("A");
+  });
+
+  it("limit 지정 시 aggChain.limit 호출", async () => {
+    const aggregates = [
+      { series: "A", postCount: "1", latestUpdatedAt: aggDate, minSeriesOrder: 1 },
+    ];
+    const firstPosts = [
+      {
+        title: "T",
+        description: null,
+        category: "cat",
+        slug: "s",
+        path: "cat/s.md",
+        series: "A",
+        seriesOrder: 1,
+      },
+    ];
+    const { repo, aggChain } = makeRepoForSeries(aggregates, firstPosts);
+    await repo.getAllSeries(1);
+    expect(aggChain.limit).toHaveBeenCalledWith(1);
+  });
+});
+
 describe("tagIntersectionSize", () => {
   it("양쪽 빈 배열 → 0", () => {
     expect(tagIntersectionSize([], [])).toBe(0);

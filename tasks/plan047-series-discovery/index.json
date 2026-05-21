@@ -1,7 +1,7 @@
 {
   "name": "plan047-series-discovery",
   "description": "시리즈 발견성 개선 — plan033 의 OOS 였던 /series 인덱스 페이지 + 메인 페이지 시리즈 섹션 + Header navigation '03 / 시리즈' 진입점 추가. PostRepository.getAllSeries() 신설 (2 쿼리 N+1 회피). 시리즈 카드는 ADR-028 결정에 따라 PostCard variant 가 아닌 별도 SeriesCard 컴포넌트로 분리.",
-  "status": "in_progress",
+  "status": "completed",
   "created_at": "2026-05-21",
   "total_phases": 4,
   "related_docs": [
@@ -20,28 +20,28 @@
       "file": "phase-01.md",
       "title": "PostRepository.getAllSeries + SeriesInfo 타입 + 단위 테스트",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 2,
       "file": "phase-02.md",
       "title": "SeriesCard 컴포넌트 + /series 인덱스 페이지",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 3,
       "file": "phase-03.md",
       "title": "Header navLink + 메인 페이지 시리즈 섹션",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 4,
       "file": "phase-04.md",
       "title": "검증 + index.json completed 마킹",
       "model": "haiku",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }
