@@ -328,6 +328,37 @@ plan033 의 OOS 였던 `/series` 인덱스 + 전역 진입점 추가.
 
 ---
 
+## SEO 색인 정책 (plan048)
+
+Google Search Console "적절한 표준 태그가 포함된 대체 페이지" 알람 해소를 위한 정책.
+
+### 글 URL 인코딩 일관성
+
+글 path 는 슬래시를 보존하는 segment-encoding 패턴 (`path.split("/").map(encodeURIComponent).join("/")`) 으로만 인코딩한다.
+`encodeURIComponent(fullPath)` 처럼 통째 인코딩하면 슬래시까지 `%2F` 로 변환되어 정상 슬래시 URL 과 별개로 크롤링되며, canonical 충돌로 alternate URL 누적이 발생한다.
+
+적용 위치 (sync 7+1 곳):
+
+- `src/components/PostCard.tsx` `postHref` — segment-encoding
+- `src/components/SearchDialog.tsx` — segment-encoding
+- `src/components/ArticleFooter.tsx` (series prev/next) — segment-encoding
+- `src/app/posts/[...slug]/page.tsx` (canonical / OG image URL) — segment-encoding
+- `src/app/sitemap.ts` post URL — segment-encoding
+- `src/app/category/[...path]/page.tsx` (글 카드 href) — segment-encoding (plan048 에서 단독 인코딩에서 전환)
+
+### 글 단위 noindex (frontmatter `index: false`)
+
+폴더 단위 sync 차단은 `src/infra/github/file-filter.ts` 의 `EXCLUDED_FILENAMES`.
+글 단위 색인 차단은 frontmatter `index: false` — `generateMetadata` 에서 `robots: { index: false, follow: true }` 로 매핑.
+두 정책 도메인 분리:
+
+- file-filter — 사전 차단 (DB 에 동기화 자체 안 함)
+- frontmatter index — 사후 차단 (DB 동기화 + 페이지 렌더는 하되 검색엔진에만 비노출)
+
+현재 frontmatter `index: false` 적용 글은 없음 — 향후 비공개 전환 필요한 글에 대비한 인프라.
+
+---
+
 ## sync 자가 치유 metadata (plan037)
 
 - **`CategoryRepository.syncAll(stats)`** — UPSERT (`onDuplicateKeyUpdate` on `name`) + orphan DELETE (`notInArray(categories.name, currentNames)`). 기존 `replaceAll` (DELETE all + INSERT all) 대체. id 안정성 + 변경 없는 row 의 `updatedAt` 미터치. `stats.length === 0` 분기로 빈 입력 시 전체 row 삭제 명시.
