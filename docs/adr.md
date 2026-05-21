@@ -536,6 +536,7 @@
 
 ---
 
+<a id="adr-028"></a>
 ## ADR-028. 시리즈 인덱스 카드는 별도 SeriesCard 컴포넌트 (plan047)
 
 - **결정**: 시리즈 인덱스 (`/series`) 와 메인 페이지 시리즈 섹션에서 사용할 카드는 `PostCard` 의 variant 가 아닌 신규 `SeriesCard` 컴포넌트로 분리한다. 도메인 필드 — 시리즈명, postCount, latestUpdatedAt, 대표 카테고리, 첫 글 description — 만 props 로 받는다.
