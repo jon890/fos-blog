@@ -47,6 +47,7 @@ export async function generateMetadata({
       return { title: "글을 찾을 수 없습니다" };
     }
 
+    const { frontMatter } = parseFrontMatter(data.content);
     const title = extractTitle(data.content) || data.post.title;
     const description = extractDescription(data.content);
     const postUrl = `${siteUrl}/posts/${slug
@@ -62,6 +63,7 @@ export async function generateMetadata({
       title,
       description,
       alternates: { canonical: postUrl },
+      ...(frontMatter.index === false && { robots: { index: false, follow: true } }),
       openGraph: {
         title,
         description,

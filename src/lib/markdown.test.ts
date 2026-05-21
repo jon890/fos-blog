@@ -393,3 +393,23 @@ describe("findCodeProp", () => {
     expect(findCodeProp(tree, "data-line-numbers")).toBeUndefined();
   });
 });
+
+// ===== parseFrontMatter — boolean coercion =====
+describe("parseFrontMatter — boolean coercion", () => {
+  it("index: false 를 boolean false 로 변환", () => {
+    const { frontMatter } = parseFrontMatter("---\nindex: false\n---\n본문");
+    expect(frontMatter.index).toBe(false);
+  });
+  it("index: true 를 boolean true 로 변환", () => {
+    const { frontMatter } = parseFrontMatter("---\nindex: true\n---\n본문");
+    expect(frontMatter.index).toBe(true);
+  });
+  it("index 미지정 시 undefined", () => {
+    const { frontMatter } = parseFrontMatter("---\ntitle: foo\n---\n본문");
+    expect(frontMatter.index).toBeUndefined();
+  });
+  it("seriesOrder string 은 boolean coercion 영향 없음", () => {
+    const { frontMatter } = parseFrontMatter("---\nseriesOrder: 2\n---\n본문");
+    expect(frontMatter.seriesOrder).toBe("2");
+  });
+});

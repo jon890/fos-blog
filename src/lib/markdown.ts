@@ -12,6 +12,8 @@ export interface FrontMatter {
   series?: string;
   /** YAML 파서가 `seriesOrder: 2` 를 number 로, `seriesOrder: "2"` 를 string 으로 반환할 수 있어 둘 다 허용. SyncService 에서 `Number()` + `Number.isFinite` 로 정규화. */
   seriesOrder?: number | string;
+  /** false 일 때 글 페이지에 `robots: { index: false, follow: true }` 적용 — 검색엔진 색인 제외 (plan048). parseFrontMatter 의 boolean coercion 으로 frontmatter `index: false` 가 boolean false 로 변환됨. 폴더 단위 차단은 src/infra/github/file-filter.ts. */
+  index?: boolean;
   [key: string]: unknown;
 }
 
@@ -52,6 +54,8 @@ export function parseFrontMatter(content: string): {
         frontMatter[key] = arrayContent
           .split(",")
           .map((item) => item.trim().replace(/['"]/g, ""));
+      } else if (value === "true" || value === "false") {
+        frontMatter[key] = value === "true";
       } else {
         frontMatter[key] = value;
       }
