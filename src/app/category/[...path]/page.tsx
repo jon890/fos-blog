@@ -188,7 +188,7 @@ export default async function FolderPage({ params }: FolderPageProps) {
                   index={i + 1}
                   title={p.title}
                   excerpt={p.description ?? ""}
-                  href={`/posts/${encodeURIComponent(p.path)}`}
+                  href={`/posts/${p.path.split("/").map(encodeURIComponent).join("/")}`}
                   updatedAt={p.updatedAt ?? null}
                   categorySlug={category}
                 />

@@ -4,6 +4,13 @@ import type { Element as HastElement, ElementContent, Text } from "hast";
 
 const HTML_TAG_RE = /<[^>]+>/g;
 
+/**
+ * parseFrontMatter 가 `"true"` / `"false"` 를 boolean 으로 변환할 frontmatter 키 화이트리스트.
+ * 새 boolean 필드 추가 시 이 set 에 등록 — 다른 필드 (title, description 등) 가
+ * 우연히 `"true"` / `"false"` 값을 가져도 string 으로 유지 (plan048 review).
+ */
+const BOOLEAN_FRONT_MATTER_KEYS = new Set(["index"]);
+
 export interface FrontMatter {
   title?: string;
   date?: string;
@@ -12,6 +19,8 @@ export interface FrontMatter {
   series?: string;
   /** YAML 파서가 `seriesOrder: 2` 를 number 로, `seriesOrder: "2"` 를 string 으로 반환할 수 있어 둘 다 허용. SyncService 에서 `Number()` + `Number.isFinite` 로 정규화. */
   seriesOrder?: number | string;
+  /** false 일 때 글 페이지에 `robots: { index: false, follow: true }` 적용 — 검색엔진 색인 제외 (plan048). parseFrontMatter 의 boolean coercion 으로 frontmatter `index: false` 가 boolean false 로 변환됨. 폴더 단위 차단은 src/infra/github/file-filter.ts. */
+  index?: boolean;
   [key: string]: unknown;
 }
 
@@ -52,6 +61,8 @@ export function parseFrontMatter(content: string): {
         frontMatter[key] = arrayContent
           .split(",")
           .map((item) => item.trim().replace(/['"]/g, ""));
+      } else if (BOOLEAN_FRONT_MATTER_KEYS.has(key) && (value === "true" || value === "false")) {
+        frontMatter[key] = value === "true";
       } else {
         frontMatter[key] = value;
       }
@@ -63,11 +74,14 @@ export function parseFrontMatter(content: string): {
 }
 
 // Extract title from markdown content
-export function extractTitle(content: string): string | null {
-  // First try to get title from frontmatter
-  const { frontMatter } = parseFrontMatter(content);
-  if (frontMatter.title) {
-    return frontMatter.title as string;
+export function extractTitle(
+  content: string,
+  frontMatter?: FrontMatter,
+): string | null {
+  // First try to get title from frontmatter (재파싱 회피용 optional param)
+  const fm = frontMatter ?? parseFrontMatter(content).frontMatter;
+  if (fm.title) {
+    return fm.title as string;
   }
 
   // Then try to find first h1
@@ -82,9 +96,11 @@ export function extractTitle(content: string): string | null {
 // Extract description from markdown content
 export function extractDescription(
   content: string,
-  maxLength: number = 200
+  maxLength: number = 200,
+  parsed?: { frontMatter: FrontMatter; content: string },
 ): string {
-  const { frontMatter, content: mainContent } = parseFrontMatter(content);
+  const { frontMatter, content: mainContent } =
+    parsed ?? parseFrontMatter(content);
 
   if (frontMatter.description) {
     return frontMatter.description.replace(HTML_TAG_RE, " ").replace(/\s+/g, " ").trim();

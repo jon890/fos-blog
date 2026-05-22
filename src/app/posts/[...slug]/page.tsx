@@ -47,8 +47,10 @@ export async function generateMetadata({
       return { title: "글을 찾을 수 없습니다" };
     }
 
-    const title = extractTitle(data.content) || data.post.title;
-    const description = extractDescription(data.content);
+    const parsed = parseFrontMatter(data.content);
+    const { frontMatter } = parsed;
+    const title = extractTitle(data.content, frontMatter) || data.post.title;
+    const description = extractDescription(data.content, 200, parsed);
     const postUrl = `${siteUrl}/posts/${slug
       .split("/")
       .map(encodeURIComponent)
@@ -62,6 +64,7 @@ export async function generateMetadata({
       title,
       description,
       alternates: { canonical: postUrl },
+      ...(frontMatter.index === false && { robots: { index: false, follow: true } }),
       openGraph: {
         title,
         description,
@@ -111,10 +114,10 @@ export default async function PostPage({ params }: PostPageProps) {
   }
 
   const { content, post: postData } = data;
-  const { content: contentWithoutFrontmatter, frontMatter } =
-    parseFrontMatter(content);
+  const parsed = parseFrontMatter(content);
+  const { content: contentWithoutFrontmatter, frontMatter } = parsed;
   const stripped = stripLeadingH1(contentWithoutFrontmatter);
-  const title = extractTitle(content) || postData.title;
+  const title = extractTitle(content, frontMatter) || postData.title;
   const readTime = getReadingTime(stripped);
   const tocItems = generateTableOfContents(stripped).filter(
     (i) => i.level === 2 || i.level === 3
@@ -146,7 +149,7 @@ export default async function PostPage({ params }: PostPageProps) {
     visit.getVisitCount(postData.path),
     postRepo.getRelatedPosts(postData.path, 4),
   ]);
-  const desc = extractDescription(content);
+  const desc = extractDescription(content, 200, parsed);
 
   const postUrl = `${siteUrl}/posts/${postData.path
     .split("/")
