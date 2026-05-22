@@ -412,4 +412,14 @@ describe("parseFrontMatter — boolean coercion", () => {
     const { frontMatter } = parseFrontMatter("---\nseriesOrder: 2\n---\n본문");
     expect(frontMatter.seriesOrder).toBe("2");
   });
+  it("허용 키 외 (title) 가 'false' 값을 가지면 string 으로 유지", () => {
+    const { frontMatter } = parseFrontMatter("---\ntitle: false\n---\n본문");
+    expect(frontMatter.title).toBe("false");
+  });
+  it("허용 키 외 (description) 가 'true' 값을 가지면 string 으로 유지", () => {
+    const { frontMatter } = parseFrontMatter(
+      "---\ndescription: true\n---\n본문",
+    );
+    expect(frontMatter.description).toBe("true");
+  });
 });
