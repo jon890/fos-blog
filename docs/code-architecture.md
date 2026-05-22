@@ -369,6 +369,18 @@ Google robots.txt 매칭은 가장 구체적인 (긴) 경로 우선:
 
 다른 `/api/*` 엔드포인트 (`comments` / `posts/{latest,popular}` / `search` / `sync` / `visit`) 는 모두 인덱싱 가치 없어 차단 유지.
 
+### 카테고리 페이지 metadata 가드 (plan050)
+
+`src/app/category/[...path]/page.tsx` 의 `generateMetadata` 는 path 만으로 canonical 과 og:image 메타를 생성하고 있어, 임의 path (예: `/category/분산_계산_알고리즘.md`) 도 자기 자신을 canonical 로 노출.
+누군가 한 번 잘못된 URL 로 접근하면 Next.js ISR 캐시에 prerender HTML 이 남고, Google 이 발견 시 영구 인덱싱 후보가 됨.
+
+방어:
+
+- `getFolderContents(folderPath)` 를 React `cache()` 로 wrap — `generateMetadata` 와 `page()` 가 같은 호출 공유
+- `generateMetadata` 에서 결과가 비어있으면 (`folders.length === 0 && posts.length === 0 && !readme`) fallback metadata 반환 — `canonical` / `openGraph` 미생성 + `robots: { index: false, follow: false }`
+- `page()` 의 `notFound()` 가드 (이미 존재) 는 그대로 — runtime 404 응답
+- 결과: 잘못된 path 응답이 metadata 단에서 noindex 명시 + canonical 미노출 → Google 이 재방문 시 색인 해제
+
 ---
 
 ## sync 자가 치유 metadata (plan037)
