@@ -1,7 +1,7 @@
 {
   "name": "plan050-category-metadata-guard",
   "description": "category 페이지가 임의 path 에 대해 200 응답하면서 canonical / og:image 메타를 자기 자신으로 노출하는 문제 방어. generateMetadata 에 getFolderContents 검증 추가 + React cache() 로 page() 와 쿼리 공유. 빈 결과면 canonical 미생성 + robots noindex. Search Console 의 /api/og/category/분산_계산_알고리즘.md 같은 잘못된 URL 인덱싱을 차단.",
-  "status": "in_progress",
+  "status": "completed",
   "created_at": "2026-05-21",
   "total_phases": 2,
   "related_docs": [
@@ -14,14 +14,14 @@
       "file": "phase-01.md",
       "title": "generateMetadata 가드 + React cache 도입",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 2,
       "file": "phase-02.md",
       "title": "검증 + index.json 마킹 + production 모드 응답 확인",
       "model": "haiku",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }
