@@ -1,7 +1,7 @@
 {
   "name": "plan049-robots-og-allow",
   "description": "Google Search Console 'robots.txt에 의해 차단됨' 알람 9건 해소. /api/ 통째 차단 정책이 /api/og/* OG 이미지 endpoint 까지 막아 글 페이지의 og:image URL 을 Google 이 크롤 시도 → 차단 알람. robots.ts 에 allow:['/api/og/'] 예외 추가. 다른 /api/ 엔드포인트는 차단 유지.",
-  "status": "in_progress",
+  "status": "completed",
   "created_at": "2026-05-21",
   "total_phases": 2,
   "related_docs": [
@@ -14,14 +14,14 @@
       "file": "phase-01.md",
       "title": "robots.ts /api/og/ allow 예외 추가",
       "model": "sonnet",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "number": 2,
       "file": "phase-02.md",
       "title": "검증 + index.json 마킹 + Search Console 안내",
       "model": "haiku",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }
