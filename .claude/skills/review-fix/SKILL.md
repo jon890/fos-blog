@@ -402,20 +402,41 @@ gh pr view <N> --json mergeable,mergeStateStatus
 
 코드 수정이 완료되고 push된 후, 처리한 리뷰 댓글에 reply 를 달아 해결됐음을 알린다.
 
-### ⚠️ 자동 재트리거 토큰 금지 (CRITICAL)
+### ⚠️ 자동 재트리거 토큰 + cross-reference 금지 (CRITICAL)
 
-reply 본문에 다음 토큰을 **포함하면 안 된다** — `.github/workflows/claude-code-review.yml` 의 `if:` 조건에 의해 자동 review 재실행 유발 또는 사용자가 봇 멘션으로 인지:
+reply 본문에 다음 패턴을 **포함하면 안 된다** — workflow 자동 재실행 유발 / 봇 멘션 오인 / 의도치 않은 issue·PR cross-reference 생성:
 
+**자동 재트리거 토큰**:
 - `/review` — workflow 의 `contains(github.event.comment.body, '/review')` 트리거 (확정 재실행)
 - `@claude` — 현재 workflow `if:` 절은 `@claude` 를 트리거하지 않지만 사용자가 "봇 멘션" 으로 인지 + 향후 workflow 변경 시 위험. 봇을 지칭해야 하면 `` `@claude` `` 백틱 코드 fence 또는 평문 "Claude bot" 사용
 - `@github-actions`, `@dependabot` 등 다른 봇 멘션도 동일
 
-검증 grep (reply 등록 전):
+**GitHub auto-link (cross-reference 사고 방지)**:
+- `#숫자` (예: `#1`, `#42`) — GitHub 가 같은 repo 의 issue / PR 번호로 hovercard 링크. **리뷰 항목 번호** (예: "🟡 권장 #1 반영") 가 실재 issue/PR 로 cross-ref 되어 무관한 PR 의 timeline 에 알림 발생. 실사례: PR #169 의 통합 reply 댓글이 `#1`, `#2` 로 fos-blog 의 closed PR 두 건과 cross-reference
+- `GH-숫자` — 같은 hovercard 동작
+- `owner/repo#숫자` — 다른 repo cross-reference
+
+**검증 + 자동 escape grep** (reply 등록 직전 — 필수):
 
 ```bash
-echo "$REPLY_BODY" | grep -nE "(^|[^\`])(/review|@claude|@github-actions)\b"
-# 결과 있으면 → 본문 수정 (백틱으로 감싸거나 평문으로)
+# 1) 자동 재트리거 토큰 검출 (백틱 안 제외)
+TRIGGER=$(echo "$REPLY_BODY" | grep -nE "(^|[^\`])(/review|@claude|@github-actions|@dependabot)\b")
+[ -n "$TRIGGER" ] && { echo "⚠️ 자동 재트리거 토큰 발견:"; echo "$TRIGGER"; echo "→ 백틱으로 감싸거나 평문으로 변환"; }
+
+# 2) issue/PR cross-reference 패턴 검출 (백틱·entity 안 제외)
+CROSSREF=$(echo "$REPLY_BODY" | grep -nE "(^|[^\`&\w])#[0-9]+\b|(^|[^\`])GH-[0-9]+\b|(^|[^\`])[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+#[0-9]+\b")
+if [ -n "$CROSSREF" ]; then
+  echo "⚠️ GitHub auto-link 패턴 발견:"
+  echo "$CROSSREF"
+  # → 자동 백틱 escape 후 사용자 confirm (의도된 PR 참조면 NO 답 후 그대로 등록 / 의도 아니면 escape 본문으로 재등록)
+fi
 ```
+
+**의도된 PR 참조 (예: "PR #167 의 변경") vs 사고 (리뷰 항목 번호)** 는 자동 판단 불가 — 발견 시 본문 + 위치를 사용자에게 보여주고 `AskUserQuestion` 으로 confirm:
+- "이 `#숫자` 는 의도된 PR/issue 참조인가요?" → YES = 그대로, NO = `` `#N` `` 백틱 감싸기 + 재등록
+- 본문에 여러 건 섞여 있으면 (의도 + 사고 혼재) — 위치별 개별 confirm
+
+**이미 등록된 댓글에서 사고 발견 시**: `gh api repos/{owner}/{repo}/issues/comments/{id} -X PATCH -f body=...` 로 body 교체. PR review comment (인라인) 는 `pulls/comments/{id}` 경로 사용.
 
 ### 리뷰 형식 분기 (CRITICAL)
 
