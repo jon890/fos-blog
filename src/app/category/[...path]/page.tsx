@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { cache } from "react";
 import { getRepositories } from "@/infra/db/repositories";
 import { computeFolderPaths } from "@/lib/path-utils";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
@@ -28,12 +29,42 @@ interface FolderPageProps {
   }>;
 }
 
+type FolderContents = Awaited<
+  ReturnType<ReturnType<typeof getRepositories>["folder"]["getFolderContents"]>
+>;
+
+const getCachedFolderContents = cache(
+  async (folderPath: string): Promise<FolderContents> => {
+    try {
+      const { folder } = getRepositories();
+      return await folder.getFolderContents(folderPath);
+    } catch (error) {
+      log.warn(
+        { err: error instanceof Error ? error : new Error(String(error)) },
+        "Database not available",
+      );
+      return { folders: [], posts: [], readme: null };
+    }
+  },
+);
+
 export async function generateMetadata({
   params,
 }: FolderPageProps): Promise<Metadata> {
   const resolvedParams = await params;
   const pathSegments = resolvedParams.path.map(decodeURIComponent);
   const currentFolder = pathSegments[pathSegments.length - 1];
+  const folderPath = pathSegments.join("/");
+
+  const { folders, posts, readme } = await getCachedFolderContents(folderPath);
+
+  if (folders.length === 0 && posts.length === 0 && !readme) {
+    return {
+      title: "카테고리를 찾을 수 없습니다 | FOS Study",
+      robots: { index: false, follow: false },
+    };
+  }
+
   const canonicalUrl = `${siteUrl}/category/${pathSegments
     .map(encodeURIComponent)
     .join("/")}`;
@@ -77,18 +108,7 @@ export default async function FolderPage({ params }: FolderPageProps) {
   const category = pathSegments[0];
   const currentFolder = pathSegments[pathSegments.length - 1];
 
-  let folderContents = { folders: [], posts: [], readme: null } as Awaited<
-    ReturnType<ReturnType<typeof getRepositories>["folder"]["getFolderContents"]>
-  >;
-
-  try {
-    const { folder } = getRepositories();
-    folderContents = await folder.getFolderContents(folderPath);
-  } catch (error) {
-    log.warn({ err: error instanceof Error ? error : new Error(String(error)) }, "Database not available");
-  }
-
-  const { folders, posts, readme } = folderContents;
+  const { folders, posts, readme } = await getCachedFolderContents(folderPath);
 
   if (folders.length === 0 && posts.length === 0 && !readme) {
     notFound();
