@@ -2,6 +2,7 @@
 
 **작성일**: 2026-04-25
 **관련 ADR**: [ADR-017](./adr.md#adr-017)
+**확정된 디자인 시스템 명세**: [design.md](./design.md) — 이 문서는 *생성 과정*(영감 보드 + 프롬프트), design.md 는 *현재 상태*(Stitch 9섹션)
 
 fos-blog 의 모던 dev-tool 스타일 리디자인을 위한 영감 보드 + Claude Design 단계별 프롬프트. Claude Design (Anthropic Labs Research Preview, 2026-04-17 출시) 에서 mockup 생성 후 결과를 이 저장소의 코드로 구현하는 워크플로우.
 
