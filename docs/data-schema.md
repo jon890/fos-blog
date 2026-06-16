@@ -43,7 +43,7 @@
 Notes:
 - `path` = unique key (slug 이 아닌 path 기준 업서트)
 - `is_active = false` = soft delete — 모든 조회에 `WHERE is_active = 1` 필수
-- 카테고리별 조회는 `JSON_CONTAINS(categories, '"AI"')` 사용 (단일 `category` 컬럼 대신 다중 `categories` 기준). 글 수가 적어 인덱스 없이 풀스캔 허용 (plan051, ADR-030)
+- 카테고리 페이지(depth 1)는 폴더 직속 글(경로 매칭)에 더해 cross-post 글을 `JSON_CONTAINS(categories, '"AI"')` + 경로 prefix 제외로 합쳐 노출 (plan051, ADR-030). 폴더 브라우저(`path` prefix 매칭)는 그대로 유지. 글 수가 적어 인덱스 없이 풀스캔 허용
 
 ---
 

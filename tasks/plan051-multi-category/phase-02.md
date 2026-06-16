@@ -1,4 +1,4 @@
-# Phase 02 — frontmatter categories 파싱 + sync 시 합집합 저장
+# Phase 02 — frontmatter categories 저장 (full + incremental sync 정합)
 
 **Model**: sonnet
 **Status**: pending
@@ -7,62 +7,70 @@
 
 ## 목표
 
-frontmatter 의 `categories: [..]` 를 파싱하고, sync 시 `posts.categories` 를
-`[경로 category, ...frontmatter categories]` 합집합(중복 제거)으로 채운다 (ADR-030).
-경로 첫 폴더 카테고리는 항상 포함되므로 frontmatter 가 없으면 `[category]` 1개가 된다.
+sync 시 `posts.categories` 를 합집합 `[경로 category, ...frontmatter categories]`(중복 제거)로 채운다 (ADR-030).
+**핵심**: sync 경로가 둘(full / incremental)인데 incremental 경로(`PostSyncService.upsert`)는 현재 frontmatter 를 파싱하지 않아 tags/series 도 저장하지 않는다.
+두 경로가 같은 공통 헬퍼로 frontmatter 를 처리하도록 정합시켜, 평상시(증분) 운영에서 categories 가 누락되지 않게 한다.
 
-**선행**: phase-01 (posts.categories 컬럼 + PostData.categories 타입).
-**범위 외**: 조회(phase-03), UI(phase-04).
+**선행**: phase-01 (posts.categories 컬럼 + PostData.categories + FrontMatter.categories 타입).
+**범위 외**: 카테고리 페이지 노출(phase-03), 배지 UI(phase-04). select 추가는 노출 면을 다루는 phase 에서.
 
 ---
 
-## 작업 항목 (4)
+## 작업 항목 (5)
 
-### 1. `src/lib/markdown.ts` — FrontMatter 타입에 categories 추가
+### 1. `mergeCategories` 순수 함수 (export, `src/services/PostSyncService.ts`)
 
-`FrontMatter` 인터페이스에 `tags?: string[]` 과 같은 형태로 추가한다.
-
-```ts
-categories?: string[];
-```
-
-`parseFrontMatter` 가 YAML 배열을 이미 `tags` 로 처리하므로 별도 coercion 로직은 불필요하다. tags 가 어떻게 파싱되는지 같은 파일에서 확인하고 동일 경로를 탄다.
-
-### 2. categories 합집합 계산 헬퍼
-
-경로 category 와 frontmatter categories 를 합쳐 중복 제거하는 순수 함수를 만든다. 위치는 `parsePath` 가 있는 `src/services/PostSyncService.ts` 가 자연스럽다.
+경로 category 와 frontmatter categories 를 합쳐 순서 보존 중복 제거한다. `parsePath` 옆에 둔다.
 
 ```ts
 export function mergeCategories(pathCategory: string, fmCategories?: string[]): string[] {
   const all = [pathCategory, ...(fmCategories ?? [])]
     .map((c) => c.trim())
     .filter((c) => c.length > 0);
-  return Array.from(new Set(all));   // 순서 보존 중복 제거 — pathCategory 가 항상 첫째(primary)
+  return Array.from(new Set(all));   // pathCategory 가 항상 첫째(primary)
 }
 ```
 
-### 3. `src/services/SyncService.ts` — insert/update 에 categories 저장
+### 2. `resolveFrontMatterMeta` 순수 함수 (export, `src/services/PostSyncService.ts`)
 
-현재 insert(추가)·update(업데이트) 두 분기에서 `category: file.category` 를 저장한다. 같은 두 지점에 `categories` 를 추가한다.
+현재 `SyncService.performFullSync` 안에 인라인으로 있는 tags/series/seriesOrder 파싱 로직(현재 약 170~196번 줄: `normalizeTags` + series/seriesOrder 검증)을 그대로 옮겨 공통화한다.
+
+```ts
+export function resolveFrontMatterMeta(frontMatter: FrontMatter): {
+  tags: string[];
+  series: string | null;
+  seriesOrder: number | null;
+} { /* 기존 performFullSync 의 series/seriesOrder/tags 검증 로직을 동일하게 */ }
+```
+
+`normalizeTags` import 위치는 grep 으로 확인해 동일하게 가져온다. **기존 동작을 바꾸지 않는다**(추출만).
+
+### 3. `SyncService.performFullSync` — 헬퍼 사용 + categories 저장
+
+인라인 tags/series 파싱을 `resolveFrontMatterMeta(frontMatter)` 호출로 교체한다.
+update·create 두 분기(현재 약 199·216번 줄)에 `categories` 를 추가한다.
 
 ```ts
 categories: mergeCategories(file.category, frontMatter.categories),
 ```
 
-`frontMatter` 가 이미 파싱되어 있는 변수명을 해당 함수 스코프에서 확인해 사용한다(현재 series/tags 를 꺼내는 동일 객체). `mergeCategories` 를 import 한다.
+`mergeCategories` / `resolveFrontMatterMeta` 를 import 한다. 기존 `category: file.category` 는 유지한다.
 
-### 4. `src/infra/db/repositories/PostRepository.ts` — select 에 categories 포함
+### 4. `PostSyncService.upsert` — frontmatter 파싱 + tags/series/categories 저장
 
-`category: posts.category` 를 select 하는 메서드들에 `categories: posts.categories` 를 함께 select 한다. phase-03·phase-04 가 categories 를 읽으려면 조회 결과에 포함되어야 한다.
+현재 `upsert` 는 `parsePath` 만 쓰고 frontmatter 를 파싱하지 않는다. `content` 는 이미 만들어져 있다(`rewriteImagePaths` 결과).
+`parseFrontMatter(content)` 로 frontMatter 를 얻어 `resolveFrontMatterMeta` + `mergeCategories` 를 적용하고, update·create 두 분기에 `tags` / `series` / `seriesOrder` / `categories` 를 추가 저장한다.
 
-대상 메서드는 아래 grep 으로 특정한다.
+이로써 증분 경로가 full 경로와 동일한 메타를 저장한다(기존 tags/series 누락도 함께 해소).
 
-```bash
-# cwd: <repo root>
-grep -n "category: posts.category" src/infra/db/repositories/PostRepository.ts
-```
+### 5. 단위 테스트 (`src/services/PostSyncService.test.ts`)
 
-각 매치 라인 다음에 `categories: posts.categories,` 를 추가한다.
+`mergeCategories` + `resolveFrontMatterMeta` 테스트를 기존 `parsePath` 테스트 옆에 추가한다.
+
+- `mergeCategories("AI", undefined)` → `["AI"]`
+- `mergeCategories("AI", ["AI", "DevOps"])` → `["AI", "DevOps"]` (중복 제거, primary 첫째)
+- `mergeCategories("AI", [" ", "DevOps"])` → `["AI", "DevOps"]` (공백 제거)
+- `resolveFrontMatterMeta` — series + 유효 seriesOrder / series 만 있고 order 누락 / tags 정규화 케이스
 
 ---
 
@@ -70,10 +78,9 @@ grep -n "category: posts.category" src/infra/db/repositories/PostRepository.ts
 
 | 파일 | 변경 |
 |---|---|
-| `src/lib/markdown.ts` | 수정 — FrontMatter.categories |
-| `src/services/PostSyncService.ts` | 수정 — mergeCategories 헬퍼 export |
-| `src/services/SyncService.ts` | 수정 — insert/update 에 categories 저장 |
-| `src/infra/db/repositories/PostRepository.ts` | 수정 — select 에 categories 추가 |
+| `src/services/PostSyncService.ts` | 수정 — mergeCategories + resolveFrontMatterMeta export |
+| `src/services/SyncService.ts` | 수정 — 헬퍼 사용 + performFullSync update/create 에 categories |
+| `src/services/PostSyncService.test.ts` | 수정 — 헬퍼 단위 테스트 |
 
 ## 검증
 
@@ -83,20 +90,17 @@ pnpm lint
 pnpm type-check
 pnpm test --run
 
-grep -n "categories" src/lib/markdown.ts                          # FrontMatter 타입
 grep -n "export function mergeCategories" src/services/PostSyncService.ts
-grep -c "categories: mergeCategories" src/services/SyncService.ts  # insert+update 2건 이상
-grep -c "categories: posts.categories" src/infra/db/repositories/PostRepository.ts  # 1건 이상
+grep -n "export function resolveFrontMatterMeta" src/services/PostSyncService.ts
+grep -c "categories: mergeCategories" src/services/SyncService.ts   # performFullSync update+create 2건 이상
+# 증분 경로가 frontmatter 를 파싱하는지 (upsert 가 parseFrontMatter 호출)
+grep -n "parseFrontMatter" src/services/PostSyncService.ts          # 1건 이상
+grep -c "categories: mergeCategories\|resolveFrontMatterMeta" src/services/PostSyncService.ts
 ```
-
-`mergeCategories` 단위 테스트를 `src/services/PostSyncService.test.ts` 에 추가한다(기존 parsePath 테스트 옆).
-
-- 경로만(frontmatter 없음) → `["AI"]`
-- 경로 + frontmatter 중복 → 중복 제거, primary 첫째 유지 (예: `mergeCategories("AI", ["AI","DevOps"])` → `["AI","DevOps"]`)
-- 빈 문자열·공백 입력 제거
 
 ## 의도 메모 (왜)
 
-- 합집합에 pathCategory 를 항상 첫째로 넣어 primary 순서를 보장한다 — UI 에서 첫 배지를 primary 로 쓸 수 있다.
-- `Set` 으로 순서 보존 중복 제거 — frontmatter 에 경로 카테고리를 중복 적어도 안전하다.
-- select 누락은 phase-03/04 에서 categories 가 undefined 가 되는 런타임 결함으로 이어지므로 이 phase 에서 함께 처리한다.
+- 공통 헬퍼로 추출하는 이유: full/incremental 두 경로가 frontmatter 처리를 따로 두면 또 drift 한다(이번 plan 의 categories 누락이 바로 그 drift). 공통 헬퍼가 정합을 강제한다.
+- 합집합에 pathCategory 를 항상 첫째로 넣어 primary 순서를 보장한다 — UI 에서 첫 배지를 primary 로 쓴다.
+- 증분 경로의 tags/series 복원은 categories 를 파싱하면서 자연히 따라오는 정합 수정이다(사용자 결정: frontmatter 전체 파싱으로 정합).
+- frontmatter 카테고리명은 폴더명과 대소문자가 일치해야 phase-03 의 `JSON_CONTAINS` 가 매칭한다 — 정규화는 후속 plan(ADR-030 범위 제외).
