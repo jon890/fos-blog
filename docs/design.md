@@ -114,7 +114,7 @@ hero 배경에만 사용. 본문·컴포넌트에는 쓰지 않는다.
 | 요소 | 규칙 |
 |---|---|
 | h2 | size `--prose-h2-size` (28px)<br>weight 600<br>letter-spacing -0.02em<br>margin-top 56px<br>`::before` 에 `01`·`02` 2자리 카운터(mono, muted) |
-| blockquote | 좌측 2px brand border<br>`::before` 에 `QUOTE` 라벨(mono 10px, brand)<br>font-style normal |
+| blockquote | 좌측 2px brand-text border<br>`::before` 에 `QUOTE` 라벨(mono 10px, brand-text)<br>font-style normal |
 | inline code | `--font-mono` · 0.88em · brand-text 색(강조 텍스트 토큰)<br>subtle border + bg-subtle 배경<br>`word-break: keep-all`(한글/식별자 글자단위 분해 방지) |
 | ul marker | `— `(em dash), faint 색 |
 | 링크 | `text-blue-600 dark:text-blue-400` + hover underline |
