@@ -44,10 +44,12 @@
   --color-brand-800: oklch(0.38 0.07 200);
   --color-brand-900: oklch(0.26 0.05 200);
 
-  /* Brand text — 강조 구문(inline code, 라벨 등) 전용.
+  /* Brand text — light 에서 가시성이 필요한 brand 적용처 전용.
+   *   - 강조 텍스트: inline code, blockquote QUOTE 라벨, 코드블록 lang 라벨, 터미널 $ 프롬프트
+   *   - 기능적 경계: blockquote / 코드 하이라이트 라인의 left border (인용·강조 구분)
    * brand-400 은 dark 배경 기준이라 흰 배경에선 대비 1.9:1 로 무너진다 (WCAG AA 미달).
-   * 장식(border/background/caret)은 brand-400 을 유지하고, 텍스트만 분리해
-   * light 에서 어둡게 내린다. dark 기본값 = brand-400, light override 는 :root:not(.dark). */
+   * 순수 장식(옅은 배경 mix, hero caret, footer gradient)은 brand-400 을 유지한다.
+   * dark 기본값 = brand-400, light override 는 :root:not(.dark). */
   --color-brand-text: oklch(0.78 0.13 195);
 
   /* Categories 9 — chroma 0.09, lightness 0.74 (dark) — light variant 는 :root:not(.dark) 에서 override */
@@ -225,7 +227,7 @@ code, kbd, samp, pre {
   letter-spacing: 0.04em;
 }
 .prose blockquote {
-  border-left: 2px solid var(--color-brand-400);
+  border-left: 2px solid var(--color-brand-text);
   padding: var(--prose-blockquote-padding);
   margin: var(--prose-block-margin);
   font-size: 16px;
@@ -373,7 +375,7 @@ code, kbd, samp, pre {
 /* line-highlight (Q6) */
 .prose .code-card-body code [data-highlighted-line] {
   background: color-mix(in oklch, var(--color-brand-400), transparent 92%);
-  border-left: 2px solid var(--color-brand-400);
+  border-left: 2px solid var(--color-brand-text);
 }
 
 /* diff variant */
