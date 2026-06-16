@@ -24,6 +24,7 @@
 - [ADR-004](#adr-004) — 무한 스크롤 데이터 fetch = API Route
 - [ADR-023](#adr-023) — 태그 시스템 (posts.tags JSON + JSON_CONTAINS)
 - [ADR-025](#adr-025) — 시리즈 시스템 (posts.series VARCHAR + series_order INT + 양쪽 필수, plan033)
+- [ADR-030](#adr-030) — 다중 카테고리 (경로 primary + frontmatter 추가, posts.categories JSON, plan051)
 
 ### OG 이미지 & 공유
 
@@ -561,3 +562,17 @@
   - **포인터형(값 복제 없이 globals.css 참조만)** 기각 — 자립적으로 읽히지 않아 외부 agent 핸드오프 시 globals.css 동반 필요. Stitch 컨벤션의 "툴 없이 markdown 만으로 읽힌다" 이점 상실.
 - **트레이드오프**: 자립형이라 oklch 값이 `globals.css` 와 design.md 두 곳에 존재 → dual source 동기화 위험. "globals.css 우선" 명시 + 토큰 변경 시 design.md 표 동반 갱신 규칙으로 완화. 향후 빈도가 잦아지면 globals.css → design.md 자동 생성 스크립트를 별도 plan 으로 검토.
 - **적용 범위**: design.md 는 확정된 현재 상태, [design-inspiration.md](./design-inspiration.md) 는 생성 과정(영감 보드 + Claude Design 프롬프트)으로 역할이 다르다.
+
+---
+
+<a id="adr-030"></a>
+
+## ADR-030. 다중 카테고리 — 경로 primary + frontmatter 추가, json 배열 저장 (plan051)
+
+- **결정**: 한 글이 여러 카테고리에 속할 수 있게 한다. 경로 첫 폴더를 primary `category`(단일)로 유지하고, frontmatter `categories: [..]` 로 추가 카테고리를 더한다. 최종 합집합 `[경로 category, ...frontmatter categories]`(중복 제거)를 `posts.categories` json 배열에 저장한다. 카테고리별 조회는 `JSON_CONTAINS(categories, ?)` 로 한다.
+- **맥락**: 카테고리가 100% 경로 기반(`parsePath`)이라 한 글은 한 폴더 = 단일 카테고리뿐이었다. "AI 폴더 글을 DevOps 에도 노출" 같은 다중 소속 요구를 경로로는 풀 수 없다. 글은 markdown 이라 frontmatter 가 자연스러운 입력 채널이다.
+- **대안 기각**:
+  - **frontmatter 가 전체 카테고리 목록(경로 무시)** 기각 — 기존 글 전부에 frontmatter 를 추가해야 한다. 경로 primary 를 유지하면 frontmatter 없는 글이 `[category]` 1개로 그대로 동작해 마이그레이션이 불필요하다.
+  - **post_categories 관계 테이블** 기각 — 카테고리가 9개 규모라 정규화 이득이 작고, sync·조회 코드와 마이그레이션이 늘어난다. 이미 `tags` 가 json 배열이라 패턴이 일관적이다.
+  - **subcategory(계층)로 푸는 방식** 기각 — subcategory 는 경로 둘째 폴더라 본질적으로 단일 계층이다. 한 글의 다중 소속을 표현하지 못한다.
+- **트레이드오프**: json 배열은 `JSON_CONTAINS` 풀스캔이라 인덱스 활용이 어렵다. 글 수가 적어 허용한다. 규모가 커지면 multi-value index 또는 관계 테이블로 이전을 별도 plan 으로 검토한다.

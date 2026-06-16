@@ -1,0 +1,48 @@
+{
+  "name": "plan051-multi-category",
+  "description": "문서 다중 카테고리 지원 — 경로 primary category 유지 + frontmatter categories 추가, posts.categories JSON 저장 (ADR-030)",
+  "status": "pending",
+  "created_at": "2026-06-16",
+  "total_phases": 5,
+  "related_docs": [
+    "docs/adr.md",
+    "docs/data-schema.md"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "posts.categories 스키마 + 타입 + 마이그레이션(backfill 포함)",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "title": "frontmatter categories 파싱 + sync 시 합집합 저장",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 3,
+      "file": "phase-03.md",
+      "title": "카테고리 조회를 categories(JSON_CONTAINS) 기준으로 확장",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 4,
+      "file": "phase-04.md",
+      "title": "글 카드/상세에 다중 카테고리 배지 표시",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 5,
+      "file": "phase-05.md",
+      "title": "통합 검증 + legacy 잔재 grep + completed 마킹",
+      "model": "haiku",
+      "status": "pending"
+    }
+  ]
+}

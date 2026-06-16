@@ -20,8 +20,9 @@
 | `title` | varchar(500) | NOT NULL | |
 | `path` | varchar(500) | NOT NULL, UNIQUE | canonical GitHub 파일 경로 (고유 키) |
 | `slug` | varchar(500) | NOT NULL | URL slug |
-| `category` | varchar(255) | NOT NULL | 최상위 카테고리명 |
-| `subcategory` | varchar(255) | | 서브카테고리명 |
+| `category` | varchar(255) | NOT NULL | 최상위(primary) 카테고리명 — 경로 첫 폴더. 정렬·하위호환용 단일 값 유지 |
+| `categories` | json | NOT NULL DEFAULT '[]' | 다중 카테고리 합집합 `[경로 category, ...frontmatter categories]` 중복 제거 (plan051, ADR-030) |
+| `subcategory` | varchar(255) | | 서브카테고리명 (경로 둘째 폴더, 계층 개념 — 다중 소속과 무관) |
 | `folders` | json | DEFAULT '[]' | n-depth 폴더 경로 배열 |
 | `tags` | json | NOT NULL DEFAULT '[]' | frontmatter tags (plan026, ADR-023) |
 | `series` | varchar(255) | NULL | frontmatter series 이름 (plan033, ADR-025) |
@@ -42,6 +43,7 @@
 Notes:
 - `path` = unique key (slug 이 아닌 path 기준 업서트)
 - `is_active = false` = soft delete — 모든 조회에 `WHERE is_active = 1` 필수
+- 카테고리별 조회는 `JSON_CONTAINS(categories, '"AI"')` 사용 (단일 `category` 컬럼 대신 다중 `categories` 기준). 글 수가 적어 인덱스 없이 풀스캔 허용 (plan051, ADR-030)
 
 ---
 
