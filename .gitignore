@@ -41,3 +41,6 @@ next-env.d.ts
 .omc
 .gstack/
 dist/
+
+# playwright mcp (브라우저 자동화 산출물 — 스냅샷/콘솔/스크린샷)
+.playwright-mcp/

@@ -44,6 +44,14 @@
   --color-brand-800: oklch(0.38 0.07 200);
   --color-brand-900: oklch(0.26 0.05 200);
 
+  /* Brand text — light 에서 가시성이 필요한 brand 적용처 전용.
+   *   - 강조 텍스트: inline code, blockquote QUOTE 라벨, 코드블록 lang 라벨, 터미널 $ 프롬프트
+   *   - 기능적 경계: blockquote / 코드 하이라이트 라인의 left border (인용·강조 구분)
+   * brand-400 은 dark 배경 기준이라 흰 배경에선 대비 1.9:1 로 무너진다 (WCAG AA 미달).
+   * 순수 장식(옅은 배경 mix, hero caret, footer gradient)은 brand-400 을 유지한다.
+   * dark 기본값 = brand-400, light override 는 :root:not(.dark). */
+  --color-brand-text: oklch(0.78 0.13 195);
+
   /* Categories 9 — chroma 0.09, lightness 0.74 (dark) — light variant 는 :root:not(.dark) 에서 override */
   --color-cat-ai: oklch(0.74 0.09 285);
   --color-cat-algorithm: oklch(0.74 0.09 25);
@@ -146,6 +154,9 @@
   --color-cat-next: oklch(0.5 0.11 0);
   --color-cat-system: oklch(0.5 0.11 250);
 
+  /* 강조 텍스트만 어둡게 — 흰 배경 대비 5.47:1 (AA 통과). cat 과 동일한 L=0.5 톤. */
+  --color-brand-text: oklch(0.5 0.11 195);
+
   --shadow-subtle: 0 1px 2px 0 rgb(0 0 0 / 0.04);
   --shadow-default: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 4px 12px -2px rgb(0 0 0 / 0.06);
   --shadow-popover: 0 4px 8px -2px rgb(0 0 0 / 0.08), 0 12px 32px -4px rgb(0 0 0 / 0.12);
@@ -216,7 +227,7 @@ code, kbd, samp, pre {
   letter-spacing: 0.04em;
 }
 .prose blockquote {
-  border-left: 2px solid var(--color-brand-400);
+  border-left: 2px solid var(--color-brand-text);
   padding: var(--prose-blockquote-padding);
   margin: var(--prose-block-margin);
   font-size: 16px;
@@ -229,7 +240,7 @@ code, kbd, samp, pre {
   font-family: var(--font-mono);
   font-size: var(--prose-label-size);
   letter-spacing: 0.08em;
-  color: var(--color-brand-400);
+  color: var(--color-brand-text);
   margin-bottom: 8px;
 }
 /* inline code — token 단위 wrap 보존 (plan035 #136).
@@ -243,7 +254,7 @@ code, kbd, samp, pre {
   border: 1px solid var(--color-border-subtle);
   border-radius: 4px;
   background: var(--color-bg-subtle);
-  color: var(--color-brand-400);
+  color: var(--color-brand-text);
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
@@ -293,7 +304,7 @@ code, kbd, samp, pre {
   text-transform: uppercase;
   padding: 2px 6px;
   border-radius: 3px;
-  color: var(--color-brand-400);
+  color: var(--color-brand-text);
   background: color-mix(in oklch, var(--color-brand-400), transparent 88%);
   border: 1px solid color-mix(in oklch, var(--color-brand-400), transparent 70%);
 }
@@ -364,7 +375,7 @@ code, kbd, samp, pre {
 /* line-highlight (Q6) */
 .prose .code-card-body code [data-highlighted-line] {
   background: color-mix(in oklch, var(--color-brand-400), transparent 92%);
-  border-left: 2px solid var(--color-brand-400);
+  border-left: 2px solid var(--color-brand-text);
 }
 
 /* diff variant */
@@ -393,7 +404,7 @@ code, kbd, samp, pre {
 /* 첫 라인에만 $ prompt 표시 (M5 후속: 전 라인 적용 부적절) */
 .prose .code-card--terminal .code-card-body [data-line]:first-child::before {
   content: "$";
-  color: var(--color-brand-400);
+  color: var(--color-brand-text);
   font-weight: 500;
   width: auto;
   margin-right: 1ch;
