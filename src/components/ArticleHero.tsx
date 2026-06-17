@@ -8,6 +8,7 @@ import {
 
 interface ArticleHeroProps {
   category: string;
+  categories?: string[];
   title: string;
   description: string;
   createdAt: Date | null;
@@ -19,6 +20,7 @@ interface ArticleHeroProps {
 
 export function ArticleHero({
   category,
+  categories,
   title,
   description,
   createdAt,
@@ -27,9 +29,9 @@ export function ArticleHero({
   breadcrumb,
   series,
 }: ArticleHeroProps) {
+  const cats = categories?.length ? categories : [category];
   const catColor = getCategoryColor(category);
   const catHue = getCategoryHue(category);
-  const canonical = toCanonicalCategory(category);
   const inlineStyle = {
     "--cat-color": catColor,
     "--mesh-stop-cat": `oklch(0.7 0.16 ${catHue})`,
@@ -93,18 +95,27 @@ export function ArticleHero({
           ))}
         </nav>
 
-        {/* Category art-tag */}
-        <span
-          className="inline-flex items-center gap-2 rounded-full border px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.06em]"
-          style={{
-            color: "var(--cat-color)",
-            borderColor: "var(--cat-color)",
-            background: "color-mix(in oklch, var(--cat-color), transparent 90%)",
-          }}
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-          {canonical}
-        </span>
+        {/* Category art-tag (다중) */}
+        <div className="flex flex-wrap items-center gap-2">
+          {cats.map((cat) => {
+            const chipColor = getCategoryColor(cat);
+            return (
+              <Link
+                key={cat}
+                href={`/category/${encodeURIComponent(cat)}`}
+                className="inline-flex items-center gap-2 rounded-full border px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.06em] transition-opacity hover:opacity-80"
+                style={{
+                  color: chipColor,
+                  borderColor: chipColor,
+                  background: `color-mix(in oklch, ${chipColor}, transparent 90%)`,
+                }}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
+                {toCanonicalCategory(cat)}
+              </Link>
+            );
+          })}
+        </div>
 
         <h1 className="mt-6 mb-5 max-w-[22ch] text-[34px] font-semibold leading-[1.1] tracking-tight text-[var(--color-fg-primary)] md:text-[52px]">
           {title}

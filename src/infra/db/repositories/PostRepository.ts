@@ -45,6 +45,7 @@ export class PostRepository extends BaseRepository {
         path: posts.path,
         slug: posts.slug,
         category: posts.category,
+        categories: posts.categories,
         subcategory: posts.subcategory,
         folders: posts.folders,
         description: posts.description,
@@ -206,6 +207,7 @@ export class PostRepository extends BaseRepository {
         path: post.path,
         slug: post.slug,
         category: post.category,
+        categories: post.categories,
         subcategory: post.subcategory,
         folders: post.folders || [],
         description: post.description,
@@ -283,6 +285,7 @@ export class PostRepository extends BaseRepository {
             path: posts.path,
             slug: posts.slug,
             category: posts.category,
+            categories: posts.categories,
             subcategory: posts.subcategory,
             folders: posts.folders,
             description: posts.description,
@@ -304,6 +307,7 @@ export class PostRepository extends BaseRepository {
           path: p.path,
           slug: p.slug,
           category: p.category,
+          categories: p.categories,
           subcategory: p.subcategory,
           folders: p.folders || [],
           description: p.description,
@@ -322,6 +326,7 @@ export class PostRepository extends BaseRepository {
         path: posts.path,
         slug: posts.slug,
         category: posts.category,
+        categories: posts.categories,
         subcategory: posts.subcategory,
         folders: posts.folders,
         description: posts.description,
@@ -392,6 +397,30 @@ export class PostRepository extends BaseRepository {
       .orderBy(desc(posts.createdAt))
       .limit(limit)
       .offset(offset);
+    return result.map((p) => ({ ...p, folders: p.folders || [] }));
+  }
+
+  async getCrossCategoryPosts(category: string): Promise<PostData[]> {
+    const result = await this.db
+      .select({
+        title: posts.title,
+        path: posts.path,
+        slug: posts.slug,
+        category: posts.category,
+        subcategory: posts.subcategory,
+        folders: posts.folders,
+        description: posts.description,
+        categories: posts.categories,
+      })
+      .from(posts)
+      .where(
+        and(
+          eq(posts.isActive, true),
+          sql`JSON_CONTAINS(${posts.categories}, JSON_QUOTE(${category}))`,
+          ne(posts.category, category),
+        ),
+      )
+      .orderBy(asc(posts.title));
     return result.map((p) => ({ ...p, folders: p.folders || [] }));
   }
 

@@ -28,8 +28,8 @@ export function PostCard({
   showCategory = true,
   viewCount,
 }: PostCardProps) {
+  const cats = post.categories?.length ? post.categories : [post.category];
   const catColor = getCategoryColor(post.category);
-  const canonical = toCanonicalCategory(post.category);
   const inlineStyle = { "--cat-color": catColor } as CSSProperties;
 
   if (variant === "grid") {
@@ -41,12 +41,17 @@ export function PostCard({
       >
         <div className="flex flex-1 flex-col gap-2 p-5">
           {showCategory && (
-            <div
-              className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.06em]"
-              style={{ color: "var(--cat-color)" }}
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-              <span>{canonical}</span>
+            <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.06em]">
+              {cats.map((cat) => (
+                <span
+                  key={cat}
+                  className="inline-flex items-center gap-1"
+                  style={{ color: getCategoryColor(cat) }}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
+                  <span>{toCanonicalCategory(cat)}</span>
+                </span>
+              ))}
             </div>
           )}
           <h3 className="text-[17px] font-medium leading-snug tracking-tight text-[var(--color-fg-primary)] line-clamp-2">
@@ -90,16 +95,17 @@ export function PostCard({
             </div>
           )}
           {/* 모바일에선 cat/meta 를 본문 아래로 내림 */}
-          <div className="mt-2 flex items-center gap-3 font-mono text-[11px] text-[var(--color-fg-muted)] @lg:hidden">
-            {showCategory && (
+          <div className="mt-2 flex flex-wrap items-center gap-3 font-mono text-[11px] text-[var(--color-fg-muted)] @lg:hidden">
+            {showCategory && cats.map((cat) => (
               <span
+                key={cat}
                 className="inline-flex items-center gap-1.5 uppercase tracking-[0.04em]"
-                style={{ color: "var(--cat-color)" }}
+                style={{ color: getCategoryColor(cat) }}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-                {getCategoryIcon(post.category)} {canonical}
+                {getCategoryIcon(cat)} {toCanonicalCategory(cat)}
               </span>
-            )}
+            ))}
             {viewCount !== undefined && (
               <span className="inline-flex items-center gap-1">
                 <Eye className="h-3 w-3" />
@@ -110,12 +116,17 @@ export function PostCard({
         </div>
 
         {showCategory && (
-          <div
-            className="hidden self-center items-center gap-2 font-mono text-[11px] uppercase tracking-[0.04em] @lg:flex"
-            style={{ color: "var(--cat-color)" }}
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-            <span>{canonical}</span>
+          <div className="hidden self-center flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.04em] @lg:flex">
+            {cats.map((cat) => (
+              <span
+                key={cat}
+                className="inline-flex items-center gap-1.5"
+                style={{ color: getCategoryColor(cat) }}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
+                <span>{toCanonicalCategory(cat)}</span>
+              </span>
+            ))}
           </div>
         )}
 
@@ -135,4 +146,3 @@ export function PostCard({
     </div>
   );
 }
-
