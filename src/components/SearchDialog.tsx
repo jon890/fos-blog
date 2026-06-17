@@ -10,6 +10,7 @@ interface SearchResult {
   title: string;
   path: string;
   category: string;
+  categories?: string[];
   description?: string | null;
 }
 
@@ -227,9 +228,11 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
                         {result.title}
                       </div>
                       <div className="text-sm text-[var(--color-fg-muted)] flex items-center gap-2">
-                        <span className="px-1.5 py-0.5 bg-[var(--color-bg-subtle)] text-[var(--color-fg-secondary)] rounded text-xs">
-                          {result.category}
-                        </span>
+                        {(result.categories?.length ? result.categories : [result.category]).map((cat) => (
+                          <span key={cat} className="px-1.5 py-0.5 bg-[var(--color-bg-subtle)] text-[var(--color-fg-secondary)] rounded text-xs">
+                            {cat}
+                          </span>
+                        ))}
                         {result.description && (
                           <span className="truncate">{result.description}</span>
                         )}

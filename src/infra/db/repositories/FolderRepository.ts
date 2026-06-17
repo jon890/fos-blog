@@ -51,6 +51,7 @@ export class FolderRepository extends BaseRepository {
         path: p.path,
         slug: p.slug,
         category: p.category,
+        categories: p.categories,
         subcategory: p.subcategory,
         folders: p.folders || [],
         description: p.description,

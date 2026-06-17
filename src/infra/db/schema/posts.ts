@@ -19,6 +19,7 @@ export const posts = mysqlTable(
     path: varchar("path", { length: 500 }).notNull().unique(), // MySQL 인덱스 키 제한으로 500자로 제한
     slug: varchar("slug", { length: 500 }).notNull(),
     category: varchar("category", { length: 255 }).notNull(),
+    categories: json("categories").$type<string[]>().notNull().default([]),
     subcategory: varchar("subcategory", { length: 255 }),
     folders: json("folders").$type<string[]>().default([]), // n-depth 폴더 경로 배열
     tags: json("tags").$type<string[]>().notNull().default([]),

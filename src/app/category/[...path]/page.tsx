@@ -110,7 +110,23 @@ export default async function FolderPage({ params }: FolderPageProps) {
 
   const { folders, posts, readme } = await getCachedFolderContents(folderPath);
 
-  if (folders.length === 0 && posts.length === 0 && !readme) {
+  // depth 1 (카테고리 루트)일 때만 cross-post 병합
+  let mergedPosts = posts;
+  if (pathSegments.length === 1) {
+    try {
+      const { post } = getRepositories();
+      const crossPosts = await post.getCrossCategoryPosts(category);
+      const seen = new Set(posts.map((p) => p.path));
+      mergedPosts = [...posts, ...crossPosts.filter((p) => !seen.has(p.path))];
+    } catch (error) {
+      log.warn(
+        { err: error instanceof Error ? error : new Error(String(error)) },
+        "getCrossCategoryPosts 실패 — cross-post 없이 렌더",
+      );
+    }
+  }
+
+  if (folders.length === 0 && mergedPosts.length === 0 && !readme) {
     notFound();
   }
 
@@ -148,7 +164,7 @@ export default async function FolderPage({ params }: FolderPageProps) {
         title={currentFolder}
         sublines={[
           ...(folders.length > 0 ? [{ num: folders.length, suffix: "폴더" }] : []),
-          ...(posts.length > 0 ? [{ num: posts.length, suffix: "글" }] : []),
+          ...(mergedPosts.length > 0 ? [{ num: mergedPosts.length, suffix: "글" }] : []),
           `category/${pathSegments.join("/")}`,
         ]}
         categorySlug={category}
@@ -192,17 +208,17 @@ export default async function FolderPage({ params }: FolderPageProps) {
             </div>
           </CategoriesSection>
         )}
-        {posts.length > 0 && (
+        {mergedPosts.length > 0 && (
           <CategoriesSection
             idx="02"
             title="이 폴더의 글"
-            meta={`${posts.length} posts`}
+            meta={`${mergedPosts.length} posts`}
           >
             <div
               className="post-list-rows"
               style={{ "--cat-color": catColor } as CSSProperties}
             >
-              {posts.map((p, i) => (
+              {mergedPosts.map((p, i) => (
                 <PostListRow
                   key={p.path}
                   index={i + 1}

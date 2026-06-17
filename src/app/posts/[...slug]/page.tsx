@@ -202,6 +202,7 @@ export default async function PostPage({ params }: PostPageProps) {
 
       <ArticleHero
         category={postData.category}
+        categories={postData.categories}
         title={title}
         description={desc}
         createdAt={postData.createdAt ?? null}
