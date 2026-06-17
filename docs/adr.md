@@ -572,7 +572,7 @@
 - **결정**: 한 글이 여러 카테고리에 속할 수 있게 한다.
   - 경로 첫 폴더를 primary `category`(단일)로 유지하고, frontmatter `categories: [..]` 로 추가 카테고리를 더한다.
   - 합집합 `[경로 category, ...frontmatter categories]`(중복 제거)를 `posts.categories` json 배열에 저장한다.
-  - `/category/{name}`(depth 1) 페이지에 폴더 직속 글 + "cross-post 글"(`categories` 에 `name` 을 포함하지만 경로상 다른 폴더에 있는 글)을 합쳐 노출한다. cross-post 조회는 `JSON_CONTAINS(categories, ?)` 에 경로 prefix 제외를 더해 한다.
+  - `/category/{name}`(depth 1) 페이지에 폴더 직속 글 + "cross-post 글"(`categories` 에 `name` 을 포함하지만 경로상 다른 폴더에 있는 글)을 합쳐 노출한다. cross-post 조회는 `JSON_CONTAINS(categories, ?)` 에 primary 카테고리 제외(`ne(category, name)`)를 더해 한다. depth 1 에선 primary == 경로 첫 폴더라 "폴더 밖" 과 동치다.
   - 글 배지(카드·상세·검색)는 단일 chip 대신 `categories` 배열 전체를 표시한다. 첫 요소(primary)는 기존 위치를 유지한다.
 - **맥락**: 카테고리 탐색이 100% 경로 기반이다.
   - `/category/[...path]` 는 `post.path.startsWith(folderPath + "/")` 폴더 브라우저이고, `category` 는 경로 첫 폴더(`parsePath`)다.

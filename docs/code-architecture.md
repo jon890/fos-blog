@@ -277,7 +277,7 @@ src/components/
 
 - **`GET /tag/[name]`** (`src/app/tag/[name]/page.tsx`) — tag 별 글 목록. ISR 300s. tag URL decode → `getPostsByTag(tag, { limit: 50 })` + `countPostsByTag`. count 0 이면 `notFound()`.
 - **`PostRepository.getPostsByTag(tag, { limit, offset })`** / **`countPostsByTag(tag)`** — `JSON_CONTAINS(posts.tags, JSON_QUOTE(?))` 쿼리. count 는 `sql<string>\`count(*)\`` + `Number()` (BLG6).
-- **`SyncService.normalizeTags(raw)`** — frontmatter 의 `tags` 를 `trim().toLowerCase()` + 빈 문자열 제거 + Set dedup 후 DB 저장.
+- **`PostSyncService.normalizeTags(raw)`** — frontmatter 의 `tags` 를 `trim().toLowerCase()` + 빈 문자열 제거 + Set dedup 후 DB 저장. full·incremental 양쪽 sync 가 공통 헬퍼 `resolveFrontMatterMeta` 를 통해 호출(plan051, ADR-030).
 - **`ArticleFooter`** — tag chip 을 `<Link href="/tag/{encoded}">` 로 활성화.
 
 설계 의도 (정규화 테이블 회피, 50 limit, lowercase 만 등) 는 ADR-023 참조.
