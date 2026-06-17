@@ -87,14 +87,17 @@ grep -rn "docs/adr\.md\|adr\.md" docs/ .claude/ CLAUDE.md --include="*.md"
 # cwd: <repo root>
 # 본문 충실도 게이트 — ADR 번호별 개별 비교(순서 독립). adr.md 본문은 숫자 순이 아니므로(실측: 018 이 017 앞)
 # 번호별로 구 섹션 본문 ≡ 신규 NNN-*.md 본문 비교. 031 은 신규라 제외. 앵커/구분선/빈줄 정규화.
+# ADR 상호참조 링크는 작업4 가 의도적으로 갱신한다(#adr-NNN → ./NNN-slug.md). 본문 비교는 이 링크 형태만
+# 정규화로 흡수하고, 그 외 본문이 한 줄이라도 유실/변형되면 잡는다(흡수 범위를 링크 타겟으로 한정).
+norm() { sed -E 's,\(#adr-[0-9]+\),(ADR-REF),g; s,\(\./[0-9]{3}-[a-z0-9-]+\.md\),(ADR-REF),g'; }
 FAIL=0
 for nnn in $(ls docs/adr/[0-9]*.md | grep -oE "[0-9]{3}" | grep -v "^031$"); do
   old=$(awk -v n="$nnn" '/^## ADR-/ { if (inb) exit; if ($0 ~ "^## ADR-"n"\\.") inb=1 } inb { print }' docs/adr.md \
-        | grep -vE '^<a id="adr-|^---$|^[[:space:]]*$')
-  new=$(cat docs/adr/${nnn}-*.md | grep -vE '^<a id="adr-|^---$|^[[:space:]]*$')
+        | grep -vE '^<a id="adr-|^---$|^[[:space:]]*$' | norm)
+  new=$(cat docs/adr/${nnn}-*.md | grep -vE '^<a id="adr-|^---$|^[[:space:]]*$' | norm)
   [ "$old" = "$new" ] || { echo "❌ ADR-$nnn 본문 불일치 (유실/변형/이동)"; FAIL=1; }
 done
-[ "$FAIL" -eq 0 ] && echo "본문 동일성 ✓ (29개 ADR 개별 비교)" || echo "분리 오류 — 아래 git rm 중단하고 수정"
+[ "$FAIL" -eq 0 ] && echo "본문 동일성 ✓ (29개 ADR, 상호참조 링크 정규화 후 — 유실 0)" || echo "분리 오류 — 아래 git rm 중단하고 수정"
 
 # FAIL=0(검증 통과)일 때만 제거 — 검증 통과가 제거의 전제
 [ "$FAIL" -eq 0 ] && git rm docs/adr.md

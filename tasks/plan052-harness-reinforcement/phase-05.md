@@ -29,7 +29,9 @@ N=$(ls docs/adr/[0-9]*.md | grep -oE "[0-9]{3}" | sort -u | wc -l | tr -d ' ')
 
 # 깨진 앵커 잔재 0
 ! grep -rn "(#adr-[0-9]" docs/ --include="*.md"           # exit 1 기대
-! grep -rn "adr\.md#\|docs/adr\.md" docs/ .claude/ CLAUDE.md --include="*.md"   # 옛 단일 경로 참조 잔재 없어야
+# 옛 adr.md 를 가리키는 깨진 링크 0 — markdown 링크 형태(`](...adr.md)`) + 앵커(`adr.md#`)만 검사.
+# ADR-031 본문의 백틱 `docs/adr.md`(분해 대상을 가리키는 역사 서술)는 링크가 아니므로 정당하게 제외.
+! grep -rnE "\]\([^)]*adr\.md|adr\.md#" docs/ .claude/ CLAUDE.md --include="*.md"
 
 # INDEX ↔ 파일 양방향 정합
 # (a) INDEX → 파일 (링크된 파일이 모두 존재)
