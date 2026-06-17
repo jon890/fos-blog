@@ -33,6 +33,8 @@ async getCrossCategoryPosts(category: string): Promise<PostData[]>
 
 select 에 PostData 표시 필드 + `categories: posts.categories` 를 포함한다(배지·노출용). `getPostsBySeries` 의 select/map 패턴을 참고한다.
 
+정렬을 명시한다 — 폴더 직속 글(`FolderRepository` postsData)이 title 기준 정렬이므로 cross-post 도 **title 기준 정렬**(`orderBy`)을 둔다. 정렬이 없으면 병합 목록(`[...direct, ...cross]`) 뒷부분 순서가 비결정적이다.
+
 > 주의: 죽은 `getPostsByCategory` 는 건드리지 않는다(프로덕션 호출자 0개, 외과적 변경 원칙). 노출은 이 신규 메서드로만 배선한다.
 
 ### 2. `src/infra/db/repositories/FolderRepository.ts` — postsData 에 categories 포함

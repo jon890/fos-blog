@@ -26,6 +26,7 @@ const cats = post.categories?.length ? post.categories : [post.category];
 ```
 
 - 각 chip 색은 **`getCategoryColor(name)`** 적용(이미 import 됨). `getCategoryHex`(og-palette, OG 이미지용) 아님.
+- **chip 표시 형식을 기존과 동일하게 유지**: 현재 단일 chip 은 `toCanonicalCategory(post.category)` 로 라벨을 만들고(일부 위치는 `getCategoryIcon` 도 사용). 다중 chip 의 각 항목에도 `toCanonicalCategory(name)`(+ 기존에 아이콘을 쓰던 위치면 `getCategoryIcon(name)`)를 동일 적용해 표시 형식이 어긋나지 않게 한다. 기존에 쓰던 헬퍼는 grep 으로 각 chip 위치에서 확인.
 - 첫 요소(primary)는 기존 단일 표시와 동일 위치·스타일 유지. 나머지는 이어서 표시.
 - chip 컨테이너에 `flex-wrap` + gap 을 둬 여러 개일 때 줄바꿈 처리.
 - PostCard 의 chip 은 카드 전체 `<Link>` 안에 있으므로 **개별 링크로 만들지 않는다**(중첩 anchor 금지) — 표시 전용.
@@ -60,6 +61,8 @@ grep -n "category: posts.category" src/infra/db/repositories/PostRepository.ts
 - 시리즈 `firstPost` mini-select / `getRelatedPosts` 후보 select — 본 plan 범위 밖, 표시 면 아님.
 
 각 대상 메서드의 select + map 에 categories 를 추가한다(`getPostsBySeries` 의 select/map 패턴 참고).
+
+**누락 0 으로 추적**: 3개 면(홈/최신글 카드, 검색, 상세)이 각각 어느 PostRepository 메서드에서 PostData 를 받는지 호출 체인을 grep 으로 끝까지 추적해(예: 홈 page → service → repository), 그 면을 공급하는 메서드를 **모두** 고친다. 한 면이라도 공급 메서드를 빠뜨리면 그 면의 다중 배지가 안 뜬다(optional 이라 빌드·테스트는 통과 → 런타임 표시 누락만 발생). 특정한 대상 메서드 목록을 phase 완료 보고에 적는다.
 
 ---
 

@@ -36,18 +36,25 @@ export function mergeCategories(pathCategory: string, fmCategories?: string[]): 
 현재 `SyncService.performFullSync` 안에 인라인으로 있는 tags/series/seriesOrder 파싱 로직(현재 약 170~196번 줄: `normalizeTags` + series/seriesOrder 검증)을 그대로 옮겨 공통화한다.
 
 ```ts
-export function resolveFrontMatterMeta(frontMatter: FrontMatter): {
+export function resolveFrontMatterMeta(frontMatter: FrontMatter, path: string): {
   tags: string[];
   series: string | null;
   seriesOrder: number | null;
 } { /* 기존 performFullSync 의 series/seriesOrder/tags 검증 로직을 동일하게 */ }
 ```
 
-`normalizeTags` import 위치는 grep 으로 확인해 동일하게 가져온다. **기존 동작을 바꾸지 않는다**(추출만).
+**`normalizeTags` 는 이동한다 (순환 import 금지)**: `normalizeTags` 는 현재 `src/services/SyncService.ts` 의 module-private 함수다(export 안 됨). 그리고 `SyncService.ts` 가 이미 `import { ... } from "./PostSyncService"` 로 SyncService → PostSyncService 단방향 의존을 가진다.
+따라서 `normalizeTags` 를 `SyncService` 에서 export 해 `PostSyncService` 로 import 하면 **양방향 순환 import**가 된다(`import/no-cycle` lint 위반 + 구조 결함).
+
+- `normalizeTags` 함수를 `SyncService.ts` → `PostSyncService.ts` 로 **이동**한다(`resolveFrontMatterMeta` 옆).
+- `SyncService.ts` 는 더 이상 normalizeTags 를 직접 쓰지 않는다(아래 작업 3 에서 `resolveFrontMatterMeta` 호출로 대체). 만약 `SyncService` 가 normalizeTags 를 따로 더 써야 하면 `PostSyncService` 에서 import 한다(단방향 유지).
+- **`normalizeTags` 를 `SyncService` 에서 export → `PostSyncService` 에서 import 하지 말 것**(역방향 순환).
+
+**series/order 검증 경고 처리**: 원본 로직(SyncService.ts:191-194 부근)은 `log.warn({ path: file.path, ... })` 로 잘못된 seriesOrder 를 경고한다. 순수 함수로 옮기면 path·logger 맥락이 사라지므로 **path 인자를 받아 헬퍼 내부에서 경고**한다(위 시그니처의 `path` 인자). `PostSyncService` 의 기존 logger(`logger.child({ module: ... })`)를 grep 으로 확인해 동일 패턴으로 가져온다. **기존 동작(경고 발생 조건·메시지)을 바꾸지 않는다**(추출 + 정합만).
 
 ### 3. `SyncService.performFullSync` — 헬퍼 사용 + categories 저장
 
-인라인 tags/series 파싱을 `resolveFrontMatterMeta(frontMatter)` 호출로 교체한다.
+인라인 tags/series 파싱을 `resolveFrontMatterMeta(frontMatter, file.path)` 호출로 교체한다.
 update·create 두 분기(현재 약 199·216번 줄)에 `categories` 를 추가한다.
 
 ```ts
@@ -59,7 +66,7 @@ categories: mergeCategories(file.category, frontMatter.categories),
 ### 4. `PostSyncService.upsert` — frontmatter 파싱 + tags/series/categories 저장
 
 현재 `upsert` 는 `parsePath` 만 쓰고 frontmatter 를 파싱하지 않는다. `content` 는 이미 만들어져 있다(`rewriteImagePaths` 결과).
-`parseFrontMatter(content)` 로 frontMatter 를 얻어 `resolveFrontMatterMeta` + `mergeCategories` 를 적용하고, update·create 두 분기에 `tags` / `series` / `seriesOrder` / `categories` 를 추가 저장한다.
+`parseFrontMatter(content)` 로 frontMatter 를 얻어 `resolveFrontMatterMeta(frontMatter, path)` + `mergeCategories` 를 적용하고, update·create 두 분기에 `tags` / `series` / `seriesOrder` / `categories` 를 추가 저장한다(path 는 upsert 가 받는 파일 경로 인자를 그대로 전달).
 
 이로써 증분 경로가 full 경로와 동일한 메타를 저장한다(기존 tags/series 누락도 함께 해소).
 
@@ -96,6 +103,10 @@ grep -c "categories: mergeCategories" src/services/SyncService.ts   # performFul
 # 증분 경로가 frontmatter 를 파싱하는지 (upsert 가 parseFrontMatter 호출)
 grep -n "parseFrontMatter" src/services/PostSyncService.ts          # 1건 이상
 grep -c "categories: mergeCategories\|resolveFrontMatterMeta" src/services/PostSyncService.ts
+
+# 순환 import 가드 — normalizeTags 이동 확인 + 역방향 import 없음
+grep -n "function normalizeTags" src/services/PostSyncService.ts    # 이동 완료(정의 존재)
+! grep -n 'from "./SyncService"' src/services/PostSyncService.ts    # PostSyncService → SyncService 역방향 import 없음 (exit 1 기대)
 ```
 
 ## 의도 메모 (왜)
