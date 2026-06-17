@@ -5,6 +5,7 @@ export interface PostData {
   path: string;
   slug: string;
   category: string;
+  categories?: string[];
   subcategory?: string | null;
   folders?: string[];
   content?: string | null;
