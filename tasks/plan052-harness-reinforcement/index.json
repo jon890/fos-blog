@@ -1,0 +1,53 @@
+{
+  "name": "plan052-harness-reinforcement",
+  "description": "brain 하네스 패턴 대비 fos-blog 하네스 보강 5건 — adr.md 분해, pitfalls 운영 규율, 특이사항 4종, PR 번호 점검, executor 전용 agent",
+  "status": "pending",
+  "created_at": "2026-06-17",
+  "total_phases": 5,
+  "related_docs": [
+    "docs/adr.md",
+    ".claude/skills/_shared/common-pitfalls.md",
+    ".claude/skills/build-with-teams/SKILL.md",
+    ".claude/skills/planning/SKILL.md"
+  ],
+  "depends_on": [
+    "plan051-multi-category"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "adr.md 를 docs/adr/NNN-slug.md + INDEX 로 분해 (ADR-031)",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "title": "common-pitfalls 운영 규율 (축적 점검 4조건 + prune/automate 패스)",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 3,
+      "file": "phase-03.md",
+      "title": "build-with-teams 특이사항 4종 집계 추가",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 4,
+      "file": "phase-04.md",
+      "title": "planning 열린 PR 번호 점검 + executor 전용 agent 신설",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 5,
+      "file": "phase-05.md",
+      "title": "통합 검증 + 참조 무결성 grep + completed 마킹",
+      "model": "haiku",
+      "status": "pending"
+    }
+  ]
+}
