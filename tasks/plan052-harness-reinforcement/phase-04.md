@@ -16,7 +16,9 @@
 
 ---
 
-## 작업 항목 (2)
+## 작업 항목 (3)
+
+> 작업 2·3 은 둘 다 `build-with-teams/SKILL.md` 의 스폰 영역 보강(한 관심사). 작업 1 만 planning 으로 독립.
 
 ### 1. planning SKILL — 번호 충돌 방지에 열린 PR 점검 추가
 
@@ -48,6 +50,21 @@ gh pr list --state open --json number,headRefName,title --jq '.[] | "\(.headRefN
 
 > 주의: build-with-teams 가 executor 를 스폰하는 정확한 방식(agentType 명시 위치)을 SKILL.md 에서 grep 으로 확인 후 최소 변경. 스폰 가드(team_name·name 필수)는 유지한다.
 
+### 3. build-with-teams SKILL — native teams 스폰 규약 명확화
+
+`build-with-teams/SKILL.md` 의 "1. 팀 생성" 섹션과 "정식 팀원 스폰 규칙" 이 OMC `TeamCreate` 도구를 전제로 적혀 있어, 매 실행마다 "TeamCreate 없음" 을 발견하고 우회하는 비용이 반복된다.
+이 harness 가 Claude Code native teams 모델임을 명문화한다.
+
+- "1. 팀 생성" 섹션에 명시: 이 harness 는 Claude Code **native teams**.
+  - `TeamCreate` 도구는 없다.
+  - `Agent` 호출에 `team_name` 인자를 직접 넣으면 `agent-spawn-guard.sh` 통과 + 팀이 자동 형성된다.
+  - 팀원 통신은 `SendMessage({to})`.
+- "정식 팀원 스폰 규칙" 의 스폰 패턴 예시(`Agent({subagent_type, team_name, name, run_in_background, prompt})`)는 이미 native 호환이므로 유지.
+  단 "TeamCreate 로 생성한 팀의 정식 멤버" 표현을 "team_name 인자로 등록된 팀원" 으로 정합.
+- hook(`agent-spawn-guard.sh`)은 **변경하지 않는다** — team_name 인자만 있으면 통과하므로 이미 native 호환. 문서 표현만 정합.
+
+출처: 본 plan052 실행 중 실측(team_name 인자로 critic 스폰 성공). 사용자 결정으로 plan052 에 편입.
+
 ---
 
 ## Critical Files
@@ -56,15 +73,19 @@ gh pr list --state open --json number,headRefName,title --jq '.[] | "\(.headRefN
 |---|---|
 | `.claude/skills/planning/SKILL.md` | 수정 — 번호 충돌 방지에 열린 PR 점검 |
 | `.claude/agents/fos-blog-executor.md` | 신규 — 전용 executor agent |
-| `.claude/skills/build-with-teams/SKILL.md` | 수정 — executor 스폰을 전용 agent 로 배선 |
+| `.claude/skills/build-with-teams/SKILL.md` | 수정 — executor 스폰 전용 agent 배선 + native teams 규약 명확화 |
 
 ## 검증
 
 ```bash
 # cwd: <repo root>
-grep -niE "gh pr list|열린 PR" .claude/skills/planning/SKILL.md | head        # PR 점검 추가
-[ -f .claude/agents/fos-blog-executor.md ] && echo "executor agent 신설 ✓"
-grep -niE "fos-blog-executor" .claude/skills/build-with-teams/SKILL.md | head  # 배선 확인
+grep -niE "gh pr list|열린 PR" .claude/skills/planning/SKILL.md | head        # 작업1 PR 점검 추가
+[ -f .claude/agents/fos-blog-executor.md ] && echo "executor agent 신설 ✓"   # 작업2
+grep -niE "fos-blog-executor" .claude/skills/build-with-teams/SKILL.md | head  # 작업2 배선 확인
+# 작업2 — 잔존 oh-my-claudecode:executor 참조 0 (BLG22: SKILL ↔ .claude/agents 정합)
+! grep -n "oh-my-claudecode:executor" .claude/skills/build-with-teams/SKILL.md && echo "고아 executor 참조 0 ✓"
+# 작업3 — native teams 규약 명시
+grep -niE "native teams|TeamCreate 도구는 없" .claude/skills/build-with-teams/SKILL.md | head
 ```
 
 ## 의도 메모 (왜)

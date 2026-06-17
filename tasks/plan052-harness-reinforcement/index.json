@@ -1,6 +1,6 @@
 {
   "name": "plan052-harness-reinforcement",
-  "description": "brain 하네스 패턴 대비 fos-blog 하네스 보강 5건 — adr.md 분해, pitfalls 운영 규율, 특이사항 4종, PR 번호 점검, executor 전용 agent",
+  "description": "brain 하네스 패턴 대비 fos-blog 하네스 보강 — adr.md 분해, pitfalls 운영 규율, 특이사항 4종, PR 번호 점검, executor 전용 agent, native teams 스폰 규약",
   "status": "pending",
   "created_at": "2026-06-17",
   "total_phases": 5,
@@ -38,7 +38,7 @@
     {
       "number": 4,
       "file": "phase-04.md",
-      "title": "planning 열린 PR 번호 점검 + executor 전용 agent 신설",
+      "title": "planning 열린 PR 번호 점검 + executor 전용 agent 신설 + native teams 스폰 규약",
       "model": "sonnet",
       "status": "pending"
     },
