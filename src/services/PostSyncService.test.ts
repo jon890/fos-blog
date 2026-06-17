@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { parsePath, PostSyncService } from "./PostSyncService";
+import { parsePath, PostSyncService, mergeCategories, resolveFrontMatterMeta } from "./PostSyncService";
 import type { PostRepository } from "@/infra/db/repositories/PostRepository";
 import type { getFileContent, getFileCommitDates } from "@/infra/github/api";
 
@@ -50,6 +50,62 @@ describe("parsePath", () => {
     const result = parsePath("");
     expect(result.category).toBe("uncategorized");
     expect(result.foldersList).toEqual([]);
+  });
+});
+
+describe("mergeCategories", () => {
+  it("frontmatter categories 없으면 pathCategory 만 반환", () => {
+    expect(mergeCategories("AI", undefined)).toEqual(["AI"]);
+  });
+
+  it("pathCategory 와 중복되는 항목 제거, primary 첫째", () => {
+    expect(mergeCategories("AI", ["AI", "DevOps"])).toEqual(["AI", "DevOps"]);
+  });
+
+  it("공백만 있는 항목 제거", () => {
+    expect(mergeCategories("AI", [" ", "DevOps"])).toEqual(["AI", "DevOps"]);
+  });
+
+  it("빈 배열이면 pathCategory 만 반환", () => {
+    expect(mergeCategories("AI", [])).toEqual(["AI"]);
+  });
+});
+
+describe("resolveFrontMatterMeta", () => {
+  it("tags 정규화 — 소문자 + trim + 중복 제거", () => {
+    const result = resolveFrontMatterMeta({ tags: ["AI", " ML ", "ai"] }, "test/path.md");
+    expect(result.tags).toEqual(["ai", "ml"]);
+  });
+
+  it("series + 유효한 seriesOrder — 모두 설정", () => {
+    const result = resolveFrontMatterMeta(
+      { series: "RAG 시리즈", seriesOrder: 2 },
+      "test/path.md",
+    );
+    expect(result.series).toBe("RAG 시리즈");
+    expect(result.seriesOrder).toBe(2);
+  });
+
+  it("series 있고 seriesOrder 누락 — series 무시", () => {
+    const result = resolveFrontMatterMeta({ series: "RAG 시리즈" }, "test/path.md");
+    expect(result.series).toBeNull();
+    expect(result.seriesOrder).toBeNull();
+  });
+
+  it("series 없으면 null 반환", () => {
+    const result = resolveFrontMatterMeta({}, "test/path.md");
+    expect(result.series).toBeNull();
+    expect(result.seriesOrder).toBeNull();
+    expect(result.tags).toEqual([]);
+  });
+
+  it("seriesOrder 가 문자열 숫자인 경우 파싱", () => {
+    const result = resolveFrontMatterMeta(
+      { series: "시리즈", seriesOrder: "3" },
+      "test/path.md",
+    );
+    expect(result.series).toBe("시리즈");
+    expect(result.seriesOrder).toBe(3);
   });
 });
 

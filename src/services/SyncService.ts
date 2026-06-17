@@ -1,15 +1,6 @@
 import { PostRepository } from "@/infra/db/repositories/PostRepository";
 import { SyncLogRepository } from "@/infra/db/repositories/SyncLogRepository";
 import { extractDescription, extractTitle, parseFrontMatter } from "@/lib/markdown";
-
-function normalizeTags(raw: unknown): string[] {
-  if (!Array.isArray(raw)) return [];
-  const cleaned = raw
-    .filter((t): t is string => typeof t === "string")
-    .map((t) => t.trim().toLowerCase())
-    .filter((t) => t.length > 0);
-  return Array.from(new Set(cleaned));
-}
 import {
   type ChangedFile,
   type getChangedFilesSince,
@@ -20,7 +11,7 @@ import {
 } from "@/infra/github/api";
 import { shouldSyncFile } from "@/infra/github/file-filter";
 import { rewriteImagePaths } from "@/infra/github/image-rewrite";
-import { PostSyncService, parsePath } from "./PostSyncService";
+import { PostSyncService, parsePath, resolveFrontMatterMeta, mergeCategories } from "./PostSyncService";
 import { MetadataSyncService } from "./MetadataSyncService";
 import { PostService } from "./PostService";
 import logger from "@/lib/logger";
@@ -167,33 +158,8 @@ export class SyncService {
       const title = extractTitle(content) || filenameTitle;
       const description = extractDescription(content, 200);
       const { frontMatter } = parseFrontMatter(content);
-      const tags = normalizeTags(frontMatter.tags);
-
-      const rawSeries =
-        typeof frontMatter.series === "string" ? frontMatter.series.trim() : "";
-      const rawOrder = frontMatter.seriesOrder;
-
-      let series: string | null = null;
-      let seriesOrder: number | null = null;
-
-      if (rawSeries) {
-        const parsedOrder =
-          typeof rawOrder === "number"
-            ? rawOrder
-            : typeof rawOrder === "string" && rawOrder.trim() !== ""
-              ? Number(rawOrder)
-              : NaN;
-
-        if (Number.isFinite(parsedOrder) && parsedOrder >= 0) {
-          series = rawSeries;
-          seriesOrder = Math.trunc(parsedOrder);
-        } else {
-          log.warn(
-            { path: file.path, series: rawSeries, rawOrder },
-            "frontmatter 'series' 있으나 'seriesOrder' 누락/유효하지 않음 — series 메타 무시",
-          );
-        }
-      }
+      const { tags, series, seriesOrder } = resolveFrontMatterMeta(frontMatter, file.path);
+      const categories = mergeCategories(file.category, frontMatter.categories);
 
       if (existing) {
         await this.postRepo.update(existing.id, {
@@ -207,6 +173,7 @@ export class SyncService {
           tags,
           series,
           seriesOrder,
+          categories,
           isActive: true,
           updatedAt: commitDates?.updatedAt ?? new Date(),
         });
@@ -223,6 +190,7 @@ export class SyncService {
           tags,
           series,
           seriesOrder,
+          categories,
           content,
           description,
           sha: fileData.sha,

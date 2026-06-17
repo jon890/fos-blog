@@ -1,7 +1,11 @@
 import { PostRepository } from "@/infra/db/repositories/PostRepository";
-import { extractDescription, extractTitle } from "@/lib/markdown";
+import { extractDescription, extractTitle, parseFrontMatter } from "@/lib/markdown";
+import type { FrontMatter } from "@/lib/markdown";
 import { rewriteImagePaths } from "@/infra/github/image-rewrite";
 import type { getFileContent, getFileCommitDates } from "@/infra/github/api";
+import logger from "@/lib/logger";
+
+const log = logger.child({ module: "PostSyncService" });
 
 type GithubApi = {
   getFileContent: typeof getFileContent;
@@ -17,6 +21,60 @@ export function parsePath(filePath: string) {
     .replace(/\.(md|mdx)$/, "")
     .replace(/_/g, " ");
   return { category, foldersList, subcategory, title };
+}
+
+export function normalizeTags(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const cleaned = raw
+    .filter((t): t is string => typeof t === "string")
+    .map((t) => t.trim().toLowerCase())
+    .filter((t) => t.length > 0);
+  return Array.from(new Set(cleaned));
+}
+
+export function mergeCategories(pathCategory: string, fmCategories?: string[]): string[] {
+  const all = [pathCategory, ...(fmCategories ?? [])]
+    .map((c) => c.trim())
+    .filter((c) => c.length > 0);
+  return Array.from(new Set(all));
+}
+
+export function resolveFrontMatterMeta(
+  frontMatter: FrontMatter,
+  path: string,
+): {
+  tags: string[];
+  series: string | null;
+  seriesOrder: number | null;
+} {
+  const tags = normalizeTags(frontMatter.tags);
+  const rawSeries =
+    typeof frontMatter.series === "string" ? frontMatter.series.trim() : "";
+  const rawOrder = frontMatter.seriesOrder;
+
+  let series: string | null = null;
+  let seriesOrder: number | null = null;
+
+  if (rawSeries) {
+    const parsedOrder =
+      typeof rawOrder === "number"
+        ? rawOrder
+        : typeof rawOrder === "string" && rawOrder.trim() !== ""
+          ? Number(rawOrder)
+          : NaN;
+
+    if (Number.isFinite(parsedOrder) && parsedOrder >= 0) {
+      series = rawSeries;
+      seriesOrder = Math.trunc(parsedOrder);
+    } else {
+      log.warn(
+        { path, series: rawSeries, rawOrder },
+        "frontmatter 'series' 있으나 'seriesOrder' 누락/유효하지 않음 — series 메타 무시",
+      );
+    }
+  }
+
+  return { tags, series, seriesOrder };
 }
 
 export class PostSyncService {
@@ -41,6 +99,9 @@ export class PostSyncService {
     const content = rewriteImagePaths(fileData.content, filePath);
     const title = extractTitle(content) || filenameTitle;
     const description = extractDescription(content, 200);
+    const { frontMatter } = parseFrontMatter(content);
+    const { tags, series, seriesOrder } = resolveFrontMatterMeta(frontMatter, filePath);
+    const categories = mergeCategories(category, frontMatter.categories);
 
     const existingPostId = await this.postRepo.getPostId(filePath);
 
@@ -53,6 +114,10 @@ export class PostSyncService {
         category,
         subcategory,
         folders: foldersList,
+        tags,
+        series,
+        seriesOrder,
+        categories,
         isActive: true,
         updatedAt: commitDates?.updatedAt ?? new Date(),
       });
@@ -65,6 +130,10 @@ export class PostSyncService {
         category,
         subcategory,
         folders: foldersList,
+        tags,
+        series,
+        seriesOrder,
+        categories,
         content,
         description,
         sha: fileData.sha,
