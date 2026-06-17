@@ -501,6 +501,9 @@ executor 완료 후 team-lead → docs-verifier 에게 검증 요청. self-shutd
 ### 9. 완료 + PR 생성 + 즉시 팀 종료
 
 1. team-lead 가 변경사항 검토
+   - **commit 전 staging 영역 전체 확인 (필수 — plan052 관측)** — executor 가 `git rm`/`git add` 로 staging 한 변경은 team-lead 가 `git add <일부 파일>` 만 해도 `git commit` 시 함께 커밋된다(`git commit` 은 staging 전체 대상이지 방금 add 한 파일만이 아님).
+     - commit 전 `git status` 로 staged 전체를 점검. 관심사가 섞였으면 `git reset` 후 명시적 add, 또는 `git commit <경로>` 로 대상 한정.
+     - 실측: executor 의 `git rm docs/adr.md` 가 task 게이트 정밀화 commit 에 딸려와 `git reset --mixed HEAD~1` 로 분리.
 2. 통합 검증: `pnpm lint && pnpm type-check && pnpm test -- --run && pnpm build`
 3. **CI 실패 시 분기 절차 (필수)** — 변경 파일 vs 실패 원인 파일을 매칭해 책임을 분류하고 사용자 결정을 받는다. 자의적으로 plan PR 안에 외부 잔존 깨짐 fix 를 흡수하지 말 것 (scope creep + 회고 어려움).
    - **plan 범위 내 (executor 결과물 책임)**: lint/type/build 실패가 본 plan 변경 파일에서 발생 → executor 재투입(또는 team-lead 직접 fix). 사용자 결정 불필요
