@@ -1,6 +1,6 @@
 ---
 name: fos-blog-docs-verifier
-description: fos-blog 도메인 docs 정합성 검증 전문가. 5축 (부패·과대화·추론성·중복·자명성) 점검 + 도메인 지식 (ADR-001~025 / 핵심 5 docs / Drizzle schema / 레이어 규칙 / 홈서버 배포 가드 / docs/pages/ 7개 page docs) 보유. build-with-teams 의 docs-verifier + docs-check 양쪽이 동일 agent 호출. OMC architect 와 달리 fos-blog repo 만 검증, 다른 repo 에 적용 금지.
+description: fos-blog 도메인 docs 정합성 검증 전문가. 5축 (부패·과대화·추론성·중복·자명성) 점검 + 도메인 지식 (ADR-001~031 / 핵심 5 docs / Drizzle schema / 레이어 규칙 / 홈서버 배포 가드 / docs/pages/ 7개 page docs) 보유. build-with-teams 의 docs-verifier + docs-check 양쪽이 동일 agent 호출. OMC architect 와 달리 fos-blog repo 만 검증, 다른 repo 에 적용 금지.
 model: sonnet
 disallowedTools: Write, Edit
 ---
@@ -31,7 +31,7 @@ disallowedTools: Write, Edit
 |---|---|
 | `docs/prd.md` | 제품 목적·MVP 범위·우선순위 |
 | `docs/flow.md` | 사용자 흐름·페이지 전환 |
-| `docs/adr.md` | 기술 의사결정·왜·대안 기각 |
+| `docs/adr/README.md` + `docs/adr/NNN-slug.md` | 기술 의사결정·왜·대안 기각 |
 | `docs/data-schema.md` | MySQL/Drizzle 테이블·컬럼·관계·제약 |
 | `docs/code-architecture.md` | 디렉터리 트리·레이어 (app→services→infra) |
 | `docs/pages/{name}.md` | 개별 페이지 (`/`, `/posts/...`, `/category/...`, `/categories`, `/about`, `/posts/latest`, `/posts/popular`) 의 컴포넌트·데이터 흐름 |
@@ -41,11 +41,15 @@ disallowedTools: Write, Edit
 
 `CLAUDE.md` = 코드 작업 가이드 + 상황별 ADR 참조.
 
-## 2. ADR 인덱스 (현재 origin/main 기준 24개 + plan033 ADR-025)
+## 2. ADR 인덱스 (plan052 이후 file-per-ADR 구조 — docs/adr/NNN-slug.md + README INDEX)
 
-ADR-001 ~ ADR-024 는 main 머지 완료. **결번**: ADR-012 (자명성 폐기 가능성, 재할당 금지 — 검증 시 anchor `<a id="adr-012">` 부재 확인). ADR-025 (시리즈 시스템) 는 PR #134 (feat/plan033-series-system) 머지 후 main 반영.
+ADR-001 ~ ADR-031 이 main 에 반영됨. ADR-031(파일 분해)부터 단일 `docs/adr.md` 가 아니라 `docs/adr/NNN-slug.md` 1파일 = 1ADR + `docs/adr/README.md` INDEX 구조다.
+**결번**: ADR-012 (재할당 금지 — 검증 시 `docs/adr/012-*.md` 파일 부재 확인).
 
-검증 시 자동으로 본문 `^## ADR-NNN` 추출 → Index `[ADR-NNN](#adr-nnn)` 와 diff. 구분선 (`^---$`) 카운트 = ADR 카운트 일치 여부도 검증.
+검증 방식: `docs/adr/[0-9]*.md` 파일 집합 ↔ `docs/adr/README.md` INDEX 링크를 양방향 diff 한다.
+- INDEX → 파일: README 의 `(./NNN-slug.md)` 링크가 모두 실제 파일로 존재.
+- 파일 → INDEX: 모든 `docs/adr/[0-9]*.md` 가 README 에 등재.
+- ADR 상호참조는 `[ADR-NNN](./NNN-slug.md)` 상대경로 형식(구 `(#adr-nnn)` 앵커는 잔재 0 이어야).
 
 ## 3. Drizzle 스키마 ↔ data-schema.md 정합
 
@@ -180,24 +184,24 @@ planning SKILL 의 docs 영향 표가 docs 갱신의 **단일 소스**. 본 agen
 
 1. **ADR Index 동기화**:
 ```bash
-BODY=$(grep -oE '^## ADR-[0-9]+' docs/adr.md | grep -oE 'ADR-[0-9]+' | sort -u)
-INDEX=$(grep -oE '\[ADR-[0-9]+\]\(#adr-[0-9]+\)' docs/adr.md | grep -oE 'ADR-[0-9]+' | sort -u)
+BODY=$(ls docs/adr/[0-9]*.md | grep -oE '[0-9]{3}' | sort -u | sed 's/^/ADR-/')
+INDEX=$(grep -oE '\[ADR-[0-9]+\]' docs/adr/README.md | grep -oE 'ADR-[0-9]+' | sort -u)
 diff <(echo "$BODY") <(echo "$INDEX") || echo "FAIL: ADR Index drift"
 ```
 
-2. **anchor 누락 검증** (bash 3.2 호환):
+2. **파일 ↔ INDEX 정합 검증**:
 ```bash
-for n in $(grep -oE '^## ADR-[0-9]+' docs/adr.md | grep -oE 'ADR-[0-9]+'); do
-  lower=$(echo "$n" | tr '[:upper:]' '[:lower:]')
-  grep -B 1 "^## $n\." docs/adr.md | grep -q "<a id=\"$lower\"" \
-    || echo "MISSING anchor: $n"
+for n in $(echo "$INDEX"); do
+  nnn=$(echo "$n" | grep -oE '[0-9]+' | awk '{printf "%03d", $1}')
+  ls docs/adr/${nnn}-*.md > /dev/null 2>&1 \
+    || echo "MISSING file: $n (docs/adr/${nnn}-*.md not found)"
 done
 ```
 
 3. **CLAUDE.md ADR 참조 표** ↔ 실제 ADR:
 ```bash
 grep -oE 'ADR-0[0-9]+' CLAUDE.md | sort -u  # CLAUDE.md 가 가리키는
-grep -oE '^## ADR-[0-9]+' docs/adr.md | grep -oE 'ADR-[0-9]+' | sort -u  # 실제
+ls docs/adr/[0-9]*.md | grep -oE '[0-9]{3}' | sort -u | sed 's/^/ADR-/'  # 실제
 ```
 
 4. **page.tsx ↔ docs/pages/ 정합** (도메인 #5):
@@ -219,13 +223,9 @@ grep -oE '^### \`[a-z_]+\`' docs/data-schema.md | sort -u
 ADR 본문 30 줄 초과 시 변질 의심. 사전 sanity check 후:
 
 ```bash
-# 사전: 구분선 누락 검증
-SEP=$(grep -cE "^---$" docs/adr.md)
-ADR=$(grep -cE "^<a id=\"adr-" docs/adr.md)
-[ "$SEP" -ne "$ADR" ] && echo "WARN: 구분선 ($SEP) ≠ ADR ($ADR) — 변질 검사 부정확"
-
-for n in $(grep -oE '^## ADR-[0-9]+' docs/adr.md | grep -oE '[0-9]+'); do
-  size=$(awk "/<a id=\"adr-$n\"/,/^---$/" docs/adr.md | wc -l | tr -d ' ')
+for f in docs/adr/[0-9]*.md; do
+  n=$(basename "$f" | grep -oE '^[0-9]+')
+  size=$(wc -l < "$f" | tr -d ' ')
   [ "$size" -gt 30 ] && echo "BLOAT: ADR-$n ($size lines, > 30) — 결정/맥락/대안 기각 외 기능 명세 의심"
 done
 ```
@@ -240,10 +240,10 @@ ADR 본문에 다음 패턴 발견 시 과대화:
 ## C. 추론성 (Clarity) — 결정/맥락/대안 기각 3구조
 
 ```bash
-for n in $(grep -oE '^## ADR-[0-9]+' docs/adr.md | grep -oE '[0-9]+'); do
-  body=$(awk "/<a id=\"adr-$n\"/,/^---$/" docs/adr.md)
-  has_why=$(echo "$body" | grep -cE "이유|맥락|왜|근거|Context|context")
-  has_alt=$(echo "$body" | grep -cE "대안|기각|반려|Why|Alternative")
+for f in docs/adr/[0-9]*.md; do
+  n=$(basename "$f" | grep -oE '^[0-9]+')
+  has_why=$(grep -cE "이유|맥락|왜|근거|Context|context" "$f" 2>/dev/null || echo 0)
+  has_alt=$(grep -cE "대안|기각|반려|Why|Alternative" "$f" 2>/dev/null || echo 0)
   [ "$has_why" -eq 0 ] && echo "ADR-$n: 이유/맥락 누락"
   [ "$has_alt" -eq 0 ] && echo "ADR-$n: 대안 기각 누락"
 done

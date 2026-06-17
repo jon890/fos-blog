@@ -183,7 +183,7 @@ grep -nE "^(<<<<<<<|=======|>>>>>>>)" $(git diff --name-only --diff-filter=U)
 
 | 카테고리 | 예시 | 자동 처리 |
 |---|---|---|
-| **양쪽 추가** (서로 다른 항목 추가) | `docs/adr.md` 에 양쪽이 다른 ADR-NNN 추가 / `data-schema.md` 에 다른 테이블 섹션 추가 | ✅ 둘 다 보존 |
+| **양쪽 추가** (서로 다른 항목 추가) | `docs/adr/NNN-slug.md` 양쪽이 다른 파일 추가 / `data-schema.md` 에 다른 테이블 섹션 추가 | ✅ 둘 다 보존 |
 | **수치/카운트 갱신** | `CLAUDE.md` 의 plan 카운트 / ADR 인덱스 카운트 (다른 PR 머지로 증가) | ✅ 더 큰 수치 + 본 PR 변경 의미 합성 |
 | **same-line different-content** | 같은 함수 시그니처 양쪽 수정 / 같은 컴포넌트 props 양쪽 변경 | ⚠️ claude 가 의도 추론 → **사용자 confirm 필수** |
 | **delete vs modify** | 한쪽이 파일/함수 제거, 한쪽은 수정 (예: plan 결과로 PostRepository 메서드 제거 vs 본 PR 의 다른 변경) | 🛑 사용자 confirm 필수 (제거가 의도된 변경인지 확인) |
@@ -537,7 +537,7 @@ reply 까지 완료되면 이번 PR 의 리뷰에서 **재발 가능 패턴**을
 |---|---|---|
 | 라이브러리 / DB / 타입 함정 (Drizzle / pino / Octokit / React 등 fos-blog 스택) | `_shared/common-pitfalls.md` | "### fos-blog (Next.js 16 / Drizzle ORM / MySQL / pino)" 의 BLG# |
 | 일반 critic 시드 패턴 (수치 추측 / cwd 모호 / 눈으로 확인 등) | 같은 파일 | P# 시드 패턴 |
-| 도메인 의사결정 / ADR 가치 | `docs/adr.md` | 신규 ADR (자명성 게이트 통과 후) |
+| 도메인 의사결정 / ADR 가치 | `docs/adr/NNN-slug.md` | 신규 ADR (자명성 게이트 통과 후) |
 | 페이지 / 컴포넌트 흐름 변경 | `docs/pages/{page}.md` | 해당 섹션 |
 
 ### 작성 형식 (BLG# 추가 예시)

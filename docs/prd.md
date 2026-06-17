@@ -95,4 +95,4 @@
 - [flow.md](./flow.md) — 사용자 흐름 (상세)
 - [data-schema.md](./data-schema.md) — DB 인덱스 추가 마이그레이션
 - [code-architecture.md](./code-architecture.md) — Repository / Service / API / Component 구조
-- [adr.md](./adr.md) — ADR-001 ~ ADR-005
+- [adr/README.md](./adr/README.md) — ADR-001 ~ ADR-005

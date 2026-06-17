@@ -32,7 +32,7 @@ description: AI 에이전트 하네스를 사용한 대규모 구현 자동화. 
 - `docs/data-schema.md` — DB 스키마, 테이블 관계, Json 구조 명세
 - `docs/flow.md` — 사용자 플로우, 화면 레이아웃
 - `docs/code-architecture.md` — 디렉터리 구조, 레이어 (app → services → infra), API 전략
-- `docs/adr.md` — 기술 결정 기록
+- `docs/adr/README.md` — 기술 결정 INDEX + `docs/adr/NNN-slug.md` — ADR 개별 파일
 - `CLAUDE.md` — 코딩 규칙, 금지사항
 
 ### 2. 논의
@@ -44,7 +44,7 @@ description: AI 에이전트 하네스를 사용한 대규모 구현 자동화. 
 
 논의 결과를 반드시 **task 생성 전에** docs에 반영한다. task 내부(phase)에서는 docs를 수정하지 않는다.
 
-- `docs/adr.md` — 새 의사결정 기록 (ADR 추가)
+- `docs/adr/NNN-slug.md` 신규 생성 + `docs/adr/README.md` 에 링크 추가
 - `docs/data-schema.md` — 스키마 변경 반영
 - `docs/flow.md` — 플로우 변경 반영
 - `docs/code-architecture.md` — 디렉터리/파이프라인 변경 반영

@@ -1,7 +1,7 @@
 # AdSense 승인 체크리스트
 
 **작성일:** 2026-04-24
-**관련 ADR**: [ADR-014](./adr.md#adr-014)
+**관련 ADR**: [ADR-014](./adr/014-adsense-approval.md)
 
 Google AdSense 승인 신청 → 승인 → 광고 노출까지의 절차와 체크리스트.
 
@@ -28,7 +28,7 @@ Google AdSense 승인 신청 → 승인 → 광고 노출까지의 절차와 체
 
 ## 2. AdSense 신청
 
-> **신청 단위 = 루트 도메인**: AdSense 는 등록 도메인(`fosworld.co.kr`) 단위로만 신청 가능. `blog.fosworld.co.kr` 같은 서브도메인 단독 입력은 거부됨. 루트 도메인 승인 후 서브도메인을 별도 추가하는 정책. (자세히는 [ADR-014](./adr.md#adr-014))
+> **신청 단위 = 루트 도메인**: AdSense 는 등록 도메인(`fosworld.co.kr`) 단위로만 신청 가능. `blog.fosworld.co.kr` 같은 서브도메인 단독 입력은 거부됨. 루트 도메인 승인 후 서브도메인을 별도 추가하는 정책. (자세히는 [ADR-014](./adr/014-adsense-approval.md))
 
 1. https://www.google.com/adsense/start/ 접속
 2. **사이트 URL**: `https://fosworld.co.kr` 입력 (루트 도메인)

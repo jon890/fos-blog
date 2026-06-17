@@ -30,7 +30,7 @@ ls -dt tasks/plan*/ | head -5
   "created_at": "2026-04-28",             // YYYY-MM-DD
   "total_phases": 3,                      // phases 배열 길이와 일치
   "related_docs": [                       // (선택) 관련 docs 경로
-    "docs/adr.md",
+    "docs/adr/README.md",
     "docs/code-architecture.md"
   ],
   "depends_on": [                         // (선택) 선행 plan 번호

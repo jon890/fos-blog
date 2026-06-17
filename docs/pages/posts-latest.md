@@ -19,7 +19,7 @@
 | PostRepository | `getRecentPostsCursor({ limit: 10 })` | 최신 10개 (SSR) |
 | VisitRepository | `getPostVisitCounts(paths)` | 조회수 맵 |
 
-**정렬**: `updated_at DESC, id DESC` (composite cursor — [ADR-002](../adr.md#adr-002))
+**정렬**: `updated_at DESC, id DESC` (composite cursor — [ADR-002](../adr/002-pagination.md))
 
 **ISR:** `revalidate = 60`
 **Static params:** 없음
@@ -56,7 +56,7 @@
 
 ## SEO
 
-- `export const metadata = { robots: { index: false, follow: true } }` ([ADR-005](../adr.md#adr-005))
+- `export const metadata = { robots: { index: false, follow: true } }` ([ADR-005](../adr/005-list-page-noindex.md))
 - 제목: "최신 글 — FOS Study"
 - 설명: "개발 공부 기록 블로그의 최신 글 목록입니다."
 
