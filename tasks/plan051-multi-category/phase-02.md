@@ -31,6 +31,8 @@ export function mergeCategories(pathCategory: string, fmCategories?: string[]): 
 }
 ```
 
+**사전조건 — pathCategory 는 비빈 문자열**: `parsePath` 가 `pathParts[0] || "uncategorized"` 로 항상 비빈 값을 보장하므로 호출부는 비빈 pathCategory 를 넘긴다. 만약 빈/공백이 들어오면 `filter` 로 primary 가 제거돼 "첫째 = primary" 불변식이 깨진다(phase-04 배지 fallback 이 잘못된 primary 를 그림). 함수 위에 이 사전조건을 1줄 주석으로 명시하고, 작업 5 테스트로 빈 입력 동작을 잠근다.
+
 ### 2. `resolveFrontMatterMeta` 순수 함수 (export, `src/services/PostSyncService.ts`)
 
 현재 `SyncService.performFullSync` 안에 인라인으로 있는 tags/series/seriesOrder 파싱 로직(현재 약 170~196번 줄: `normalizeTags` + series/seriesOrder 검증)을 그대로 옮겨 공통화한다.
@@ -77,6 +79,7 @@ categories: mergeCategories(file.category, frontMatter.categories),
 - `mergeCategories("AI", undefined)` → `["AI"]`
 - `mergeCategories("AI", ["AI", "DevOps"])` → `["AI", "DevOps"]` (중복 제거, primary 첫째)
 - `mergeCategories("AI", [" ", "DevOps"])` → `["AI", "DevOps"]` (공백 제거)
+- `mergeCategories("", ["DevOps"])` → `["DevOps"]` (빈 primary 방어 — 사전조건 위반 시 동작을 명시적으로 잠금)
 - `resolveFrontMatterMeta` — series + 유효 seriesOrder / series 만 있고 order 누락 / tags 정규화 케이스
 
 ---

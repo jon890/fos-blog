@@ -589,4 +589,4 @@
 - **트레이드오프**:
   - json 배열은 `JSON_CONTAINS` 풀스캔이라 인덱스 활용이 어렵다. 글 수가 적어 허용하고, 커지면 multi-value index 또는 관계 테이블 이전을 별도 plan 으로 검토한다.
   - sync 저장은 full·incremental 두 경로가 있다. 두 경로 모두 frontmatter 를 파싱해 `categories` 를 저장해야 평상시(증분) 운영에서 누락이 없다. 공통 헬퍼로 두 경로의 정합을 보장한다.
-  - frontmatter 카테고리명은 폴더명과 대소문자가 일치해야 매칭된다(`JSON_CONTAINS` 대소문자 민감). 정규화는 후속으로 미룬다.
+  - frontmatter 카테고리명은 폴더명과 대소문자가 일치해야 매칭된다(`JSON_CONTAINS` 대소문자 민감). 불일치 시 글 저자가 silent miss(매칭 안 됨)를 겪을 수 있다. 작성 가이드(폴더명 그대로 쓸 것)는 fos-study `CLAUDE.md`("카테고리와 Frontmatter" 절)에 명시했다. 자동 정규화·미매칭 logger 경고는 후속 plan 으로 미룬다.

@@ -105,3 +105,4 @@ grep -n "categories: p.categories" src/infra/db/repositories/FolderRepository.ts
 - `ne(posts.category, category)` 로 폴더 밖만 거르는 이유: primary category 가 경로 첫 폴더라, primary == name 인 글은 이미 폴더 직속·하위 폴더로 노출된다. 이중 노출·중복을 막고 "직속 + 타카테고리"(사용자 결정)를 정확히 구현한다.
 - 폴더 브라우저를 교체하지 않는 이유: 경로 계층(하위 폴더 카드·deep path)과 카테고리 다중 소속은 다른 축이다. 섞으면 한 글이 잘못된 폴더에 뜨는 회귀가 생긴다(ADR-030 대안 기각).
 - depth 1 로 한정하는 이유: 카테고리는 경로 첫 폴더 단위 개념이라 다중 소속도 1-depth 에서만 의미가 있다. 깊은 폴더는 순수 경로 탐색.
+- 병합 순서 결정: 직속 글(title 정렬) 뒤에 cross-post(title 정렬)를 단순 append 한다 — 폴더 직속 글을 앞에 노출하려는 의도다. `mergedPosts` 를 전체 재정렬하지 않는다(직속 우선 보존). 두 그룹 각각은 title 정렬이라 그룹 내 순서는 결정적이다.

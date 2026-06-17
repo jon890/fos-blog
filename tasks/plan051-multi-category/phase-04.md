@@ -44,7 +44,14 @@ grep -n "category\|getCategoryColor\|categorySlug" src/app/posts/\[...slug\]/pag
 
 ### 3. `src/components/SearchDialog.tsx` — 검색 결과 다중 chip
 
-검색 결과 항목의 단일 category 표시를 categories 다중으로 바꾼다(해당 표시가 있을 때). 동일 fallback 적용.
+검색 결과 항목의 단일 category 표시를 categories 다중으로 바꾼다. 먼저 표시 위치를 grep 으로 특정한다.
+
+```bash
+# cwd: <repo root>
+grep -n "category\|getCategoryColor\|getCategoryIcon\|toCanonicalCategory" src/components/SearchDialog.tsx
+```
+
+category chip 표시가 있으면 다중으로 교체(동일 fallback 적용). **표시가 전혀 없으면 침묵으로 건너뛰지 말고**, phase 완료 보고에 "SearchDialog 에 category chip 없음 — 변경 불필요" 를 명시한다(실행자가 못 찾아 누락한 것인지, 원래 없는 것인지 구분).
 
 ### 4. 노출 면 query 에 categories select 추가
 
