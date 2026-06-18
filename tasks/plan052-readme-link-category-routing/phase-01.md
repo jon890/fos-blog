@@ -1,7 +1,7 @@
 # Phase 01 — resolveMarkdownLink README → /category 라우팅 + 테스트
 
 **Model**: sonnet
-**Status**: pending
+**Status**: completed
 
 ---
 
