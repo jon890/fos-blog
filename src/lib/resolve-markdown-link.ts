@@ -6,6 +6,8 @@
  * - README: README 는 글이 아니라 /category 폴더 페이지로 렌더되므로
  *   (src/app/category/[...path]/page.tsx) 마지막 세그먼트를 떼고 /category/<폴더> 로 보낸다.
  *   본문에 직접 쓴 README 링크가 /posts/.../README.md 로 가서 404 나는 것을 막는다 (이슈 #178).
+ *   확장자 없는 README 링크(예: ./README)도 폴더 페이지 의도로 보고 /category 로 보낸다
+ *   (정규식의 확장자 부분이 optional — 대상 폴더가 없으면 /category 라우트가 404 위임).
  * - 최상위 README (폴더가 빈 문자열) → /categories (카테고리 목록). /category/ 빈 경로는 404 이므로 방어.
  * - 앵커(#...)는 그대로 보존.
  *

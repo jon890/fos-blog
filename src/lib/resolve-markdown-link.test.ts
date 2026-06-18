@@ -144,6 +144,20 @@ describe("resolveMarkdownLink", () => {
         resolveMarkdownLink("./mysql/readme.md", "database/README.md")
       ).toBe("/category/database/mysql");
     });
+
+    it("확장자 없는 README 링크도 폴더 페이지 의도로 /category 로 보낸다", () => {
+      expect(
+        resolveMarkdownLink("./mysql/README", "database/README.md")
+      ).toBe("/category/database/mysql");
+    });
+  });
+
+  describe("경로 정규화 — 연속 슬래시 방어", () => {
+    it("연속 슬래시는 빈 세그먼트로 취급하지 않는다", () => {
+      expect(
+        resolveMarkdownLink("foo//bar.md", "java/README.md")
+      ).toBe("/posts/java/foo/bar.md");
+    });
   });
 
   describe("README 방어 — 잘못 매치되면 안 되는 케이스", () => {
