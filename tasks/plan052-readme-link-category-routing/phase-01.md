@@ -202,7 +202,7 @@ pnpm test --run src/lib/resolve-markdown-link.test.ts
 
 # 기존 11개 + 신규 13개 = 24개 전부 통과 확인 (개수는 추가한 it 수에 따라 조정)
 # README 분기가 함수에 실제로 들어갔는지 확인
-grep -nE "/category/|README\(\\\\\\.mdx" src/lib/resolve-markdown-link.ts
+grep -nE '/category/|README' src/lib/resolve-markdown-link.ts
 
 # 호출부는 변경되지 않았는지 확인 (함수 내부 변경만)
 grep -n "resolveMarkdownLink(href, basePath)" src/components/markdown/components.tsx
