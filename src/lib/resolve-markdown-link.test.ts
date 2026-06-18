@@ -95,4 +95,103 @@ describe("resolveMarkdownLink", () => {
       ).toBe("/posts/task/nsc-slot/slot-machine.md");
     });
   });
+
+  describe("README → /category 라우팅 (이슈 #178)", () => {
+    it("상대경로 하위 폴더 README → /category", () => {
+      expect(
+        resolveMarkdownLink("./mysql/README.md", "database/README.md")
+      ).toBe("/category/database/mysql");
+    });
+
+    it("상대경로 상위 이동 README → /category (일반 글 → README 케이스)", () => {
+      expect(
+        resolveMarkdownLink("../java/opentelemetry/README.md", "architecture/observability-basics.md")
+      ).toBe("/category/java/opentelemetry");
+    });
+
+    it("README → 다른 폴더 README 인덱스 링크 (README → README 케이스)", () => {
+      expect(
+        resolveMarkdownLink("../RAG/README.md", "AI/agent/multi-turn-memory-healthcare-agent.md")
+      ).toBe("/category/AI/RAG");
+    });
+
+    it("같은 디렉토리 ./README.md → 자기 폴더 카테고리", () => {
+      expect(
+        resolveMarkdownLink("./README.md", "database/mysql/README.md")
+      ).toBe("/category/database/mysql");
+    });
+
+    it("절대경로 README → /category", () => {
+      expect(
+        resolveMarkdownLink("/database/mysql/README.md", "database/README.md")
+      ).toBe("/category/database/mysql");
+    });
+
+    it("README 링크에 앵커가 있으면 보존한다", () => {
+      expect(
+        resolveMarkdownLink("./mysql/README.md#설치", "database/README.md")
+      ).toBe("/category/database/mysql#설치");
+    });
+
+    it(".mdx README 도 /category 로 보낸다", () => {
+      expect(
+        resolveMarkdownLink("./guide/README.mdx", "docs/README.md")
+      ).toBe("/category/docs/guide");
+    });
+
+    it("소문자 readme.md 도 대소문자 무시하고 /category 로 보낸다", () => {
+      expect(
+        resolveMarkdownLink("./mysql/readme.md", "database/README.md")
+      ).toBe("/category/database/mysql");
+    });
+
+    it("확장자 없는 README 링크도 폴더 페이지 의도로 /category 로 보낸다", () => {
+      expect(
+        resolveMarkdownLink("./mysql/README", "database/README.md")
+      ).toBe("/category/database/mysql");
+    });
+  });
+
+  describe("경로 정규화 — 연속 슬래시 방어", () => {
+    it("연속 슬래시는 빈 세그먼트로 취급하지 않는다", () => {
+      expect(
+        resolveMarkdownLink("foo//bar.md", "java/README.md")
+      ).toBe("/posts/java/foo/bar.md");
+    });
+  });
+
+  describe("README 방어 — 잘못 매치되면 안 되는 케이스", () => {
+    it("README 로 시작만 하는 파일명은 글로 취급 (/posts 유지)", () => {
+      expect(
+        resolveMarkdownLink("./README-notes.md", "database/README.md")
+      ).toBe("/posts/database/README-notes.md");
+    });
+
+    it("README 가 파일명이 아닌 폴더명 중간 세그먼트면 글로 취급", () => {
+      // 마지막 세그먼트(post.md)가 README 가 아니므로 /posts
+      expect(
+        resolveMarkdownLink("/java/post.md", "java/README.md")
+      ).toBe("/posts/java/post.md");
+    });
+  });
+
+  describe("최상위 README 방어 (폴더 빈 문자열)", () => {
+    it("절대경로 /README.md → /categories (목록)", () => {
+      expect(
+        resolveMarkdownLink("/README.md", "java/README.md")
+      ).toBe("/categories");
+    });
+
+    it("최상위에서 ./README.md → /categories", () => {
+      expect(
+        resolveMarkdownLink("./README.md", "README.md")
+      ).toBe("/categories");
+    });
+
+    it("최상위 README 링크에 앵커가 있으면 /categories 에 보존", () => {
+      expect(
+        resolveMarkdownLink("/README.md#intro", "java/README.md")
+      ).toBe("/categories#intro");
+    });
+  });
 });
