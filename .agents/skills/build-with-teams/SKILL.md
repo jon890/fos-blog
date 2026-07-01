@@ -1,11 +1,21 @@
 ---
 name: build-with-teams
-description: Claude Agent Teams 기반 구현 자동화. 계획(team-lead) → 평가(critic) → 실행(executor) → 검증(docs-verifier) 파이프라인. 에이전트 팀이 가시적으로 협업하며 task phase 를 순차 실행.
+description: 팀 기반 구현 자동화. 계획(team-lead) → 평가(critic) → 실행(executor) → 검증(docs-verifier) 파이프라인으로 task phase를 순차 실행한다. Claude Code에서는 Agent Teams/SendMessage를 쓰고 다른 환경에서는 같은 gate와 검증 순서를 현재 가능한 실행 방식으로 처리한다.
 ---
 
 # build-with-teams
 
-task phase를 Claude Agent Teams 파이프라인으로 실행하는 시스템. 4-5명의 에이전트가 가시적으로 협업.
+task phase를 팀 기반 파이프라인으로 실행하는 시스템. 실행 환경에 따라 Claude Agent Teams 또는 현재 환경에서 가능한 위임/직접 실행 흐름으로 처리한다.
+
+## 공용 원본 및 실행 어댑터
+
+이 skill의 원본은 `.agents/skills/build-with-teams` 이다. `.claude/skills/build-with-teams` 는 같은 디렉터리를 가리키는 symlink 여야 하며, 두 위치에 내용을 복사해 분기하지 않는다.
+
+- Claude Code에서는 아래의 `Agent`, `SendMessage`, `team_name`, `oh-my-claudecode:*`, `fos-blog-executor` 규칙을 그대로 적용한다.
+- Codex에서는 `.codex/agents/fos-blog-executor.toml`, `.codex/agents/fos-blog-docs-verifier.toml`, `.codex/agents/self-healing-postmortem.toml` custom agent가 사용 가능하면 우선 사용한다.
+- Claude Code가 아닌 환경에서는 Claude 전용 `Agent`/`SendMessage`/`team_name`을 호출하지 않는다. 이 skill의 gate와 검증 순서만 유지하고, 팀 런타임 의존 절차는 현재 환경의 custom agent 또는 직접 실행으로 대체한다.
+- 선택지가 필요한 gate는 Claude에서는 `AskUserQuestion`, 다른 환경에서는 사용 가능한 질문 도구 또는 하나의 간결한 plain-text 질문으로 처리한다.
+- 특정 coding agent 종류는 skill 본문에서 일반 지정하지 않는다. 이 repo처럼 구체 custom agent 파일이 존재하는 경우에만 해당 agent를 우선 사용하도록 명시한다.
 
 ## 사전 검증 (실행 전 필수 — 3중 체크)
 
@@ -401,7 +411,8 @@ critic 평가 관점:
 
 critic APPROVE 후 executor 를 `run_in_background: true`, `mode: "bypassPermissions"` 로 스폰. critic 승인 + docs-verifier 검증의 이중 안전망이 있으므로 executor 는 권한 확인 없이 실행.
 
-fos-blog 는 `subagent_type: "fos-blog-executor"` 를 사용한다.
+fos-blog 는 Claude Code에서 `subagent_type: "fos-blog-executor"` 를 사용한다.
+Codex에서는 사용 가능할 때 `.codex/agents/fos-blog-executor.toml` custom agent를 사용한다.
 도메인 규칙은 agent 정의가 단일 소스이므로 스폰 프롬프트에 반복하지 않는다.
 스폰 프롬프트에는 호출 인자(task 파일 경로·worktree 절대경로·critic minor notes)만 담는다.
 
@@ -531,7 +542,7 @@ spawn 입력:
 - team-lead 가 마주친 분기점 (AskUserQuestion 답변 포함)
 
 agent 산출: 재현 가능 + 추상화 가능 + 검증 가능 패턴 1-3 개의 마크다운 draft.
-누적 위치는 agent 가 라우팅 제안 (`.claude/skills/_shared/common-pitfalls.md` BLG# / 본 SKILL.md / `docs/adr/NNN-slug.md` / `docs/pages/*.md` 중 하나).
+누적 위치는 agent 가 라우팅 제안 (`.agents/skills/_shared/common-pitfalls.md` BLG# / 본 SKILL.md / `docs/adr/NNN-slug.md` / `docs/pages/*.md` 중 하나).
 
 **승인 게이트** (필수): team-lead 가 사용자에게 `AskUserQuestion` 으로 확인 후 main 직접 commit.
 본 PR 브랜치 commit 금지 — `branch-contamination-guard.sh` 가 자동 차단.
@@ -667,7 +678,7 @@ executor 가 phase 실패 보고 시:
 
 | 종류 | 트리거 (어떤 사고/관찰) | 누적 위치 | 형식 / 섹션 |
 |---|---|---|---|
-| critic 반복 지적 패턴 | critic 이 동일 결함 타입을 2회+ 지적 | `.claude/skills/_shared/common-pitfalls.md` | `### P{N}.` (Bad / Good / Why / How to apply 4-section) |
+| critic 반복 지적 패턴 | critic 이 동일 결함 타입을 2회+ 지적 | `.agents/skills/_shared/common-pitfalls.md` | `### P{N}.` (Bad / Good / Why / How to apply 4-section) |
 | build-with-teams 프로세스 결함 | sub-agent 협업 / 게이트 / worktree 절차 자체에서 사고 발생 | 이 SKILL.md | 해당 섹션 (예: "팀원 자발적 실행 방지", "executor cwd 격리") 끝에 1-2줄 |
 | 도메인 의사결정 | "왜 X 를 선택했는가" 가 코드만 봐서는 추론 불가 + ADR 자명성 게이트 통과 | `docs/adr/NNN-slug.md` | `## ADR-XXX` (결정 / 맥락 / 대안 기각 구조) |
 | AI 에이전트 컨텍스트 | 프로젝트 전반 코딩 규칙 / 스택 / 레이어 / 금지사항 변경 | `CLAUDE.md` / `<dir>/AGENTS.md` | 기존 섹션 갱신 또는 신규 1-2줄 |

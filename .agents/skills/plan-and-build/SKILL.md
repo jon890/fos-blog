@@ -1,11 +1,20 @@
 ---
 name: plan-and-build
-description: AI 에이전트 하네스를 사용한 대규모 구현 자동화. 논의 → 계획 → task 생성 → 순차 실행. 새 기능 추가, 리팩토링 등 multi-phase 작업에 사용.
+description: multi-phase 구현 자동화. 논의 → 계획 → task 생성 → 순차 실행. 새 기능 추가, 리팩토링 등 대규모 변경에 사용하며, Claude Code에서는 run-phases.py 하네스를 쓰고 다른 환경에서는 동일 task 파일을 직접 실행 가능한 단위로 처리한다.
 ---
 
 # plan-and-build
 
-새 기능이나 대규모 변경을 phase 단위로 분리하고, `run-phases.py` 하네스를 통해 Claude Code가 자동으로 순차 실행하는 시스템.
+새 기능이나 대규모 변경을 phase 단위로 분리하고, 실행 환경에 맞는 에이전트 흐름으로 순차 실행하는 시스템.
+
+## 공용 원본 및 실행 어댑터
+
+이 skill의 원본은 `.agents/skills/plan-and-build` 이다. `.claude/skills/plan-and-build` 는 같은 디렉터리를 가리키는 symlink 여야 하며, 두 위치에 내용을 복사해 분기하지 않는다.
+
+- Claude Code에서는 bundled `run-phases.py` 하네스를 사용할 수 있다.
+- Claude Code가 아닌 환경에서는 `run-phases.py`가 내부적으로 `claude --print`를 호출하므로 기본 실행 경로로 사용하지 않는다. task phase 파일을 현재 환경에서 가능한 방식으로 순차 실행하고, repo-local custom agent가 있으면 해당 phase에 맞는 agent를 우선 사용한다.
+- `.claude/skills/...` 경로는 기존 Claude 호환 경로다. 새 문서나 새 참조를 추가할 때는 `.agents/skills/...`를 원본으로 보고, Claude 경로는 symlink 호환 경로로 취급한다.
+- phase의 `model` 값(`haiku`, `sonnet`, `opus`)은 Claude 실행 힌트다. Claude Code가 아닌 환경에서는 참고 정보로만 취급하고, 구체 모델/agent 선택은 해당 환경의 운영 지침을 따른다.
 
 ## 핵심 원칙 — 사용자에게 묻지 말고 자동으로 따를 것
 
@@ -58,7 +67,7 @@ description: AI 에이전트 하네스를 사용한 대규모 구현 자동화. 
 
 ### 3. 구현 계획 초안
 
-`.claude/skills/planning/task-create.md`를 정확히 숙지한 후, 다음을 포함한 초안을 작성한다:
+`.agents/skills/planning/task-create.md`를 정확히 숙지한 후, 다음을 포함한 초안을 작성한다. Claude 환경에서 기존 경로가 필요하면 `.claude/skills/planning/task-create.md` symlink 경로도 동일하게 동작한다.
 
 - phase별 분리 이유와 작업 목록
 - 성공 기준 (실행 가능한 명령어)
@@ -68,7 +77,7 @@ description: AI 에이전트 하네스를 사용한 대규모 구현 자동화. 
 
 ### 4. Task 생성
 
-`.claude/skills/planning/task-create.md` 형식에 따라 task와 phase 파일을 생성한다:
+`.agents/skills/planning/task-create.md` 형식에 따라 task와 phase 파일을 생성한다:
 
 ```
 tasks/{task-name}/
@@ -90,7 +99,7 @@ tasks/{task-name}/
 
 **병렬 실행 규칙**: 두 task를 동시에 실행하려면 반드시 **git worktree 분리** 또는 **claude teams**(subagent)를 사용. 같은 working directory에서 `run-phases.py`를 2개 동시 실행 금지.
 
-**반드시 `run-phases.py`를 Bash `run_in_background: true`로 실행한다.**
+**Claude Code에서는 `run-phases.py`를 Bash `run_in_background: true`로 실행한다. Claude Code가 아닌 환경에서는 이 하네스를 실행하지 말고 아래 phase를 직접 처리한다.**
 사용자 개입 없이 자기 완결적으로 동작해야 한다.
 
 ```bash
@@ -204,7 +213,7 @@ Opus는 Sonnet의 약 5배 비싸고 Claude Code Max 5시간 한도를 빠르게
 | -------- | --------------------------------------------------------- | ------------------------------------------------------- |
 | `haiku`  | 기계적 작업 (git commit+push, 빌드 검증, 파일 삭제)       | 빌드 검증 + 커밋 phase, 단순 삭제                      |
 | `sonnet` | **실제 구현 대부분** — 코드 작성/수정/rename/리팩토링     | AI 함수 작성, 컴포넌트 수정, rename, DB repo 수정, UI  |
-| `opus`   | **계획/설계/논의** (task 외부에서만) + 복잡 알고리즘 설계 | planner, architect, deep-interview, 복잡한 아키텍처 설계 |
+| `opus`   | **계획/설계/논의** (task 외부에서만) + 복잡 알고리즘 설계 | 복잡한 아키텍처 설계, 고위험 의사결정 검토 |
 
 **Task phase에서 opus 사용 금지 원칙** (예외만 허용):
 - ❌ 기계적 rename/이동: sonnet으로 충분
