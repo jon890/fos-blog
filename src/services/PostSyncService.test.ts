@@ -1,7 +1,24 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { parsePath, PostSyncService, mergeCategories, resolveFrontMatterMeta } from "./PostSyncService";
+import {
+  parsePath,
+  PostSyncService,
+  mergeCategories,
+  resolveFrontMatterMeta,
+  warnUnknownFrontMatterCategories,
+} from "./PostSyncService";
 import type { PostRepository } from "@/infra/db/repositories/PostRepository";
 import type { getFileContent, getFileCommitDates } from "@/infra/github/api";
+
+const loggerMock = vi.hoisted(() => ({
+  warn: vi.fn(),
+  info: vi.fn(),
+}));
+
+vi.mock("@/lib/logger", () => ({
+  default: {
+    child: () => loggerMock,
+  },
+}));
 
 describe("parsePath", () => {
   it("루트 경로 파일 — category는 확장자 포함 파일명, title은 확장자 제거", () => {
@@ -112,6 +129,7 @@ describe("resolveFrontMatterMeta", () => {
 describe("PostSyncService.upsert", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    loggerMock.warn.mockClear();
   });
 
   function makeMocks() {
@@ -165,5 +183,31 @@ describe("PostSyncService.upsert", () => {
     expect(result).toBe("updated");
     expect(postRepo.update).toHaveBeenCalledWith(42, expect.objectContaining({ sha: "sha456" }));
     expect(postRepo.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("warnUnknownFrontMatterCategories", () => {
+  beforeEach(() => {
+    loggerMock.warn.mockClear();
+  });
+
+  it("알려진 최상위 prefix를 가진 하위 경로는 경고하지 않는다", () => {
+    warnUnknownFrontMatterCategories("database/opensearch/rag.md", "database", [
+      "AI/RAG",
+      "database/opensearch",
+    ]);
+
+    expect(loggerMock.warn).not.toHaveBeenCalled();
+  });
+
+  it("알려지지 않은 category key는 경고한다", () => {
+    warnUnknownFrontMatterCategories("database/opensearch/rag.md", "database", [
+      "unknown/path",
+    ]);
+
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      { path: "database/opensearch/rag.md", categories: ["unknown/path"] },
+      "frontmatter categories 에 알려지지 않은 category key 포함",
+    );
   });
 });

@@ -1,5 +1,5 @@
 import { and, desc, eq, notInArray, sql } from "drizzle-orm";
-import { categoryIcons, DEFAULT_CATEGORY_ICON } from "../constants";
+import { getCategoryIcon } from "../constants";
 import { categories, posts } from "../schema";
 import type { CategoryData } from "../types";
 import { BaseRepository } from "./BaseRepository";
@@ -22,7 +22,7 @@ export class CategoryRepository extends BaseRepository {
     return result.map((cat) => ({
       name: cat.name,
       slug: cat.slug,
-      icon: cat.icon || categoryIcons[cat.name] || DEFAULT_CATEGORY_ICON,
+      icon: cat.icon || getCategoryIcon(cat.name),
       count: cat.postCount,
       latestUpdatedAt: cat.latestUpdatedAt,
     }));
@@ -37,13 +37,13 @@ export class CategoryRepository extends BaseRepository {
     return result.map((cat) => ({
       name: cat.name,
       slug: cat.slug,
-      icon: cat.icon || categoryIcons[cat.name] || DEFAULT_CATEGORY_ICON,
+      icon: cat.icon || getCategoryIcon(cat.name),
       count: cat.postCount,
     }));
   }
 
   getCategoryIcon(category: string): string {
-    return categoryIcons[category] || DEFAULT_CATEGORY_ICON;
+    return getCategoryIcon(category);
   }
 
   async syncAll(

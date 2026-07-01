@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 import logger from "@/lib/logger";
 import { getRepositories, PostRepository } from "@/infra/db/repositories";
 import { extractTitle, extractDescription } from "@/lib/markdown";
-import { categoryIcons, DEFAULT_CATEGORY_ICON } from "@/infra/db/constants";
+import { getCategoryIcon } from "@/infra/db/constants";
 import {
   OG_WIDTH,
   OG_HEIGHT,
@@ -81,7 +81,7 @@ export async function GET(
     ? truncateForOg(extractDescription(data.content), 120)
     : "";
   const category = data?.post.category ?? "";
-  const icon = categoryIcons[category] ?? DEFAULT_CATEGORY_ICON;
+  const icon = getCategoryIcon(category);
   const showBadge = Boolean(data && category);
   const categoryHex = getCategoryHex(category);
 

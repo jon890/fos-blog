@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { categoryIcons, DEFAULT_CATEGORY_ICON } from "@/infra/db/constants";
+import { getCategoryIcon } from "@/infra/db/constants";
 import type { PostData } from "@/infra/db/types";
 import { getCategoryColor, toCanonicalCategory } from "@/lib/category-meta";
 import { formatDate } from "@/lib/date-utils";
@@ -12,10 +12,6 @@ interface PostCardProps {
   variant?: "row" | "grid";
   showCategory?: boolean;
   viewCount?: number;
-}
-
-function getCategoryIcon(category: string): string {
-  return categoryIcons[category] || DEFAULT_CATEGORY_ICON;
 }
 
 function postHref(slug: string): string {

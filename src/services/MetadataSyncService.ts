@@ -1,7 +1,7 @@
 import { CategoryRepository } from "@/infra/db/repositories/CategoryRepository";
 import { FolderRepository } from "@/infra/db/repositories/FolderRepository";
 import { PostRepository } from "@/infra/db/repositories/PostRepository";
-import { categoryIcons } from "@/infra/db/constants";
+import { getCategoryIcon } from "@/infra/db/constants";
 import type { getFileContent } from "@/infra/github/api";
 import logger from "@/lib/logger";
 
@@ -25,7 +25,7 @@ export class MetadataSyncService {
       stats.map((s) => ({
         name: s.category,
         slug: s.category,
-        icon: categoryIcons[s.category] || "📁",
+        icon: getCategoryIcon(s.category),
         postCount: s.count,
       })),
     );

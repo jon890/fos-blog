@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { ImageResponse } from "next/og";
 import logger from "@/lib/logger";
 import { getRepositories } from "@/infra/db/repositories";
-import { categoryIcons, DEFAULT_CATEGORY_ICON } from "@/infra/db/constants";
+import { getCategoryIcon } from "@/infra/db/constants";
 import {
   OG_WIDTH,
   OG_HEIGHT,
@@ -79,8 +79,8 @@ export async function GET(
     contents = { posts: [], folders: [], readme: null };
   }
 
-  const icon = categoryIcons[current] ?? DEFAULT_CATEGORY_ICON;
-  const categoryHex = getCategoryHex(current);
+  const icon = getCategoryIcon(folderPath);
+  const categoryHex = getCategoryHex(folderPath);
 
   try {
     return new ImageResponse(

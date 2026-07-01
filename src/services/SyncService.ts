@@ -11,7 +11,13 @@ import {
 } from "@/infra/github/api";
 import { shouldSyncFile } from "@/infra/github/file-filter";
 import { rewriteImagePaths } from "@/infra/github/image-rewrite";
-import { PostSyncService, parsePath, resolveFrontMatterMeta, mergeCategories } from "./PostSyncService";
+import {
+  PostSyncService,
+  parsePath,
+  resolveFrontMatterMeta,
+  mergeCategories,
+  warnUnknownFrontMatterCategories,
+} from "./PostSyncService";
 import { MetadataSyncService } from "./MetadataSyncService";
 import { PostService } from "./PostService";
 import logger from "@/lib/logger";
@@ -159,6 +165,7 @@ export class SyncService {
       const description = extractDescription(content, 200);
       const { frontMatter } = parseFrontMatter(content);
       const { tags, series, seriesOrder } = resolveFrontMatterMeta(frontMatter, file.path);
+      warnUnknownFrontMatterCategories(file.path, file.category, frontMatter.categories);
       const categories = mergeCategories(file.category, frontMatter.categories);
 
       if (existing) {
