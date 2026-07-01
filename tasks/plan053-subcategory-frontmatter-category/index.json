@@ -1,0 +1,30 @@
+{
+  "name": "plan053-subcategory-frontmatter-category",
+  "description": "frontmatter categories 값으로 AI/RAG 같은 하위 폴더 경로를 실제 cross-post 카테고리로 지원한다",
+  "status": "pending",
+  "created_at": "2026-07-01",
+  "total_phases": 2,
+  "related_docs": [
+    "docs/adr/030-multi-category.md",
+    "docs/data-schema.md",
+    "docs/pages/category-detail.md",
+    "docs/code-architecture.md"
+  ],
+  "issue": "#180",
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "category path 정규화와 sync 경고",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "title": "하위 폴더 cross-post 조회와 통합 검증",
+      "model": "sonnet",
+      "status": "pending"
+    }
+  ]
+}

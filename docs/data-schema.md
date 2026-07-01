@@ -21,7 +21,7 @@
 | `path` | varchar(500) | NOT NULL, UNIQUE | canonical GitHub 파일 경로 (고유 키) |
 | `slug` | varchar(500) | NOT NULL | URL slug |
 | `category` | varchar(255) | NOT NULL | 최상위(primary) 카테고리명 — 경로 첫 폴더. 정렬·하위호환용 단일 값 유지 |
-| `categories` | json | NOT NULL DEFAULT '[]' | 다중 카테고리 합집합 `[경로 category, ...frontmatter categories]` 중복 제거 (plan051, ADR-030) |
+| `categories` | json | NOT NULL DEFAULT '[]' | 다중 카테고리 합집합 `[경로 category, ...frontmatter categories]` 중복 제거. frontmatter 값은 `AI/RAG` 같은 하위 폴더 경로도 허용 (plan051, plan053, ADR-030) |
 | `subcategory` | varchar(255) | | 서브카테고리명 (경로 둘째 폴더, 계층 개념 — 다중 소속과 무관) |
 | `folders` | json | DEFAULT '[]' | n-depth 폴더 경로 배열 |
 | `tags` | json | NOT NULL DEFAULT '[]' | frontmatter tags (plan026, ADR-023) |
@@ -43,7 +43,10 @@
 Notes:
 - `path` = unique key (slug 이 아닌 path 기준 업서트)
 - `is_active = false` = soft delete — 모든 조회에 `WHERE is_active = 1` 필수
-- 카테고리 페이지(depth 1)는 폴더 직속 글(경로 매칭)에 더해 cross-post 글을 `JSON_CONTAINS(categories, '"AI"')` + primary 카테고리 제외(`ne(category, name)`)로 합쳐 노출 (plan051, ADR-030). 폴더 브라우저(`path` prefix 매칭)는 그대로 유지. 글 수가 적어 인덱스 없이 풀스캔 허용
+- 카테고리 페이지는 폴더 직속 글(경로 매칭)에 더해 cross-post 글을 `JSON_CONTAINS(categories, JSON_QUOTE(folderPath))` + 현재 폴더 경로 prefix 제외로 합쳐 노출한다 (plan051, plan053, ADR-030).
+  `folderPath`는 `AI`뿐 아니라 `AI/RAG` 같은 하위 폴더 경로도 가능하다.
+  폴더 브라우저(`path` prefix 매칭)는 그대로 유지한다.
+  글 수가 적어 인덱스 없이 풀스캔을 허용한다.
 
 ---
 

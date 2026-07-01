@@ -2,7 +2,7 @@
 
 **Route:** `/category/[...path]`  
 **File:** `src/app/category/[...path]/page.tsx`  
-**Updated:** 2026-04-29
+**Updated:** 2026-07-01
 
 ---
 
@@ -17,16 +17,21 @@
 | Source | Method | Returns |
 |--------|--------|---------|
 | FolderRepository | `getFolderContents(folderPath)` | `{ folders, posts, readme }` |
+| PostRepository | `getCrossCategoryPosts(folderPath)` | 현재 폴더 경로를 frontmatter `categories` 에 포함하지만 경로상 해당 폴더 밖에 있는 cross-post 글 |
 
 `folderPath` = `pathSegments.join("/")`  
 `pathSegments` = URL 세그먼트 배열 (decodeURIComponent 처리)
+
+frontmatter `categories` 는 `AI` 같은 최상위 폴더뿐 아니라 `AI/RAG` 같은 하위 폴더 경로도 허용한다.
+페이지는 `getFolderContents(folderPath)` 결과와 `getCrossCategoryPosts(folderPath)` 결과를 path 기준으로 중복 제거해 합친다.
+색상과 아이콘은 slash path의 첫 세그먼트 기준으로 fallback한다.
 
 **ISR:** `revalidate = 60`  
 **Static params:** `generateStaticParams()` — `computeFolderPaths(post.getAllPostPaths())` 로 생성
 
 **에러 처리:**
 - DB 에러 시 빈 폴더 컨텐츠로 폴백
-- `folders`, `posts`, `readme` 모두 없으면 `notFound()`
+- `folders`, merged posts, `readme` 모두 없으면 `notFound()`
 
 ---
 
@@ -68,7 +73,7 @@ Breadcrumb (fos-blog > categories > ... > current)
 CategoryDetailSubHero (eyebrow + h1 + sublines, tinted)
 README 섹션 (있을 때만, ReadmeFrame wrap)
 01. 하위 폴더 grid (있을 때만, SubfolderCard)
-02. 이 폴더의 글 (있을 때만, PostListRow)
+02. 이 폴더의 글 (폴더 직속 글 + cross-post 글이 있을 때만, PostListRow)
 ```
 
 ---
@@ -88,6 +93,7 @@ README 섹션 (있을 때만, ReadmeFrame wrap)
 - `src/lib/time.ts` — `formatYYYYMMDD`, `formatRelativeKo`
 - `src/lib/category-meta.ts` — `getCategoryColor`, `toCanonicalCategory`
 - `src/infra/db/repositories/FolderRepository.ts`
+- `src/infra/db/repositories/PostRepository.ts` — `getCrossCategoryPosts`
 - `src/infra/db/constants.ts` — `categoryIcons`, `DEFAULT_CATEGORY_ICON`
 - `src/lib/path-utils.ts` — `computeFolderPaths`
 - `src/app/globals.css` — `.post-list-row:hover`, `.readme-body code`

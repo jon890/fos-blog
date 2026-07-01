@@ -387,3 +387,16 @@ Google robots.txt 매칭은 가장 구체적인 (긴) 경로 우선:
 
 - **`CategoryRepository.syncAll(stats)`** — UPSERT (`onDuplicateKeyUpdate` on `name`) + orphan DELETE (`notInArray(categories.name, currentNames)`). 기존 `replaceAll` (DELETE all + INSERT all) 대체. id 안정성 + 변경 없는 row 의 `updatedAt` 미터치. `stats.length === 0` 분기로 빈 입력 시 전체 row 삭제 명시.
 - **`SyncService.sync` short-circuit path** — `lastSyncedSha === headSha` 분기에서도 `metadataSyncService.updateCategories()` + `syncFolderReadmes()` 호출. posts 변경 없어도 categories drift (예: GitHub 측 디렉터리 통째 삭제 후 sync) 자가 치유. 응답 shape (`upToDate: true, deleted: 0`) 는 그대로 — metadata 재계산은 caller-invisible 부수효과.
+
+## 하위 폴더 frontmatter category (plan053)
+
+ADR-030의 `posts.categories`는 `AI` 같은 최상위 폴더뿐 아니라 `AI/RAG` 같은 slash path도 저장한다.
+`/category/[...path]` 페이지는 현재 `folderPath`를 기준으로 cross-post를 조회한다.
+조회 결과는 경로상 해당 폴더 안에 있는 글을 제외하고, `getFolderContents(folderPath)` 결과와 path 기준으로 중복 제거해 합친다.
+
+색상과 아이콘은 slash path 전체를 canonical category로 늘리지 않는다.
+`src/lib/category-meta.ts`와 `src/infra/db/constants.ts`는 먼저 전체 key를 확인하고, 없으면 첫 path segment를 기준으로 fallback한다.
+예: `AI/RAG`는 `AI`와 같은 색상·아이콘을 사용한다.
+
+sync 단계는 frontmatter `categories` 값이 전체 key 또는 첫 path segment 어느 쪽으로도 알려진 카테고리로 해석되지 않으면 `warn` 로그를 남긴다.
+이는 `categories: [AI/RAG]` 같은 정상 하위 경로는 허용하면서, 오타로 인한 매칭 누락은 운영 로그에서 드러내기 위한 가드다.

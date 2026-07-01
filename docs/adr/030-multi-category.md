@@ -3,7 +3,10 @@
 - **결정**: 한 글이 여러 카테고리에 속할 수 있게 한다.
   - 경로 첫 폴더를 primary `category`(단일)로 유지하고, frontmatter `categories: [..]` 로 추가 카테고리를 더한다.
   - 합집합 `[경로 category, ...frontmatter categories]`(중복 제거)를 `posts.categories` json 배열에 저장한다.
-  - `/category/{name}`(depth 1) 페이지에 폴더 직속 글 + "cross-post 글"(`categories` 에 `name` 을 포함하지만 경로상 다른 폴더에 있는 글)을 합쳐 노출한다. cross-post 조회는 `JSON_CONTAINS(categories, ?)` 에 primary 카테고리 제외(`ne(category, name)`)를 더해 한다. depth 1 에선 primary == 경로 첫 폴더라 "폴더 밖" 과 동치다.
+  - `/category/{path}` 페이지에 폴더 직속 글 + "cross-post 글"(`categories` 에 현재 `path` 를 포함하지만 경로상 해당 폴더 밖에 있는 글)을 합쳐 노출한다.
+    `path` 는 `AI` 같은 최상위 폴더뿐 아니라 `AI/RAG` 같은 하위 폴더 경로도 허용한다.
+    cross-post 조회는 `JSON_CONTAINS(categories, ?)` 에 현재 폴더 경로 prefix 제외를 더해 한다.
+    depth 1 에선 prefix 제외가 기존 primary 카테고리 제외와 같은 의미다.
   - 글 배지(카드·상세·검색)는 단일 chip 대신 `categories` 배열 전체를 표시한다. 첫 요소(primary)는 기존 위치를 유지한다.
 - **맥락**: 카테고리 탐색이 100% 경로 기반이다.
   - `/category/[...path]` 는 `post.path.startsWith(folderPath + "/")` 폴더 브라우저이고, `category` 는 경로 첫 폴더(`parsePath`)다.
@@ -20,4 +23,8 @@
 - **트레이드오프**:
   - json 배열은 `JSON_CONTAINS` 풀스캔이라 인덱스 활용이 어렵다. 글 수가 적어 허용하고, 커지면 multi-value index 또는 관계 테이블 이전을 별도 plan 으로 검토한다.
   - sync 저장은 full·incremental 두 경로가 있다. 두 경로 모두 frontmatter 를 파싱해 `categories` 를 저장해야 평상시(증분) 운영에서 누락이 없다. 공통 헬퍼로 두 경로의 정합을 보장한다.
-  - frontmatter 카테고리명은 폴더명과 대소문자가 일치해야 매칭된다(`JSON_CONTAINS` 대소문자 민감). 불일치 시 글 저자가 silent miss(매칭 안 됨)를 겪을 수 있다. 작성 가이드(폴더명 그대로 쓸 것)는 fos-study `CLAUDE.md`("카테고리와 Frontmatter" 절)에 명시했다. 자동 정규화·미매칭 logger 경고는 후속 plan 으로 미룬다.
+  - frontmatter 카테고리명은 폴더 경로와 대소문자가 일치해야 매칭된다(`JSON_CONTAINS` 대소문자 민감).
+    불일치 시 글 저자가 매칭 누락을 겪을 수 있으므로 sync 단계에서 알려진 카테고리 prefix로 해석되지 않는 값을 `warn` 로그로 남긴다.
+    작성 가이드(폴더명 그대로 쓸 것)는 fos-study `CLAUDE.md`("카테고리와 Frontmatter" 절)에 명시했다.
+  - 색상과 아이콘은 slash path 전체를 canonical 9종으로 늘리지 않고 첫 세그먼트 기준으로 fallback한다.
+    예: `AI/RAG`는 `AI`와 같은 색상·아이콘을 사용한다.
