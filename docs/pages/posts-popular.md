@@ -22,7 +22,7 @@
 | VisitRepository | `getPopularPostPathsTotal()` | `visit_stats` row 총수 (hasMore 계산) |
 | PostRepository | `getPostsByPaths(paths)` | 경로 대응 글 상세 |
 
-**정렬**: `visit_count DESC, page_path ASC` — 2차 정렬로 페이지 간 안정성 확보 ([ADR-002](../adr.md#adr-002))
+**정렬**: `visit_count DESC, page_path ASC` — 2차 정렬로 페이지 간 안정성 확보 ([ADR-002](../adr/002-pagination.md))
 
 **ISR:** `revalidate = 600` (10분 — 방문수 변동 느림)
 **Static params:** 없음
@@ -59,7 +59,7 @@
 
 ## SEO
 
-- `export const metadata = { robots: { index: false, follow: true } }` ([ADR-005](../adr.md#adr-005))
+- `export const metadata = { robots: { index: false, follow: true } }` ([ADR-005](../adr/005-list-page-noindex.md))
 - 제목: "인기 글 — FOS Study"
 - 설명: "개발 공부 기록 블로그의 방문수 기준 인기 글 목록입니다."
 

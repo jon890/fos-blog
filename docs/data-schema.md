@@ -1,6 +1,6 @@
 # Data Schema — 스키마 레퍼런스
 
-**관련:** [prd.md](./prd.md) · [adr.md](./adr.md)
+**관련:** [prd.md](./prd.md) · [adr/README.md](./adr/README.md)
 
 ---
 

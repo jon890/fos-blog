@@ -1,7 +1,7 @@
 # Code Architecture — 변경사항
 
 **작성일:** 2026-04-19
-**관련:** [prd.md](./prd.md) · [data-schema.md](./data-schema.md) · [adr.md](./adr.md)
+**관련:** [prd.md](./prd.md) · [data-schema.md](./data-schema.md) · [adr/README.md](./adr/README.md)
 
 ---
 

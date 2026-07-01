@@ -55,7 +55,7 @@
 - **PostCard 클릭**: `/posts/<path>` 이동
 - **SeriesCard 클릭** (plan047): `/series/<name>` 이동
 
-※ 카테고리 섹션은 헤더 우측 "모두 보기 →" 링크, 글 섹션은 섹션 하단 큰 CTA 버튼 — [ADR-003](../adr.md#adr-003)
+※ 카테고리 섹션은 헤더 우측 "모두 보기 →" 링크, 글 섹션은 섹션 하단 큰 CTA 버튼 — [ADR-003](../adr/003-home-entry-ux.md)
 
 ---
 
