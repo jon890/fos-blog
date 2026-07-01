@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { categoryIcons, DEFAULT_CATEGORY_ICON } from "./constants";
+import { categoryIcons, DEFAULT_CATEGORY_ICON, getCategoryIcon } from "./constants";
 
 describe("categoryIcons", () => {
   it("주요 카테고리에 아이콘이 정의되어 있다", () => {
@@ -29,5 +29,14 @@ describe("categoryIcons", () => {
     // getCategoryIcon의 fallback 로직 검증: undefined || DEFAULT_CATEGORY_ICON
     const icon = categoryIcons["unknown-category"] || DEFAULT_CATEGORY_ICON;
     expect(icon).toBe(DEFAULT_CATEGORY_ICON);
+  });
+
+  it("하위 폴더 경로는 최상위 카테고리 아이콘으로 fallback한다", () => {
+    expect(getCategoryIcon("AI/RAG")).toBe(categoryIcons.AI);
+    expect(getCategoryIcon("database/opensearch")).toBe(categoryIcons.database);
+  });
+
+  it("알 수 없는 하위 폴더 경로는 기본 아이콘을 반환한다", () => {
+    expect(getCategoryIcon("unknown/path")).toBe(DEFAULT_CATEGORY_ICON);
   });
 });

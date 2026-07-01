@@ -23,7 +23,9 @@ const OG_CATEGORY_ALIAS: Record<string, string> = {
 };
 
 export function getCategoryHex(category: string): string {
-  const raw = category.toLowerCase();
+  const raw = category.trim().toLowerCase();
   const key = OG_CATEGORY_ALIAS[raw] ?? raw;
-  return OG_CATEGORY_HEX[key] ?? OG_CATEGORY_DEFAULT_HEX;
+  const topLevel = raw.split("/")[0] ?? "";
+  const topLevelKey = OG_CATEGORY_ALIAS[topLevel] ?? topLevel;
+  return OG_CATEGORY_HEX[key] ?? OG_CATEGORY_HEX[topLevelKey] ?? OG_CATEGORY_DEFAULT_HEX;
 }

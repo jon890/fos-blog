@@ -4,6 +4,7 @@ import type { FrontMatter } from "@/lib/markdown";
 import { rewriteImagePaths } from "@/infra/github/image-rewrite";
 import type { getFileContent, getFileCommitDates } from "@/infra/github/api";
 import logger from "@/lib/logger";
+import { isKnownCategoryKey } from "@/lib/category-meta";
 
 const log = logger.child({ module: "PostSyncService" });
 
@@ -37,6 +38,25 @@ export function mergeCategories(pathCategory: string, fmCategories?: string[]): 
     .map((c) => c.trim())
     .filter((c) => c.length > 0);
   return Array.from(new Set(all));
+}
+
+export function warnUnknownFrontMatterCategories(
+  path: string,
+  pathCategory: string,
+  fmCategories?: string[],
+): void {
+  const unknownCategories = (fmCategories ?? [])
+    .map((category) => category.trim())
+    .filter((category) => category.length > 0)
+    .filter((category) => category !== pathCategory)
+    .filter((category) => !isKnownCategoryKey(category));
+
+  if (unknownCategories.length === 0) return;
+
+  log.warn(
+    { path, categories: unknownCategories },
+    "frontmatter categories 에 알려지지 않은 category key 포함",
+  );
 }
 
 export function resolveFrontMatterMeta(
@@ -101,6 +121,7 @@ export class PostSyncService {
     const description = extractDescription(content, 200);
     const { frontMatter } = parseFrontMatter(content);
     const { tags, series, seriesOrder } = resolveFrontMatterMeta(frontMatter, filePath);
+    warnUnknownFrontMatterCategories(filePath, category, frontMatter.categories);
     const categories = mergeCategories(category, frontMatter.categories);
 
     const existingPostId = await this.postRepo.getPostId(filePath);

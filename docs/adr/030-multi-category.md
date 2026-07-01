@@ -11,9 +11,9 @@
 - **맥락**: 카테고리 탐색이 100% 경로 기반이다.
   - `/category/[...path]` 는 `post.path.startsWith(folderPath + "/")` 폴더 브라우저이고, `category` 는 경로 첫 폴더(`parsePath`)다.
   - 한 글은 한 폴더 = 단일 카테고리뿐이라 "AI 폴더 글을 DevOps 에도 노출" 같은 다중 소속을 경로로는 풀 수 없다.
-  - 폴더 계층(경로)과 카테고리 소속(다중)은 서로 다른 축이라, 폴더 브라우저를 교체하지 않고 depth-1 페이지에 cross-post 만 더해 두 축을 모두 보존한다.
+  - 폴더 계층(경로)과 카테고리 소속(다중)은 서로 다른 축이라, 폴더 브라우저를 교체하지 않고 현재 `/category/{path}` 페이지에 cross-post 를 더해 두 축을 모두 보존한다.
 - **대안 기각**:
-  - **폴더 브라우저 자체를 categories 조회로 교체** 기각 — 하위 폴더 카드·deep path 탐색(경로 축)이 깨진다. depth-1 에 cross-post 를 더하는 방식이 폴더 탐색을 보존하면서 다중 소속을 노출한다.
+  - **폴더 브라우저 자체를 categories 조회로 교체** 기각 — 하위 폴더 카드·deep path 탐색(경로 축)이 깨진다. 현재 폴더 경로에 cross-post 를 더하는 방식이 폴더 탐색을 보존하면서 다중 소속을 노출한다.
   - **죽은 `getPostsByCategory` 를 다중화** 기각 — 프로덕션 호출자가 없어 화면에 무동작이다. 실제 노출은 카테고리 페이지(`getFolderContents` + cross-post 조회)에 배선한다.
   - **frontmatter 가 전체 카테고리 목록(경로 무시)** 기각 — 기존 글 전부에 frontmatter 를 추가해야 한다. primary 유지 시 frontmatter 없는 글이 `[category]` 1개로 그대로 동작해 마이그레이션이 불필요하다.
   - **post_categories 관계 테이블** 기각 — 카테고리가 9개 규모라 정규화 이득이 작고 sync·조회·마이그레이션이 늘어난다. 이미 `tags` 가 json 배열이라 패턴이 일관적이다.

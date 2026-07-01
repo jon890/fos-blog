@@ -400,7 +400,7 @@ export class PostRepository extends BaseRepository {
     return result.map((p) => ({ ...p, folders: p.folders || [] }));
   }
 
-  async getCrossCategoryPosts(category: string): Promise<PostData[]> {
+  async getCrossCategoryPosts(folderPath: string): Promise<PostData[]> {
     const result = await this.db
       .select({
         title: posts.title,
@@ -416,8 +416,8 @@ export class PostRepository extends BaseRepository {
       .where(
         and(
           eq(posts.isActive, true),
-          sql`JSON_CONTAINS(${posts.categories}, JSON_QUOTE(${category}))`,
-          ne(posts.category, category),
+          sql`JSON_CONTAINS(${posts.categories}, JSON_QUOTE(${folderPath}))`,
+          sql`${posts.path} NOT LIKE ${`${folderPath}/%`}`,
         ),
       )
       .orderBy(asc(posts.title));

@@ -25,3 +25,9 @@ export const categoryIcons: Record<string, string> = {
 };
 
 export const DEFAULT_CATEGORY_ICON = "📁";
+
+export function getCategoryIcon(category: string): string {
+  const key = category.trim();
+  const topLevel = key.split("/")[0] ?? "";
+  return categoryIcons[key] ?? categoryIcons[topLevel] ?? DEFAULT_CATEGORY_ICON;
+}

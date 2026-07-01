@@ -37,8 +37,22 @@ const RAW_TO_CANONICAL: Record<string, CanonicalCategory> = {
   system: "system",
 };
 
+function normalizeCategoryKey(raw: string): string {
+  return raw.trim();
+}
+
+function getTopLevelCategory(raw: string): string {
+  return normalizeCategoryKey(raw).split("/")[0] ?? "";
+}
+
+export function isKnownCategoryKey(raw: string): boolean {
+  const key = normalizeCategoryKey(raw);
+  return key in RAW_TO_CANONICAL || getTopLevelCategory(key) in RAW_TO_CANONICAL;
+}
+
 export function toCanonicalCategory(raw: string): CanonicalCategory {
-  return RAW_TO_CANONICAL[raw] ?? "system";
+  const key = normalizeCategoryKey(raw);
+  return RAW_TO_CANONICAL[key] ?? RAW_TO_CANONICAL[getTopLevelCategory(key)] ?? "system";
 }
 
 /**

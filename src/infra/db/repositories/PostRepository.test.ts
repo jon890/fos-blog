@@ -17,6 +17,38 @@ function makeRepo(rows: unknown[] = []) {
   return { repo: new PostRepository(db as unknown as DbInstance), db };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function flattenSqlTokens(value: unknown): string[] {
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return [String(value)];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap(flattenSqlTokens);
+  }
+
+  if (!isRecord(value)) {
+    return [];
+  }
+
+  if (Array.isArray(value.queryChunks)) {
+    return flattenSqlTokens(value.queryChunks);
+  }
+
+  if (Array.isArray(value.value)) {
+    return flattenSqlTokens(value.value);
+  }
+
+  if (typeof value.name === "string") {
+    return [value.name];
+  }
+
+  return [];
+}
+
 const now = new Date("2024-01-10T00:00:00Z");
 const earlier = new Date("2024-01-09T00:00:00Z");
 
@@ -69,6 +101,43 @@ describe("PostRepository.getRecentPostsCursor", () => {
     const { repo } = makeRepo([row]);
     const result = await repo.getRecentPostsCursor({ limit: 10 });
     expect(result[0].folders).toEqual([]);
+  });
+});
+
+describe("PostRepository.getCrossCategoryPosts", () => {
+  it("folderPath category를 조회하고 해당 folderPath 아래 실제 글은 제외한다", async () => {
+    const rows = [
+      {
+        title: "Cross Post",
+        path: "database/opensearch/rag-search-quality.md",
+        slug: "database/opensearch/rag-search-quality.md",
+        category: "database",
+        subcategory: "opensearch",
+        folders: ["opensearch"],
+        description: "desc",
+        categories: ["database", "AI/RAG"],
+      },
+    ];
+    const db = {
+      select: vi.fn().mockReturnThis(),
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      orderBy: vi.fn().mockResolvedValue(rows),
+    };
+    const repo = new PostRepository(db as unknown as DbInstance);
+
+    const result = await repo.getCrossCategoryPosts("AI/RAG");
+
+    expect(db.where).toHaveBeenCalledOnce();
+    const whereCondition = db.where.mock.calls[0]?.[0];
+    const sqlCondition = flattenSqlTokens(whereCondition).join(" ");
+    expect(sqlCondition).toContain("JSON_CONTAINS(");
+    expect(sqlCondition).toContain("categories");
+    expect(sqlCondition).toContain("AI/RAG");
+    expect(sqlCondition).toContain("path");
+    expect(sqlCondition).toContain("NOT LIKE");
+    expect(sqlCondition).toContain("AI/RAG/%");
+    expect(result).toEqual([{ ...rows[0], folders: ["opensearch"] }]);
   });
 });
 

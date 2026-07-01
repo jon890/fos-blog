@@ -33,6 +33,10 @@ type FolderContents = Awaited<
   ReturnType<ReturnType<typeof getRepositories>["folder"]["getFolderContents"]>
 >;
 
+type CrossCategoryPosts = Awaited<
+  ReturnType<ReturnType<typeof getRepositories>["post"]["getCrossCategoryPosts"]>
+>;
+
 const getCachedFolderContents = cache(
   async (folderPath: string): Promise<FolderContents> => {
     try {
@@ -48,6 +52,26 @@ const getCachedFolderContents = cache(
   },
 );
 
+const getCachedCrossCategoryPosts = cache(
+  async (folderPath: string): Promise<CrossCategoryPosts> => {
+    try {
+      const { post } = getRepositories();
+      return await post.getCrossCategoryPosts(folderPath);
+    } catch (error) {
+      log.warn(
+        { err: error instanceof Error ? error : new Error(String(error)) },
+        "getCrossCategoryPosts 실패 — cross-post 없이 렌더",
+      );
+      return [];
+    }
+  },
+);
+
+function mergePostsByPath(posts: CrossCategoryPosts, crossPosts: CrossCategoryPosts): CrossCategoryPosts {
+  const seen = new Set(posts.map((p) => p.path));
+  return [...posts, ...crossPosts.filter((p) => !seen.has(p.path))];
+}
+
 export async function generateMetadata({
   params,
 }: FolderPageProps): Promise<Metadata> {
@@ -57,8 +81,10 @@ export async function generateMetadata({
   const folderPath = pathSegments.join("/");
 
   const { folders, posts, readme } = await getCachedFolderContents(folderPath);
+  const crossPosts = await getCachedCrossCategoryPosts(folderPath);
+  const mergedPosts = mergePostsByPath(posts, crossPosts);
 
-  if (folders.length === 0 && posts.length === 0 && !readme) {
+  if (folders.length === 0 && mergedPosts.length === 0 && !readme) {
     return {
       title: "카테고리를 찾을 수 없습니다 | FOS Study",
       robots: { index: false, follow: false },
@@ -109,22 +135,8 @@ export default async function FolderPage({ params }: FolderPageProps) {
   const currentFolder = pathSegments[pathSegments.length - 1];
 
   const { folders, posts, readme } = await getCachedFolderContents(folderPath);
-
-  // depth 1 (카테고리 루트)일 때만 cross-post 병합
-  let mergedPosts = posts;
-  if (pathSegments.length === 1) {
-    try {
-      const { post } = getRepositories();
-      const crossPosts = await post.getCrossCategoryPosts(category);
-      const seen = new Set(posts.map((p) => p.path));
-      mergedPosts = [...posts, ...crossPosts.filter((p) => !seen.has(p.path))];
-    } catch (error) {
-      log.warn(
-        { err: error instanceof Error ? error : new Error(String(error)) },
-        "getCrossCategoryPosts 실패 — cross-post 없이 렌더",
-      );
-    }
-  }
+  const crossPosts = await getCachedCrossCategoryPosts(folderPath);
+  const mergedPosts = mergePostsByPath(posts, crossPosts);
 
   if (folders.length === 0 && mergedPosts.length === 0 && !readme) {
     notFound();

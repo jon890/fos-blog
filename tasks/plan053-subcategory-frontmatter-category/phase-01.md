@@ -1,7 +1,7 @@
 # Phase 01 — category path 정규화와 sync 경고
 
 **Model**: sonnet
-**Status**: pending
+**Status**: completed
 
 ---
 
@@ -118,7 +118,7 @@ export function getCategoryIcon(category: string): string
 
 ```bash
 # cwd: /Users/nhn/personal/fos-blog
-pnpm test --run src/lib/category-meta.test.ts src/infra/db/constants.test.ts src/services/PostSyncService.test.ts
+pnpm test src/lib/category-meta.test.ts src/infra/db/constants.test.ts src/services/PostSyncService.test.ts
 pnpm type-check
 
 # slash path fallback 테스트가 실제로 추가됐는지 확인
