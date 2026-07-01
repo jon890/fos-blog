@@ -7,6 +7,7 @@
     `path` 는 `AI` 같은 최상위 폴더뿐 아니라 `AI/RAG` 같은 하위 폴더 경로도 허용한다.
     cross-post 조회는 `JSON_CONTAINS(categories, ?)` 에 현재 폴더 경로 prefix 제외를 더해 한다.
     depth 1 에선 prefix 제외가 기존 primary 카테고리 제외와 같은 의미다.
+    모든 depth 에서 같은 규칙을 적용해 `/category/AI/RAG` 같은 하위 폴더 페이지도 동일하게 cross-post 를 노출한다.
   - 글 배지(카드·상세·검색)는 단일 chip 대신 `categories` 배열 전체를 표시한다. 첫 요소(primary)는 기존 위치를 유지한다.
 - **맥락**: 카테고리 탐색이 100% 경로 기반이다.
   - `/category/[...path]` 는 `post.path.startsWith(folderPath + "/")` 폴더 브라우저이고, `category` 는 경로 첫 폴더(`parsePath`)다.
@@ -25,6 +26,8 @@
   - sync 저장은 full·incremental 두 경로가 있다. 두 경로 모두 frontmatter 를 파싱해 `categories` 를 저장해야 평상시(증분) 운영에서 누락이 없다. 공통 헬퍼로 두 경로의 정합을 보장한다.
   - frontmatter 카테고리명은 폴더 경로와 대소문자가 일치해야 매칭된다(`JSON_CONTAINS` 대소문자 민감).
     불일치 시 글 저자가 매칭 누락을 겪을 수 있으므로 sync 단계에서 알려진 카테고리 prefix로 해석되지 않는 값을 `warn` 로그로 남긴다.
+    현재 경고 기준은 실제 폴더 트리가 아니라 `RAW_TO_CANONICAL`/아이콘/OG 색상 같은 정적 category meta 이다.
+    새 최상위 폴더를 category key로 사용하려면 해당 meta도 함께 갱신해야 하며, 실제 폴더 트리 기반 검증은 별도 후속 이슈로 추적한다.
     작성 가이드(폴더명 그대로 쓸 것)는 fos-study `CLAUDE.md`("카테고리와 Frontmatter" 절)에 명시했다.
   - 색상과 아이콘은 slash path 전체를 canonical 9종으로 늘리지 않고 첫 세그먼트 기준으로 fallback한다.
     예: `AI/RAG`는 `AI`와 같은 색상·아이콘을 사용한다.

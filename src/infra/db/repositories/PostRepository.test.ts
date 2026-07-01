@@ -137,7 +137,25 @@ describe("PostRepository.getCrossCategoryPosts", () => {
     expect(sqlCondition).toContain("path");
     expect(sqlCondition).toContain("NOT LIKE");
     expect(sqlCondition).toContain("AI/RAG/%");
+    expect(sqlCondition).toContain("ESCAPE");
     expect(result).toEqual([{ ...rows[0], folders: ["opensearch"] }]);
+  });
+
+  it("folderPath prefix 제외 조건의 LIKE 특수문자를 escape한다", async () => {
+    const db = {
+      select: vi.fn().mockReturnThis(),
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      orderBy: vi.fn().mockResolvedValue([]),
+    };
+    const repo = new PostRepository(db as unknown as DbInstance);
+
+    await repo.getCrossCategoryPosts("AI/R%_\\");
+
+    const whereCondition = db.where.mock.calls[0]?.[0];
+    const sqlCondition = flattenSqlTokens(whereCondition).join(" ");
+    expect(sqlCondition).toContain("AI/R\\%\\_\\\\/%");
+    expect(sqlCondition).toContain("ESCAPE");
   });
 });
 

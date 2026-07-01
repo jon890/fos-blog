@@ -33,6 +33,7 @@ describe("categoryIcons", () => {
 
   it("하위 폴더 경로는 최상위 카테고리 아이콘으로 fallback한다", () => {
     expect(getCategoryIcon("AI/RAG")).toBe(categoryIcons.AI);
+    expect(getCategoryIcon("ai/rag")).toBe(categoryIcons.AI);
     expect(getCategoryIcon("database/opensearch")).toBe(categoryIcons.database);
   });
 

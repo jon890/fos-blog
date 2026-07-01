@@ -8,6 +8,10 @@ import logger from "@/lib/logger";
 
 const log = logger.child({ module: "infra/db/repositories/PostRepository" });
 
+function escapeLikePattern(value: string): string {
+  return value.replace(/[%_\\]/g, "\\$&");
+}
+
 export function tagIntersectionSize(a: string[], b: string[]): number {
   if (a.length === 0 || b.length === 0) return 0;
   const set = new Set(a.map((t) => t.toLowerCase()));
@@ -401,6 +405,8 @@ export class PostRepository extends BaseRepository {
   }
 
   async getCrossCategoryPosts(folderPath: string): Promise<PostData[]> {
+    const escapedFolderPrefix = `${escapeLikePattern(folderPath)}/%`;
+
     const result = await this.db
       .select({
         title: posts.title,
@@ -417,7 +423,7 @@ export class PostRepository extends BaseRepository {
         and(
           eq(posts.isActive, true),
           sql`JSON_CONTAINS(${posts.categories}, JSON_QUOTE(${folderPath}))`,
-          sql`${posts.path} NOT LIKE ${`${folderPath}/%`}`,
+          sql`${posts.path} NOT LIKE ${escapedFolderPrefix} ESCAPE '\\'`,
         ),
       )
       .orderBy(asc(posts.title));
