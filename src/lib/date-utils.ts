@@ -1,4 +1,6 @@
-export function formatDate(date: Date | null | undefined): string {
-  if (!date || Number.isNaN(date.getTime())) return "";
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
+export function formatDate(date: Date | string | null | undefined): string {
+  if (!date) return "";
+  const normalized = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(normalized.getTime())) return "";
+  return `${normalized.getFullYear()}.${String(normalized.getMonth() + 1).padStart(2, "0")}.${String(normalized.getDate()).padStart(2, "0")}`;
 }

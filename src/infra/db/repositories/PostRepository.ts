@@ -31,6 +31,7 @@ export class PostRepository extends BaseRepository {
         subcategory: posts.subcategory,
         folders: posts.folders,
         description: posts.description,
+        createdAt: posts.createdAt,
       })
       .from(posts)
       .where(and(eq(posts.category, category), eq(posts.isActive, true)))
@@ -53,6 +54,7 @@ export class PostRepository extends BaseRepository {
         subcategory: posts.subcategory,
         folders: posts.folders,
         description: posts.description,
+        createdAt: posts.createdAt,
       })
       .from(posts)
       .where(eq(posts.isActive, true))
@@ -252,6 +254,7 @@ export class PostRepository extends BaseRepository {
         subcategory: posts.subcategory,
         folders: posts.folders,
         description: posts.description,
+        createdAt: posts.createdAt,
       })
       .from(posts)
       .where(and(inArray(posts.path, paths), eq(posts.isActive, true)));

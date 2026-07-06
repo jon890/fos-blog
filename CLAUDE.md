@@ -308,6 +308,12 @@ type(scope): description
 
 예시: `feat(sync): add retry with exponential backoff`, `fix(db): prevent duplicate post insertion`, `docs(task): add layered architecture ADR`
 
+이 repo의 PR 제목과 본문은 기본적으로 한국어로 작성한다.
+단 `type(scope):` prefix, command, file path, symbol, error message 같은 기술 식별자는 원문을 유지한다.
+
+PR은 기본적으로 ready-for-review 상태로 생성한다.
+Draft PR은 사용자가 명시적으로 요청했거나, 검증이 아직 끝나지 않아 reviewer가 머지 판단을 할 수 없는 경우에만 사용한다.
+
 **브랜치 네이밍 규칙** — 작업 성격에 따라 prefix 분리:
 
 | PR 종류 | 브랜치 prefix | 예시 |
@@ -352,19 +358,19 @@ git status --short | grep -E "^(M|A) pnpm-lock\.yaml" && \
 `gh pr create --body` HEREDOC 으로 다음 포맷:
 
 ```markdown
-## Summary
+## 요약
 - {핵심 변경 한 줄}
 - {핵심 변경 한 줄}
 
-## Test plan
+## 검증
 - [ ] {검증 방법 — 자동 또는 수동}
 - [ ] {검증 방법}
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
-`Summary` 는 변경의 *왜* 와 *무엇*.
-`Test plan` 은 reviewer 가 머지 전 확인할 항목.
+`요약` 은 변경의 *왜* 와 *무엇*.
+`검증` 은 reviewer 가 머지 전 확인할 항목.
 항목 0 개면 PR 본문 생략 (단발 docs PR 등 예외 명시).
 
 #### 의미 단위 atomic 커밋
