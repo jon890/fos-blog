@@ -7,6 +7,10 @@ describe("formatDate", () => {
     expect(formatDate(new Date(2026, 11, 31))).toBe("2026.12.31");
   });
 
+  it("accepts date strings returned by MySQL drivers", () => {
+    expect(formatDate("2026-01-05 12:34:56")).toBe("2026.01.05");
+  });
+
   it("returns empty string for null / undefined", () => {
     expect(formatDate(null)).toBe("");
     expect(formatDate(undefined)).toBe("");
@@ -14,5 +18,6 @@ describe("formatDate", () => {
 
   it("returns empty string for Invalid Date", () => {
     expect(formatDate(new Date("not-a-date"))).toBe("");
+    expect(formatDate("not-a-date")).toBe("");
   });
 });
