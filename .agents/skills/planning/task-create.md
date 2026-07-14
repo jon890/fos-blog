@@ -207,6 +207,61 @@ CLAUDE.md "Architecture" 의 레이어 (app → services → infra, lib 는 횡�
 
 ---
 
+## task 검증 (생성 직후)
+
+task 파일 작성 직후, 사용자 보고 + git commit 전에 실행한다. `/planning` SKILL 의 "task 검증" 섹션이 이 절차를 가리킨다.
+AI 가 임의로 자동 수정하지 않고, 위반은 `AskUserQuestion` 으로 확인받는다 — 의도 보존 우선.
+
+### 자동 검출 5 패턴
+
+아래 스크립트를 실행한다. 위반 라인을 stdout 으로 출력하며, 출력이 0 줄이면 통과.
+
+```bash
+# cwd: <repo root>
+.claude/skills/planning/scripts/verify-task.sh plan{N}-{slug}
+```
+
+스크립트가 검출하는 5 패턴 (`common-pitfalls.md` 섹션 1 의 자동화 가능분):
+
+- **1-2** — '전체 수정/변경/적용/…' 표현 (파일 범위 부정확). 구체 파일 목록으로 대체.
+- **1-4** — Bash 블록의 `# cwd:` 주석 누락.
+- **1-5** — 인간 의존 검증 ('수동 검토'·'눈으로 확인'·'육안' 등). "수동 smoke" 는 dev server 동작 확인이라 제외.
+- **1-8** — 마지막 phase 에 `index.json` completed 마킹 지시 누락.
+- **1-9** — macOS BSD sed `\b` 미지원. 발견 시 `perl -i -pe 's/\bfoo\b/.../g'` 로 대체.
+
+출력 1줄이라도 나오면 아래 흐름.
+
+### 위반 발견 시 처리 (사용자 confirm 우선)
+
+위반된 패턴과 위치를 정리해 `AskUserQuestion` 호출:
+
+- 옵션 1: **수정** — AI 가 위반 라인을 패턴별 권장 대안으로 교체 후 `verify-task.sh` 재실행 (재귀, 최대 2회)
+- 옵션 2: **skip** — 이번 위반은 의도된 표현. critic / build-with-teams 단계에서 다시 판단
+- 옵션 3: **면제** — 본 plan 한정 면제 사유를 phase 파일 "의도 메모 (왜)" 에 명시 후 통과
+
+사용자가 일괄 처리를 원하면 (예: "5건 다 수정해줘") 옵션 1 을 즉시 적용.
+
+### 사람 판단 필요 4 패턴 (자동 검출 불가)
+
+아래 패턴은 도메인 의존이라 grep 검출 불가. task 작성 시 사람 (AI) 이 직접 self-check.
+
+- **1-1 수치 추측**: "약 30개" / "100줄" 같은 수치가 실측 명령 결과인지 확인. `git diff --stat | wc -l` 등 실측 명령을 plan 에 인용
+- **1-3 이전 plan / main 커밋 상호작용**: `git log origin/main --oneline -20 -- <scope-dir>/` 결과 중 plan 범위와 겹치는 변경이 있는지, 있다면 "어느 쪽이 final" 명시
+- **1-6 외부 상태 gate**: PR / 배포 / push 단계 앞에 상태 확인 명령 (`gh pr view {N} --json state`) 가 있는지
+- **1-7 4면 가드**: load-bearing 불변식 도입 시 Migration / Repository / Mapper / UI 4면 모두 가드 명시되어 있는지
+
+### self-review (제출 전 fresh eyes)
+
+위 자동검증·critic pitfalls 와 별개로, task 전체를 새로운 눈으로 한 번 훑는다. critic 이 아니라 본인이 도는 체크리스트다.
+
+1. **placeholder 스캔**: `TBD` / `TODO` / '나중에' / 빈 섹션이 남아 있나. 있으면 실제 내용으로 채운다.
+2. **모순 스캔**: phase 간·docs 간 상충하는 서술이 없나. 아키텍처 설명과 기능 설명이 어긋나지 않나.
+3. **식별자 일관성**: 앞 phase 에서 정한 함수·타입·필드명을 뒤 phase 가 똑같이 쓰나. phase-01 의 `clearLayers()` 를 phase-03 이 `clearFullLayers()` 로 쓰면 버그다.
+
+발견 즉시 인라인 수정. 재검토는 불필요 — 고치고 넘어간다.
+
+---
+
 ## 참조
 
 - `common-pitfalls.md 섹션 1 plan 작성` — critic 회피 패턴 모두 사전 해소
