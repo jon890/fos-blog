@@ -94,6 +94,13 @@ export function extractTitle(
   return null;
 }
 
+// Markdown 이스케이프(`\~`, `\*` 등) 를 평문으로 되돌린다.
+// 본문 소스는 `~` 를 취소선으로 오인하지 않도록 `\~` 로 escape 하는데,
+// 평문 description 에서는 backslash 가 그대로 노출되므로 제거한다.
+function unescapeMarkdown(text: string): string {
+  return text.replace(/\\([!-/:-@[-`{-~])/g, "$1");
+}
+
 // Extract description from markdown content
 export function extractDescription(
   content: string,
@@ -104,11 +111,13 @@ export function extractDescription(
     parsed ?? parseFrontMatter(content);
 
   if (frontMatter.description) {
-    return frontMatter.description.replace(HTML_TAG_RE, " ").replace(/\s+/g, " ").trim();
+    return unescapeMarkdown(
+      frontMatter.description.replace(HTML_TAG_RE, " ").replace(/\s+/g, " ").trim(),
+    );
   }
 
   // Remove markdown syntax and get first paragraph
-  const plainText = mainContent
+  const plainText = unescapeMarkdown(mainContent)
     .replace(HTML_TAG_RE, " ") // Remove HTML tags (<br>, <details> 등)
     .replace(/^#+\s+.+$/gm, "") // Remove headers
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Replace links with text

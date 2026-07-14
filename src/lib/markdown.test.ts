@@ -159,6 +159,15 @@ description: 한 줄<br>다음 줄
 본문`;
     expect(extractDescription(content)).toBe("한 줄 다음 줄");
   });
+
+  it("frontmatter description 의 마크다운 이스케이프(\\~)를 평문으로 되돌린다", () => {
+    const content = `---
+description: 진행기간 2026-01 \\~ 2026-03
+---
+
+본문`;
+    expect(extractDescription(content)).toBe("진행기간 2026-01 ~ 2026-03");
+  });
 });
 
 // ===== getReadingTime =====
