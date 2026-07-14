@@ -170,9 +170,9 @@ grep -rnE "매트릭스|matrix" docs/ .claude/skills/ CLAUDE.md 2>/dev/null
 
 ## 9. 거울 구조 원칙 (planning 8단계 A항)
 
-planning SKILL 의 docs 영향 표가 docs 갱신의 **단일 소스**. 본 agent 의 검증 항목은 그 표의 거울 — 별도 체크 항목 추가 금지. 표 수정 시 본 agent 와 동기 검토.
+planning 오버레이의 docs 컨벤션 표가 docs 갱신의 **단일 소스**. 본 agent 의 검증 항목은 그 표의 거울 — 별도 체크 항목 추가 금지. 표 수정 시 본 agent 와 동기 검토.
 
-상세: `.claude/skills/planning/SKILL.md` "거울 구조 원칙" 섹션 (있는 경우).
+상세: `.claude/planning-overlay.md` "docs 컨벤션" + "거울 구조 원칙" 섹션.
 
 </Domain_Knowledge>
 

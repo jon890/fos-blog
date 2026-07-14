@@ -123,7 +123,7 @@ def validate_task(task: dict, task_dir: Path) -> None:
         for e in errors:
             print(f"  - {e}", file=sys.stderr)
         print(
-            "\n  → tasks/schema.ts 및 .claude/skills/planning/task-create.md 참고\n",
+            "\n  → tasks/schema.ts 및 ~/.claude/skills/planning/task-create.md 참고\n",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -358,7 +358,7 @@ def main() -> None:
     task["status"] = "completed"
     save_task(task, index_path)
 
-    # 커밋/push는 마지막 phase에서 처리 (.claude/skills/planning/task-create.md 표준)
+    # 커밋/push는 마지막 phase에서 처리 (~/.claude/skills/planning/task-create.md 표준)
     # run-phases.py에서는 자동 커밋하지 않음
 
     msg = f"✅ Task **{task_name}** 완료 ({total} phases)"

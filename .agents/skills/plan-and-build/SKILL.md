@@ -67,7 +67,7 @@ description: multi-phase 구현 자동화. 논의 → 계획 → task 생성 →
 
 ### 3. 구현 계획 초안
 
-`.agents/skills/planning/task-create.md`를 정확히 숙지한 후, 다음을 포함한 초안을 작성한다. Claude 환경에서 기존 경로가 필요하면 `.claude/skills/planning/task-create.md` symlink 경로도 동일하게 동작한다.
+`~/.claude/skills/planning/task-create.md`(공용 코어)를 정확히 숙지한 후, 다음을 포함한 초안을 작성한다. 레포 특화는 `.claude/planning-overlay.md` 참조.
 
 - phase별 분리 이유와 작업 목록
 - 성공 기준 (실행 가능한 명령어)
@@ -77,7 +77,7 @@ description: multi-phase 구현 자동화. 논의 → 계획 → task 생성 →
 
 ### 4. Task 생성
 
-`.agents/skills/planning/task-create.md` 형식에 따라 task와 phase 파일을 생성한다:
+`~/.claude/skills/planning/task-create.md` 형식에 따라 task와 phase 파일을 생성한다:
 
 ```
 tasks/{task-name}/
@@ -185,7 +185,7 @@ tasks/
 .claude/skills/plan-and-build/
   run-phases.py       # phase 순차 실행기 (실시간 스트리밍, --from-phase 지원)
 
-.claude/skills/planning/
+~/.claude/skills/planning/     # 공용 코어 (fos-skills symlink)
   task-create.md      # task/phase 작성 가이드 (planning 스킬 산출물 규격)
 ```
 
