@@ -705,13 +705,3 @@ executor 가 phase 실패 보고 시:
 ### team-lead 보고 의무
 
 PR 생성 후 worktree 정리 직전, 사용자에게 **"이번 세션 누적 노하우"** 1-3줄 보고. 누적 안 했으면 "신규 노하우 없음" 명시.
-
-## vs plan-and-build (참고)
-
-|  | plan-and-build | build-with-teams |
-|---|---|---|
-| 실행 방식 | 백그라운드 스크립트 | Claude Agent Teams 가시적 협업 |
-| 평가 단계 | 없음 | critic APPROVE 게이트 |
-| docs 검증 | 없음 | docs-verifier 자동 검증 |
-| 진행 상황 | 로그 파일 확인 | 에이전트 메시지로 실시간 확인 |
-| 실패 복구 | `--from-phase` 재시작 | team-lead 판단 → executor 재지시 |
