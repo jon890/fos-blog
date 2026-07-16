@@ -154,8 +154,8 @@ Content sync cron (crontab):
 ## Agent Operating Rules
 
 webtoon-maker-v1에서 검증된 3 레포 공통 규칙.
-하네스 원본은 `.agents/skills/{planning,build-with-teams,docs-check}`와 짝을 이룬다.
-`.claude/skills/*`는 Claude Code 호환 symlink 경로로만 유지한다.
+`planning` 은 하네스 원본을 `.agents/skills/planning`에 두고 `.claude/skills/planning`을 Claude Code 호환 symlink 경로로 유지한다.
+`build-with-teams`와 `docs-check`는 공용 코어(글로벌 `~/.claude/skills/{build-with-teams,docs-check}`)를 쓰고, fos-blog 특화는 `.claude/build-with-teams-overlay.md` / `.claude/docs-check-overlay.md` 가 주입한다.
 
 ### Claude / Codex 공용 운영
 

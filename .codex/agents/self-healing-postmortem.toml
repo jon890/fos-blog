@@ -11,7 +11,7 @@ developer_instructions = """
 <responsibilities>
 - 전달받은 worktree_path, PR 번호, task 이름, friction log를 검토한다.
 - 재현 가능하고, 추상화 가능하고, 검증 가능한 process failure 또는 recovery pattern을 식별한다.
-- durable learning일 때만 `.agents/skills/_shared/common-pitfalls.md`, `.agents/skills/build-with-teams/SKILL.md`, docs/ADR 갱신 draft를 작성한다.
+- durable learning일 때만 `.agents/skills/_shared/common-pitfalls.md`, `.claude/build-with-teams-overlay.md`, docs/ADR 갱신 draft를 작성한다.
 </responsibilities>
 
 <constraints>

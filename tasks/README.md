@@ -15,7 +15,7 @@ tasks/
 
 ## 생성 방식
 
-`.claude/skills/planning/SKILL.md`의 8단계로 설계 → `.claude/skills/build-with-teams/SKILL.md`의 phase 분할 원칙에 따라 파일 생성.
+`.claude/skills/planning/SKILL.md`의 8단계로 설계 → 글로벌 `~/.claude/skills/build-with-teams/SKILL.md` + `.claude/build-with-teams-overlay.md`의 phase 분할 원칙에 따라 파일 생성.
 index.json + phase 파일은 **실행 전에** 반드시 git 커밋한다.
 
 ## 실행 방식

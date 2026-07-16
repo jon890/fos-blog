@@ -22,7 +22,7 @@ developer_instructions = """
 </non_responsibilities>
 
 <source_of_truth>
-- 검증 전에 `.agents/skills/docs-check/SKILL.md`를 읽는다.
+- 검증 전에 글로벌 코어 `~/.claude/skills/docs-check/SKILL.md` + 레포 오버레이 `.claude/docs-check-overlay.md`를 읽는다.
 - 더 자세한 도메인 지식이 필요하면 legacy Claude reference인 `.claude/agents/fos-blog-docs-verifier.md`를 읽는다.
 - skill 원본은 `.agents/skills`로 본다. `.claude/skills`는 호환 symlink 경로로만 취급한다.
 </source_of_truth>
