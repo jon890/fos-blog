@@ -70,7 +70,7 @@ server page 데이터 실패 폴백과 metadata는 source-level 회귀 또는 �
 ```bash
 # cwd: /Users/nhn/personal/fos-blog/.claude/worktrees/plan054-glossary-tooltip
 # branch: feat/plan054-glossary-tooltip
-pnpm test --run src/components/glossary/GlossaryIndex.test.tsx
+pnpm test src/components/glossary/GlossaryIndex.test.tsx
 pnpm type-check
 rg -n 'href: "/glossary"|/glossary' src/components/SiteFooter.tsx src/app/sitemap.ts
 ! rg -n 'href: "/glossary"' src/components/Header.tsx

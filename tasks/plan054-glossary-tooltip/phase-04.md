@@ -79,7 +79,7 @@ server-only HAST 모듈 테스트는 기존 Markdown 회귀 테스트처럼 `ser
 ```bash
 # cwd: /Users/nhn/personal/fos-blog/.claude/worktrees/plan054-glossary-tooltip
 # branch: feat/plan054-glossary-tooltip
-pnpm test --run src/components/markdown/glossary-transform.test.ts src/components/glossary/GlossaryTooltip.test.tsx
+pnpm test src/components/markdown/glossary-transform.test.ts src/components/glossary/GlossaryTooltip.test.tsx
 pnpm type-check
 rg -n 'import "server-only"' src/components/markdown/glossary-transform.ts src/components/markdown/components.tsx
 ```
