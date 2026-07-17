@@ -1,7 +1,7 @@
 # Phase 04 — Markdown 용어 툴팁 통합
 
 **Execution profile**: standard
-**Status**: pending
+**Status**: completed
 
 ---
 

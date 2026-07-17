@@ -159,7 +159,7 @@ Notes:
 
 ---
 
-### plan054 목표: `glossary_terms` (구현 예정)
+### `glossary_terms` (plan054)
 
 스키마 파일: `src/infra/db/schema/glossaryTerms.ts`
 
@@ -186,7 +186,7 @@ Notes:
 
 ---
 
-### plan054 목표: `glossary_mentions` (구현 예정)
+### `glossary_mentions` (plan054)
 
 스키마 파일: `src/infra/db/schema/glossaryMentions.ts`
 

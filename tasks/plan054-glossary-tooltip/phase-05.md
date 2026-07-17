@@ -1,7 +1,7 @@
 # Phase 05 — 공개 용어집 페이지와 발견 경로
 
 **Execution profile**: standard
-**Status**: pending
+**Status**: completed
 
 ---
 
