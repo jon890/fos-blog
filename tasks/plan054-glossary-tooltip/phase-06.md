@@ -59,7 +59,8 @@ build에는 필수 `GITHUB_TOKEN`, `SYNC_API_KEY`, `DATABASE_URL` 검증 환경�
 ## 검증
 
 ```bash
-# cwd: /Users/nhn/personal/fos-blog
+# cwd: /Users/nhn/personal/fos-blog/.claude/worktrees/plan054-glossary-tooltip
+# branch: feat/plan054-glossary-tooltip
 pnpm test --run src/lib/glossary-matcher.test.ts src/services/glossary-mention-scanner.test.ts src/services/GlossarySyncService.test.ts src/components/markdown/glossary-transform.test.ts src/components/glossary/GlossaryTooltip.test.tsx src/components/glossary/GlossaryIndex.test.tsx
 pnpm lint
 pnpm type-check

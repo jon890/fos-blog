@@ -101,7 +101,8 @@ frontmatter에만 있는 용어가 제외되는 case와 glossary·post·README �
 ## 검증
 
 ```bash
-# cwd: /Users/nhn/personal/fos-blog
+# cwd: /Users/nhn/personal/fos-blog/.claude/worktrees/plan054-glossary-tooltip
+# branch: feat/plan054-glossary-tooltip
 pnpm test --run src/lib/glossary-matcher.test.ts src/services/glossary-mention-scanner.test.ts src/services/GlossarySyncService.test.ts
 pnpm type-check
 rg -n "heading|linkReference|inlineCode|inlineMath|Mermaid" src/services/glossary-mention-scanner.test.ts

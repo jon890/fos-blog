@@ -88,7 +88,8 @@ phase 03이 추가할 mention 갱신은 post·metadata 저장이 끝난 뒤 호�
 ## 검증
 
 ```bash
-# cwd: /Users/nhn/personal/fos-blog
+# cwd: /Users/nhn/personal/fos-blog/.claude/worktrees/plan054-glossary-tooltip
+# branch: feat/plan054-glossary-tooltip
 DATABASE_URL=mysql://user:pass@127.0.0.1:3306/fos_blog pnpm db:generate
 pnpm test --run src/services/GlossarySyncService.test.ts src/infra/db/repositories/GlossaryRepository.test.ts src/services/SyncService.test.ts
 pnpm type-check
