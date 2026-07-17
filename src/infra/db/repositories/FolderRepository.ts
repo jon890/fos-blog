@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { posts, folders } from "../schema";
 import type { PostData, FolderItemData, FolderContentsResult } from "../types";
 import { BaseRepository } from "./BaseRepository";
@@ -74,6 +74,40 @@ export class FolderRepository extends BaseRepository {
       .select({ id: folders.id, path: folders.path, sha: folders.sha })
       .from(folders);
     return new Map(result.map((f) => [f.path, { id: f.id, sha: f.sha }]));
+  }
+
+  async getReadmeMentionSources(): Promise<
+    Array<{ path: string; readme: string; updatedAt: Date | null }>
+  > {
+    const rows = await this.db
+      .select({
+        path: folders.path,
+        readme: folders.readme,
+        updatedAt: folders.updatedAt,
+      })
+      .from(folders)
+      .where(isNotNull(folders.readme));
+    return rows.flatMap((row) =>
+      row.readme === null ? [] : [{ ...row, readme: row.readme }],
+    );
+  }
+
+  async getReadmeMentionSource(
+    folderPath: string,
+  ): Promise<{ path: string; readme: string; updatedAt: Date | null } | null> {
+    const rows = await this.db
+      .select({
+        path: folders.path,
+        readme: folders.readme,
+        updatedAt: folders.updatedAt,
+      })
+      .from(folders)
+      .where(and(eq(folders.path, folderPath), isNotNull(folders.readme)))
+      .limit(1);
+    const row = rows[0];
+    return row?.readme === null || row?.readme === undefined
+      ? null
+      : { ...row, readme: row.readme };
   }
 
   async upsert(folderPath: string, readme: string, sha: string): Promise<void> {

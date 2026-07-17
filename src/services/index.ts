@@ -21,7 +21,7 @@ export function createSyncService(): SyncService {
   return new SyncService(
     new PostSyncService(postRepo, githubApi),
     new MetadataSyncService(categoryRepo, folderRepo, postRepo, githubApi),
-    new GlossarySyncService(glossaryRepo, githubApi),
+    new GlossarySyncService(glossaryRepo, githubApi, postRepo, folderRepo),
     syncLogRepo,
     githubApi,
   );
@@ -36,8 +36,16 @@ export type { SyncResult } from "./SyncService";
 export { GlossarySyncService } from "./GlossarySyncService";
 export type {
   GlossaryDefinitionSyncResult,
+  GlossaryMentionSyncInput,
+  GlossaryMentionSyncResult,
   GlossarySyncMode,
 } from "./GlossarySyncService";
+export { createGlossaryService, GlossaryService } from "./GlossaryService";
+export type {
+  GlossaryPageData,
+  GlossaryPageMention,
+  GlossaryPageTerm,
+} from "./GlossaryService";
 export {
   glossaryFileSchema,
   glossaryTermSchema,

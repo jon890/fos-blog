@@ -1,7 +1,9 @@
-import { count, notInArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, notInArray, sql } from "drizzle-orm";
 import {
+  glossaryMentions,
   glossaryTerms,
   type GlossaryTerm,
+  type NewGlossaryMention,
   type NewGlossaryTerm,
 } from "../schema";
 import { BaseRepository } from "./BaseRepository";
@@ -22,6 +24,21 @@ export type GlossaryDefinition = Pick<
   | "caseSensitive"
   | "references"
 >;
+
+export type GlossaryPageType = "post" | "category-readme";
+
+export type GlossaryMentionInput = Pick<
+  NewGlossaryMention,
+  "termId" | "pageTitle" | "pageUpdatedAt"
+>;
+
+export type GlossaryMentionProjection = {
+  termId: string;
+  pageType: GlossaryPageType;
+  pagePath: string;
+  pageTitle: string;
+  pageUpdatedAt: Date | null;
+};
 
 export class GlossaryRepository extends BaseRepository {
   async replaceTerms(terms: NewGlossaryTerm[]): Promise<void> {
@@ -57,6 +74,73 @@ export class GlossaryRepository extends BaseRepository {
       .select({ value: count() })
       .from(glossaryTerms);
     return result[0]?.value ?? 0;
+  }
+
+  async replaceAllMentions(rows: NewGlossaryMention[]): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx.delete(glossaryMentions);
+      if (rows.length > 0) {
+        await tx.insert(glossaryMentions).values(rows);
+      }
+    });
+  }
+
+  async replacePageMentions(
+    pageType: GlossaryPageType,
+    pagePath: string,
+    rows: GlossaryMentionInput[],
+  ): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx
+        .delete(glossaryMentions)
+        .where(
+          and(
+            eq(glossaryMentions.pageType, pageType),
+            eq(glossaryMentions.pagePath, pagePath),
+          ),
+        );
+      if (rows.length > 0) {
+        await tx.insert(glossaryMentions).values(
+          rows.map((row) => ({ ...row, pageType, pagePath })),
+        );
+      }
+    });
+  }
+
+  async deletePageMentions(
+    pageType: GlossaryPageType,
+    pagePath: string,
+  ): Promise<void> {
+    await this.db
+      .delete(glossaryMentions)
+      .where(
+        and(
+          eq(glossaryMentions.pageType, pageType),
+          eq(glossaryMentions.pagePath, pagePath),
+        ),
+      );
+  }
+
+  async countMentions(): Promise<number> {
+    const result = await this.db
+      .select({ value: count() })
+      .from(glossaryMentions);
+    return result[0]?.value ?? 0;
+  }
+
+  async getMentions(): Promise<GlossaryMentionProjection[]> {
+    const rows = await this.db
+      .select({
+        termId: glossaryMentions.termId,
+        pageType: glossaryMentions.pageType,
+        pagePath: glossaryMentions.pagePath,
+        pageTitle: glossaryMentions.pageTitle,
+        pageUpdatedAt: glossaryMentions.pageUpdatedAt,
+      })
+      .from(glossaryMentions)
+      .orderBy(desc(glossaryMentions.pageUpdatedAt));
+
+    return rows as GlossaryMentionProjection[];
   }
 
   async getMatchableTerms(): Promise<MatchableGlossaryTerm[]> {

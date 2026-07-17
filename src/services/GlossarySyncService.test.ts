@@ -20,7 +20,20 @@ const validGlossary = JSON.stringify({
 
 function makeMocks(content: string | null = validGlossary) {
   const glossaryRepo: ConstructorParameters<typeof GlossarySyncService>[0] = {
+    countMentions: vi.fn().mockResolvedValue(0),
     countTerms: vi.fn().mockResolvedValue(3),
+    deletePageMentions: vi.fn().mockResolvedValue(undefined),
+    getMatchableTerms: vi.fn().mockResolvedValue([
+      {
+        id: "dependency-injection",
+        term: "Dependency Injection",
+        aliases: ["DI"],
+        summary: "의존성을 외부에서 전달하는 설계 방식",
+        caseSensitive: false,
+      },
+    ]),
+    replaceAllMentions: vi.fn().mockResolvedValue(undefined),
+    replacePageMentions: vi.fn().mockResolvedValue(undefined),
     replaceTerms: vi.fn().mockResolvedValue(undefined),
   };
   const githubApi: ConstructorParameters<typeof GlossarySyncService>[1] = {
@@ -28,11 +41,24 @@ function makeMocks(content: string | null = validGlossary) {
       content === null ? null : { content, sha: "glossary-sha" },
     ),
   };
-  return { glossaryRepo, githubApi };
+  const postRepo: ConstructorParameters<typeof GlossarySyncService>[2] = {
+    getActiveMentionSources: vi.fn().mockResolvedValue([]),
+    getActiveMentionSource: vi.fn().mockResolvedValue(null),
+  };
+  const folderRepo: ConstructorParameters<typeof GlossarySyncService>[3] = {
+    getReadmeMentionSources: vi.fn().mockResolvedValue([]),
+    getReadmeMentionSource: vi.fn().mockResolvedValue(null),
+  };
+  return { glossaryRepo, githubApi, postRepo, folderRepo };
 }
 
 function createService(mocks: ReturnType<typeof makeMocks>) {
-  return new GlossarySyncService(mocks.glossaryRepo, mocks.githubApi);
+  return new GlossarySyncService(
+    mocks.glossaryRepo,
+    mocks.githubApi,
+    mocks.postRepo,
+    mocks.folderRepo,
+  );
 }
 
 describe("GlossarySyncService.syncDefinitions", () => {
@@ -141,5 +167,90 @@ describe("GlossarySyncService.syncDefinitions", () => {
 
     expect(mocks.glossaryRepo.replaceTerms).toHaveBeenCalledWith([]);
     expect(result).toEqual({ definitionsChanged: true, terms: 0 });
+  });
+});
+
+describe("GlossarySyncService.syncMentions", () => {
+  it("정의 변경 시 활성 post와 README를 전체 재색인한다", async () => {
+    const mocks = makeMocks();
+    vi.mocked(mocks.postRepo.getActiveMentionSources).mockResolvedValue([
+      {
+        path: "AI/intro.md",
+        title: "DI 소개",
+        content: "DI와 DI를 설명한다.",
+        updatedAt: new Date("2026-01-02"),
+      },
+    ]);
+    vi.mocked(mocks.folderRepo.getReadmeMentionSources).mockResolvedValue([
+      {
+        path: "AI",
+        readme: "---\ntitle: Dependency Injection\n---\n본문에는 용어 없음",
+        updatedAt: new Date("2026-01-01"),
+      },
+    ]);
+    vi.mocked(mocks.glossaryRepo.countMentions).mockResolvedValue(1);
+
+    const result = await createService(mocks).syncMentions({
+      definitionsChanged: true,
+      changedPosts: [],
+      changedReadmes: [],
+    });
+
+    expect(mocks.glossaryRepo.replaceAllMentions).toHaveBeenCalledWith([
+      expect.objectContaining({
+        termId: "dependency-injection",
+        pageType: "post",
+        pagePath: "AI/intro.md",
+      }),
+    ]);
+    expect(result).toEqual({ mentions: 1, pagesReindexed: 2 });
+  });
+
+  it("변경 page는 저장 이후 snapshot으로 교체하고 삭제 page는 정리한다", async () => {
+    const mocks = makeMocks();
+    vi.mocked(mocks.postRepo.getActiveMentionSource).mockResolvedValue({
+      path: "AI/intro.md",
+      title: "갱신된 제목",
+      content: "Dependency Injection과 DI",
+      updatedAt: new Date("2026-02-01"),
+    });
+    vi.mocked(mocks.glossaryRepo.countMentions).mockResolvedValue(4);
+
+    const result = await createService(mocks).syncMentions({
+      definitionsChanged: false,
+      changedPosts: [{ path: "AI/intro.md", operation: "upsert" }],
+      changedReadmes: [{ path: "AI/README.md", operation: "delete" }],
+    });
+
+    expect(mocks.glossaryRepo.replacePageMentions).toHaveBeenCalledWith(
+      "post",
+      "AI/intro.md",
+      [
+        expect.objectContaining({
+          termId: "dependency-injection",
+          pageTitle: "갱신된 제목",
+        }),
+      ],
+    );
+    expect(mocks.glossaryRepo.deletePageMentions).toHaveBeenCalledWith(
+      "category-readme",
+      "AI/README.md",
+    );
+    expect(result).toEqual({ mentions: 4, pagesReindexed: 2 });
+  });
+
+  it("저장 이후 사라진 upsert page도 stale mention을 삭제한다", async () => {
+    const mocks = makeMocks();
+
+    await createService(mocks).syncMentions({
+      definitionsChanged: false,
+      changedPosts: [{ path: "removed.md", operation: "upsert" }],
+      changedReadmes: [],
+    });
+
+    expect(mocks.glossaryRepo.deletePageMentions).toHaveBeenCalledWith(
+      "post",
+      "removed.md",
+    );
   });
 });

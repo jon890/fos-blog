@@ -24,7 +24,10 @@ type PostSync = Pick<
   "retitleAll" | "syncAll" | "syncChanged"
 >;
 type MetadataSync = Pick<MetadataSyncService, "refresh">;
-type GlossarySync = Pick<GlossarySyncService, "syncDefinitions">;
+type GlossarySync = Pick<
+  GlossarySyncService,
+  "syncDefinitions" | "syncMentions"
+>;
 type SyncLogRepo = Pick<SyncLogRepository, "create" | "getLatest">;
 
 export type SyncResult = {
@@ -74,8 +77,14 @@ export class SyncService {
         log.info("이미 최신 상태 — posts 변경 없음, metadata 만 재계산");
         const glossaryDefinitions =
           await this.glossarySyncService.syncDefinitions("incremental", []);
-        await this.metadataSyncService.refresh();
         const titles = await this.postSyncService.retitleAll();
+        const metadataResult = await this.metadataSyncService.refresh();
+        const glossaryMentions =
+          await this.glossarySyncService.syncMentions({
+            definitionsChanged: glossaryDefinitions.definitionsChanged,
+            changedPosts: [],
+            changedReadmes: metadataResult.changedReadmes,
+          });
         return {
           added: 0,
           updated: 0,
@@ -83,7 +92,7 @@ export class SyncService {
           commitSha: headSha,
           upToDate: true,
           titles,
-          glossary: this.createGlossaryResult(glossaryDefinitions),
+          glossary: { ...glossaryDefinitions, ...glossaryMentions },
         };
       }
 
@@ -94,7 +103,12 @@ export class SyncService {
           syncPlan.changedFiles,
         );
       const postResult = await this.syncPosts(syncPlan);
-      await this.metadataSyncService.refresh();
+      const metadataResult = await this.metadataSyncService.refresh();
+      const glossaryMentions = await this.glossarySyncService.syncMentions({
+        definitionsChanged: glossaryDefinitions.definitionsChanged,
+        changedPosts: postResult.changedPosts,
+        changedReadmes: metadataResult.changedReadmes,
+      });
 
       await this.syncLogRepo.create({
         status: "success",
@@ -120,7 +134,7 @@ export class SyncService {
         deleted: postResult.deleted,
         commitSha: headSha,
         titles: postResult.titles,
-        glossary: this.createGlossaryResult(glossaryDefinitions),
+        glossary: { ...glossaryDefinitions, ...glossaryMentions },
       };
     } catch (error) {
       log.error(
@@ -180,13 +194,4 @@ export class SyncService {
       : this.postSyncService.syncChanged(plan.changedFiles);
   }
 
-  private createGlossaryResult(
-    definitions: GlossaryDefinitionSyncResult,
-  ): SyncResult["glossary"] {
-    return {
-      ...definitions,
-      mentions: 0,
-      pagesReindexed: 0,
-    };
-  }
 }

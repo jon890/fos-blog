@@ -31,6 +31,10 @@ function makeMocks() {
       definitionsChanged: false,
       terms: 2,
     }),
+    syncMentions: vi.fn().mockResolvedValue({
+      mentions: 3,
+      pagesReindexed: 1,
+    }),
   };
   const syncLogRepo: ConstructorParameters<typeof SyncService>[3] = {
     getLatest: vi.fn(),
@@ -84,8 +88,8 @@ describe("SyncService.sync", () => {
       glossary: {
         definitionsChanged: false,
         terms: 2,
-        mentions: 0,
-        pagesReindexed: 0,
+        mentions: 3,
+        pagesReindexed: 1,
       },
     });
   });
@@ -123,11 +127,57 @@ describe("SyncService.sync", () => {
       changedFiles,
     );
     expect(mocks.metadataSyncService.refresh).toHaveBeenCalledOnce();
+    expect(mocks.glossarySyncService.syncMentions).toHaveBeenCalledWith({
+      definitionsChanged: false,
+      changedPosts: [{ path: "AI/intro.md", operation: "upsert" }],
+      changedReadmes: [],
+    });
     expect(
       vi.mocked(mocks.glossarySyncService.syncDefinitions).mock.invocationCallOrder[0],
     ).toBeLessThan(
       vi.mocked(mocks.postSyncService.syncChanged).mock.invocationCallOrder[0],
     );
+    expect(
+      vi.mocked(mocks.metadataSyncService.refresh).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      vi.mocked(mocks.glossarySyncService.syncMentions).mock.invocationCallOrder[0],
+    );
+  });
+
+  it("glossary, post, README 동시 변경도 definitions → posts → metadata → mentions 순서다", async () => {
+    const mocks = makeMocks();
+    const changedFiles: ChangedFile[] = [
+      { status: "modified", filename: "glossary.json" },
+      { status: "modified", filename: "AI/intro.md" },
+      { status: "modified", filename: "AI/README.md" },
+    ];
+    vi.mocked(mocks.githubApi.getCurrentHeadSha).mockResolvedValue("head-sha");
+    vi.mocked(mocks.syncLogRepo.getLatest).mockResolvedValue({
+      commitSha: "old-sha",
+    } as SyncLog);
+    vi.mocked(mocks.githubApi.getChangedFilesSince).mockResolvedValue(changedFiles);
+    vi.mocked(mocks.glossarySyncService.syncDefinitions).mockResolvedValue({
+      definitionsChanged: true,
+      terms: 2,
+    });
+    vi.mocked(mocks.metadataSyncService.refresh).mockResolvedValue({
+      changedReadmes: [{ path: "AI/README.md", operation: "upsert" }],
+    });
+
+    await createService(mocks).sync();
+
+    expect(mocks.glossarySyncService.syncMentions).toHaveBeenCalledWith({
+      definitionsChanged: true,
+      changedPosts: [{ path: "AI/intro.md", operation: "upsert" }],
+      changedReadmes: [{ path: "AI/README.md", operation: "upsert" }],
+    });
+    const order = [
+      vi.mocked(mocks.glossarySyncService.syncDefinitions).mock.invocationCallOrder[0],
+      vi.mocked(mocks.postSyncService.syncChanged).mock.invocationCallOrder[0],
+      vi.mocked(mocks.metadataSyncService.refresh).mock.invocationCallOrder[0],
+      vi.mocked(mocks.glossarySyncService.syncMentions).mock.invocationCallOrder[0],
+    ];
+    expect(order).toEqual([...order].sort((left, right) => left - right));
   });
 
   it("HEAD가 같아도 metadata를 갱신하고 title 보정을 유지한다", async () => {

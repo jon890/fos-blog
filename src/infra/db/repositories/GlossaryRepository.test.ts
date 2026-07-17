@@ -64,3 +64,37 @@ describe("GlossaryRepository.replaceTerms", () => {
     expect(mocks.where).not.toHaveBeenCalled();
   });
 });
+
+describe("GlossaryRepository mention writes", () => {
+  const mention = {
+    termId: "dependency-injection",
+    pageTitle: "DI 소개",
+    pageUpdatedAt: new Date("2026-01-01"),
+  };
+
+  it("전체 교체는 한 transaction에서 기존 row를 지운 뒤 insert한다", async () => {
+    const mocks = makeRepository();
+
+    await mocks.repo.replaceAllMentions([
+      { ...mention, pageType: "post", pagePath: "AI/intro.md" },
+    ]);
+
+    expect(mocks.deleteFrom).toHaveBeenCalledOnce();
+    expect(mocks.where).not.toHaveBeenCalled();
+    expect(mocks.values).toHaveBeenCalledWith([
+      { ...mention, pageType: "post", pagePath: "AI/intro.md" },
+    ]);
+    expect(mocks.deleteFrom.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.insert.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("page 교체의 빈 배열은 delete만 수행한다", async () => {
+    const mocks = makeRepository();
+
+    await mocks.repo.replacePageMentions("post", "AI/intro.md", []);
+
+    expect(mocks.where).toHaveBeenCalledOnce();
+    expect(mocks.insert).not.toHaveBeenCalled();
+  });
+});
