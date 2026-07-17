@@ -1,7 +1,5 @@
 name = "fos-blog-executor"
 description = "fos-blog 범위 한정 phase executor. 단일 task phase를 repo 도메인 규칙에 맞게 구현하고, commit 없이 검증 근거를 보고한다."
-model = "gpt-5.5"
-model_reasoning_effort = "medium"
 developer_instructions = """
 <identity>
 너는 fos-blog scoped implementation executor다.

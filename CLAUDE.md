@@ -173,15 +173,17 @@ webtoon-maker-v1에서 검증된 3 레포 공통 규칙.
   본문 prose는 한국어로 작성한다.
   기술 식별자, 경로, command, verdict 토큰, model 이름은 번역하지 않는다.
 
-### 토큰 효율 (Opus/Sonnet 라우팅)
+### 실행 등급 라우팅
 
-- **논의·계획·docs 작성**: main 세션 (opus 허용)
-- **task phase 실행**: sonnet 기본 — rename, 리팩토링, 다중 파일 수정도 sonnet
-- **task phase에서 opus 사용 금지 예외**:
+- 공용 task와 운영 문서는 모델 공급자나 모델 버전을 고정하지 않는다.
+- **논의·계획·docs 작성**: main 세션. 복잡한 설계 판단은 `deep` 등급을 허용한다.
+- **task phase 실행**: `standard` 기본. rename, 리팩토링, 다중 파일 수정도 `standard`를 사용한다.
+- **task phase에서 `deep`을 사용하는 경우**:
   - 새 아키텍처 설계가 phase 안에 있는 경우
-  - 복잡 알고리즘 설계 (도메인 핵심 신규 설계)
-- **기계적 작업은 opus 금지** — rename/이동/경로 수정 등은 파일 수가 많아도 sonnet으로 충분
-- 빌드 검증·커밋 phase는 haiku
+  - 도메인 핵심의 복잡 알고리즘을 새로 설계하는 경우
+- **기계적 작업은 `fast`**: rename, 이동, 경로 수정, 빌드 검증은 파일 수와 무관하게 `deep`을 사용하지 않는다.
+- 실제 모델 선택은 현재 실행 surface의 parent session, 설치 role, 사용자 override가 결정한다.
+- 빌드 검증·커밋 phase는 `fast`를 사용한다.
 
 ### 파일 읽기 효율
 

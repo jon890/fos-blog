@@ -70,7 +70,7 @@ PLAN_DIR=""
 
 ## M4. Post-mortem 학습 누적 (선택 — 사용자 confirm 후)
 
-PR 생성 + 팀 종료 직전, `self-healing-postmortem` (haiku) 를 spawn 해 본 plan 의 마찰/회복 패턴을 추출한다.
+PR 생성 + 팀 종료 직전, `self-healing-postmortem` (`fast` 실행 등급) 를 spawn 해 본 plan 의 마찰/회복 패턴을 추출한다.
 
 spawn 입력: 본 plan git log(PR 브랜치) + sub-agent 통신 요약(critic 사이클 횟수/재시도/무응답) + team-lead 가 마주친 분기점.
 산출: 재현·추상화·검증 가능 패턴 1-3개 draft. 누적 위치는 agent 가 라우팅 제안 (`common-pitfalls.md` BLG# / 본 SKILL / `docs/adr/NNN-slug.md` / `docs/pages/*.md`).

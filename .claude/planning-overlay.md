@@ -71,7 +71,7 @@ CLAUDE.md "Architecture" 의 레이어(app → services → infra, lib 는 횡�
 
 ### 마지막 phase (검증 전용)
 
-`haiku` 모델. `pnpm lint && pnpm type-check && pnpm build && pnpm test`, 잔재 grep, dead code 정리, JSON-LD 회귀, Lighthouse smoke.
+`fast` 실행 등급. `pnpm lint && pnpm type-check && pnpm build && pnpm test`, 잔재 grep, dead code 정리, JSON-LD 회귀, Lighthouse smoke.
 **커밋은 별도 phase 로 분리하지 않는다** — build-with-teams 가 phase 단위 atomic commit 자동 생성.
 
 ## plan 네이밍 (번호 충돌 방지)

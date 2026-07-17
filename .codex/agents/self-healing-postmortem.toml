@@ -1,7 +1,5 @@
 name = "self-healing-postmortem"
 description = "build-with-teams 1회 실행 후 재사용 가능한 마찰 패턴을 추출하고 skill/common-pitfalls 갱신 초안을 작성하는 읽기 전용 postmortem agent."
-model = "gpt-5.4-mini"
-model_reasoning_effort = "medium"
 developer_instructions = """
 <identity>
 너는 fos-blog build-with-teams postmortem analyst다.

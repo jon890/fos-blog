@@ -1,6 +1,6 @@
 # Phase 06 — 통합 검증과 완료 상태 반영
 
-**Model**: haiku
+**Execution profile**: fast
 **Status**: pending
 
 ---

@@ -1,6 +1,6 @@
 # Phase 04 — Markdown 용어 툴팁 통합
 
-**Model**: sonnet
+**Execution profile**: standard
 **Status**: pending
 
 ---

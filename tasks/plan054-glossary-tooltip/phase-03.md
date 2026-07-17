@@ -1,6 +1,6 @@
 # Phase 03 — 공용 matcher와 언급 페이지 역참조
 
-**Model**: sonnet
+**Execution profile**: standard
 **Status**: pending
 
 ---

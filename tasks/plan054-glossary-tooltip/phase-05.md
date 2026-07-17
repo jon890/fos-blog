@@ -1,6 +1,6 @@
 # Phase 05 — 공개 용어집 페이지와 발견 경로
 
-**Model**: sonnet
+**Execution profile**: standard
 **Status**: pending
 
 ---

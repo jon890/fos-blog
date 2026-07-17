@@ -1,6 +1,6 @@
 # Phase 02 — 용어 정의 schema와 안전한 동기화
 
-**Model**: sonnet
+**Execution profile**: standard
 **Status**: pending
 
 ---
