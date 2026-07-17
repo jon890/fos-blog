@@ -1,6 +1,11 @@
 import { SyncLogRepository } from "@/infra/db/repositories/SyncLogRepository";
 import type { ChangedFile } from "@/infra/github/api";
 import logger from "@/lib/logger";
+import type {
+  GlossaryDefinitionSyncResult,
+  GlossarySyncMode,
+} from "./GlossarySyncService";
+import { GlossarySyncService } from "./GlossarySyncService";
 import { MetadataSyncService } from "./MetadataSyncService";
 import { PostSyncService, type PostSyncResult } from "./PostSyncService";
 
@@ -19,21 +24,32 @@ type PostSync = Pick<
   "retitleAll" | "syncAll" | "syncChanged"
 >;
 type MetadataSync = Pick<MetadataSyncService, "refresh">;
+type GlossarySync = Pick<GlossarySyncService, "syncDefinitions">;
 type SyncLogRepo = Pick<SyncLogRepository, "create" | "getLatest">;
 
-type SyncResult = {
+export type SyncResult = {
   added: number;
   updated: number;
   deleted: number;
   commitSha: string;
   upToDate?: boolean;
   titles: { total: number; updated: number; skipped: number };
+  glossary: GlossaryDefinitionSyncResult & {
+    mentions: number;
+    pagesReindexed: number;
+  };
+};
+
+type SyncPlan = {
+  mode: GlossarySyncMode;
+  changedFiles: ChangedFile[];
 };
 
 export class SyncService {
   constructor(
     private postSyncService: PostSync,
     private metadataSyncService: MetadataSync,
+    private glossarySyncService: GlossarySync,
     private syncLogRepo: SyncLogRepo,
     private githubApi: GithubApi,
   ) {}
@@ -56,6 +72,8 @@ export class SyncService {
 
       if (lastSyncedSha === headSha) {
         log.info("이미 최신 상태 — posts 변경 없음, metadata 만 재계산");
+        const glossaryDefinitions =
+          await this.glossarySyncService.syncDefinitions("incremental", []);
         await this.metadataSyncService.refresh();
         const titles = await this.postSyncService.retitleAll();
         return {
@@ -65,10 +83,17 @@ export class SyncService {
           commitSha: headSha,
           upToDate: true,
           titles,
+          glossary: this.createGlossaryResult(glossaryDefinitions),
         };
       }
 
-      const postResult = await this.syncPosts(lastSyncedSha, headSha);
+      const syncPlan = await this.resolveSyncPlan(lastSyncedSha, headSha);
+      const glossaryDefinitions =
+        await this.glossarySyncService.syncDefinitions(
+          syncPlan.mode,
+          syncPlan.changedFiles,
+        );
+      const postResult = await this.syncPosts(syncPlan);
       await this.metadataSyncService.refresh();
 
       await this.syncLogRepo.create({
@@ -95,6 +120,7 @@ export class SyncService {
         deleted: postResult.deleted,
         commitSha: headSha,
         titles: postResult.titles,
+        glossary: this.createGlossaryResult(glossaryDefinitions),
       };
     } catch (error) {
       log.error(
@@ -123,13 +149,13 @@ export class SyncService {
     }
   }
 
-  private async syncPosts(
+  private async resolveSyncPlan(
     lastSyncedSha: string | null | undefined,
     headSha: string,
-  ): Promise<PostSyncResult> {
+  ): Promise<SyncPlan> {
     if (!lastSyncedSha) {
       log.info("최초 sync — 전체 동기화 수행");
-      return this.postSyncService.syncAll();
+      return { mode: "full", changedFiles: [] };
     }
 
     const changedFiles = await this.githubApi.getChangedFilesSince(
@@ -138,13 +164,29 @@ export class SyncService {
     );
     if (changedFiles === null) {
       log.info("전체 동기화 폴백 수행");
-      return this.postSyncService.syncAll();
+      return { mode: "full", changedFiles: [] };
     }
 
     log.info(
       { changedCount: changedFiles.length },
       `변경 파일 ${changedFiles.length}개에 대해 증분 동기화 수행`,
     );
-    return this.postSyncService.syncChanged(changedFiles);
+    return { mode: "incremental", changedFiles };
+  }
+
+  private syncPosts(plan: SyncPlan): Promise<PostSyncResult> {
+    return plan.mode === "full"
+      ? this.postSyncService.syncAll()
+      : this.postSyncService.syncChanged(plan.changedFiles);
+  }
+
+  private createGlossaryResult(
+    definitions: GlossaryDefinitionSyncResult,
+  ): SyncResult["glossary"] {
+    return {
+      ...definitions,
+      mentions: 0,
+      pagesReindexed: 0,
+    };
   }
 }

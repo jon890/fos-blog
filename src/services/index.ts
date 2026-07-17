@@ -4,9 +4,11 @@ import { PostRepository } from "@/infra/db/repositories/PostRepository";
 import { CategoryRepository } from "@/infra/db/repositories/CategoryRepository";
 import { FolderRepository } from "@/infra/db/repositories/FolderRepository";
 import { SyncLogRepository } from "@/infra/db/repositories/SyncLogRepository";
+import { GlossaryRepository } from "@/infra/db/repositories/GlossaryRepository";
 import { PostSyncService } from "./PostSyncService";
 import { MetadataSyncService } from "./MetadataSyncService";
 import { SyncService } from "./SyncService";
+import { GlossarySyncService } from "./GlossarySyncService";
 
 export function createSyncService(): SyncService {
   const db = getDb();
@@ -14,10 +16,12 @@ export function createSyncService(): SyncService {
   const categoryRepo = new CategoryRepository(db);
   const folderRepo = new FolderRepository(db);
   const syncLogRepo = new SyncLogRepository(db);
+  const glossaryRepo = new GlossaryRepository(db);
 
   return new SyncService(
     new PostSyncService(postRepo, githubApi),
     new MetadataSyncService(categoryRepo, folderRepo, postRepo, githubApi),
+    new GlossarySyncService(glossaryRepo, githubApi),
     syncLogRepo,
     githubApi,
   );
@@ -28,6 +32,18 @@ export type { PostSyncResult, SyncedPageChange } from "./PostSyncService";
 export { MetadataSyncService } from "./MetadataSyncService";
 export type { MetadataSyncResult } from "./MetadataSyncService";
 export { SyncService } from "./SyncService";
+export type { SyncResult } from "./SyncService";
+export { GlossarySyncService } from "./GlossarySyncService";
+export type {
+  GlossaryDefinitionSyncResult,
+  GlossarySyncMode,
+} from "./GlossarySyncService";
+export {
+  glossaryFileSchema,
+  glossaryTermSchema,
+  parseGlossaryFile,
+} from "./glossary-schema";
+export type { GlossaryFile, GlossaryTermInput } from "./glossary-schema";
 export { createStatsService } from "./StatsService";
 export type { SiteStats } from "./StatsService";
 export { createRSSService, createDefaultRSSService } from "./RSSService";

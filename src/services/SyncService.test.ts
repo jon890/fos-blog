@@ -26,22 +26,35 @@ function makeMocks() {
   const metadataSyncService: ConstructorParameters<typeof SyncService>[1] = {
     refresh: vi.fn().mockResolvedValue({ changedReadmes: [] }),
   };
-  const syncLogRepo: ConstructorParameters<typeof SyncService>[2] = {
+  const glossarySyncService: ConstructorParameters<typeof SyncService>[2] = {
+    syncDefinitions: vi.fn().mockResolvedValue({
+      definitionsChanged: false,
+      terms: 2,
+    }),
+  };
+  const syncLogRepo: ConstructorParameters<typeof SyncService>[3] = {
     getLatest: vi.fn(),
     create: vi.fn().mockResolvedValue(undefined),
   };
-  const githubApi: ConstructorParameters<typeof SyncService>[3] = {
+  const githubApi: ConstructorParameters<typeof SyncService>[4] = {
     getCurrentHeadSha: vi.fn(),
     getChangedFilesSince: vi.fn(),
   };
 
-  return { postSyncService, metadataSyncService, syncLogRepo, githubApi };
+  return {
+    postSyncService,
+    metadataSyncService,
+    glossarySyncService,
+    syncLogRepo,
+    githubApi,
+  };
 }
 
 function createService(mocks: ReturnType<typeof makeMocks>): SyncService {
   return new SyncService(
     mocks.postSyncService,
     mocks.metadataSyncService,
+    mocks.glossarySyncService,
     mocks.syncLogRepo,
     mocks.githubApi,
   );
@@ -61,7 +74,20 @@ describe("SyncService.sync", () => {
 
     expect(mocks.postSyncService.syncAll).toHaveBeenCalledOnce();
     expect(mocks.postSyncService.syncChanged).not.toHaveBeenCalled();
-    expect(result).toMatchObject({ added: 1, commitSha: "head-sha" });
+    expect(mocks.glossarySyncService.syncDefinitions).toHaveBeenCalledWith(
+      "full",
+      [],
+    );
+    expect(result).toMatchObject({
+      added: 1,
+      commitSha: "head-sha",
+      glossary: {
+        definitionsChanged: false,
+        terms: 2,
+        mentions: 0,
+        pagesReindexed: 0,
+      },
+    });
   });
 
   it("compare 실패의 null은 full sync로 폴백한다", async () => {
@@ -92,7 +118,16 @@ describe("SyncService.sync", () => {
     await createService(mocks).sync();
 
     expect(mocks.postSyncService.syncChanged).toHaveBeenCalledWith(changedFiles);
+    expect(mocks.glossarySyncService.syncDefinitions).toHaveBeenCalledWith(
+      "incremental",
+      changedFiles,
+    );
     expect(mocks.metadataSyncService.refresh).toHaveBeenCalledOnce();
+    expect(
+      vi.mocked(mocks.glossarySyncService.syncDefinitions).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      vi.mocked(mocks.postSyncService.syncChanged).mock.invocationCallOrder[0],
+    );
   });
 
   it("HEAD가 같아도 metadata를 갱신하고 title 보정을 유지한다", async () => {
@@ -105,6 +140,10 @@ describe("SyncService.sync", () => {
     const result = await createService(mocks).sync();
 
     expect(result.upToDate).toBe(true);
+    expect(mocks.glossarySyncService.syncDefinitions).toHaveBeenCalledWith(
+      "incremental",
+      [],
+    );
     expect(mocks.metadataSyncService.refresh).toHaveBeenCalledOnce();
     expect(mocks.postSyncService.retitleAll).toHaveBeenCalledOnce();
     expect(mocks.syncLogRepo.create).not.toHaveBeenCalled();
