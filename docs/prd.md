@@ -95,4 +95,29 @@
 - [flow.md](./flow.md) — 사용자 흐름 (상세)
 - [data-schema.md](./data-schema.md) — DB 인덱스 추가 마이그레이션
 - [code-architecture.md](./code-architecture.md) — Repository / Service / API / Component 구조
-- [adr/README.md](./adr/README.md) — ADR-001 ~ ADR-005
+- [adr/README.md](./adr/README.md) — 기술 결정 index
+
+---
+
+## 용어집과 본문 설명 툴팁 (plan054)
+
+### 문제
+
+전문 용어가 별도 설명 없이 본문에 등장해, 독자가 문맥을 벗어나 검색해야 한다.
+같은 용어의 설명과 실제 사용 글을 함께 탐색할 경로도 없다.
+
+### MVP 범위
+
+- `fos-study/glossary.json`을 용어 정의의 단일 소스로 사용한다.
+- 글과 카테고리 README에서 개념별 첫 등장에 설명 툴팁을 표시한다.
+- 제목, 링크, 코드, 수식, Mermaid 내부는 자동 감지하지 않는다.
+- `/glossary`에서 용어 검색, 가나다·알파벳 탐색, 상세 설명, 참고 자료를 제공한다.
+- 각 용어가 언급된 글과 카테고리 README를 표시한다.
+- Footer와 본문 툴팁에서 용어집으로 진입하며 Header에는 추가하지 않는다.
+
+### 범위 외
+
+- 별도 용어 상세 라우트
+- 용어집 웹 편집 화면
+- 글 작성자가 매칭 위치를 직접 지정하는 전용 Markdown 문법
+- 런타임 전체 본문 검색

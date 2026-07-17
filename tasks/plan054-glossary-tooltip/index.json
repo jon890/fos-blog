@@ -1,0 +1,62 @@
+{
+  "name": "plan054-glossary-tooltip",
+  "description": "fos-study 용어집을 동기화해 본문 설명 툴팁과 언급 페이지가 있는 공개 용어집을 제공한다.",
+  "status": "pending",
+  "created_at": "2026-07-17",
+  "total_phases": 6,
+  "related_docs": [
+    "docs/prd.md",
+    "docs/flow.md",
+    "docs/pages/glossary.md",
+    "docs/pages/post-detail.md",
+    "docs/pages/category-detail.md",
+    "docs/data-schema.md",
+    "docs/code-architecture.md",
+    "docs/adr/032-glossary-sync-and-mentions.md"
+  ],
+  "depends_on": [],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "sync 책임 분리와 변경 경로 계약",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "title": "용어 정의 schema와 안전한 동기화",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 3,
+      "file": "phase-03.md",
+      "title": "공용 matcher와 언급 페이지 역참조",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 4,
+      "file": "phase-04.md",
+      "title": "Markdown 용어 툴팁 통합",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 5,
+      "file": "phase-05.md",
+      "title": "공개 용어집 페이지와 발견 경로",
+      "model": "sonnet",
+      "status": "pending"
+    },
+    {
+      "number": 6,
+      "file": "phase-06.md",
+      "title": "통합 검증과 완료 상태 반영",
+      "model": "haiku",
+      "status": "pending"
+    }
+  ]
+}

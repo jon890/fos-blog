@@ -6,7 +6,9 @@
 
 ## 전체 스키마
 
-7개 테이블. 스키마 소스: `src/infra/db/schema/*.ts`.
+현재 7개 테이블이다.
+스키마 소스는 `src/infra/db/schema/*.ts`다.
+plan054 구현 후 아래 목표 schema 2개가 추가되어 9개가 된다.
 
 ### `posts`
 
@@ -154,6 +156,62 @@ Notes:
 Notes:
 - 물리적 FK 없음 (논리적 관계만) — sync 로 post 삭제 시 댓글은 보존
 - `content` 는 저장 시 1회 `escapeHtml()` 적용, read 시 unescape 없음 (React JSX 가 자동 escape)
+
+---
+
+### plan054 목표: `glossary_terms` (구현 예정)
+
+스키마 파일: `src/infra/db/schema/glossaryTerms.ts`
+
+용도: `fos-study/glossary.json`에서 동기화한 용어 정의.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| `id` | varchar(128) | PK | 안정적인 URL 앵커와 용어 식별자 |
+| `term` | varchar(255) | NOT NULL, UNIQUE | 대표 용어 |
+| `full_name` | varchar(500) | | 약어의 전체 이름 |
+| `aliases` | json | NOT NULL DEFAULT '[]' | 같은 개념으로 매칭할 별칭 |
+| `summary` | text | NOT NULL | 툴팁용 짧은 설명 |
+| `description` | text | NOT NULL | `/glossary`용 Markdown 설명 |
+| `case_sensitive` | boolean | NOT NULL DEFAULT false | 영문 매칭의 대소문자 구분 여부 |
+| `references` | json | NOT NULL DEFAULT '[]' | 검증된 외부 참고 링크 |
+| `created_at` | timestamp | DEFAULT NOW | |
+| `updated_at` | timestamp | DEFAULT NOW ON UPDATE | |
+
+Notes:
+
+- `id`, 대표 용어, 모든 별칭은 파일 전체에서 중복될 수 없다.
+- 원본 누락이나 검증 실패 시 기존 row를 보존한다.
+- 유효한 `terms: []`만 전체 삭제 의사로 해석한다.
+
+---
+
+### plan054 목표: `glossary_mentions` (구현 예정)
+
+스키마 파일: `src/infra/db/schema/glossaryMentions.ts`
+
+용도: 용어가 등장한 글과 카테고리 README의 역참조.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| `id` | int | PK, autoincrement | |
+| `term_id` | varchar(128) | NOT NULL, FK → `glossary_terms.id` | 용어 식별자 |
+| `page_type` | varchar(32) | NOT NULL | `post` 또는 `category-readme` |
+| `page_path` | varchar(500) | NOT NULL | 글 또는 폴더의 canonical 경로 |
+| `page_title` | varchar(500) | NOT NULL | 목록 표시용 제목 snapshot |
+| `page_updated_at` | timestamp | | 최근 수정 순 정렬 기준 |
+| `created_at` | timestamp | DEFAULT NOW | |
+
+인덱스와 제약:
+
+- UNIQUE `(term_id, page_type, page_path)` — 한 페이지는 용어별 한 번만 저장한다.
+- INDEX `(term_id, page_updated_at)` — 용어별 최근 언급 페이지를 조회한다.
+
+Notes:
+
+- 용어 정의가 변경되면 모든 역참조를 재계산한다.
+- 글이나 README만 변경되면 해당 페이지의 역참조만 교체한다.
+- 페이지 URL은 `page_type`과 `page_path`로 조회 시점에 생성한다.
 
 ---
 

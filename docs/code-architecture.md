@@ -400,3 +400,88 @@ ADR-030의 `posts.categories`는 `AI` 같은 최상위 폴더뿐 아니라 `AI/R
 
 sync 단계는 frontmatter `categories` 값이 전체 key 또는 첫 path segment 어느 쪽으로도 알려진 카테고리로 해석되지 않으면 `warn` 로그를 남긴다.
 이는 `categories: [AI/RAG]` 같은 정상 하위 경로는 허용하면서, 오타로 인한 매칭 누락은 운영 로그에서 드러내기 위한 가드다.
+
+## 용어집 동기화와 본문 툴팁 목표 구조 (plan054, 구현 예정)
+
+이 섹션은 task 실행 후 도달할 구조를 정의한다.
+현재 `src/`에는 glossary 모듈이 없다.
+
+### 동기화 책임
+
+`SyncService`는 GitHub HEAD 비교, 전체·증분 모드 결정, 하위 서비스 호출 순서, 성공·실패 기록, 응답 조립만 담당한다.
+
+호출 순서는 다음과 같다.
+
+1. glossary 정의 검증과 저장
+2. post 저장·삭제
+3. category와 README 갱신
+4. 저장 이후 콘텐츠를 기준으로 glossary mention 갱신
+
+glossary와 콘텐츠가 같은 commit에서 바뀌어도 mention은 마지막 상태만 색인한다.
+
+- `PostSyncService`
+  - 전체 Markdown 탐색
+  - 전체·증분 글 upsert와 삭제
+  - 제목 보정
+  - 변경된 글 경로 반환
+- `MetadataSyncService`
+  - 카테고리 재계산
+  - 폴더 README 동기화
+  - 변경된 README 경로 반환
+- `GlossarySyncService`
+  - `fos-study/glossary.json` 검증과 정의 교체
+  - 글·README 역참조 갱신
+  - 용어집 변경 시 전체 역참조 재계산
+
+범용 sync task registry나 공통 worker abstraction은 도입하지 않는다.
+현재 세 자원의 계약이 달라 명시적 호출 순서가 더 읽기 쉽고 실패 경계도 분명하다.
+
+### `glossary.json` 계약
+
+루트 객체는 `version`과 `terms`를 가진다.
+각 term은 `id`, `term`, `summary`, `description`을 필수로 가지며 `fullName`, `aliases`, `caseSensitive`, `references`는 선택 사항이다.
+
+Zod가 다음 불변식을 검증한다.
+
+- `id`, 대표 용어, 모든 별칭은 파일 전체에서 중복되지 않는다.
+- `id`는 URL anchor로 안전한 kebab-case다.
+- 참고 자료는 `https` URL만 허용한다.
+- 누락이나 검증 실패는 기존 DB를 보존하고 sync를 실패시킨다.
+- 유효한 `terms: []`만 전체 삭제로 해석한다.
+
+### 매칭과 렌더링
+
+`src/lib/glossary-matcher.ts`는 긴 표현 우선, 대소문자 설정, 개념별 첫 등장 규칙을 구현한다.
+대표 용어와 별칭은 같은 `id`로 묶는다.
+
+`MarkdownRenderer`는 sanitize가 끝난 요청별 HAST에 glossary 변환기를 적용한다.
+module-level processor 설정은 변경하지 않아 동시 요청의 용어 목록이 섞이지 않는다.
+변환된 `<abbr>`는 용어 `id`만 보유하고, `createMarkdownComponents`가 검증된 용어 map에서 내용을 찾아 `GlossaryTooltip` client island로 전달한다.
+
+다음 subtree는 자동 감지에서 제외한다.
+
+- `h1`부터 `h6`
+- `a`
+- `code`, `pre`
+- KaTeX
+- Mermaid
+- 이미 변환된 `abbr`
+
+글과 카테고리 README는 glossary를 활성화한다.
+`/glossary`의 Markdown 설명은 자기 참조를 막기 위해 비활성화한다.
+
+### 역참조 갱신
+
+역참조 scanner는 렌더러와 같은 matcher와 제외 정책을 사용한다.
+
+- glossary 변경: 활성 글과 README 전체를 다시 계산한다.
+- 글 또는 README 변경: 해당 페이지의 mention만 교체한다.
+- 페이지 삭제: 해당 `pageType`과 `pagePath` mention을 삭제한다.
+- folder가 활성 post 경로에서 사라짐: 기존 README mention을 삭제한다.
+- 같은 페이지의 반복 출현: term별 한 row만 저장한다.
+
+scanner는 `parseFrontMatter(content).content`를 입력으로 사용한다.
+렌더러가 표시하지 않는 frontmatter의 용어는 mention에 포함하지 않는다.
+
+`/glossary`는 `GlossaryService.getGlossaryPageData()`로 정의와 최근 수정 순 mention을 한 번에 읽는다.
+별도 API Route 없이 서버 렌더링하며 검색과 mention 펼침만 client island가 담당한다.

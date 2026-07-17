@@ -121,6 +121,12 @@
 
 ---
 
+## plan054 목표 상호작용 (구현 예정)
+
+- 제목, 링크, 코드, 수식, Mermaid를 제외한 본문에서 개념별 첫 등장 용어를 `<GlossaryTooltip>`로 표시한다.
+- desktop hover·focus 또는 mobile tap으로 열고 ESC·바깥 클릭·다른 용어 열기로 닫는다.
+- "용어집에서 보기"는 `/glossary#<id>`로 이동한다.
+
 ## Server-side Processing
 
 `lib/markdown.ts` 함수들이 서버에서 실행됨:
