@@ -20,6 +20,7 @@ const SITE_LINKS = [
   { href: "/", label: "Home" },
   { href: "/posts/latest", label: "Posts" },
   { href: "/categories", label: "Categories" },
+  { href: "/glossary", label: "Glossary" },
   { href: "/about", label: "About" },
 ];
 
