@@ -18,6 +18,23 @@ const validGlossary = JSON.stringify({
   ],
 });
 
+const validSlaGlossary = JSON.stringify({
+  version: 1,
+  terms: [
+    {
+      id: "service-level-agreement",
+      term: "SLA",
+      fullName: "Service Level Agreement",
+      aliases: ["서비스 수준 협약"],
+      summary: "서비스 제공 수준을 합의한 계약",
+      description: "가용성, 응답 시간과 같은 서비스 목표를 정의합니다.",
+      references: [
+        { label: "Google SRE", url: "https://sre.google/sre-book/service-level-objectives/" },
+      ],
+    },
+  ],
+});
+
 function makeMocks(content: string | null = validGlossary) {
   const glossaryRepo: ConstructorParameters<typeof GlossarySyncService>[0] = {
     countMentions: vi.fn().mockResolvedValue(0),
@@ -62,6 +79,24 @@ function createService(mocks: ReturnType<typeof makeMocks>) {
 }
 
 describe("GlossarySyncService.syncDefinitions", () => {
+  it("SLA, 별칭과 https reference를 포함한 version 1 fixture를 허용한다", async () => {
+    const mocks = makeMocks(validSlaGlossary);
+
+    await expect(createService(mocks).syncDefinitions("full")).resolves.toEqual({
+      definitionsChanged: true,
+      terms: 1,
+    });
+    expect(mocks.glossaryRepo.replaceTerms).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: "service-level-agreement",
+        aliases: ["서비스 수준 협약"],
+        references: [
+          expect.objectContaining({ url: expect.stringMatching(/^https:/) }),
+        ],
+      }),
+    ]);
+  });
+
   it("full mode는 고정 경로를 검증한 뒤 정의를 교체한다", async () => {
     const mocks = makeMocks();
 
@@ -155,6 +190,55 @@ describe("GlossarySyncService.syncDefinitions", () => {
     ],
   ])("%s 실패는 정의를 교체하지 않는다", async (_case, content) => {
     const mocks = makeMocks(content);
+
+    await expect(createService(mocks).syncDefinitions("full")).rejects.toThrow();
+    expect(mocks.glossaryRepo.replaceTerms).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      "중복 id",
+      {
+        version: 1,
+        terms: [
+          { id: "sla", term: "SLA", summary: "첫 정의", description: "설명" },
+          { id: "sla", term: "SLO", summary: "둘째 정의", description: "설명" },
+        ],
+      },
+    ],
+    [
+      "대표 용어와 별칭 충돌",
+      {
+        version: 1,
+        terms: [
+          { id: "sla", term: "SLA", summary: "첫 정의", description: "설명" },
+          {
+            id: "agreement",
+            term: "Agreement",
+            aliases: ["sla"],
+            summary: "둘째 정의",
+            description: "설명",
+          },
+        ],
+      },
+    ],
+    [
+      "http reference",
+      {
+        version: 1,
+        terms: [
+          {
+            id: "sla",
+            term: "SLA",
+            summary: "정의",
+            description: "설명",
+            references: [{ label: "unsafe", url: "http://example.com" }],
+          },
+        ],
+      },
+    ],
+  ])("%s fixture는 기존 정의를 보존하고 실패한다", async (_case, input) => {
+    const mocks = makeMocks(JSON.stringify(input));
 
     await expect(createService(mocks).syncDefinitions("full")).rejects.toThrow();
     expect(mocks.glossaryRepo.replaceTerms).not.toHaveBeenCalled();
