@@ -16,6 +16,7 @@ import { Metadata } from "next";
 import { env } from "@/env";
 import logger from "@/lib/logger";
 import { parseFrontMatter, stripLeadingH1 } from "@/lib/markdown";
+import { createGlossaryService } from "@/services";
 
 const log = logger.child({ module: "app/category/[...path]" });
 const siteUrl = env.NEXT_PUBLIC_SITE_URL;
@@ -137,6 +138,19 @@ export default async function FolderPage({ params }: FolderPageProps) {
   const { folders, posts, readme } = await getCachedFolderContents(folderPath);
   const crossPosts = await getCachedCrossCategoryPosts(folderPath);
   const mergedPosts = mergePostsByPath(posts, crossPosts);
+  let glossaryTerms: Awaited<
+    ReturnType<ReturnType<typeof createGlossaryService>["getMatchableTerms"]>
+  > = [];
+  if (readme) {
+    try {
+      glossaryTerms = await createGlossaryService().getMatchableTerms();
+    } catch (error) {
+      log.warn(
+        { err: error instanceof Error ? error : new Error(String(error)) },
+        "Glossary 조회 실패 — README를 tooltip 없이 렌더",
+      );
+    }
+  }
 
   if (folders.length === 0 && mergedPosts.length === 0 && !readme) {
     notFound();
@@ -192,6 +206,7 @@ export default async function FolderPage({ params }: FolderPageProps) {
               <MarkdownRenderer
                 content={stripLeadingH1(parseFrontMatter(readme).content)}
                 basePath={`${folderPath}/README`}
+                glossaryTerms={glossaryTerms}
               />
             </ReadmeFrame>
           </CategoriesSection>

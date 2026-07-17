@@ -10,7 +10,7 @@ import { BaseRepository } from "./BaseRepository";
 
 export type MatchableGlossaryTerm = Pick<
   GlossaryTerm,
-  "id" | "term" | "aliases" | "summary" | "caseSensitive"
+  "id" | "term" | "fullName" | "aliases" | "summary" | "caseSensitive"
 >;
 
 export type GlossaryDefinition = Pick<
@@ -148,6 +148,7 @@ export class GlossaryRepository extends BaseRepository {
       .select({
         id: glossaryTerms.id,
         term: glossaryTerms.term,
+        fullName: glossaryTerms.fullName,
         aliases: glossaryTerms.aliases,
         summary: glossaryTerms.summary,
         caseSensitive: glossaryTerms.caseSensitive,

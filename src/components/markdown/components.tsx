@@ -1,5 +1,8 @@
+import "server-only";
+
 import type { Components } from "hast-util-to-jsx-runtime";
 import type { Element as HastElement } from "hast";
+import type { MatchableGlossaryTerm } from "@/infra/db/repositories/GlossaryRepository";
 
 // 시그니처는 baseline 부분형 그대로 유지 (hast ElementContent 강제 시 9개 test fixture 가
 // tagName/children 필수 위반 → strict TS 깨짐)
@@ -14,6 +17,7 @@ type HastChild = {
 import { LightboxImage } from "@/components/lightbox/LightboxImage";
 import { CodeCard } from "../CodeCard";
 import { Mermaid } from "../Mermaid";
+import { GlossaryTooltip } from "../glossary/GlossaryTooltip";
 import { resolveMarkdownLink } from "@/lib/resolve-markdown-link";
 import {
   extractRawText,
@@ -54,7 +58,10 @@ export function isMermaidPreNode(node: {
 // createMarkdownComponents factory
 // ==================================================
 
-export function createMarkdownComponents(basePath: string): Partial<Components> {
+export function createMarkdownComponents(
+  basePath: string,
+  glossaryById: ReadonlyMap<string, MatchableGlossaryTerm> = new Map(),
+): Partial<Components> {
   return {
     // --------------------------------------------------
     // figure — rehype-pretty-code 가 wrap 한 figure 처리
@@ -123,6 +130,25 @@ export function createMarkdownComponents(basePath: string): Partial<Components> 
         <code className={className} {...props}>
           {children}
         </code>
+      );
+    },
+
+    abbr: ({ children, node, ...props }) => {
+      const glossaryId = String(
+        (node as HastElement | undefined)?.properties?.dataGlossaryId ?? "",
+      );
+      const glossary = glossaryById.get(glossaryId);
+
+      if (!glossary) return <abbr {...props}>{children}</abbr>;
+      return (
+        <GlossaryTooltip
+          id={glossary.id}
+          term={glossary.term}
+          fullName={glossary.fullName}
+          summary={glossary.summary}
+        >
+          {children}
+        </GlossaryTooltip>
       );
     },
 

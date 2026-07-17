@@ -65,6 +65,28 @@ describe("GlossaryRepository.replaceTerms", () => {
   });
 });
 
+describe("GlossaryRepository.getMatchableTerms", () => {
+  it("tooltip 표시에 필요한 fullName을 projection에 포함한다", async () => {
+    const rows = [
+      {
+        id: "llm",
+        term: "LLM",
+        fullName: "Large Language Model",
+        aliases: [],
+        summary: "대규모 언어 모델",
+        caseSensitive: false,
+      },
+    ];
+    const from = vi.fn().mockResolvedValue(rows);
+    const select = vi.fn((_projection: Record<string, unknown>) => ({ from }));
+    const repo = new GlossaryRepository({ select } as unknown as DbInstance);
+
+    await expect(repo.getMatchableTerms()).resolves.toEqual(rows);
+    expect(select).toHaveBeenCalledOnce();
+    expect(Object.keys(select.mock.calls[0][0])).toContain("fullName");
+  });
+});
+
 describe("GlossaryRepository mention writes", () => {
   const mention = {
     termId: "dependency-injection",
