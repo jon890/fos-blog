@@ -103,4 +103,11 @@ export class FolderRepository extends BaseRepository {
     }
   }
 
+  async clearReadme(folderPath: string): Promise<void> {
+    await this.db
+      .update(folders)
+      .set({ readme: null, sha: null, updatedAt: new Date() })
+      .where(eq(folders.path, folderPath));
+  }
+
 }

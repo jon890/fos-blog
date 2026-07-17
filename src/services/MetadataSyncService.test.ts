@@ -1,79 +1,124 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MetadataSyncService } from "./MetadataSyncService";
-import type { CategoryRepository } from "@/infra/db/repositories/CategoryRepository";
-import type { FolderRepository } from "@/infra/db/repositories/FolderRepository";
-import type { PostRepository } from "@/infra/db/repositories/PostRepository";
-import type { getFileContent } from "@/infra/github/api";
 
 function makeMocks() {
-  const postRepo = {
-    getCategoryStats: vi.fn(),
-    getAllPostPaths: vi.fn(),
-  } as unknown as PostRepository;
-
-  const categoryRepo = {
+  const categoryRepo: ConstructorParameters<typeof MetadataSyncService>[0] = {
     syncAll: vi.fn().mockResolvedValue(undefined),
-  } as unknown as CategoryRepository;
-
-  const folderRepo = {
+  };
+  const folderRepo: ConstructorParameters<typeof MetadataSyncService>[1] = {
+    clearReadme: vi.fn().mockResolvedValue(undefined),
+    ensureFolder: vi.fn().mockResolvedValue(undefined),
     getAll: vi.fn().mockResolvedValue(new Map()),
     upsert: vi.fn().mockResolvedValue(undefined),
-    ensureFolder: vi.fn().mockResolvedValue(undefined),
-  } as unknown as FolderRepository;
-
-  const githubApi = {
-    getFileContent: vi.fn(),
-  } as unknown as { getFileContent: typeof getFileContent };
-
-  return { postRepo, categoryRepo, folderRepo, githubApi };
+  };
+  const postRepo: ConstructorParameters<typeof MetadataSyncService>[2] = {
+    getAllPostPaths: vi.fn().mockResolvedValue([]),
+    getCategoryStats: vi.fn().mockResolvedValue([]),
+  };
+  const githubApi: ConstructorParameters<typeof MetadataSyncService>[3] = {
+    getFileContent: vi.fn().mockResolvedValue(null),
+  };
+  return { categoryRepo, folderRepo, postRepo, githubApi };
 }
 
-describe("MetadataSyncService.updateCategories", () => {
+function createService(mocks: ReturnType<typeof makeMocks>): MetadataSyncService {
+  return new MetadataSyncService(
+    mocks.categoryRepo,
+    mocks.folderRepo,
+    mocks.postRepo,
+    mocks.githubApi,
+  );
+}
+
+describe("MetadataSyncService.refresh", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("getCategoryStats 결과를 syncAll에 올바르게 매핑한다", async () => {
-    const { postRepo, categoryRepo, folderRepo, githubApi } = makeMocks();
-
-    vi.mocked(postRepo.getCategoryStats).mockResolvedValue([
-      { category: "AI", count: 5 },
-      { category: "database", count: 3 },
+  it("category 재계산과 새 README upsert를 한 번에 수행한다", async () => {
+    const mocks = makeMocks();
+    vi.mocked(mocks.postRepo.getCategoryStats).mockResolvedValue([
+      { category: "AI", count: 2 },
     ]);
-
-    const service = new MetadataSyncService(categoryRepo, folderRepo, postRepo, githubApi);
-    await service.updateCategories();
-
-    expect(postRepo.getCategoryStats).toHaveBeenCalledOnce();
-    expect(categoryRepo.syncAll).toHaveBeenCalledWith([
-      { name: "AI", slug: "AI", icon: "🤖", postCount: 5 },
-      { name: "database", slug: "database", icon: "🗄️", postCount: 3 },
+    vi.mocked(mocks.postRepo.getAllPostPaths).mockResolvedValue([
+      "AI/RAG/intro.md",
     ]);
-  });
+    vi.mocked(mocks.githubApi.getFileContent).mockImplementation(async (path) =>
+      path === "AI/RAG/README.md"
+        ? { content: "# RAG", sha: "new-sha" }
+        : null,
+    );
 
-  it("categoryIcons에 없는 카테고리는 기본 아이콘(📁)을 사용한다", async () => {
-    const { postRepo, categoryRepo, folderRepo, githubApi } = makeMocks();
+    const result = await createService(mocks).refresh();
 
-    vi.mocked(postRepo.getCategoryStats).mockResolvedValue([
-      { category: "unknown-topic", count: 2 },
+    expect(mocks.categoryRepo.syncAll).toHaveBeenCalledWith([
+      { name: "AI", slug: "AI", icon: "🤖", postCount: 2 },
     ]);
-
-    const service = new MetadataSyncService(categoryRepo, folderRepo, postRepo, githubApi);
-    await service.updateCategories();
-
-    expect(categoryRepo.syncAll).toHaveBeenCalledWith([
-      { name: "unknown-topic", slug: "unknown-topic", icon: "📁", postCount: 2 },
+    expect(mocks.folderRepo.upsert).toHaveBeenCalledWith(
+      "AI/RAG",
+      "# RAG",
+      "new-sha",
+    );
+    expect(result.changedReadmes).toEqual([
+      { path: "AI/RAG/README.md", operation: "upsert" },
     ]);
   });
 
-  it("post 가 0 건이면 syncAll([]) 호출되어 모든 카테고리 row 삭제", async () => {
-    const { postRepo, categoryRepo, folderRepo, githubApi } = makeMocks();
+  it("원본 README가 사라지면 DB readme를 지우고 delete change를 반환한다", async () => {
+    const mocks = makeMocks();
+    vi.mocked(mocks.postRepo.getAllPostPaths).mockResolvedValue([
+      "AI/RAG/intro.md",
+    ]);
+    vi.mocked(mocks.folderRepo.getAll).mockResolvedValue(
+      new Map([
+        ["AI", { id: 1, sha: null }],
+        ["AI/RAG", { id: 2, sha: "old-sha" }],
+      ]),
+    );
 
-    vi.mocked(postRepo.getCategoryStats).mockResolvedValue([]);
+    const result = await createService(mocks).refresh();
 
-    const service = new MetadataSyncService(categoryRepo, folderRepo, postRepo, githubApi);
-    await service.updateCategories();
+    expect(mocks.folderRepo.clearReadme).toHaveBeenCalledWith("AI/RAG");
+    expect(result.changedReadmes).toEqual([
+      { path: "AI/RAG/README.md", operation: "delete" },
+    ]);
+  });
 
-    expect(categoryRepo.syncAll).toHaveBeenCalledWith([]);
+  it("활성 post가 사라져 folder가 소멸해도 README delete change를 반환한다", async () => {
+    const mocks = makeMocks();
+    vi.mocked(mocks.folderRepo.getAll).mockResolvedValue(
+      new Map([["AI/RAG", { id: 2, sha: "old-sha" }]]),
+    );
+
+    const result = await createService(mocks).refresh();
+
+    expect(mocks.folderRepo.clearReadme).toHaveBeenCalledWith("AI/RAG");
+    expect(result.changedReadmes).toEqual([
+      { path: "AI/RAG/README.md", operation: "delete" },
+    ]);
+  });
+
+  it("README SHA가 같으면 DB와 변경 목록을 갱신하지 않는다", async () => {
+    const mocks = makeMocks();
+    vi.mocked(mocks.postRepo.getAllPostPaths).mockResolvedValue([
+      "AI/RAG/intro.md",
+    ]);
+    vi.mocked(mocks.folderRepo.getAll).mockResolvedValue(
+      new Map([
+        ["AI", { id: 1, sha: null }],
+        ["AI/RAG", { id: 2, sha: "same-sha" }],
+      ]),
+    );
+    vi.mocked(mocks.githubApi.getFileContent).mockImplementation(async (path) =>
+      path === "AI/RAG/README.md"
+        ? { content: "# RAG", sha: "same-sha" }
+        : null,
+    );
+
+    const result = await createService(mocks).refresh();
+
+    expect(mocks.folderRepo.upsert).not.toHaveBeenCalled();
+    expect(mocks.folderRepo.clearReadme).not.toHaveBeenCalled();
+    expect(result.changedReadmes).toEqual([]);
   });
 });
