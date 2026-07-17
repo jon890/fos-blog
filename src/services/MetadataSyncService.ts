@@ -70,13 +70,12 @@ export class MetadataSyncService {
 
     for (const folderPath of folderPaths) {
       let readmeContent: { content: string; sha: string } | null = null;
-      let readmePath = `${folderPath}/README.md`;
+      const canonicalReadmePath = `${folderPath}/README.md`;
       for (const readmeName of readmeNames) {
         const candidatePath = `${folderPath}/${readmeName}`;
         const result = await this.githubApi.getFileContent(candidatePath);
         if (result) {
           readmeContent = result;
-          readmePath = candidatePath;
           break;
         }
       }
@@ -90,12 +89,18 @@ export class MetadataSyncService {
           readmeContent.content,
           readmeContent.sha,
         );
-        changedReadmes.push({ path: readmePath, operation: "upsert" });
+        changedReadmes.push({
+          path: canonicalReadmePath,
+          operation: "upsert",
+        });
         synced++;
         log.info({ folderPath }, `README 동기화: ${folderPath}`);
       } else if (existing?.sha) {
         await this.folderRepo.clearReadme(folderPath);
-        changedReadmes.push({ path: readmePath, operation: "delete" });
+        changedReadmes.push({
+          path: canonicalReadmePath,
+          operation: "delete",
+        });
         log.info({ folderPath }, `README 삭제 반영: ${folderPath}`);
       } else {
         await this.folderRepo.ensureFolder(folderPath);

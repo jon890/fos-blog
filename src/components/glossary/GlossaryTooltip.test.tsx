@@ -30,7 +30,7 @@ describe("GlossaryTooltip", () => {
     const tooltip = screen.getByRole("tooltip");
     expect(trigger.getAttribute("aria-describedby")).toBe(tooltip.id);
     expect(screen.getByText("(Large Language Model)")).toBeTruthy();
-    expect(screen.getByRole("link")).toHaveProperty(
+    expect(screen.getByRole("link", { name: "용어집에서 보기" })).toHaveProperty(
       "href",
       "http://localhost:3000/glossary#llm",
     );

@@ -44,6 +44,13 @@ export default async function GlossaryPage() {
   }
 
   const items = await Promise.all(terms.map(renderGlossaryItem));
+  const mentionedPageCount = new Set(
+    terms.flatMap((term) =>
+      term.mentions.map(
+        (mention) => `${mention.pageType}:${mention.pagePath}`,
+      ),
+    ),
+  ).size;
 
   return (
     <main className="mx-auto w-full max-w-[980px] px-5 pb-24 pt-14 sm:px-8 sm:pt-20">
@@ -61,7 +68,7 @@ export default async function GlossaryPage() {
             </p>
           </div>
           <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.06em] text-[var(--color-fg-muted)]">
-            {items.length} terms
+            {items.length} terms · {mentionedPageCount} pages
           </span>
         </div>
       </header>

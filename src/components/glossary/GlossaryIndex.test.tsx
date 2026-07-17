@@ -36,6 +36,23 @@ const baseItems: GlossaryIndexItem[] = [
 ];
 
 describe("GlossaryIndex", () => {
+  it("외부 참고 링크가 새 창 열림을 보조기술에 알린다", () => {
+    render(
+      <GlossaryIndex
+        items={[
+          {
+            ...baseItems[0],
+            references: [{ label: "SRE 참고", url: "https://example.com" }],
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByRole("link", { name: /SRE 참고.*새 창에서 열림/ }),
+    ).toHaveProperty("target", "_blank");
+  });
+
   it("term, fullName, aliases, summary를 대소문자 구분 없이 검색하고 결과 색인을 갱신한다", async () => {
     const user = userEvent.setup();
     render(<GlossaryIndex items={baseItems} />);
@@ -117,6 +134,7 @@ describe("GlossaryPage source contracts", () => {
     expect(pageSource).toContain('let terms: GlossaryPageTerm[] = []');
     expect(pageSource).toContain('operation: "get-glossary-page-data"');
     expect(pageSource).toContain("log.warn(");
+    expect(pageSource).toContain("mentionedPageCount");
   });
 });
 

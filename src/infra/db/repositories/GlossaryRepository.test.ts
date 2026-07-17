@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import type { DbInstance } from "./BaseRepository";
-import { GlossaryRepository } from "./GlossaryRepository";
+import {
+  GlossaryRepository,
+  type GlossaryRepositoryDb,
+} from "./GlossaryRepository";
 
 function makeRepository() {
   const where = vi.fn().mockResolvedValue(undefined);
@@ -8,15 +10,35 @@ function makeRepository() {
   const onDuplicateKeyUpdate = vi.fn().mockResolvedValue(undefined);
   const values = vi.fn(() => ({ onDuplicateKeyUpdate }));
   const insert = vi.fn(() => ({ values }));
-  const tx = { delete: deleteFrom, insert };
-  const transaction = vi.fn(async (callback: (transaction: typeof tx) => Promise<void>) => {
-    await callback(tx);
+  type Transaction = Parameters<
+    Parameters<GlossaryRepositoryDb["transaction"]>[0]
+  >[0];
+  const tx: Transaction = Object.assign(Object.create(null), {
+    delete: deleteFrom,
+    insert,
   });
-  const db = { transaction } as unknown as DbInstance;
+  const transactionSpy = vi.fn();
+  const transaction: GlossaryRepositoryDb["transaction"] = async <T>(
+    callback: (transaction: Transaction) => Promise<T>,
+  ): Promise<T> => {
+    transactionSpy();
+    return callback(tx);
+  };
+  const unsupportedDelete: GlossaryRepositoryDb["delete"] = () => {
+    throw new Error("이 테스트에서는 direct delete를 사용하지 않습니다.");
+  };
+  const unsupportedSelect: GlossaryRepositoryDb["select"] = () => {
+    throw new Error("이 테스트에서는 select를 사용하지 않습니다.");
+  };
+  const db: GlossaryRepositoryDb = {
+    delete: unsupportedDelete,
+    select: unsupportedSelect,
+    transaction,
+  };
 
   return {
     repo: new GlossaryRepository(db),
-    transaction,
+    transaction: transactionSpy,
     deleteFrom,
     where,
     insert,
@@ -44,8 +66,19 @@ describe("GlossaryRepository.replaceTerms", () => {
 
     expect(mocks.transaction).toHaveBeenCalledOnce();
     expect(mocks.insert).toHaveBeenCalledOnce();
-    expect(mocks.values).toHaveBeenCalledWith([term]);
+    expect(mocks.values).toHaveBeenCalledWith(term);
     expect(mocks.onDuplicateKeyUpdate).toHaveBeenCalledOnce();
+    expect(mocks.onDuplicateKeyUpdate).toHaveBeenCalledWith({
+      set: {
+        term: term.term,
+        fullName: term.fullName,
+        aliases: term.aliases,
+        summary: term.summary,
+        description: term.description,
+        caseSensitive: term.caseSensitive,
+        references: term.references,
+      },
+    });
     expect(mocks.deleteFrom).toHaveBeenCalledOnce();
     expect(mocks.where).toHaveBeenCalledOnce();
     expect(mocks.deleteFrom.mock.invocationCallOrder[0]).toBeLessThan(
@@ -78,12 +111,31 @@ describe("GlossaryRepository.getMatchableTerms", () => {
       },
     ];
     const from = vi.fn().mockResolvedValue(rows);
-    const select = vi.fn((_projection: Record<string, unknown>) => ({ from }));
-    const repo = new GlossaryRepository({ select } as unknown as DbInstance);
+    const selectBuilder = Object.assign(Object.create(null), { from });
+    const selectSpy = vi.fn();
+    const select: GlossaryRepositoryDb["select"] = (
+      projection?: Record<string, unknown>,
+    ) => {
+      selectSpy(projection);
+      return selectBuilder;
+    };
+    const unsupportedDelete: GlossaryRepositoryDb["delete"] = () => {
+      throw new Error("이 테스트에서는 delete를 사용하지 않습니다.");
+    };
+    const unsupportedTransaction: GlossaryRepositoryDb["transaction"] =
+      async () => {
+        throw new Error("이 테스트에서는 transaction을 사용하지 않습니다.");
+      };
+    const db: GlossaryRepositoryDb = {
+      delete: unsupportedDelete,
+      select,
+      transaction: unsupportedTransaction,
+    };
+    const repo = new GlossaryRepository(db);
 
     await expect(repo.getMatchableTerms()).resolves.toEqual(rows);
-    expect(select).toHaveBeenCalledOnce();
-    expect(Object.keys(select.mock.calls[0][0])).toContain("fullName");
+    expect(selectSpy).toHaveBeenCalledOnce();
+    expect(Object.keys(selectSpy.mock.calls[0][0])).toContain("fullName");
   });
 });
 

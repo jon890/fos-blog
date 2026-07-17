@@ -96,7 +96,7 @@ export function GlossaryTooltip({
             className="mt-2 inline-block text-blue-600 hover:underline dark:text-blue-400"
             href={`/glossary#${encodeURIComponent(id)}`}
           >
-            자세히 보기
+            용어집에서 보기
           </a>
         </span>
       )}

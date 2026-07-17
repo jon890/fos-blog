@@ -84,6 +84,48 @@ describe("MetadataSyncService.refresh", () => {
     ]);
   });
 
+  it.each(["readme.md", "Readme.md"])(
+    "%s upsert와 후속 delete에 같은 canonical path를 반환한다",
+    async (readmeName) => {
+      const mocks = makeMocks();
+      let readmeExists = true;
+      let storedSha: string | null = null;
+      vi.mocked(mocks.postRepo.getAllPostPaths).mockResolvedValue([
+        "AI/RAG/intro.md",
+      ]);
+      vi.mocked(mocks.folderRepo.getAll).mockImplementation(async () =>
+        new Map([
+          ["AI", { id: 1, sha: null }],
+          ["AI/RAG", { id: 2, sha: storedSha }],
+        ]),
+      );
+      vi.mocked(mocks.folderRepo.upsert).mockImplementation(
+        async (_path, _content, sha) => {
+          storedSha = sha;
+        },
+      );
+      vi.mocked(mocks.githubApi.getFileContent).mockImplementation(
+        async (path) =>
+          readmeExists && path === `AI/RAG/${readmeName}`
+            ? { content: "# RAG", sha: "readme-sha" }
+            : null,
+      );
+
+      const service = createService(mocks);
+      const upsertResult = await service.refresh();
+      readmeExists = false;
+      const deleteResult = await service.refresh();
+
+      expect(upsertResult.changedReadmes).toEqual([
+        { path: "AI/RAG/README.md", operation: "upsert" },
+      ]);
+      expect(deleteResult.changedReadmes).toEqual([
+        { path: "AI/RAG/README.md", operation: "delete" },
+      ]);
+      expect(mocks.folderRepo.clearReadme).toHaveBeenCalledWith("AI/RAG");
+    },
+  );
+
   it("활성 post가 사라져 folder가 소멸해도 README delete change를 반환한다", async () => {
     const mocks = makeMocks();
     vi.mocked(mocks.folderRepo.getAll).mockResolvedValue(

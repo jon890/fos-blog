@@ -1,4 +1,4 @@
-import { and, count, desc, eq, notInArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, notInArray } from "drizzle-orm";
 import {
   glossaryMentions,
   glossaryTerms,
@@ -6,7 +6,12 @@ import {
   type NewGlossaryMention,
   type NewGlossaryTerm,
 } from "../schema";
-import { BaseRepository } from "./BaseRepository";
+import type { DbInstance } from "./BaseRepository";
+
+export type GlossaryRepositoryDb = Pick<
+  DbInstance,
+  "delete" | "select" | "transaction"
+>;
 
 export type MatchableGlossaryTerm = Pick<
   GlossaryTerm,
@@ -40,7 +45,9 @@ export type GlossaryMentionProjection = {
   pageUpdatedAt: Date | null;
 };
 
-export class GlossaryRepository extends BaseRepository {
+export class GlossaryRepository {
+  constructor(private db: GlossaryRepositoryDb) {}
+
   async replaceTerms(terms: NewGlossaryTerm[]): Promise<void> {
     await this.db.transaction(async (tx) => {
       if (terms.length === 0) {
@@ -52,20 +59,22 @@ export class GlossaryRepository extends BaseRepository {
         .delete(glossaryTerms)
         .where(notInArray(glossaryTerms.id, terms.map((term) => term.id)));
 
-      await tx
-        .insert(glossaryTerms)
-        .values(terms)
-        .onDuplicateKeyUpdate({
-          set: {
-            term: sql`VALUES(${glossaryTerms.term})`,
-            fullName: sql`VALUES(${glossaryTerms.fullName})`,
-            aliases: sql`VALUES(${glossaryTerms.aliases})`,
-            summary: sql`VALUES(${glossaryTerms.summary})`,
-            description: sql`VALUES(${glossaryTerms.description})`,
-            caseSensitive: sql`VALUES(${glossaryTerms.caseSensitive})`,
-            references: sql`VALUES(${glossaryTerms.references})`,
-          },
-        });
+      for (const term of terms) {
+        await tx
+          .insert(glossaryTerms)
+          .values(term)
+          .onDuplicateKeyUpdate({
+            set: {
+              term: term.term,
+              fullName: term.fullName,
+              aliases: term.aliases,
+              summary: term.summary,
+              description: term.description,
+              caseSensitive: term.caseSensitive,
+              references: term.references,
+            },
+          });
+      }
     });
   }
 

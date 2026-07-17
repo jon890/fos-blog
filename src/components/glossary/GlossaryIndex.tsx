@@ -68,17 +68,23 @@ export function GlossaryIndex({ items }: GlossaryIndexProps) {
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLocaleLowerCase("ko-KR");
   const visibleItems = useMemo(() => {
-    if (!normalizedQuery) return items;
+    const filteredItems = normalizedQuery
+      ? items.filter(({ metadata }) =>
+          [
+            metadata.term,
+            metadata.fullName ?? "",
+            ...metadata.aliases,
+            metadata.summary,
+          ].some((value) =>
+            value.toLocaleLowerCase("ko-KR").includes(normalizedQuery),
+          ),
+        )
+      : items;
 
-    return items.filter(({ metadata }) =>
-      [
-        metadata.term,
-        metadata.fullName ?? "",
-        ...metadata.aliases,
-        metadata.summary,
-      ].some((value) =>
-        value.toLocaleLowerCase("ko-KR").includes(normalizedQuery),
-      ),
+    return [...filteredItems].sort((left, right) =>
+      left.metadata.term.localeCompare(right.metadata.term, "ko-KR", {
+        sensitivity: "base",
+      }),
     );
   }, [items, normalizedQuery]);
 
@@ -267,6 +273,7 @@ function GlossaryEntry({ item }: { item: GlossaryIndexItem }) {
                     className="text-sm text-[var(--color-brand-text)] underline decoration-[var(--color-border-strong)] underline-offset-4 transition-colors hover:decoration-current focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-400)] motion-reduce:transition-none"
                   >
                     {reference.label}
+                    <span className="sr-only"> (새 창에서 열림)</span>
                     <span aria-hidden="true"> ↗</span>
                   </a>
                 </li>
