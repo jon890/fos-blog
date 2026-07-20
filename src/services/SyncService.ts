@@ -102,7 +102,7 @@ export class SyncService {
           syncPlan.mode,
           syncPlan.changedFiles,
         );
-      const postResult = await this.syncPosts(syncPlan);
+      const postResult = await this.syncPosts(syncPlan, headSha);
       const metadataResult = await this.metadataSyncService.refresh();
       const glossaryMentions = await this.glossarySyncService.syncMentions({
         definitionsChanged: glossaryDefinitions.definitionsChanged,
@@ -188,10 +188,10 @@ export class SyncService {
     return { mode: "incremental", changedFiles };
   }
 
-  private syncPosts(plan: SyncPlan): Promise<PostSyncResult> {
+  private syncPosts(plan: SyncPlan, headSha: string): Promise<PostSyncResult> {
     return plan.mode === "full"
-      ? this.postSyncService.syncAll()
-      : this.postSyncService.syncChanged(plan.changedFiles);
+      ? this.postSyncService.syncAll(headSha)
+      : this.postSyncService.syncChanged(plan.changedFiles, headSha);
   }
 
 }

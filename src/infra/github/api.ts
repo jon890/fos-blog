@@ -55,6 +55,86 @@ export async function getCurrentHeadSha(): Promise<string> {
   return response.data.commit.sha;
 }
 
+export async function getRepositoryFolderPaths(
+  commitSha: string,
+): Promise<ReadonlySet<string> | null> {
+  try {
+    const commit = await withRetry(() =>
+      octokit.git.getCommit({ owner: OWNER, repo: REPO, commit_sha: commitSha }),
+    );
+    const rootTreeSha = commit.data.tree.sha;
+    if (!rootTreeSha) {
+      log.warn({ commitSha }, "GitHub tree SHA 누락 -> category 검증 생략");
+      return null;
+    }
+
+    const recursiveTree = await withRetry(() =>
+      octokit.git.getTree({
+        owner: OWNER,
+        repo: REPO,
+        tree_sha: rootTreeSha,
+        recursive: "1",
+      }),
+    );
+
+    if (!recursiveTree.data.truncated) {
+      const folderPaths = new Set<string>();
+      for (const item of recursiveTree.data.tree) {
+        if (item.type !== "tree") continue;
+        if (!item.path) {
+          log.warn({ commitSha }, "GitHub tree 경로 누락 -> category 검증 생략");
+          return null;
+        }
+        folderPaths.add(item.path);
+      }
+      return folderPaths;
+    }
+
+    const folderPaths = new Set<string>();
+    const pendingTrees = [{ sha: rootTreeSha, path: "" }];
+
+    while (pendingTrees.length > 0) {
+      const current = pendingTrees.pop();
+      if (!current) break;
+
+      const tree = await withRetry(() =>
+        octokit.git.getTree({
+          owner: OWNER,
+          repo: REPO,
+          tree_sha: current.sha,
+        }),
+      );
+      if (tree.data.truncated) {
+        log.warn({ commitSha }, "GitHub tree 응답 잘림 -> category 검증 생략");
+        return null;
+      }
+
+      for (const item of tree.data.tree) {
+        if (item.type !== "tree") continue;
+        if (!item.path || !item.sha) {
+          log.warn({ commitSha }, "GitHub tree 정보 누락 -> category 검증 생략");
+          return null;
+        }
+
+        const path = current.path ? `${current.path}/${item.path}` : item.path;
+        folderPaths.add(path);
+        pendingTrees.push({ sha: item.sha, path });
+      }
+    }
+
+    return folderPaths;
+  } catch (error) {
+    log.warn(
+      {
+        err: error instanceof Error ? error : new Error(String(error)),
+        commitSha,
+      },
+      "GitHub repository 폴더 조회 실패 -> category 검증 생략",
+    );
+    return null;
+  }
+}
+
 /**
  * baseSha..headSha 사이의 변경 파일 목록 반환.
  * 변경 파일이 300개 이상이면 null을 반환 → full sync 폴백.
