@@ -217,8 +217,12 @@ export class PostSyncService {
     let updated = 0;
     let deleted = 0;
     const changedPosts: SyncedPageChange[] = [];
-    const repositoryFolderPaths =
-      await this.githubApi.getRepositoryFolderPaths(headSha);
+    const needsFolderPaths = changedFiles.some(
+      (file) => file.status !== "removed",
+    );
+    const repositoryFolderPaths = needsFolderPaths
+      ? await this.githubApi.getRepositoryFolderPaths(headSha)
+      : null;
 
     for (const file of changedFiles) {
       if (file.status === "removed") {
