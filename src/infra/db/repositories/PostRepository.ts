@@ -426,7 +426,7 @@ export class PostRepository extends BaseRepository {
         and(
           eq(posts.isActive, true),
           sql`JSON_CONTAINS(${posts.categories}, JSON_QUOTE(${folderPath}))`,
-          sql`${posts.path} NOT LIKE ${escapedFolderPrefix} ESCAPE '\\'`,
+          sql`${posts.path} NOT LIKE ${escapedFolderPrefix} ESCAPE '\\\\'`,
         ),
       )
       .orderBy(asc(posts.title));
