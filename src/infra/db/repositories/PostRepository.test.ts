@@ -137,7 +137,7 @@ describe("PostRepository.getCrossCategoryPosts", () => {
     expect(sqlCondition).toContain("path");
     expect(sqlCondition).toContain("NOT LIKE");
     expect(sqlCondition).toContain("AI/RAG/%");
-    expect(sqlCondition).toContain("ESCAPE");
+    expect(sqlCondition).toContain("ESCAPE '\\\\'");
     expect(result).toEqual([{ ...rows[0], folders: ["opensearch"] }]);
   });
 
@@ -155,7 +155,7 @@ describe("PostRepository.getCrossCategoryPosts", () => {
     const whereCondition = db.where.mock.calls[0]?.[0];
     const sqlCondition = flattenSqlTokens(whereCondition).join(" ");
     expect(sqlCondition).toContain("AI/R\\%\\_\\\\/%");
-    expect(sqlCondition).toContain("ESCAPE");
+    expect(sqlCondition).toContain("ESCAPE '\\\\'");
   });
 });
 
