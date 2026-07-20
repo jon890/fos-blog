@@ -32,13 +32,17 @@ const fallbackProfile: ProfileData = {
   followers: 0,
 };
 
-function requestProfile(fetcher: typeof fetch, token?: string) {
+function requestProfile(
+  fetcher: typeof fetch,
+  token?: string,
+  revalidate = 3600,
+) {
   return fetcher(profileUrl, {
     headers: {
       Accept: "application/vnd.github+json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    next: { revalidate: 3600 },
+    next: { revalidate },
   });
 }
 
@@ -46,17 +50,17 @@ export async function fetchGitHubProfile(token: string, fetcher: typeof fetch = 
   try {
     let response = await requestProfile(fetcher, token);
 
-    if (response.status === 401) {
+    if (response.status === 401 || response.status === 403) {
       log.warn(
-        { component: "about", operation: "github-profile", status: response.status },
+        { operation: "github-profile", status: response.status },
         "github token rejected, retrying public profile without authentication",
       );
-      response = await requestProfile(fetcher);
+      response = await requestProfile(fetcher, undefined, 60);
     }
 
     if (!response.ok) {
       const err = new Error(`GitHub API responded with status ${response.status}`);
-      log.warn({ component: "about", operation: "github-profile", err, status: response.status }, "github profile fetch failed");
+      log.warn({ operation: "github-profile", err, status: response.status }, "github profile fetch failed");
       return fallbackProfile;
     }
 
@@ -72,7 +76,7 @@ export async function fetchGitHubProfile(token: string, fetcher: typeof fetch = 
     };
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
-    log.warn({ component: "about", operation: "github-profile", err, status: 0 }, "github profile fetch failed");
+    log.warn({ operation: "github-profile", err, status: 0 }, "github profile fetch failed");
     return fallbackProfile;
   }
 }

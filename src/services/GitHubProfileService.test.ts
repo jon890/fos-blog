@@ -43,6 +43,20 @@ describe("fetchGitHubProfile", () => {
     expect(result.name).toBe("FOS");
   });
 
+  it("토큰이 403으로 거부되면 인증 없이 공개 프로필을 짧은 캐시로 재요청한다", async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(null, { status: 403 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(profile), { status: 200 }));
+
+    const result = await fetchGitHubProfile("expired-token", fetcher);
+
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher.mock.calls[1]?.[1]?.headers).not.toHaveProperty("Authorization");
+    expect(fetcher.mock.calls[1]?.[1]?.next).toMatchObject({ revalidate: 60 });
+    expect(result.name).toBe("FOS");
+  });
+
   it("재요청도 실패하면 기본 프로필을 반환한다", async () => {
     const fetcher = vi
       .fn<typeof fetch>()
