@@ -51,6 +51,7 @@ describe("fetchGitHubProfile", () => {
 
     const result = await fetchGitHubProfile("expired-token", fetcher);
 
+    expect(fetcher).toHaveBeenCalledTimes(2);
     expect(result).toEqual({
       name: "jon890",
       handle: "@jon890",
