@@ -5,7 +5,15 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { GlossaryTooltip } from "./GlossaryTooltip";
 
-afterEach(cleanup);
+const DEFAULT_INNER_WIDTH = window.innerWidth;
+
+afterEach(() => {
+  cleanup();
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    value: DEFAULT_INNER_WIDTH,
+  });
+});
 
 function renderTooltip(id = "llm", term = "LLM") {
   return render(
@@ -49,6 +57,24 @@ describe("GlossaryTooltip", () => {
 
     fireEvent.pointerDown(document.body);
     expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
+  it("좁은 화면에서는 tooltip 좌표를 viewport 여백 안으로 제한한다", async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 320,
+    });
+    renderTooltip();
+    const trigger = screen.getByTitle(/Large Language Model/);
+    trigger.getBoundingClientRect = () =>
+      ({ left: 100, right: 130, width: 30 } as DOMRect);
+
+    await user.click(trigger);
+
+    const tooltip = screen.getByRole("tooltip");
+    expect(100 + Number.parseFloat(tooltip.style.left)).toBe(16);
+    expect(tooltip.className).toContain("max-w-[calc(100vw-2rem)]");
   });
 
   it("ESC로 닫고 trigger에 focus를 유지한다", async () => {

@@ -12,6 +12,9 @@ type GlossaryTooltipProps = {
   children: React.ReactNode;
 };
 
+const TOOLTIP_WIDTH = 288;
+const VIEWPORT_MARGIN = 16;
+
 export function GlossaryTooltip({
   id,
   term,
@@ -25,8 +28,23 @@ export function GlossaryTooltip({
   const rootRef = useRef<HTMLSpanElement>(null);
   const triggerRef = useRef<HTMLElement>(null);
   const [open, setOpen] = useState(false);
+  const [tooltipLeft, setTooltipLeft] = useState(0);
 
   const show = useCallback(() => {
+    const triggerRect = triggerRef.current?.getBoundingClientRect();
+    if (triggerRect) {
+      const tooltipWidth = Math.min(
+        TOOLTIP_WIDTH,
+        window.innerWidth - VIEWPORT_MARGIN * 2,
+      );
+      const desiredViewportLeft =
+        triggerRect.left + triggerRect.width / 2 - tooltipWidth / 2;
+      const viewportLeft = Math.min(
+        Math.max(desiredViewportLeft, VIEWPORT_MARGIN),
+        window.innerWidth - tooltipWidth - VIEWPORT_MARGIN,
+      );
+      setTooltipLeft(viewportLeft - triggerRect.left);
+    }
     window.dispatchEvent(
       new CustomEvent<string>(OPEN_EVENT, { detail: instanceId }),
     );
@@ -85,7 +103,8 @@ export function GlossaryTooltip({
         <span
           id={tooltipId}
           role="tooltip"
-          className="absolute bottom-full left-1/2 z-50 mb-2 w-72 -translate-x-1/2 rounded-lg border border-gray-200 bg-white p-3 text-left text-sm font-normal not-italic text-gray-900 shadow-lg dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          style={{ left: tooltipLeft }}
+          className="absolute bottom-full z-50 mb-2 w-72 max-w-[calc(100vw-2rem)] rounded-lg border border-gray-200 bg-white p-3 text-left text-sm font-normal not-italic text-gray-900 shadow-lg dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
         >
           <span className="block font-semibold">
             {term}
