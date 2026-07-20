@@ -96,7 +96,7 @@ README 섹션 (있을 때만, ReadmeFrame wrap)
 - `src/components/JsonLd.tsx`
 - `src/lib/subline.ts` — `SublinePart` 공유 타입
 - `src/lib/time.ts` — `formatYYYYMMDD`, `formatRelativeKo`
-- `src/lib/category-meta.ts` — `getCategoryColor`, `toCanonicalCategory`
+- `src/lib/category-meta.ts` — `getCategoryColor`, `getCategoryLabel`
 - `src/infra/db/repositories/FolderRepository.ts`
 - `src/infra/db/repositories/PostRepository.ts` — `getCrossCategoryPosts`
 - `src/infra/db/constants.ts` — `categoryIcons`, `DEFAULT_CATEGORY_ICON`
