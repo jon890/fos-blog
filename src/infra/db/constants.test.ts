@@ -39,5 +39,6 @@ describe("categoryIcons", () => {
 
   it("알 수 없는 하위 폴더 경로는 기본 아이콘을 반환한다", () => {
     expect(getCategoryIcon("unknown/path")).toBe(DEFAULT_CATEGORY_ICON);
+    expect(getCategoryIcon("blockchain")).toBe(DEFAULT_CATEGORY_ICON);
   });
 });

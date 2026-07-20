@@ -45,14 +45,24 @@ function getTopLevelCategory(raw: string): string {
   return normalizeCategoryKey(raw).split("/")[0] ?? "";
 }
 
+function getKnownCanonicalCategory(raw: string): CanonicalCategory | undefined {
+  const key = normalizeCategoryKey(raw);
+  return RAW_TO_CANONICAL[key] ?? RAW_TO_CANONICAL[getTopLevelCategory(key)];
+}
+
 export function isKnownCategoryKey(raw: string): boolean {
   const key = normalizeCategoryKey(raw);
   return key in RAW_TO_CANONICAL || getTopLevelCategory(key) in RAW_TO_CANONICAL;
 }
 
 export function toCanonicalCategory(raw: string): CanonicalCategory {
+  return getKnownCanonicalCategory(raw) ?? "system";
+}
+
+export function getCategoryLabel(raw: string): string {
   const key = normalizeCategoryKey(raw);
-  return RAW_TO_CANONICAL[key] ?? RAW_TO_CANONICAL[getTopLevelCategory(key)] ?? "system";
+  if (!key) return "system";
+  return getKnownCanonicalCategory(key) ?? key;
 }
 
 /**
@@ -72,7 +82,18 @@ const CANONICAL_TO_HUE: Record<CanonicalCategory, number> = {
 };
 
 export function getCategoryHue(raw: string): number {
-  return CANONICAL_TO_HUE[toCanonicalCategory(raw)];
+  const knownCategory = getKnownCanonicalCategory(raw);
+  if (knownCategory) return CANONICAL_TO_HUE[knownCategory];
+
+  const topLevel = getTopLevelCategory(raw);
+  if (!topLevel) return CANONICAL_TO_HUE.system;
+
+  let hash = 2166136261;
+  for (const character of topLevel) {
+    hash ^= character.codePointAt(0) ?? 0;
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0) % 360;
 }
 
 /**

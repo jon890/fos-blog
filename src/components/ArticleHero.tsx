@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 import {
   getCategoryColor,
   getCategoryHue,
-  toCanonicalCategory,
+  getCategoryLabel,
 } from "@/lib/category-meta";
 
 interface ArticleHeroProps {
@@ -111,7 +111,7 @@ export function ArticleHero({
                 }}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-                {toCanonicalCategory(cat)}
+                {getCategoryLabel(cat)}
               </Link>
             );
           })}

@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { getCategoryIcon } from "@/infra/db/constants";
 import type { PostData } from "@/infra/db/types";
-import { getCategoryColor, toCanonicalCategory } from "@/lib/category-meta";
+import { getCategoryColor, getCategoryLabel } from "@/lib/category-meta";
 import { formatDate } from "@/lib/date-utils";
 import { Eye } from "lucide-react";
 
@@ -45,7 +45,7 @@ export function PostCard({
                   style={{ color: getCategoryColor(cat) }}
                 >
                   <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-                  <span>{toCanonicalCategory(cat)}</span>
+                  <span>{getCategoryLabel(cat)}</span>
                 </span>
               ))}
             </div>
@@ -99,7 +99,7 @@ export function PostCard({
                 style={{ color: getCategoryColor(cat) }}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-                {getCategoryIcon(cat)} {toCanonicalCategory(cat)}
+                {getCategoryIcon(cat)} {getCategoryLabel(cat)}
               </span>
             ))}
             {viewCount !== undefined && (
@@ -120,7 +120,7 @@ export function PostCard({
                 style={{ color: getCategoryColor(cat) }}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-                <span>{toCanonicalCategory(cat)}</span>
+                <span>{getCategoryLabel(cat)}</span>
               </span>
             ))}
           </div>

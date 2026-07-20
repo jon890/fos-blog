@@ -64,6 +64,24 @@ describe("MetadataSyncService.refresh", () => {
     ]);
   });
 
+  it("미등록 최상위 category를 기본 아이콘과 함께 자동 등록한다", async () => {
+    const mocks = makeMocks();
+    vi.mocked(mocks.postRepo.getCategoryStats).mockResolvedValue([
+      { category: "blockchain", count: 1 },
+    ]);
+
+    await createService(mocks).refresh();
+
+    expect(mocks.categoryRepo.syncAll).toHaveBeenCalledWith([
+      {
+        name: "blockchain",
+        slug: "blockchain",
+        icon: "📁",
+        postCount: 1,
+      },
+    ]);
+  });
+
   it("원본 README가 사라지면 DB readme를 지우고 delete change를 반환한다", async () => {
     const mocks = makeMocks();
     vi.mocked(mocks.postRepo.getAllPostPaths).mockResolvedValue([

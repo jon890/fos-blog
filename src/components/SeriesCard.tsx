@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import type { SeriesInfo } from "@/infra/db/types";
-import { getCategoryColor, toCanonicalCategory } from "@/lib/category-meta";
+import { getCategoryColor, getCategoryLabel } from "@/lib/category-meta";
 import { formatDate } from "@/lib/date-utils";
 import { seriesHref } from "@/lib/path-utils";
 
@@ -11,7 +11,7 @@ interface SeriesCardProps {
 
 export function SeriesCard({ series }: SeriesCardProps) {
   const catColor = getCategoryColor(series.firstPost.category);
-  const canonical = toCanonicalCategory(series.firstPost.category);
+  const label = getCategoryLabel(series.firstPost.category);
   const inlineStyle = { "--cat-color": catColor } as CSSProperties;
 
   return (
@@ -24,7 +24,7 @@ export function SeriesCard({ series }: SeriesCardProps) {
         <div className="flex items-center justify-between gap-2 font-mono text-[11px] uppercase tracking-[0.06em]">
           <span className="flex items-center gap-2" style={{ color: "var(--cat-color)" }}>
             <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-            <span>{canonical}</span>
+            <span>{label}</span>
           </span>
           <span className="text-[var(--color-fg-muted)]">{series.postCount} posts</span>
         </div>

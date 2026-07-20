@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   isKnownCategoryKey,
   toCanonicalCategory,
+  getCategoryLabel,
   getCategoryHue,
   getCategoryColor,
 } from "./category-meta";
@@ -60,6 +61,12 @@ describe("isKnownCategoryKey", () => {
 });
 
 describe("getCategoryHue", () => {
+  it("기존 category의 hue를 유지한다", () => {
+    expect(getCategoryHue("AI")).toBe(285);
+    expect(getCategoryHue("database")).toBe(55);
+    expect(getCategoryHue("javascript")).toBe(90);
+  });
+
   it('returns 220 for "react"', () => {
     expect(getCategoryHue("react")).toBe(220);
   });
@@ -70,6 +77,37 @@ describe("getCategoryHue", () => {
 
   it('returns 285 for "AI/RAG" (AI hue)', () => {
     expect(getCategoryHue("AI/RAG")).toBe(285);
+  });
+
+  it("미등록 category와 하위 path는 같은 안정적 hue를 사용한다", () => {
+    const blockchainHue = getCategoryHue("blockchain");
+    const quantumHue = getCategoryHue("quantum");
+
+    expect(blockchainHue).toBeGreaterThanOrEqual(0);
+    expect(blockchainHue).toBeLessThan(360);
+    expect(getCategoryHue("blockchain")).toBe(blockchainHue);
+    expect(getCategoryHue("blockchain/evm")).toBe(blockchainHue);
+    expect(quantumHue).toBeGreaterThanOrEqual(0);
+    expect(quantumHue).toBeLessThan(360);
+    expect(getCategoryHue("quantum")).toBe(quantumHue);
+  });
+});
+
+describe("getCategoryLabel", () => {
+  it("기존 category의 canonical label을 유지한다", () => {
+    expect(getCategoryLabel("AI")).toBe("ai");
+    expect(getCategoryLabel("database")).toBe("db");
+    expect(getCategoryLabel("javascript")).toBe("js");
+  });
+
+  it("미등록 category는 trim한 원래 key를 표시한다", () => {
+    expect(getCategoryLabel(" blockchain ")).toBe("blockchain");
+    expect(getCategoryLabel("blockchain/evm")).toBe("blockchain/evm");
+  });
+
+  it("빈 key는 기존 안전 대체값을 사용한다", () => {
+    expect(getCategoryLabel("   ")).toBe("system");
+    expect(getCategoryHue("   ")).toBe(250);
   });
 });
 
