@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { env } from "@/env";
 import logger from "@/lib/logger";
+import { fetchGitHubProfile } from "@/services/GitHubProfileService";
 import { createDefaultStatsService } from "@/services/StatsService";
 import { ProfileCard } from "@/components/about/ProfileCard";
 import { SiteStats } from "@/components/about/SiteStats";
@@ -31,74 +32,6 @@ export const metadata: Metadata = {
     type: "website",
   },
 };
-
-interface GitHubProfile {
-  name: string | null;
-  avatar_url: string;
-  bio: string | null;
-  html_url: string;
-  public_repos: number;
-  followers: number;
-}
-
-interface ProfileData {
-  name: string;
-  handle: string;
-  avatarUrl: string | null;
-  bio: string;
-  htmlUrl: string;
-  publicRepos: number;
-  followers: number;
-}
-
-async function fetchGitHubProfile(): Promise<ProfileData> {
-  try {
-    const res = await fetch("https://api.github.com/users/jon890", {
-      headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-      },
-      next: { revalidate: 3600 },
-    });
-
-    if (!res.ok) {
-      const err = new Error(`GitHub API responded with status ${res.status}`);
-      log.warn({ component: "about", operation: "github-profile", err, status: res.status }, "github profile fetch failed");
-      return {
-        name: "jon890",
-        handle: "@jon890",
-        avatarUrl: null,
-        bio: "",
-        htmlUrl: "https://github.com/jon890",
-        publicRepos: 0,
-        followers: 0,
-      };
-    }
-
-    const data: GitHubProfile = await res.json();
-    return {
-      name: data.name ?? "jon890",
-      handle: "@jon890",
-      avatarUrl: data.avatar_url,
-      bio: data.bio ?? "",
-      htmlUrl: data.html_url,
-      publicRepos: data.public_repos,
-      followers: data.followers,
-    };
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    log.warn({ component: "about", operation: "github-profile", err, status: 0 }, "github profile fetch failed");
-    return {
-      name: "jon890",
-      handle: "@jon890",
-      avatarUrl: null,
-      bio: "",
-      htmlUrl: "https://github.com/jon890",
-      publicRepos: 0,
-      followers: 0,
-    };
-  }
-}
 
 interface SectionProps {
   idx: string;
@@ -134,7 +67,7 @@ async function fetchSiteStats() {
 
 export default async function AboutPage() {
   const [profile, stats] = await Promise.all([
-    fetchGitHubProfile(),
+    fetchGitHubProfile(env.GITHUB_TOKEN),
     fetchSiteStats(),
   ]);
 
