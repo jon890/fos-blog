@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import type { CategoryData } from "@/infra/db/types";
-import { getCategoryColor, toCanonicalCategory } from "@/lib/category-meta";
+import { getCategoryColor, getCategoryLabel } from "@/lib/category-meta";
 import { formatRelativeKo } from "@/lib/time";
 
 interface CategoryFeaturedProps {
@@ -12,7 +12,7 @@ interface CategoryFeaturedProps {
 
 export function CategoryFeatured({ category, rank, latestUpdatedAt }: CategoryFeaturedProps) {
   const catColor = getCategoryColor(category.slug);
-  const canonical = toCanonicalCategory(category.slug);
+  const label = getCategoryLabel(category.slug);
   const rankStr = `#${String(rank).padStart(2, "0")}`;
 
   const inlineStyle = {
@@ -49,7 +49,7 @@ export function CategoryFeatured({ category, rank, latestUpdatedAt }: CategoryFe
           className="font-mono text-[10px] uppercase tracking-[0.1em]"
           style={{ color: "var(--cat-color)" }}
         >
-          {canonical}
+          {label}
         </span>
       </div>
 

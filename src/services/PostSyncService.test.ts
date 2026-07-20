@@ -27,6 +27,7 @@ function makeMocks() {
     update: vi.fn().mockResolvedValue(undefined),
   };
   const githubApi: ConstructorParameters<typeof PostSyncService>[1] = {
+    getRepositoryFolderPaths: vi.fn().mockResolvedValue(new Set()),
     getDirectoryContents: vi.fn().mockResolvedValue([]),
     getFileContent: vi.fn().mockResolvedValue(null),
     getFileCommitDates: vi.fn().mockResolvedValue(null),
@@ -53,8 +54,12 @@ describe("PostSyncService", () => {
       sha: "new-sha",
     });
 
-    const result = await new PostSyncService(postRepo, githubApi).syncAll();
+    const result = await new PostSyncService(postRepo, githubApi).syncAll(
+      "head-sha",
+    );
 
+    expect(githubApi.getRepositoryFolderPaths).toHaveBeenCalledOnce();
+    expect(githubApi.getRepositoryFolderPaths).toHaveBeenCalledWith("head-sha");
     expect(postRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({ path: "AI/intro.md", title: "새 제목" }),
     );
@@ -78,7 +83,9 @@ describe("PostSyncService", () => {
     ]);
     vi.mocked(postRepo.deactivateByIds).mockResolvedValue(1);
 
-    const result = await new PostSyncService(postRepo, githubApi).syncAll();
+    const result = await new PostSyncService(postRepo, githubApi).syncAll(
+      "head-sha",
+    );
 
     expect(githubApi.getFileContent).not.toHaveBeenCalled();
     expect(postRepo.deactivateByIds).toHaveBeenCalledWith([2]);
@@ -95,14 +102,18 @@ describe("PostSyncService", () => {
       sha: "rename-sha",
     });
 
-    const result = await new PostSyncService(postRepo, githubApi).syncChanged([
-      {
-        status: "renamed",
-        filename: "AI/new.md",
-        previous_filename: "AI/old.md",
-      },
-    ]);
+    const result = await new PostSyncService(postRepo, githubApi).syncChanged(
+      [
+        {
+          status: "renamed",
+          filename: "AI/new.md",
+          previous_filename: "AI/old.md",
+        },
+      ],
+      "head-sha",
+    );
 
+    expect(githubApi.getRepositoryFolderPaths).toHaveBeenCalledOnce();
     expect(result).toMatchObject({ added: 1, updated: 0, deleted: 1 });
     expect(result.changedPosts).toEqual([
       { path: "AI/old.md", operation: "delete" },
@@ -114,14 +125,96 @@ describe("PostSyncService", () => {
     const { postRepo, githubApi } = makeMocks();
     vi.mocked(postRepo.deactive).mockResolvedValue(true);
 
-    const result = await new PostSyncService(postRepo, githubApi).syncChanged([
-      { status: "removed", filename: "AI/README.md" },
-    ]);
+    const result = await new PostSyncService(postRepo, githubApi).syncChanged(
+      [{ status: "removed", filename: "AI/README.md" }],
+      "head-sha",
+    );
 
     expect(postRepo.deactive).toHaveBeenCalledWith("AI/README.md");
     expect(result.changedPosts).toEqual([
       { path: "AI/README.md", operation: "delete" },
     ]);
+  });
+
+  it("실제 폴더와 정적 meta category는 경고 없이 저장한다", async () => {
+    const { postRepo, githubApi } = makeMocks();
+    vi.mocked(githubApi.getRepositoryFolderPaths).mockResolvedValue(
+      new Set(["AI", "AI/RAG"]),
+    );
+    vi.mocked(githubApi.getFileContent).mockResolvedValue({
+      content: "---\ncategories: [AI/RAG, database/legacy]\n---\n# 제목",
+      sha: "sha",
+    });
+
+    await new PostSyncService(postRepo, githubApi).syncChanged(
+      [{ status: "added", filename: "AI/intro.md" }],
+      "head-sha",
+    );
+
+    expect(loggerMock.warn).not.toHaveBeenCalled();
+    expect(postRepo.create).toHaveBeenCalledOnce();
+  });
+
+  it("없는 category는 한 번 경고하지만 새 글을 저장한다", async () => {
+    const { postRepo, githubApi } = makeMocks();
+    vi.mocked(githubApi.getFileContent).mockResolvedValue({
+      content: "---\ncategories: [unknown/path, unknown/path]\n---\n# 제목",
+      sha: "sha",
+    });
+
+    await new PostSyncService(postRepo, githubApi).syncChanged(
+      [{ status: "added", filename: "AI/intro.md" }],
+      "head-sha",
+    );
+
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      { path: "AI/intro.md", categories: ["unknown/path"] },
+      "frontmatter categories 에 알려지지 않은 category key 포함",
+    );
+    expect(postRepo.create).toHaveBeenCalledOnce();
+  });
+
+  it("대소문자가 다른 실제 폴더는 경고하지만 기존 글을 갱신한다", async () => {
+    const { postRepo, githubApi } = makeMocks();
+    vi.mocked(githubApi.getRepositoryFolderPaths).mockResolvedValue(
+      new Set(["Study/RAG"]),
+    );
+    vi.mocked(githubApi.getFileContent).mockResolvedValue({
+      content: "---\ncategories: [study/RAG]\n---\n# 제목",
+      sha: "sha",
+    });
+    vi.mocked(postRepo.getPostId).mockResolvedValue(7);
+
+    await new PostSyncService(postRepo, githubApi).syncChanged(
+      [{ status: "modified", filename: "AI/intro.md" }],
+      "head-sha",
+    );
+
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      { path: "AI/intro.md", categories: ["study/RAG"] },
+      "frontmatter categories 에 알려지지 않은 category key 포함",
+    );
+    expect(postRepo.update).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({ categories: ["AI", "study/RAG"] }),
+    );
+  });
+
+  it("폴더 조회 실패는 category 경고 없이 글을 저장한다", async () => {
+    const { postRepo, githubApi } = makeMocks();
+    vi.mocked(githubApi.getRepositoryFolderPaths).mockResolvedValue(null);
+    vi.mocked(githubApi.getFileContent).mockResolvedValue({
+      content: "---\ncategories: [unknown/path]\n---\n# 제목",
+      sha: "sha",
+    });
+
+    await new PostSyncService(postRepo, githubApi).syncChanged(
+      [{ status: "added", filename: "AI/intro.md" }],
+      "head-sha",
+    );
+
+    expect(loggerMock.warn).not.toHaveBeenCalled();
+    expect(postRepo.create).toHaveBeenCalledOnce();
   });
 
   it("retitleAll은 content 제목이 다른 글만 보정한다", async () => {
@@ -167,7 +260,12 @@ describe("PostSyncService helpers", () => {
   });
 
   it("알려지지 않은 category key를 경고한다", () => {
-    warnUnknownFrontMatterCategories("AI/rag.md", "AI", ["unknown/path"]);
+    warnUnknownFrontMatterCategories(
+      "AI/rag.md",
+      "AI",
+      ["unknown/path"],
+      new Set(),
+    );
 
     expect(loggerMock.warn).toHaveBeenCalledWith(
       { path: "AI/rag.md", categories: ["unknown/path"] },

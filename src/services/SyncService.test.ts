@@ -76,7 +76,7 @@ describe("SyncService.sync", () => {
 
     const result = await createService(mocks).sync();
 
-    expect(mocks.postSyncService.syncAll).toHaveBeenCalledOnce();
+    expect(mocks.postSyncService.syncAll).toHaveBeenCalledWith("head-sha");
     expect(mocks.postSyncService.syncChanged).not.toHaveBeenCalled();
     expect(mocks.glossarySyncService.syncDefinitions).toHaveBeenCalledWith(
       "full",
@@ -104,7 +104,7 @@ describe("SyncService.sync", () => {
 
     await createService(mocks).sync();
 
-    expect(mocks.postSyncService.syncAll).toHaveBeenCalledOnce();
+    expect(mocks.postSyncService.syncAll).toHaveBeenCalledWith("head-sha");
     expect(mocks.postSyncService.syncChanged).not.toHaveBeenCalled();
   });
 
@@ -121,7 +121,10 @@ describe("SyncService.sync", () => {
 
     await createService(mocks).sync();
 
-    expect(mocks.postSyncService.syncChanged).toHaveBeenCalledWith(changedFiles);
+    expect(mocks.postSyncService.syncChanged).toHaveBeenCalledWith(
+      changedFiles,
+      "head-sha",
+    );
     expect(mocks.glossarySyncService.syncDefinitions).toHaveBeenCalledWith(
       "incremental",
       changedFiles,

@@ -63,7 +63,7 @@
 - `src/components/CategoryCard.tsx`
 - `src/lib/subline.ts` — `SublinePart` 공유 타입
 - `src/lib/time.ts` — `formatRelativeKo`, `formatYYYYMMDD`
-- `src/lib/category-meta.ts` — `getCategoryColor`
+- `src/lib/category-meta.ts` — `getCategoryColor`, `getCategoryLabel`
 - `src/infra/db/repositories/CategoryRepository.ts` — `getCategoriesWithLatest()`
 - `src/infra/db/types.ts` — `CategoryData` 타입
 - `src/app/globals.css` — `.cat-card::after` radial blob

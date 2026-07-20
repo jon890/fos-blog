@@ -1,8 +1,8 @@
 /**
- * 카테고리 정규화 헬퍼.
- * - canonical 9개: ai / algorithm / db / devops / java / js / react / next / system
- * - 데이터 raw key (categoryIcons 의 keys + 미정의 키) 를 canonical 로 흡수
- * - 누락/미매핑 키는 모두 'system' 으로 default
+ * 카테고리 meta 헬퍼.
+ * 알려진 raw key는 기존 canonical 9종으로 연결한다.
+ * `toCanonicalCategory()`는 미등록 key를 `system`으로 처리하는 호환 계약을 유지한다.
+ * 화면 표시와 색상은 `getCategoryLabel()`과 `getCategoryHue()`가 동적 대체값을 제공한다.
  */
 
 export type CanonicalCategory =
@@ -45,14 +45,24 @@ function getTopLevelCategory(raw: string): string {
   return normalizeCategoryKey(raw).split("/")[0] ?? "";
 }
 
+function getKnownCanonicalCategory(raw: string): CanonicalCategory | undefined {
+  const key = normalizeCategoryKey(raw);
+  return RAW_TO_CANONICAL[key] ?? RAW_TO_CANONICAL[getTopLevelCategory(key)];
+}
+
 export function isKnownCategoryKey(raw: string): boolean {
   const key = normalizeCategoryKey(raw);
   return key in RAW_TO_CANONICAL || getTopLevelCategory(key) in RAW_TO_CANONICAL;
 }
 
 export function toCanonicalCategory(raw: string): CanonicalCategory {
+  return getKnownCanonicalCategory(raw) ?? "system";
+}
+
+export function getCategoryLabel(raw: string): string {
   const key = normalizeCategoryKey(raw);
-  return RAW_TO_CANONICAL[key] ?? RAW_TO_CANONICAL[getTopLevelCategory(key)] ?? "system";
+  if (!key) return "system";
+  return getKnownCanonicalCategory(key) ?? key;
 }
 
 /**
@@ -72,7 +82,18 @@ const CANONICAL_TO_HUE: Record<CanonicalCategory, number> = {
 };
 
 export function getCategoryHue(raw: string): number {
-  return CANONICAL_TO_HUE[toCanonicalCategory(raw)];
+  const knownCategory = getKnownCanonicalCategory(raw);
+  if (knownCategory) return CANONICAL_TO_HUE[knownCategory];
+
+  const topLevel = getTopLevelCategory(raw);
+  if (!topLevel) return CANONICAL_TO_HUE.system;
+
+  let hash = 2166136261;
+  for (const character of topLevel) {
+    hash ^= character.codePointAt(0) ?? 0;
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0) % 360;
 }
 
 /**

@@ -163,7 +163,7 @@
 - `src/infra/db/repositories/PostRepository.ts`
 - `src/infra/db/repositories/VisitRepository.ts` — `getVisitCount(pagePath)`
 - `src/lib/markdown.ts` — 본문 처리 + plan012 hast 헬퍼 (`extractRawText` / `findChildText` / `findCodeProp`)
-- `src/lib/category-meta.ts` — `getCategoryColor` / `getCategoryHue` / `toCanonicalCategory` (plan010)
+- `src/lib/category-meta.ts` — `getCategoryColor` / `getCategoryHue` / `getCategoryLabel` (plan010, plan055)
 - `src/app/globals.css` — plan009 토큰 + plan011 prose 확장 (H2 counter / blockquote QUOTE / inline code / mermaid 격리) + plan012 코드 블록 frame (`.code-card` / shiki dual theme) + plan035 모바일 가독성 (inline code keep-all / code-card-body pre overflow-x)
 
 ---

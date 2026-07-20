@@ -10,6 +10,9 @@ import { shouldSyncFile } from "@/infra/github/file-filter";
 const log = logger.child({ module: "PostSyncService" });
 
 type GithubApi = {
+  getRepositoryFolderPaths: (
+    commitSha: string,
+  ) => Promise<ReadonlySet<string> | null>;
   getDirectoryContents: (path?: string) => Promise<
     Array<{ name: string; path: string; sha: string; type: string }>
   >;
@@ -80,18 +83,24 @@ export function mergeCategories(pathCategory: string, fmCategories?: string[]): 
 export function warnUnknownFrontMatterCategories(
   path: string,
   pathCategory: string,
-  fmCategories?: string[],
+  fmCategories: string[] | undefined,
+  repositoryFolderPaths: ReadonlySet<string> | null,
 ): void {
+  if (repositoryFolderPaths == null) return;
+
   const unknownCategories = (fmCategories ?? [])
     .map((category) => category.trim())
     .filter((category) => category.length > 0)
     .filter((category) => category !== pathCategory)
+    .filter((category) => !repositoryFolderPaths.has(category))
     .filter((category) => !isKnownCategoryKey(category));
 
-  if (unknownCategories.length === 0) return;
+  const uniqueUnknownCategories = Array.from(new Set(unknownCategories));
+
+  if (uniqueUnknownCategories.length === 0) return;
 
   log.warn(
-    { path, categories: unknownCategories },
+    { path, categories: uniqueUnknownCategories },
     "frontmatter categories 에 알려지지 않은 category key 포함",
   );
 }
@@ -140,10 +149,12 @@ export class PostSyncService {
     private githubApi: GithubApi,
   ) {}
 
-  async syncAll(): Promise<PostSyncResult> {
+  async syncAll(headSha: string): Promise<PostSyncResult> {
     let added = 0;
     let updated = 0;
 
+    const repositoryFolderPaths =
+      await this.githubApi.getRepositoryFolderPaths(headSha);
     const githubFiles = await this.collectMarkdownFiles();
     log.info(
       { count: githubFiles.length },
@@ -160,7 +171,11 @@ export class PostSyncService {
       const existing = existingPathMap.get(file.path);
       if (existing?.sha === file.sha) continue;
 
-      const result = await this.upsert(file.path, existing?.id);
+      const result = await this.upsert(
+        file.path,
+        repositoryFolderPaths,
+        existing?.id,
+      );
       if (result === "added") added++;
       if (result === "updated") updated++;
       if (result !== "skipped") {
@@ -194,11 +209,20 @@ export class PostSyncService {
     };
   }
 
-  async syncChanged(changedFiles: ChangedFile[]): Promise<PostSyncResult> {
+  async syncChanged(
+    changedFiles: ChangedFile[],
+    headSha: string,
+  ): Promise<PostSyncResult> {
     let added = 0;
     let updated = 0;
     let deleted = 0;
     const changedPosts: SyncedPageChange[] = [];
+    const needsFolderPaths = changedFiles.some(
+      (file) => file.status !== "removed",
+    );
+    const repositoryFolderPaths = needsFolderPaths
+      ? await this.githubApi.getRepositoryFolderPaths(headSha)
+      : null;
 
     for (const file of changedFiles) {
       if (file.status === "removed") {
@@ -226,7 +250,7 @@ export class PostSyncService {
 
       if (!shouldSyncFile(file.filename)) continue;
 
-      const result = await this.upsert(file.filename);
+      const result = await this.upsert(file.filename, repositoryFolderPaths);
       if (result === "added") added++;
       if (result === "updated") updated++;
       if (result !== "skipped") {
@@ -271,6 +295,7 @@ export class PostSyncService {
 
   private async upsert(
     filePath: string,
+    repositoryFolderPaths: ReadonlySet<string> | null,
     knownPostId?: number,
   ): Promise<"added" | "updated" | "skipped"> {
     const [fileData, commitDates] = await Promise.all([
@@ -290,7 +315,12 @@ export class PostSyncService {
     const description = extractDescription(content, 200);
     const { frontMatter } = parseFrontMatter(content);
     const { tags, series, seriesOrder } = resolveFrontMatterMeta(frontMatter, filePath);
-    warnUnknownFrontMatterCategories(filePath, category, frontMatter.categories);
+    warnUnknownFrontMatterCategories(
+      filePath,
+      category,
+      frontMatter.categories,
+      repositoryFolderPaths,
+    );
     const categories = mergeCategories(category, frontMatter.categories);
 
     const existingPostId = knownPostId ?? await this.postRepo.getPostId(filePath);

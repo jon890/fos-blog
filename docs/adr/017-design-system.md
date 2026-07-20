@@ -10,7 +10,10 @@
 - **모션**: **motion-one** (~3KB, Framer Motion 경량 alt) — 미세 page transition + hover 디테일
 - **다크 우선**: default `dark` 유지 (Vercel/Linear 컨벤션, 현 동작과 일치)
 - **토큰 시스템**: Tailwind v4 `@theme` 블록 (`globals.css`) 으로 표준화 — 컬러/타이포/spacing/radii/shadows/motion primitives
-- **카테고리 9종 (canonical)**: `ai / algorithm / db / devops / java / js / react / next / system` — oklch chroma 0.09, lightness 0.74 (dark) / 0.50 (light). 데이터의 raw 카테고리 키 (architecture/network/interview/kafka/internet 등) 는 헬퍼 (`src/lib/category-meta.ts`, plan010) 에서 9종 중 하나로 정규화 (미매핑 → `system`)
+- **카테고리 9종** (canonical): `ai / algorithm / db / devops / java / js / react / next / system` — oklch chroma 0.09, lightness 0.74 (dark) / 0.50 (light).
+  알려진 raw 카테고리 키는 헬퍼(`src/lib/category-meta.ts`, plan010)에서 기존 canonical 색상으로 정규화한다.
+  정적 meta가 없는 카테고리는 원래 이름을 표시하고 이름의 안정적인 hash로 hue를 계산한다.
+  새 폴더를 추가할 때 canonical 목록을 수정할 필요가 없도록 등록과 시각적 설정을 분리한다.
 - **OG / Avatar 팔레트는 7색 부분집합** (plan021/022): `og-palette.ts` 의 `OG_CATEGORY_HEX` 는 9종 중 `next` / `system` 제외한 7개만 hex 매핑. 이유: hash % palette.length 라 색 다양성만 충분하면 되고 `system` 은 fallback (`OG_CATEGORY_DEFAULT_HEX` brand teal) 와 의미가 겹침. `next` 는 forward-compat 자리
 - **워크플로우**: Claude Design (Anthropic Labs Research Preview) 으로 mockup 생성 → 이 저장소에서 코드 구현. 단계별 프롬프트는 `docs/design-inspiration.md`
 

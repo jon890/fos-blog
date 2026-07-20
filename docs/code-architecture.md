@@ -395,11 +395,17 @@ ADR-030의 `posts.categories`는 `AI` 같은 최상위 폴더뿐 아니라 `AI/R
 조회 결과는 경로상 해당 폴더 안에 있는 글을 제외하고, `getFolderContents(folderPath)` 결과와 path 기준으로 중복 제거해 합친다.
 
 색상과 아이콘은 slash path 전체를 canonical category로 늘리지 않는다.
-`src/lib/category-meta.ts`와 `src/infra/db/constants.ts`는 먼저 전체 key를 확인하고, 없으면 첫 path segment를 기준으로 fallback한다.
+`src/lib/category-meta.ts`와 `src/infra/db/constants.ts`는 먼저 전체 key를 확인하고, 없으면 첫 path segment를 기준으로 대체값을 찾는다.
 예: `AI/RAG`는 `AI`와 같은 색상·아이콘을 사용한다.
 
-sync 단계는 frontmatter `categories` 값이 전체 key 또는 첫 path segment 어느 쪽으로도 알려진 카테고리로 해석되지 않으면 `warn` 로그를 남긴다.
-이는 `categories: [AI/RAG]` 같은 정상 하위 경로는 허용하면서, 오타로 인한 매칭 누락은 운영 로그에서 드러내기 위한 가드다.
+sync 단계는 현재 GitHub HEAD의 tree에서 폴더 경로를 한 번 읽고 전체·증분 글 동기화가 같은 목록을 사용한다.
+frontmatter `categories` 값이 실제 폴더 또는 선택적 정적 category meta에 있으면 허용한다.
+둘 다 없으면 글은 그대로 저장하고 `warn` 로그만 남긴다.
+tree를 완전히 읽지 못하면 잘못된 개별 경고를 만들지 않도록 검증을 생략하고 원인을 한 번 기록한다.
+
+최상위 폴더에 글이 하나 이상 있으면 기존 category metadata 갱신 과정이 DB 카테고리를 자동 생성한다.
+정적 meta는 기존 별칭·색상·아이콘을 위한 선택적 설정이며 카테고리 등록 조건이 아니다.
+정적 meta가 없는 카테고리는 원래 폴더명을 표시하고 기본 아이콘과 이름 기반의 안정적인 색상을 사용한다.
 
 ## 용어집 동기화와 본문 툴팁 구조 (plan054)
 
