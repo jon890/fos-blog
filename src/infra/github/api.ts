@@ -91,10 +91,10 @@ export async function getRepositoryFolderPaths(
     }
 
     const folderPaths = new Set<string>();
-    const pendingTrees = [{ sha: rootTreeSha, path: "" }];
+    const pendingTreeStack = [{ sha: rootTreeSha, path: "" }];
 
-    while (pendingTrees.length > 0) {
-      const current = pendingTrees.pop();
+    while (pendingTreeStack.length > 0) {
+      const current = pendingTreeStack.pop();
       if (!current) break;
 
       const tree = await withRetry(() =>
@@ -118,7 +118,7 @@ export async function getRepositoryFolderPaths(
 
         const path = current.path ? `${current.path}/${item.path}` : item.path;
         folderPaths.add(path);
-        pendingTrees.push({ sha: item.sha, path });
+        pendingTreeStack.push({ sha: item.sha, path });
       }
     }
 
