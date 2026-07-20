@@ -6,3 +6,14 @@ export { syncLogs, type SyncLog } from "./syncLogs";
 export { comments, type Comment, type NewComment } from "./comments";
 export { visitLogs, type VisitLog, type NewVisitLog } from "./visitLogs";
 export { visitStats, type VisitStat, type NewVisitStat } from "./visitStats";
+export {
+  glossaryTerms,
+  type GlossaryReference,
+  type GlossaryTerm,
+  type NewGlossaryTerm,
+} from "./glossaryTerms";
+export {
+  glossaryMentions,
+  type GlossaryMention,
+  type NewGlossaryMention,
+} from "./glossaryMentions";

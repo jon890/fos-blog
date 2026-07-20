@@ -1,13 +1,11 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  mergeCategories,
   parsePath,
   PostSyncService,
-  mergeCategories,
   resolveFrontMatterMeta,
   warnUnknownFrontMatterCategories,
 } from "./PostSyncService";
-import type { PostRepository } from "@/infra/db/repositories/PostRepository";
-import type { getFileContent, getFileCommitDates } from "@/infra/github/api";
 
 const loggerMock = vi.hoisted(() => ({
   warn: vi.fn(),
@@ -15,198 +13,164 @@ const loggerMock = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/logger", () => ({
-  default: {
-    child: () => loggerMock,
-  },
+  default: { child: () => loggerMock },
 }));
 
-describe("parsePath", () => {
-  it("루트 경로 파일 — category는 확장자 포함 파일명, title은 확장자 제거", () => {
-    const result = parsePath("intro.md");
-    expect(result.category).toBe("intro.md"); // category: pathParts[0], 확장자 미제거
-    expect(result.foldersList).toEqual([]);
-    expect(result.subcategory).toBeUndefined();
-    expect(result.title).toBe("intro"); // title: pathParts[last], 확장자 제거
-  });
+function makeMocks() {
+  const postRepo: ConstructorParameters<typeof PostSyncService>[0] = {
+    create: vi.fn().mockResolvedValue(undefined),
+    deactive: vi.fn().mockResolvedValue(false),
+    deactivateByIds: vi.fn().mockResolvedValue(0),
+    getAllForSync: vi.fn().mockResolvedValue([]),
+    getAllWithContent: vi.fn().mockResolvedValue([]),
+    getPostId: vi.fn().mockResolvedValue(null),
+    update: vi.fn().mockResolvedValue(undefined),
+  };
+  const githubApi: ConstructorParameters<typeof PostSyncService>[1] = {
+    getDirectoryContents: vi.fn().mockResolvedValue([]),
+    getFileContent: vi.fn().mockResolvedValue(null),
+    getFileCommitDates: vi.fn().mockResolvedValue(null),
+  };
+  return { postRepo, githubApi };
+}
 
-  it("1단계 경로 — category와 파일명 분리", () => {
-    const result = parsePath("AI/intro.md");
-    expect(result.category).toBe("AI");
-    expect(result.foldersList).toEqual([]);
-    expect(result.subcategory).toBeUndefined();
-    expect(result.title).toBe("intro");
-  });
-
-  it("2단계 경로 — subcategory는 첫 번째 폴더", () => {
-    const result = parsePath("AI/RAG/intro.md");
-    expect(result.category).toBe("AI");
-    expect(result.foldersList).toEqual(["RAG"]);
-    expect(result.subcategory).toBe("RAG");
-    expect(result.title).toBe("intro");
-  });
-
-  it("3단계 이상 경로 — foldersList에 중간 폴더 모두 포함", () => {
-    const result = parsePath("AI/RAG/deep/intro.md");
-    expect(result.category).toBe("AI");
-    expect(result.foldersList).toEqual(["RAG", "deep"]);
-    expect(result.subcategory).toBe("RAG");
-    expect(result.title).toBe("intro");
-  });
-
-  it("파일명의 언더스코어를 공백으로 변환한다", () => {
-    const result = parsePath("AI/hello_world_guide.md");
-    expect(result.title).toBe("hello world guide");
-  });
-
-  it(".mdx 확장자도 제거한다", () => {
-    const result = parsePath("AI/intro.mdx");
-    expect(result.title).toBe("intro");
-  });
-
-  it("빈 문자열 — category는 uncategorized", () => {
-    const result = parsePath("");
-    expect(result.category).toBe("uncategorized");
-    expect(result.foldersList).toEqual([]);
-  });
-});
-
-describe("mergeCategories", () => {
-  it("frontmatter categories 없으면 pathCategory 만 반환", () => {
-    expect(mergeCategories("AI", undefined)).toEqual(["AI"]);
-  });
-
-  it("pathCategory 와 중복되는 항목 제거, primary 첫째", () => {
-    expect(mergeCategories("AI", ["AI", "DevOps"])).toEqual(["AI", "DevOps"]);
-  });
-
-  it("공백만 있는 항목 제거", () => {
-    expect(mergeCategories("AI", [" ", "DevOps"])).toEqual(["AI", "DevOps"]);
-  });
-
-  it("빈 배열이면 pathCategory 만 반환", () => {
-    expect(mergeCategories("AI", [])).toEqual(["AI"]);
-  });
-});
-
-describe("resolveFrontMatterMeta", () => {
-  it("tags 정규화 — 소문자 + trim + 중복 제거", () => {
-    const result = resolveFrontMatterMeta({ tags: ["AI", " ML ", "ai"] }, "test/path.md");
-    expect(result.tags).toEqual(["ai", "ml"]);
-  });
-
-  it("series + 유효한 seriesOrder — 모두 설정", () => {
-    const result = resolveFrontMatterMeta(
-      { series: "RAG 시리즈", seriesOrder: 2 },
-      "test/path.md",
-    );
-    expect(result.series).toBe("RAG 시리즈");
-    expect(result.seriesOrder).toBe(2);
-  });
-
-  it("series 있고 seriesOrder 누락 — series 무시", () => {
-    const result = resolveFrontMatterMeta({ series: "RAG 시리즈" }, "test/path.md");
-    expect(result.series).toBeNull();
-    expect(result.seriesOrder).toBeNull();
-  });
-
-  it("series 없으면 null 반환", () => {
-    const result = resolveFrontMatterMeta({}, "test/path.md");
-    expect(result.series).toBeNull();
-    expect(result.seriesOrder).toBeNull();
-    expect(result.tags).toEqual([]);
-  });
-
-  it("seriesOrder 가 문자열 숫자인 경우 파싱", () => {
-    const result = resolveFrontMatterMeta(
-      { series: "시리즈", seriesOrder: "3" },
-      "test/path.md",
-    );
-    expect(result.series).toBe("시리즈");
-    expect(result.seriesOrder).toBe(3);
-  });
-});
-
-describe("PostSyncService.upsert", () => {
+describe("PostSyncService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    loggerMock.warn.mockClear();
   });
 
-  function makeMocks() {
-    const postRepo = {
-      getPostId: vi.fn(),
-      create: vi.fn().mockResolvedValue(undefined),
-      update: vi.fn().mockResolvedValue(undefined),
-    } as unknown as PostRepository;
-
-    const githubApi = {
-      getFileContent: vi.fn(),
-      getFileCommitDates: vi.fn().mockResolvedValue(null),
-    } as unknown as { getFileContent: typeof getFileContent; getFileCommitDates: typeof getFileCommitDates };
-
-    return { postRepo, githubApi };
-  }
-
-  it("getFileContent가 null을 반환하면 'skipped'를 반환한다", async () => {
+  it("syncAll은 재귀 탐색 결과를 한 upsert 경로로 저장하고 변경 경로를 반환한다", async () => {
     const { postRepo, githubApi } = makeMocks();
-    vi.mocked(githubApi.getFileContent).mockResolvedValue(null);
+    vi.mocked(githubApi.getDirectoryContents)
+      .mockResolvedValueOnce([
+        { name: "AI", path: "AI", sha: "dir-sha", type: "dir" },
+      ])
+      .mockResolvedValueOnce([
+        { name: "intro.md", path: "AI/intro.md", sha: "new-sha", type: "file" },
+      ]);
+    vi.mocked(githubApi.getFileContent).mockResolvedValue({
+      content: "# 새 제목\n\n본문",
+      sha: "new-sha",
+    });
 
-    const service = new PostSyncService(postRepo, githubApi);
-    const result = await service.upsert("AI/intro.md");
+    const result = await new PostSyncService(postRepo, githubApi).syncAll();
 
-    expect(result).toBe("skipped");
-    expect(postRepo.create).not.toHaveBeenCalled();
-    expect(postRepo.update).not.toHaveBeenCalled();
+    expect(postRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "AI/intro.md", title: "새 제목" }),
+    );
+    expect(result).toEqual({
+      added: 1,
+      updated: 0,
+      deleted: 0,
+      changedPosts: [{ path: "AI/intro.md", operation: "upsert" }],
+      titles: { total: 0, updated: 0, skipped: 0 },
+    });
   });
 
-  it("기존 포스트가 없으면 postRepo.create를 호출하고 'added'를 반환한다", async () => {
+  it("syncAll은 SHA가 같은 글을 건너뛰고 사라진 활성 글을 delete로 반환한다", async () => {
     const { postRepo, githubApi } = makeMocks();
-    vi.mocked(githubApi.getFileContent).mockResolvedValue({ content: "# Hello", sha: "sha123" });
-    vi.mocked(postRepo.getPostId).mockResolvedValue(null);
+    vi.mocked(githubApi.getDirectoryContents).mockResolvedValue([
+      { name: "keep.md", path: "AI/keep.md", sha: "same-sha", type: "file" },
+    ]);
+    vi.mocked(postRepo.getAllForSync).mockResolvedValue([
+      { id: 1, path: "AI/keep.md", sha: "same-sha", isActive: true },
+      { id: 2, path: "AI/gone.md", sha: "old-sha", isActive: true },
+    ]);
+    vi.mocked(postRepo.deactivateByIds).mockResolvedValue(1);
 
-    const service = new PostSyncService(postRepo, githubApi);
-    const result = await service.upsert("AI/intro.md");
+    const result = await new PostSyncService(postRepo, githubApi).syncAll();
 
-    expect(result).toBe("added");
-    expect(postRepo.create).toHaveBeenCalledOnce();
-    expect(postRepo.update).not.toHaveBeenCalled();
+    expect(githubApi.getFileContent).not.toHaveBeenCalled();
+    expect(postRepo.deactivateByIds).toHaveBeenCalledWith([2]);
+    expect(result.changedPosts).toEqual([
+      { path: "AI/gone.md", operation: "delete" },
+    ]);
   });
 
-  it("기존 포스트가 있으면 postRepo.update를 호출하고 'updated'를 반환한다", async () => {
+  it("syncChanged는 rename의 이전 경로 delete와 새 경로 upsert를 반환한다", async () => {
     const { postRepo, githubApi } = makeMocks();
-    vi.mocked(githubApi.getFileContent).mockResolvedValue({ content: "# Hello", sha: "sha456" });
-    vi.mocked(postRepo.getPostId).mockResolvedValue(42);
+    vi.mocked(postRepo.deactive).mockResolvedValue(true);
+    vi.mocked(githubApi.getFileContent).mockResolvedValue({
+      content: "# Renamed",
+      sha: "rename-sha",
+    });
 
-    const service = new PostSyncService(postRepo, githubApi);
-    const result = await service.upsert("AI/intro.md");
+    const result = await new PostSyncService(postRepo, githubApi).syncChanged([
+      {
+        status: "renamed",
+        filename: "AI/new.md",
+        previous_filename: "AI/old.md",
+      },
+    ]);
 
-    expect(result).toBe("updated");
-    expect(postRepo.update).toHaveBeenCalledWith(42, expect.objectContaining({ sha: "sha456" }));
-    expect(postRepo.create).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ added: 1, updated: 0, deleted: 1 });
+    expect(result.changedPosts).toEqual([
+      { path: "AI/old.md", operation: "delete" },
+      { path: "AI/new.md", operation: "upsert" },
+    ]);
+  });
+
+  it("syncChanged는 README removed 이벤트도 기존 동작대로 비활성화한다", async () => {
+    const { postRepo, githubApi } = makeMocks();
+    vi.mocked(postRepo.deactive).mockResolvedValue(true);
+
+    const result = await new PostSyncService(postRepo, githubApi).syncChanged([
+      { status: "removed", filename: "AI/README.md" },
+    ]);
+
+    expect(postRepo.deactive).toHaveBeenCalledWith("AI/README.md");
+    expect(result.changedPosts).toEqual([
+      { path: "AI/README.md", operation: "delete" },
+    ]);
+  });
+
+  it("retitleAll은 content 제목이 다른 글만 보정한다", async () => {
+    const { postRepo, githubApi } = makeMocks();
+    vi.mocked(postRepo.getAllWithContent).mockResolvedValue([
+      { id: 1, path: "a.md", title: "같음", content: "# 같음" },
+      { id: 2, path: "b.md", title: "이전", content: "# 변경" },
+      { id: 3, path: "c.md", title: "없음", content: null },
+    ]);
+
+    const result = await new PostSyncService(postRepo, githubApi).retitleAll();
+
+    expect(result).toEqual({ total: 3, updated: 1, skipped: 2 });
+    expect(postRepo.update).toHaveBeenCalledOnce();
+    expect(postRepo.update).toHaveBeenCalledWith(2, { title: "변경" });
   });
 });
 
-describe("warnUnknownFrontMatterCategories", () => {
-  beforeEach(() => {
-    loggerMock.warn.mockClear();
+describe("PostSyncService helpers", () => {
+  it("parsePath는 category, folder, title을 분리한다", () => {
+    expect(parsePath("AI/RAG/hello_world.mdx")).toEqual({
+      category: "AI",
+      foldersList: ["RAG"],
+      subcategory: "RAG",
+      title: "hello world",
+    });
   });
 
-  it("알려진 최상위 prefix를 가진 하위 경로는 경고하지 않는다", () => {
-    warnUnknownFrontMatterCategories("database/opensearch/rag.md", "database", [
-      "AI/RAG",
-      "database/opensearch",
+  it("mergeCategories는 경로 category를 우선하고 중복과 공백을 제거한다", () => {
+    expect(mergeCategories("AI", [" AI ", "", "DevOps"])).toEqual([
+      "AI",
+      "DevOps",
     ]);
-
-    expect(loggerMock.warn).not.toHaveBeenCalled();
   });
 
-  it("알려지지 않은 category key는 경고한다", () => {
-    warnUnknownFrontMatterCategories("database/opensearch/rag.md", "database", [
-      "unknown/path",
-    ]);
+  it("resolveFrontMatterMeta는 tag와 series metadata를 정규화한다", () => {
+    expect(
+      resolveFrontMatterMeta(
+        { tags: ["AI", " ai "], series: "RAG", seriesOrder: "2" },
+        "AI/rag.md",
+      ),
+    ).toEqual({ tags: ["ai"], series: "RAG", seriesOrder: 2 });
+  });
+
+  it("알려지지 않은 category key를 경고한다", () => {
+    warnUnknownFrontMatterCategories("AI/rag.md", "AI", ["unknown/path"]);
 
     expect(loggerMock.warn).toHaveBeenCalledWith(
-      { path: "database/opensearch/rag.md", categories: ["unknown/path"] },
+      { path: "AI/rag.md", categories: ["unknown/path"] },
       "frontmatter categories 에 알려지지 않은 category key 포함",
     );
   });

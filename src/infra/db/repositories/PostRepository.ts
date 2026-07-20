@@ -497,6 +497,44 @@ export class PostRepository extends BaseRepository {
       .from(posts);
   }
 
+  async getActiveMentionSources(): Promise<
+    Array<{
+      path: string;
+      title: string;
+      content: string | null;
+      updatedAt: Date;
+    }>
+  > {
+    return this.db
+      .select({
+        path: posts.path,
+        title: posts.title,
+        content: posts.content,
+        updatedAt: posts.updatedAt,
+      })
+      .from(posts)
+      .where(eq(posts.isActive, true));
+  }
+
+  async getActiveMentionSource(path: string): Promise<{
+    path: string;
+    title: string;
+    content: string | null;
+    updatedAt: Date;
+  } | null> {
+    const rows = await this.db
+      .select({
+        path: posts.path,
+        title: posts.title,
+        content: posts.content,
+        updatedAt: posts.updatedAt,
+      })
+      .from(posts)
+      .where(and(eq(posts.path, path), eq(posts.isActive, true)))
+      .limit(1);
+    return rows[0] ?? null;
+  }
+
   async getCategoryStats(): Promise<
     Array<{ category: string; count: number }>
   > {

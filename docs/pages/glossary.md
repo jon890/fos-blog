@@ -4,7 +4,7 @@
 
 **File:** `src/app/glossary/page.tsx`
 
-**Status:** 설계 확정, 구현 예정
+**Status:** 구현 완료
 **Related:** plan054, ADR-032
 
 ---
@@ -14,8 +14,7 @@
 블로그에서 사용하는 전문 용어의 설명과 실제 언급 페이지를 한곳에서 탐색한다.
 본문 툴팁의 상세 확인 경로이면서 Footer에서 직접 접근할 수 있는 보조 페이지다.
 
-이 문서는 plan054 phase 05가 구현할 목표 페이지를 정의한다.
-현재 route는 존재하지 않는다.
+plan054에서 이 페이지와 본문 툴팁 진입 경로를 구현했다.
 
 ## Data
 
@@ -26,7 +25,7 @@ DB 조회가 실패하면 구조화된 warning을 남기고 빈 상태로 렌더
 ## Layout
 
 - 상단 hero
-  - `GLOSSARY` eyebrow
+  - `field notes · glossary` eyebrow
   - 용어 수와 언급 페이지 수
   - 용어·전체 이름·별칭·요약 검색 입력
 - 가나다·알파벳 색인

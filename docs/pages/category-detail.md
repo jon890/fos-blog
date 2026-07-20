@@ -57,7 +57,7 @@ frontmatter `categories` 는 `AI` 같은 최상위 폴더뿐 아니라 `AI/RAG` 
 - **PostListRow 클릭**: `/posts/<post.path>` 이동
 - **PostListRow hover**: 좌 border cat-color + bg `color-mix(in oklch, var(--cat-color), transparent 96%)` (globals.css `.post-list-row:hover` 규칙)
 
-## plan054 목표 상호작용 (구현 예정)
+## plan054 README 용어 툴팁 상호작용
 
 - README의 제외 영역 밖에서 개념별 첫 등장 용어를 `<GlossaryTooltip>`로 표시한다.
 - desktop hover·focus 또는 mobile tap으로 설명을 열고 `/glossary#<id>`로 이동한다.

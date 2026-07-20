@@ -2,15 +2,52 @@ import { PostRepository } from "@/infra/db/repositories/PostRepository";
 import { extractDescription, extractTitle, parseFrontMatter } from "@/lib/markdown";
 import type { FrontMatter } from "@/lib/markdown";
 import { rewriteImagePaths } from "@/infra/github/image-rewrite";
-import type { getFileContent, getFileCommitDates } from "@/infra/github/api";
+import type { ChangedFile } from "@/infra/github/api";
 import logger from "@/lib/logger";
 import { isKnownCategoryKey } from "@/lib/category-meta";
+import { shouldSyncFile } from "@/infra/github/file-filter";
 
 const log = logger.child({ module: "PostSyncService" });
 
 type GithubApi = {
-  getFileContent: typeof getFileContent;
-  getFileCommitDates: typeof getFileCommitDates;
+  getDirectoryContents: (path?: string) => Promise<
+    Array<{ name: string; path: string; sha: string; type: string }>
+  >;
+  getFileContent: (
+    path: string,
+  ) => Promise<{ content: string; sha: string } | null>;
+  getFileCommitDates: (
+    path: string,
+  ) => Promise<{ createdAt: Date; updatedAt: Date } | null>;
+};
+
+type PostRepo = Pick<
+  PostRepository,
+  | "create"
+  | "deactive"
+  | "deactivateByIds"
+  | "getAllForSync"
+  | "getAllWithContent"
+  | "getPostId"
+  | "update"
+>;
+
+export type SyncedPageChange = {
+  path: string;
+  operation: "upsert" | "delete";
+};
+
+export type PostSyncResult = {
+  added: number;
+  updated: number;
+  deleted: number;
+  changedPosts: SyncedPageChange[];
+  titles: { total: number; updated: number; skipped: number };
+};
+
+type MarkdownFile = {
+  path: string;
+  sha: string;
 };
 
 export function parsePath(filePath: string) {
@@ -99,11 +136,143 @@ export function resolveFrontMatterMeta(
 
 export class PostSyncService {
   constructor(
-    private postRepo: PostRepository,
+    private postRepo: PostRepo,
     private githubApi: GithubApi,
   ) {}
 
-  async upsert(filePath: string): Promise<"added" | "updated" | "skipped"> {
+  async syncAll(): Promise<PostSyncResult> {
+    let added = 0;
+    let updated = 0;
+
+    const githubFiles = await this.collectMarkdownFiles();
+    log.info(
+      { count: githubFiles.length },
+      `GitHub에서 마크다운 파일 ${githubFiles.length}개 발견`,
+    );
+
+    const existingPosts = await this.postRepo.getAllForSync();
+    const existingPathMap = new Map(existingPosts.map((post) => [post.path, post]));
+    const processedPaths = new Set<string>();
+    const changedPosts: SyncedPageChange[] = [];
+
+    for (const file of githubFiles) {
+      processedPaths.add(file.path);
+      const existing = existingPathMap.get(file.path);
+      if (existing?.sha === file.sha) continue;
+
+      const result = await this.upsert(file.path, existing?.id);
+      if (result === "added") added++;
+      if (result === "updated") updated++;
+      if (result !== "skipped") {
+        changedPosts.push({ path: file.path, operation: "upsert" });
+        log.info({ path: file.path, result }, `${result}: ${file.path}`);
+      }
+    }
+
+    const postsToDeactivate = existingPosts.filter(
+      (post) => post.isActive && !processedPaths.has(post.path),
+    );
+    const deleted = await this.postRepo.deactivateByIds(
+      postsToDeactivate.map((post) => post.id),
+    );
+    if (deleted > 0) {
+      changedPosts.push(
+        ...postsToDeactivate.map((post) => ({
+          path: post.path,
+          operation: "delete" as const,
+        })),
+      );
+      log.info({ deleted }, `비활성화 완료: ${deleted}개`);
+    }
+
+    return {
+      added,
+      updated,
+      deleted,
+      changedPosts,
+      titles: await this.retitleAll(),
+    };
+  }
+
+  async syncChanged(changedFiles: ChangedFile[]): Promise<PostSyncResult> {
+    let added = 0;
+    let updated = 0;
+    let deleted = 0;
+    const changedPosts: SyncedPageChange[] = [];
+
+    for (const file of changedFiles) {
+      if (file.status === "removed") {
+        if (await this.postRepo.deactive(file.filename)) {
+          deleted++;
+          changedPosts.push({ path: file.filename, operation: "delete" });
+        }
+        log.info({ filename: file.filename }, `삭제: ${file.filename}`);
+        continue;
+      }
+
+      if (file.status === "renamed" && file.previous_filename) {
+        if (await this.postRepo.deactive(file.previous_filename)) {
+          deleted++;
+          changedPosts.push({
+            path: file.previous_filename,
+            operation: "delete",
+          });
+        }
+        log.info(
+          { filename: file.previous_filename },
+          `이름 변경(삭제): ${file.previous_filename}`,
+        );
+      }
+
+      if (!shouldSyncFile(file.filename)) continue;
+
+      const result = await this.upsert(file.filename);
+      if (result === "added") added++;
+      if (result === "updated") updated++;
+      if (result !== "skipped") {
+        changedPosts.push({ path: file.filename, operation: "upsert" });
+      }
+      log.info(
+        { status: file.status, filename: file.filename, result },
+        `${file.status}: ${file.filename} → ${result}`,
+      );
+    }
+
+    return {
+      added,
+      updated,
+      deleted,
+      changedPosts,
+      titles: await this.retitleAll(),
+    };
+  }
+
+  async retitleAll(): Promise<{ total: number; updated: number; skipped: number }> {
+    const allPosts = await this.postRepo.getAllWithContent();
+    let updated = 0;
+    let skipped = 0;
+
+    for (const post of allPosts) {
+      if (!post.content) {
+        skipped++;
+        continue;
+      }
+      const extractedTitle = extractTitle(post.content);
+      if (!extractedTitle || extractedTitle === post.title) {
+        skipped++;
+        continue;
+      }
+      await this.postRepo.update(post.id, { title: extractedTitle });
+      updated++;
+    }
+
+    return { total: allPosts.length, updated, skipped };
+  }
+
+  private async upsert(
+    filePath: string,
+    knownPostId?: number,
+  ): Promise<"added" | "updated" | "skipped"> {
     const [fileData, commitDates] = await Promise.all([
       this.githubApi.getFileContent(filePath),
       this.githubApi.getFileCommitDates(filePath),
@@ -124,7 +293,7 @@ export class PostSyncService {
     warnUnknownFrontMatterCategories(filePath, category, frontMatter.categories);
     const categories = mergeCategories(category, frontMatter.categories);
 
-    const existingPostId = await this.postRepo.getPostId(filePath);
+    const existingPostId = knownPostId ?? await this.postRepo.getPostId(filePath);
 
     if (existingPostId != null) {
       await this.postRepo.update(existingPostId, {
@@ -165,5 +334,21 @@ export class PostSyncService {
       });
       return "added";
     }
+  }
+
+  private async collectMarkdownFiles(
+    path: string = "",
+    files: MarkdownFile[] = [],
+  ): Promise<MarkdownFile[]> {
+    const contents = await this.githubApi.getDirectoryContents(path);
+    for (const item of contents) {
+      if (item.name.startsWith(".")) continue;
+      if (item.type === "dir") {
+        await this.collectMarkdownFiles(item.path, files);
+      } else if (item.type === "file" && shouldSyncFile(item.name)) {
+        files.push({ path: item.path, sha: item.sha });
+      }
+    }
+    return files;
   }
 }

@@ -1,7 +1,7 @@
 # Phase 01 — sync 책임 분리와 변경 경로 계약
 
 **Execution profile**: standard
-**Status**: pending
+**Status**: completed
 
 ---
 
@@ -95,8 +95,9 @@ HEAD가 같은 short-circuit에서도 `MetadataSyncService.refresh()`를 호출�
 ## 검증
 
 ```bash
-# cwd: /Users/nhn/personal/fos-blog
-pnpm test --run src/services/SyncService.test.ts src/services/PostSyncService.test.ts src/services/MetadataSyncService.test.ts
+# cwd: /Users/nhn/personal/fos-blog/.claude/worktrees/plan054-glossary-tooltip
+# branch: feat/plan054-glossary-tooltip
+pnpm test src/services/SyncService.test.ts src/services/PostSyncService.test.ts src/services/MetadataSyncService.test.ts
 pnpm type-check
 ! rg -n "collectMarkdownFiles|performFullSync|performIncrementalSync" src/services/SyncService.ts
 ```

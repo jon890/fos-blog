@@ -401,10 +401,9 @@ ADR-030의 `posts.categories`는 `AI` 같은 최상위 폴더뿐 아니라 `AI/R
 sync 단계는 frontmatter `categories` 값이 전체 key 또는 첫 path segment 어느 쪽으로도 알려진 카테고리로 해석되지 않으면 `warn` 로그를 남긴다.
 이는 `categories: [AI/RAG]` 같은 정상 하위 경로는 허용하면서, 오타로 인한 매칭 누락은 운영 로그에서 드러내기 위한 가드다.
 
-## 용어집 동기화와 본문 툴팁 목표 구조 (plan054, 구현 예정)
+## 용어집 동기화와 본문 툴팁 구조 (plan054)
 
-이 섹션은 task 실행 후 도달할 구조를 정의한다.
-현재 `src/`에는 glossary 모듈이 없다.
+plan054에서 glossary 정의 동기화, mention 역참조와 본문 툴팁 모듈을 추가했다.
 
 ### 동기화 책임
 

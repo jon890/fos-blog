@@ -1,62 +1,67 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { SyncService } from "./SyncService";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SyncLog } from "@/infra/db/schema/syncLogs";
-import type { PostSyncService } from "./PostSyncService";
-import type { MetadataSyncService } from "./MetadataSyncService";
-import type { PostService } from "./PostService";
-import type { PostRepository } from "@/infra/db/repositories/PostRepository";
-import type { SyncLogRepository } from "@/infra/db/repositories/SyncLogRepository";
-import type {
-  ChangedFile,
-  getChangedFilesSince,
-  getCurrentHeadSha,
-  getDirectoryContents,
-  getFileCommitDates,
-  getFileContent,
-} from "@/infra/github/api";
+import type { ChangedFile } from "@/infra/github/api";
+import { SyncService } from "./SyncService";
 
-type GithubApi = {
-  getCurrentHeadSha: typeof getCurrentHeadSha;
-  getChangedFilesSince: typeof getChangedFilesSince;
-  getDirectoryContents: typeof getDirectoryContents;
-  getFileContent: typeof getFileContent;
-  getFileCommitDates: typeof getFileCommitDates;
-};
+const emptyTitles = { total: 0, updated: 0, skipped: 0 };
 
 function makeMocks() {
-  const postSyncService = {
-    upsert: vi.fn(),
-  } as unknown as PostSyncService;
-
-  const metadataSyncService = {
-    updateCategories: vi.fn().mockResolvedValue(undefined),
-    syncFolderReadmes: vi.fn().mockResolvedValue(undefined),
-  } as unknown as MetadataSyncService;
-
-  const postService = {
-    retitleAll: vi.fn().mockResolvedValue({ total: 0, updated: 0, skipped: 0 }),
-  } as unknown as PostService;
-
-  const postRepo = {
-    getAllForSync: vi.fn().mockResolvedValue([]),
-    deactivateByIds: vi.fn().mockResolvedValue(0),
-    deactive: vi.fn().mockResolvedValue(true),
-  } as unknown as PostRepository;
-
-  const syncLogRepo = {
+  const postSyncService: ConstructorParameters<typeof SyncService>[0] = {
+    syncAll: vi.fn().mockResolvedValue({
+      added: 1,
+      updated: 0,
+      deleted: 0,
+      changedPosts: [{ path: "AI/intro.md", operation: "upsert" }],
+      titles: emptyTitles,
+    }),
+    syncChanged: vi.fn().mockResolvedValue({
+      added: 0,
+      updated: 1,
+      deleted: 0,
+      changedPosts: [{ path: "AI/intro.md", operation: "upsert" }],
+      titles: emptyTitles,
+    }),
+    retitleAll: vi.fn().mockResolvedValue(emptyTitles),
+  };
+  const metadataSyncService: ConstructorParameters<typeof SyncService>[1] = {
+    refresh: vi.fn().mockResolvedValue({ changedReadmes: [] }),
+  };
+  const glossarySyncService: ConstructorParameters<typeof SyncService>[2] = {
+    syncDefinitions: vi.fn().mockResolvedValue({
+      definitionsChanged: false,
+      terms: 2,
+    }),
+    syncMentions: vi.fn().mockResolvedValue({
+      mentions: 3,
+      pagesReindexed: 1,
+    }),
+  };
+  const syncLogRepo: ConstructorParameters<typeof SyncService>[3] = {
     getLatest: vi.fn(),
     create: vi.fn().mockResolvedValue(undefined),
-  } as unknown as SyncLogRepository;
-
-  const githubApi = {
+  };
+  const githubApi: ConstructorParameters<typeof SyncService>[4] = {
     getCurrentHeadSha: vi.fn(),
     getChangedFilesSince: vi.fn(),
-    getDirectoryContents: vi.fn().mockResolvedValue([]),
-    getFileContent: vi.fn(),
-    getFileCommitDates: vi.fn(),
-  } as unknown as GithubApi;
+  };
 
-  return { postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi };
+  return {
+    postSyncService,
+    metadataSyncService,
+    glossarySyncService,
+    syncLogRepo,
+    githubApi,
+  };
+}
+
+function createService(mocks: ReturnType<typeof makeMocks>): SyncService {
+  return new SyncService(
+    mocks.postSyncService,
+    mocks.metadataSyncService,
+    mocks.glossarySyncService,
+    mocks.syncLogRepo,
+    mocks.githubApi,
+  );
 }
 
 describe("SyncService.sync", () => {
@@ -64,88 +69,154 @@ describe("SyncService.sync", () => {
     vi.clearAllMocks();
   });
 
-  it("lastSyncedSha === headSha 이면 upToDate: true를 반환한다", async () => {
-    const { postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi } = makeMocks();
-    const sha = "abc1234";
+  it("첫 sync는 PostSyncService.syncAll()을 호출한다", async () => {
+    const mocks = makeMocks();
+    vi.mocked(mocks.githubApi.getCurrentHeadSha).mockResolvedValue("head-sha");
+    vi.mocked(mocks.syncLogRepo.getLatest).mockResolvedValue(null);
 
-    vi.mocked(githubApi.getCurrentHeadSha).mockResolvedValue(sha);
-    vi.mocked(syncLogRepo.getLatest).mockResolvedValue({ commitSha: sha } as SyncLog);
+    const result = await createService(mocks).sync();
 
-    const service = new SyncService(postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi);
-    const result = await service.sync();
+    expect(mocks.postSyncService.syncAll).toHaveBeenCalledOnce();
+    expect(mocks.postSyncService.syncChanged).not.toHaveBeenCalled();
+    expect(mocks.glossarySyncService.syncDefinitions).toHaveBeenCalledWith(
+      "full",
+      [],
+    );
+    expect(result).toMatchObject({
+      added: 1,
+      commitSha: "head-sha",
+      glossary: {
+        definitionsChanged: false,
+        terms: 2,
+        mentions: 3,
+        pagesReindexed: 1,
+      },
+    });
+  });
+
+  it("compare 실패의 null은 full sync로 폴백한다", async () => {
+    const mocks = makeMocks();
+    vi.mocked(mocks.githubApi.getCurrentHeadSha).mockResolvedValue("head-sha");
+    vi.mocked(mocks.syncLogRepo.getLatest).mockResolvedValue({
+      commitSha: "old-sha",
+    } as SyncLog);
+    vi.mocked(mocks.githubApi.getChangedFilesSince).mockResolvedValue(null);
+
+    await createService(mocks).sync();
+
+    expect(mocks.postSyncService.syncAll).toHaveBeenCalledOnce();
+    expect(mocks.postSyncService.syncChanged).not.toHaveBeenCalled();
+  });
+
+  it("incremental은 syncChanged()에 변경 목록을 전달한다", async () => {
+    const mocks = makeMocks();
+    const changedFiles: ChangedFile[] = [
+      { status: "modified", filename: "AI/intro.md" },
+    ];
+    vi.mocked(mocks.githubApi.getCurrentHeadSha).mockResolvedValue("head-sha");
+    vi.mocked(mocks.syncLogRepo.getLatest).mockResolvedValue({
+      commitSha: "old-sha",
+    } as SyncLog);
+    vi.mocked(mocks.githubApi.getChangedFilesSince).mockResolvedValue(changedFiles);
+
+    await createService(mocks).sync();
+
+    expect(mocks.postSyncService.syncChanged).toHaveBeenCalledWith(changedFiles);
+    expect(mocks.glossarySyncService.syncDefinitions).toHaveBeenCalledWith(
+      "incremental",
+      changedFiles,
+    );
+    expect(mocks.metadataSyncService.refresh).toHaveBeenCalledOnce();
+    expect(mocks.glossarySyncService.syncMentions).toHaveBeenCalledWith({
+      definitionsChanged: false,
+      changedPosts: [{ path: "AI/intro.md", operation: "upsert" }],
+      changedReadmes: [],
+    });
+    expect(
+      vi.mocked(mocks.glossarySyncService.syncDefinitions).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      vi.mocked(mocks.postSyncService.syncChanged).mock.invocationCallOrder[0],
+    );
+    expect(
+      vi.mocked(mocks.metadataSyncService.refresh).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      vi.mocked(mocks.glossarySyncService.syncMentions).mock.invocationCallOrder[0],
+    );
+  });
+
+  it("glossary, post, README 동시 변경도 definitions → posts → metadata → mentions 순서다", async () => {
+    const mocks = makeMocks();
+    const changedFiles: ChangedFile[] = [
+      { status: "modified", filename: "glossary.json" },
+      { status: "modified", filename: "AI/intro.md" },
+      { status: "modified", filename: "AI/README.md" },
+    ];
+    vi.mocked(mocks.githubApi.getCurrentHeadSha).mockResolvedValue("head-sha");
+    vi.mocked(mocks.syncLogRepo.getLatest).mockResolvedValue({
+      commitSha: "old-sha",
+    } as SyncLog);
+    vi.mocked(mocks.githubApi.getChangedFilesSince).mockResolvedValue(changedFiles);
+    vi.mocked(mocks.glossarySyncService.syncDefinitions).mockResolvedValue({
+      definitionsChanged: true,
+      terms: 2,
+    });
+    vi.mocked(mocks.metadataSyncService.refresh).mockResolvedValue({
+      changedReadmes: [{ path: "AI/README.md", operation: "upsert" }],
+    });
+
+    await createService(mocks).sync();
+
+    expect(mocks.glossarySyncService.syncMentions).toHaveBeenCalledWith({
+      definitionsChanged: true,
+      changedPosts: [{ path: "AI/intro.md", operation: "upsert" }],
+      changedReadmes: [{ path: "AI/README.md", operation: "upsert" }],
+    });
+    const order = [
+      vi.mocked(mocks.glossarySyncService.syncDefinitions).mock.invocationCallOrder[0],
+      vi.mocked(mocks.postSyncService.syncChanged).mock.invocationCallOrder[0],
+      vi.mocked(mocks.metadataSyncService.refresh).mock.invocationCallOrder[0],
+      vi.mocked(mocks.glossarySyncService.syncMentions).mock.invocationCallOrder[0],
+    ];
+    expect(order).toEqual([...order].sort((left, right) => left - right));
+  });
+
+  it("HEAD가 같아도 metadata를 갱신하고 title 보정을 유지한다", async () => {
+    const mocks = makeMocks();
+    vi.mocked(mocks.githubApi.getCurrentHeadSha).mockResolvedValue("same-sha");
+    vi.mocked(mocks.syncLogRepo.getLatest).mockResolvedValue({
+      commitSha: "same-sha",
+    } as SyncLog);
+
+    const result = await createService(mocks).sync();
 
     expect(result.upToDate).toBe(true);
-    expect(result.commitSha).toBe(sha);
-    expect(syncLogRepo.create).not.toHaveBeenCalled();
-    expect(metadataSyncService.updateCategories).toHaveBeenCalledTimes(1);
-    expect(metadataSyncService.syncFolderReadmes).toHaveBeenCalledTimes(1);
-  });
-
-  it("lastSyncedSha가 없으면 performFullSync를 호출한다", async () => {
-    const { postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi } = makeMocks();
-    const headSha = "def5678";
-
-    vi.mocked(githubApi.getCurrentHeadSha).mockResolvedValue(headSha);
-    vi.mocked(syncLogRepo.getLatest).mockResolvedValue(null);
-
-    const service = new SyncService(postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi);
-    const result = await service.sync();
-
-    // getDirectoryContents가 호출됐으면 performFullSync가 실행된 것
-    expect(githubApi.getDirectoryContents).toHaveBeenCalled();
-    expect(result.commitSha).toBe(headSha);
-    expect(syncLogRepo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "success", commitSha: headSha }),
+    expect(mocks.glossarySyncService.syncDefinitions).toHaveBeenCalledWith(
+      "incremental",
+      [],
     );
+    expect(mocks.metadataSyncService.refresh).toHaveBeenCalledOnce();
+    expect(mocks.postSyncService.retitleAll).toHaveBeenCalledOnce();
+    expect(mocks.syncLogRepo.create).not.toHaveBeenCalled();
   });
 
-  it("getChangedFilesSince가 null을 반환하면 performFullSync로 폴백한다", async () => {
-    const { postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi } = makeMocks();
-    const headSha = "ghi9012";
-    const lastSha = "oldsha";
-
-    vi.mocked(githubApi.getCurrentHeadSha).mockResolvedValue(headSha);
-    vi.mocked(syncLogRepo.getLatest).mockResolvedValue({ commitSha: lastSha } as SyncLog);
-    vi.mocked(githubApi.getChangedFilesSince).mockResolvedValue(null);
-
-    const service = new SyncService(postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi);
-    await service.sync();
-
-    // getDirectoryContents가 호출됐으면 performFullSync 폴백이 실행된 것
-    expect(githubApi.getDirectoryContents).toHaveBeenCalled();
-    expect(syncLogRepo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "success" }),
-    );
-  });
-
-  it("incremental sync — README.md (EXCLUDED) 가 removed 이벤트로 들어와도 deactive 호출", async () => {
-    const { postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi } = makeMocks();
-    const headSha = "newsha";
-    const lastSha = "oldsha";
-
-    vi.mocked(githubApi.getCurrentHeadSha).mockResolvedValue(headSha);
-    vi.mocked(syncLogRepo.getLatest).mockResolvedValue({ commitSha: lastSha } as SyncLog);
-    vi.mocked(githubApi.getChangedFilesSince).mockResolvedValue([
-      { status: "removed", filename: "css/FlexBox/README.md" },
-    ] as ChangedFile[]);
-
-    const service = new SyncService(postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi);
-    await service.sync();
-
-    expect(postRepo.deactive).toHaveBeenCalledWith("css/FlexBox/README.md");
-  });
-
-  it("에러 발생 시 syncLogRepo.create({ status: 'failed' })를 호출하고 에러를 다시 던진다", async () => {
-    const { postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi } = makeMocks();
+  it("실패 log를 남기고 원래 error를 다시 던진다", async () => {
+    const mocks = makeMocks();
     const error = new Error("GitHub API 오류");
+    vi.mocked(mocks.githubApi.getCurrentHeadSha).mockRejectedValue(error);
 
-    vi.mocked(githubApi.getCurrentHeadSha).mockRejectedValue(error);
+    await expect(createService(mocks).sync()).rejects.toBe(error);
+    expect(mocks.syncLogRepo.create).toHaveBeenCalledWith({
+      status: "failed",
+      error: "GitHub API 오류",
+    });
+  });
 
-    const service = new SyncService(postSyncService, metadataSyncService, postService, postRepo, syncLogRepo, githubApi);
+  it("failed log 저장도 실패하면 원래 sync error를 다시 던진다", async () => {
+    const mocks = makeMocks();
+    const error = new Error("원래 오류");
+    vi.mocked(mocks.githubApi.getCurrentHeadSha).mockRejectedValue(error);
+    vi.mocked(mocks.syncLogRepo.create).mockRejectedValue(new Error("log 오류"));
 
-    await expect(service.sync()).rejects.toThrow("GitHub API 오류");
-    expect(syncLogRepo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "failed", error: "GitHub API 오류" }),
-    );
+    await expect(createService(mocks).sync()).rejects.toBe(error);
   });
 });

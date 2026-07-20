@@ -3,6 +3,7 @@ import { getDb } from "@/infra/db";
 import { CategoryRepository } from "./CategoryRepository";
 import { CommentRepository } from "./CommentRepository";
 import { FolderRepository } from "./FolderRepository";
+import { GlossaryRepository } from "./GlossaryRepository";
 import { PostRepository } from "./PostRepository";
 import { SyncLogRepository } from "./SyncLogRepository";
 import { VisitRepository } from "./VisitRepository";
@@ -18,6 +19,11 @@ export {
 } from "./CommentRepository";
 export { VisitRepository } from "./VisitRepository";
 export { SyncLogRepository } from "./SyncLogRepository";
+export {
+  GlossaryRepository,
+  type GlossaryDefinition,
+  type MatchableGlossaryTerm,
+} from "./GlossaryRepository";
 
 /**
  * 요청 범위 내에서 Repository 인스턴스를 재사용하는 팩토리
@@ -32,5 +38,6 @@ export const getRepositories = cache(() => {
     comment: new CommentRepository(db),
     visit: new VisitRepository(db),
     syncLog: new SyncLogRepository(db),
+    glossary: new GlossaryRepository(db),
   };
 });

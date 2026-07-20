@@ -29,6 +29,7 @@ export async function POST(request: Request) {
         deleted: syncResult.deleted,
       },
       titles: syncResult.titles,
+      glossary: syncResult.glossary,
     });
   } catch (error) {
     log.error({ err: error instanceof Error ? error : new Error(String(error)) }, "Sync error");

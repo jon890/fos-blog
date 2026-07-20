@@ -21,7 +21,10 @@ import { LightboxProvider } from "@/components/lightbox/LightboxProvider";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { env } from "@/env";
+import { createGlossaryService } from "@/services";
+import logger from "@/lib/logger";
 
+const log = logger.child({ module: "app/posts/[...slug]" });
 const siteUrl = env.NEXT_PUBLIC_SITE_URL;
 
 // ISR - 60초마다 페이지 재생성
@@ -149,6 +152,17 @@ export default async function PostPage({ params }: PostPageProps) {
     visit.getVisitCount(postData.path),
     postRepo.getRelatedPosts(postData.path, 4),
   ]);
+  let glossaryTerms: Awaited<
+    ReturnType<ReturnType<typeof createGlossaryService>["getMatchableTerms"]>
+  > = [];
+  try {
+    glossaryTerms = await createGlossaryService().getMatchableTerms();
+  } catch (error) {
+    log.warn(
+      { err: error instanceof Error ? error : new Error(String(error)) },
+      "Glossary 조회 실패 — 본문을 tooltip 없이 렌더",
+    );
+  }
   const desc = extractDescription(content, 200, parsed);
 
   const postUrl = `${siteUrl}/posts/${postData.path
@@ -216,7 +230,11 @@ export default async function PostPage({ params }: PostPageProps) {
         <div className="hidden md:block" aria-hidden />
         <article className="min-w-0">
           <LightboxProvider>
-            <MarkdownRenderer content={stripped} basePath={slug} />
+            <MarkdownRenderer
+              content={stripped}
+              basePath={slug}
+              glossaryTerms={glossaryTerms}
+            />
           </LightboxProvider>
         </article>
         <aside className="hidden md:block">
