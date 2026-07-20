@@ -1,8 +1,8 @@
 /**
- * 카테고리 정규화 헬퍼.
- * - canonical 9개: ai / algorithm / db / devops / java / js / react / next / system
- * - 데이터 raw key (categoryIcons 의 keys + 미정의 키) 를 canonical 로 흡수
- * - 누락/미매핑 키는 모두 'system' 으로 default
+ * 카테고리 meta 헬퍼.
+ * 알려진 raw key는 기존 canonical 9종으로 연결한다.
+ * `toCanonicalCategory()`는 미등록 key를 `system`으로 처리하는 호환 계약을 유지한다.
+ * 화면 표시와 색상은 `getCategoryLabel()`과 `getCategoryHue()`가 동적 대체값을 제공한다.
  */
 
 export type CanonicalCategory =
