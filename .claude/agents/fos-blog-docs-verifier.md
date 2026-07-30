@@ -34,8 +34,7 @@ disallowedTools: Write, Edit
 | `docs/adr/README.md` + `docs/adr/NNN-slug.md` | 기술 의사결정·왜·대안 기각 |
 | `docs/data-schema.md` | MySQL/Drizzle 테이블·컬럼·관계·제약 |
 | `docs/code-architecture.md` | 디렉터리 트리·레이어 (app→services→infra) |
-| `docs/pages/{name}.md` | 개별 페이지 (`/`, `/posts/...`, `/category/...`, `/categories`, `/about`, `/posts/latest`, `/posts/popular`) 의 컴포넌트·데이터 흐름 |
-| `docs/page-prd.md` | 페이지별 PRD 보강 |
+| `docs/pages/{name}.md` | 실제 `src/app/**/page.tsx`에 대응하는 개별 페이지의 컴포넌트·데이터 흐름 |
 | `docs/design-inspiration.md` | 디자인 톤 / 참조 |
 | `docs/adsense-checklist.md` | AdSense 승인 체크리스트 |
 
