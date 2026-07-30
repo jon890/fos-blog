@@ -32,7 +32,6 @@
 - 다크 모드와 라이트 모드
 
 배포 대상은 홈서버의 Docker 컨테이너다.
-`Vercel Cron`, `Edge Functions`, Vercel 전용 무효화 방식을 제안하거나 도입하지 않는다.
 
 주요 기술은 Next.js 16, React 19, TypeScript strict, Tailwind CSS 4, MySQL 8.4, Drizzle ORM이다.
 정확한 패키지 버전은 `package.json`과 `pnpm-lock.yaml`을 단일 소스로 삼는다.
@@ -131,27 +130,6 @@ DOM 테스트는 파일 상단에 `// @vitest-environment jsdom`을 선언해 �
 프로덕션에 `pnpm db:push`를 사용하지 않는다.
 `pnpm db:push`는 버려도 되는 로컬 실험에만 허용하며 커밋 전에 마이그레이션으로 바꾸거나 되돌린다.
 컨테이너는 시작할 때 `migrate.js`를 실행한 뒤 `server.js`를 실행한다.
-
-## 작업 방식과 역할 분담
-
-작업 전에 적용되는 스킬이 있는지 확인하고 해당 `SKILL.md`를 먼저 읽는다.
-
-- 기능 계획은 `planning`과 `.claude/planning-overlay.md`를 따른다.
-- 계획 실행은 `build-with-teams`와 `.claude/build-with-teams-overlay.md`를 따른다.
-- 전체 문서 점검은 `docs-check`와 `.claude/docs-check-overlay.md`를 따른다.
-- PR 리뷰 반영은 `review-fix`와 `.claude/review-fix-overlay.md`를 따른다.
-
-기본은 메인 에이전트가 직접 완료한다.
-독립된 구현, 조사, 검증 단위가 품질이나 속도를 실제로 높일 때만 하위 에이전트에 위임한다.
-
-구현은 `fos-blog-executor`, 문서 검증은 `fos-blog-docs-verifier`, 실행 후 교훈 추출은 `self-healing-postmortem`을 사용한다.
-
-중요한 구현과 문서는 작성자와 검토자를 분리한다.
-독립 검토가 불가능하면 최종 보고에 그 사실과 직접 검증 근거를 남긴다.
-
-200줄이 넘는 파일은 먼저 `rg`로 필요한 위치를 찾고 구간을 나눠 읽는다.
-같은 파일을 불필요하게 반복해서 읽지 않는다.
-미사용 코드나 죽은 코드라는 주장은 실제 참조를 검색한 뒤에만 한다.
 
 ## 문서 작성
 
