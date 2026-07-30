@@ -15,7 +15,6 @@ AI 에이전트가 설계 철학을 빠르게 추론하기 위한 컨텍스트.
 - [ADR-001](./001-infinite-scroll-page.md) — 무한 스크롤 페이지 (SSR 첫 페이지 + 클라이언트 fetch 하이브리드)
 - [ADR-003](./003-home-entry-ux.md) — 홈 진입 UX (섹션 하단 CTA 버튼, 카테고리 링크와 차별화)
 - [ADR-005](./005-list-page-noindex.md) — 리스트 페이지 `noindex` (`/posts/latest|popular`)
-- [ADR-006](./006-intersection-observer.md) — IntersectionObserver 직접 구현 (의존성 0)
 - [ADR-010](./010-strip-leading-h1.md) — Markdown 본문 선두 H1 제거 (`stripLeadingH1`)
 - [ADR-022](./022-about-page.md) — About 페이지 co-located CSS + 2-stage avatar
 - [ADR-024](./024-rss-feed.md) — RSS feed (RSS 2.0 + pubDate=createdAt)
@@ -25,8 +24,8 @@ AI 에이전트가 설계 철학을 빠르게 추론하기 위한 컨텍스트.
 - [ADR-002](./002-pagination.md) — 페이지네이션 (최신=cursor, 인기=offset+pagePath)
 - [ADR-004](./004-infinite-scroll-api-route.md) — 무한 스크롤 데이터 fetch = API Route
 - [ADR-023](./023-tag-system.md) — 태그 시스템 (posts.tags JSON + JSON_CONTAINS)
-- [ADR-025](./025-series-system.md) — 시리즈 시스템 (posts.series VARCHAR + series_order INT + 양쪽 필수, plan033)
-- [ADR-030](./030-multi-category.md) — 다중 카테고리 (경로 primary + frontmatter 추가, 카테고리 페이지 cross-post 노출, plan051)
+- [ADR-025](./025-series-system.md) — 시리즈 메타데이터, 순서 정책, 목록 경로
+- [ADR-030](./030-multi-category.md) — 경로 주 카테고리와 frontmatter 추가 카테고리를 함께 사용
 
 ## OG 이미지 & 공유
 
@@ -48,15 +47,15 @@ AI 에이전트가 설계 철학을 빠르게 추론하기 위한 컨텍스트.
 
 ## 디자인 시스템
 
-- [ADR-017](./017-design-system.md) — Vercel 베이스 + Stripe 액센트 + Geist/Pretendard + shadcn 최신 (Claude Design 워크플로우)
-- [ADR-029](./029-design-md.md) — DESIGN.md 자립형 도입 + globals.css 를 토큰 source of truth 로 유지
+- [ADR-017](./017-design-system.md) — 절제된 개발 도구형 디자인, npm 글꼴, CSS 동작 효과와 자체 토큰
+- [ADR-029](./029-design-md.md) — `DESIGN.md`를 도입하고 실제 토큰은 `globals.css`에서 관리
 
 ## 마크다운 / 콘텐츠 렌더
 
 - [ADR-019](./019-code-highlight.md) — 코드 블록 하이라이팅 (rehype-pretty-code + shiki dual theme)
 - [ADR-020](./020-markdown-unified-async.md) — 마크다운 변환 react-markdown → unified async (server component, plan014)
 - [ADR-021](./021-comment-design.md) — 댓글 디자인 라이브러리 + 보안 정책 (rhf + zod + sonner / escapeHtml 단방향 / USER_FRIENDLY_ERRORS / og-palette 분리, plan022)
-- [ADR-026](./026-markdown-sanitize.md) — Markdown 렌더 sanitize 도입 (rehype-sanitize + defaultSchema 확장, plan029)
+- [ADR-026](./026-markdown-sanitize.md) — 원시 HTML을 HAST 단계에서 정제하고 필요한 속성만 허용
 - [ADR-027](./027-katex.md) — KaTeX 수식 렌더링 도입 (remark-math + rehype-katex output:"html", plan044)
 - [ADR-032](./032-glossary-sync-and-mentions.md) — 콘텐츠 용어집 동기화 + 언급 페이지 사전 계산 + sanitize 이후 요청별 HAST 변환 (plan054)
 

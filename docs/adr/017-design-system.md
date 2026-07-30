@@ -1,25 +1,19 @@
-## ADR-017. 디자인 시스템 — Vercel 베이스 + Stripe 액센트 + Geist/Pretendard + shadcn 최신
+## ADR-017. 절제된 개발 도구형 디자인과 자체 토큰을 사용한다
 
-**Context**: 현재 디자인이 generic Tailwind look (gray + blue + rounded-xl + shadow-md) 으로 시각적 정체성 부족. 컬러 토큰 정의는 있으나 실제 사용 안 됨, shadcn/ui 미도입으로 UI 모두 자체 구현, Hero/PostCard 등 13개 문제점 식별 (참조: `docs/design-inspiration.md`).
-
-**Decision**:
-
-- **톤**: **Vercel 베이스** (pure black/white + 시안/블루 액센트, 절제, 미세 grid + 1px border, 작은 radius) + **Stripe 그라디언트 mesh** (hero 영역만) + **Linear** 의 큰 hero 텍스트 일부 차용
-- **폰트**: 영문 **Geist Sans/Mono** (`geist` npm 패키지) + 한글 **Pretendard** (CDN) — Geist 와 톤 매칭 + 한글 가독성
-- **컴포넌트 base**: **shadcn/ui 최신** (Tailwind v4 호환) — Dialog/Button/Card/Tooltip 등 도입. SearchDialog, Comments 등 자체 구현 점진 교체
-- **모션**: **motion-one** (~3KB, Framer Motion 경량 alt) — 미세 page transition + hover 디테일
-- **다크 우선**: default `dark` 유지 (Vercel/Linear 컨벤션, 현 동작과 일치)
-- **토큰 시스템**: Tailwind v4 `@theme` 블록 (`globals.css`) 으로 표준화 — 컬러/타이포/spacing/radii/shadows/motion primitives
-- **카테고리 9종** (canonical): `ai / algorithm / db / devops / java / js / react / next / system` — oklch chroma 0.09, lightness 0.74 (dark) / 0.50 (light).
-  알려진 raw 카테고리 키는 헬퍼(`src/lib/category-meta.ts`, plan010)에서 기존 canonical 색상으로 정규화한다.
-  정적 meta가 없는 카테고리는 원래 이름을 표시하고 이름의 안정적인 hash로 hue를 계산한다.
-  새 폴더를 추가할 때 canonical 목록을 수정할 필요가 없도록 등록과 시각적 설정을 분리한다.
-- **OG / Avatar 팔레트는 7색 부분집합** (plan021/022): `og-palette.ts` 의 `OG_CATEGORY_HEX` 는 9종 중 `next` / `system` 제외한 7개만 hex 매핑. 이유: hash % palette.length 라 색 다양성만 충분하면 되고 `system` 은 fallback (`OG_CATEGORY_DEFAULT_HEX` brand teal) 와 의미가 겹침. `next` 는 forward-compat 자리
-- **워크플로우**: Claude Design (Anthropic Labs Research Preview) 으로 mockup 생성 → 이 저장소에서 코드 구현. 단계별 프롬프트는 `docs/design-inspiration.md`
-
-**Why**:
-
-- **개발자 정체성**: 모던 dev-tool 사이트 (Vercel/Linear/Stripe) 톤이 기술 블로그와 자연스럽게 매치 + 운영자 1인 개발자 브랜드와 일관
-- **외부 의존성 최소**: shadcn (소스 복사 모델, lock-in 없음) + motion-one (3KB) + Geist npm + Pretendard CDN — 합산해도 번들 영향 작음
-- **한글 가독성 보존**: Pretendard 가 한글 dev-blog 사실상 표준. Geist 와 미세 매칭 양호
-- **Claude Design 활용**: mockup → 코드 분리로 시각 합의 후 구현 → iteration 비용 절감
+- **결정**:
+  - 검정과 흰색을 기본으로 하고 시안 계열 강조색, 1px 테두리, 작은 모서리 반경을 사용한다.
+  - 홈의 강조 영역에만 그라디언트 mesh를 사용해 정보 화면의 절제된 톤을 보존한다.
+  - 영문은 `geist` 패키지, 한글은 `pretendard` 패키지의 CSS를 사용한다.
+  - 동작 효과는 CSS 전환과 keyframe으로 구현하고 `prefers-reduced-motion`을 지원한다.
+  - `globals.css`의 `@theme`과 `:root` 토큰을 색상, 글꼴, 간격, 그림자와 동작 시간의 단일 소스로 사용한다.
+  - shadcn/ui 방식의 소스 컴포넌트는 기존 UI 경계에 맞는 경우에만 도입한다.
+- **맥락**:
+  - 기존 화면은 범용 Tailwind 기본값에 가까워 기술 블로그의 시각적 정체성이 약했다.
+  - 읽기 화면은 장식보다 정보 밀도와 한글 가독성이 중요하고, 홈 화면에는 구분되는 브랜드 요소가 필요했다.
+  - 글꼴과 동작 효과를 패키지와 CSS로 관리하면 외부 CDN이나 런타임 동작 라이브러리에 의존하지 않아도 된다.
+- **대안 기각**:
+  - 모든 화면에 강한 그라디언트와 큰 그림자를 사용하면 긴 글의 가독성과 정보 위계가 약해진다.
+  - Pretendard CDN은 외부 네트워크 의존성이 생겨 npm 패키지 방식보다 재현성이 낮다.
+  - 별도 동작 효과 라이브러리는 현재 효과 규모에서 번들 비용과 추상화 복잡도를 정당화하지 못한다.
+- **참고**:
+  - 현재 디자인 방향과 컴포넌트별 적용 기준은 `docs/design-inspiration.md`에 정리한다.

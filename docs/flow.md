@@ -126,7 +126,7 @@ AdSense 승인 요건(ADR-014) + 태그 탐색(ADR-023) 페이지.
 |---|---|---|
 | `/contact` | Footer 링크 / 직접 접근 | 이메일 + GitHub Issues 채널 안내. 정적 렌더 |
 | `/privacy` | Footer 링크 / 직접 접근 | 개인정보처리방침 (방문 통계 SHA-256 해시 / 댓글 bcrypt / Google AdSense 쿠키). ISR 24h |
-| `/tag/[name]` | PostCard 태그 chip 클릭 | `decodeURIComponent(name)` → `getPostsByTag` limit=50. total=0 이면 `notFound()`. ISR 5분 (ADR-023) |
+| `/tag/[name]` | 글 상세 `ArticleFooter`의 태그 칩 | `decodeURIComponent(name)` → `getPostsByTag` limit=50. total=0 이면 `notFound()`. ISR 5분 (ADR-023) |
 | `/series` | Header "03 / 시리즈" / 메인 시리즈 섹션 CTA | `getAllSeries()` → SeriesCard grid. 0건이면 빈 상태 메시지. ISR 5분 (plan047) |
 
 ---

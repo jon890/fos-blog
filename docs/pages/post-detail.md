@@ -59,8 +59,10 @@
 - **breadcrumb 항목 클릭**: `/` (홈), `/category/<category>` (카테고리)
 - **카테고리 art-tag 자체는 표시용** (현재 링크 아님 — 후속 PR 에서 결정)
 - **목차 항목 클릭**: 해당 헤딩으로 스크롤 (`#slug` 앵커). 모바일에서는 `MobileTocButton` bottom sheet 가 함께 닫힘
-- **태그 칩**: 표시용 (라우팅은 issue #72 에서 결정 예정)
-- **스크롤**: ① Header 하단 reading progress fill 이 `/posts/*` 에서만 동작 ② viewport 최상단 `ReadingProgressBar` 가 모든 디바이스에서 0~100 % width 로 진행률 표시 (plan019, 둘은 독립)
+- **태그 칩**: `/tag/<encodeURIComponent(name)>`으로 이동
+- **스크롤 진행률**
+  - Header 하단 표시기는 `/posts/*`에서만 동작한다.
+  - 화면 최상단 `ReadingProgressBar`는 모든 디바이스에서 0~100% 너비로 진행률을 표시한다.
 - **모바일 TOC**: 우하단 FAB 클릭 → bottom sheet (max-h 70vh, scroll). ESC / 백드롭 클릭으로 닫힘 (plan019)
 - **본문 이미지 클릭**: viewport 풀스크린 lightbox (plan039). 여러 장이면 ←/→ 키 또는 좌우 버튼으로 순회 (wrap-around). ESC / 배경 / 우상단 X 로 종료. 모바일에서도 동일 동작 — pinch zoom 은 OOS
 
@@ -70,7 +72,7 @@
 
 | State | Component | Description |
 |-------|-----------|-------------|
-| `activeSlug` | `TableOfContents` / `MobileTocButton` | IntersectionObserver 로 현재 뷰포트 내 헤딩 추적 (ADR-006). H2/H3 모두 적용 |
+| `activeSlug` | `TableOfContents` | IntersectionObserver로 현재 뷰포트의 H2/H3 헤딩 추적 |
 | `progress` (Header) | `Header` | `/posts/*` 한정 scroll position → 0~1 ratio. passive listener, `isArticle === false` 일 때 등록 안 함 |
 | `progress` (Bar) | `ReadingProgressBar` | viewport 절대 최상단 1px 띠. scroll/resize passive listener 양쪽 cleanup, 0~100 % width (plan019). Header progress 와 독립 |
 | `open` | `MobileTocButton` | bottom sheet 펼침 상태. open 인 동안에만 keydown(ESC) listener 등록 → cleanup 에서 해제 (plan019) |
@@ -106,7 +108,7 @@
                                             │ ≣│
                                             └──┘
 ┌────────────────────────────────────────────────────────┐
-│ <ArticleFooter> (tags 있을 때만)                        │
+│ <ArticleFooter> (tag·series·이전/다음 글이 있을 때)     │
 └────────────────────────────────────────────────────────┘
 ┌────────────────────────────────────────────────────────┐
 │ <RelatedPosts /> (관련 글 1개 이상일 때만, plan034)      │

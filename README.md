@@ -24,7 +24,7 @@ GitHub 저장소의 마크다운 파일을 자동으로 동기화하여 렌더�
 | 스타일링      | Tailwind CSS v4                                |
 | 데이터베이스  | MySQL 8.4 + Drizzle ORM                        |
 | GitHub 연동   | @octokit/rest                                  |
-| 마크다운      | react-markdown + remark-gfm + rehype-pretty-code (shiki) |
+| 마크다운      | `unified` 기반 변환<br>GFM·KaTeX·Mermaid·Shiki |
 | 로깅          | pino                                           |
 | 패키지 매니저 | pnpm                                           |
 
@@ -56,8 +56,8 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ### 3. 데이터베이스 시작 및 스키마 적용
 
 ```bash
-pnpm db:up      # MySQL 컨테이너 시작 (local/docker-compose.yml)
-pnpm db:push    # 스키마 적용
+docker compose -f local/docker-compose.yml up -d
+pnpm db:migrate:runtime
 ```
 
 ### 4. 개발 서버 실행
@@ -84,10 +84,11 @@ pnpm lint          # ESLint
 pnpm type-check    # TypeScript 검사
 pnpm test          # 테스트 (Vitest)
 
-pnpm db:up         # MySQL 컨테이너 시작
-pnpm db:down       # MySQL 컨테이너 중지
+docker compose -f local/docker-compose.yml up -d
+docker compose -f local/docker-compose.yml down
 pnpm db:studio     # Drizzle Studio GUI
 pnpm db:generate   # 마이그레이션 파일 생성
+pnpm db:migrate:runtime # 마이그레이션 적용
 ```
 
 ## 프로젝트 구조

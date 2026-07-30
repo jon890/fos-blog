@@ -16,10 +16,10 @@
 
 | Source | Method | Returns |
 |--------|--------|---------|
-| CategoryRepository | `getCategories()` | 전체 카테고리 목록 + 글 수 |
 | PostRepository | `getRecentPosts(6)` | 최근 글 6개 |
 | CategoryRepository | `getCategories()` | postCount desc 정렬 — 홈에서 상위 9개 표시 (plan030) |
 | PostRepository | `getActivePostCount()` | HomeHero 통계용 활성 글 총 개수 (plan013) |
+| PostRepository | `countSeries()` | HomeHero 통계용 시리즈 수 |
 | VisitRepository | `getPopularPostPaths(limit*3)` | 인기 글 경로 + 조회수 |
 | PostRepository | `getPostsByPaths(paths)` | 인기 글 상세 데이터 |
 | VisitRepository | `getPostVisitCounts(postPaths)` | 최근 글 조회수 맵 |

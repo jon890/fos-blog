@@ -6,9 +6,8 @@
 
 ## 전체 스키마
 
-현재 7개 테이블이다.
+현재 9개 테이블이다.
 스키마 소스는 `src/infra/db/schema/*.ts`다.
-plan054 구현 후 아래 목표 schema 2개가 추가되어 9개가 된다.
 
 ### `posts`
 
@@ -244,11 +243,3 @@ Notes:
 Drizzle 0.45.1 에서 column-level `.desc()` index chain 의 SQL 방향 직렬화가 불안정 → `sql\`${col} DESC\`` 템플릿 채택 (실측 확인 필요시 migration SQL 참조).
 
 ---
-
-## Repository 메서드 요약
-
-구현 상세는 `code-architecture.md` 참조. 주요 시그니처:
-
-- `PostRepository.getRecentPostsCursor({ limit, cursor? })` — cursor `(updatedAt, id)` 기반 최신글
-- `VisitRepository.getPopularPostPathsOffset({ limit, offset })` — offset 기반 인기글
-- `PostRepository.getPostsByTag(tag, { limit })` — `JSON_CONTAINS` 쿼리 (ADR-023)
