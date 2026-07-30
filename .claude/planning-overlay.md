@@ -1,7 +1,7 @@
 # planning 오버레이 — fos-blog
 
 공용 코어(`~/.claude/skills/planning`)에 fos-blog 특화를 주입한다.
-코어의 8단계 skeleton 을 이 레포의 도메인(Next.js UI 블로그)·docs 컨벤션·검증에 맞춰 채운다.
+코어의 3단계부터 5단계까지를 Next.js UI 블로그 도메인에 맞춰 보강한다.
 
 ## 도메인: UI (Next.js / React)
 

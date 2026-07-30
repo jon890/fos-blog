@@ -60,7 +60,7 @@ cat tasks/{plan_name}/index.json | jq                     # task 구조
 |---|---|---|
 | 라이브러리/DB/타입 함정 | `.agents/skills/_shared/common-pitfalls.md` "fos-blog" 섹션 | BLG# 라인 |
 | 일반 critic 시드 | 같은 파일 섹션 1 | P# 4-section |
-| build-with-teams 프로세스 결함 | `.claude/build-with-teams-overlay.md` 해당 섹션 끝 (레포 특화) 또는 글로벌 `~/.claude/skills/build-with-teams/SKILL.md` (범용 패턴) | 1-2 줄 |
+| build-with-teams 프로세스 결함 | 설치된 `build-with-teams/SKILL.md` 또는 `.agents/skills/_shared/common-pitfalls.md` | 1-2 줄 |
 | 도메인 의사결정 | `docs/adr/NNN-slug.md` | 신규 ADR-### (자명성 점검 통과 시만) |
 | 페이지/컴포넌트 흐름 변경 | `docs/pages/{page}.md` | 해당 표 갱신 |
 

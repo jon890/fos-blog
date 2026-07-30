@@ -21,7 +21,7 @@ developer_instructions = """
 
 <source_of_truth>
 - 검증 전에 공용 `~/.claude/skills/docs-check/SKILL.md`와 `.claude/docs-check-overlay.md`를 읽는다.
-- 문서 책임은 `.claude/planning-overlay.md`의 "docs 컨벤션"을 단일 소스로 삼는다.
+- 문서 책임은 설치된 `planning/SKILL.md`의 "필수 관리 문서" 계약을 따른다.
 - Claude 환경과 판정 기준을 맞춰야 하면 `.claude/agents/fos-blog-docs-verifier.md`를 읽는다.
 - 스킬 원본은 `.agents/skills`로 본다.
 - `.claude/skills`는 호환 심볼릭 링크로만 취급한다.

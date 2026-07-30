@@ -17,6 +17,11 @@
 `AGENTS.md`는 `CLAUDE.md`를 가리키는 심볼릭 링크다.
 두 파일을 별도로 편집하거나 서로 다른 내용을 두지 않는다.
 
+팀 실행의 저장소 전용 역할은 `fos-blog-executor`와 `fos-blog-docs-verifier`다.
+각 역할 정의 파일을 책임과 출력 계약의 단일 소스로 삼는다.
+반복되는 계획·검토 함정은 `.agents/skills/_shared/common-pitfalls.md`에 누적한다.
+재사용 가능한 실행 마찰을 별도로 분석할 때만 `self-healing-postmortem`을 사용한다.
+
 코드와 문서가 충돌하면 현재 동작은 코드와 설정으로 확인하고, 의사결정 이유는 문서에서 확인한다.
 충돌을 발견하면 근거 없이 한쪽을 선택하지 말고 작업 범위 안에서 함께 정리한다.
 
@@ -102,6 +107,13 @@ docker compose -f local/docker-compose.yml down
 `SYNC_API_KEY` 인증은 `/api/sync`에 적용한다.
 모든 API Route가 Bearer 인증을 사용한다고 가정하지 않는다.
 
+격리 worktree에서는 다음 순서로 환경을 준비한다.
+
+```bash
+pnpm install
+[ -e .env ] || ln -s "$(dirname "$(git rev-parse --git-common-dir)")/.env" .env
+```
+
 ## 구현 규칙
 
 - TypeScript strict와 `@/*` 경로 별칭을 유지한다.
@@ -133,7 +145,7 @@ DOM 테스트는 파일 상단에 `// @vitest-environment jsdom`을 선언해 �
 
 ## 문서 작성
 
-문서 책임의 단일 소스는 `.claude/planning-overlay.md`의 “docs 컨벤션” 표다.
+문서 책임은 설치된 `planning` 스킬의 “필수 관리 문서” 계약을 따른다.
 구현 방법은 코드에 두고 문서에는 무엇을 결정했는지와 왜 결정했는지를 남긴다.
 
 - 설명 문장은 자연스러운 한국어로 작성하고 점검, 분류, 표, 기준선 같은 직관적인 표현을 사용한다.
@@ -148,7 +160,8 @@ Dooray, GitHub, 블로그, 메일처럼 외부에 게시할 문안은 등록 전
 
 ## Git과 PR
 
-task 정의는 `tasks/`, 기능은 `feat/`, 단발 버그 수정은 `fix/`, 정리는 `chore/`, 문서는 `docs/`를 사용한다.
+`planning` 산출물 브랜치는 `plan{N}-<slug>` 형식을 사용한다.
+기능은 `feat/`, 단발 버그 수정은 `fix/`, 정리는 `chore/`, 문서는 `docs/`를 사용한다.
 
 PR 제목은 `type(scope): description` 형식을 사용하며 제목과 본문은 기본적으로 한국어로 작성한다.
 본문에는 변경 이유와 내용을 요약하고 검증 항목을 체크리스트로 적는다.

@@ -1,7 +1,8 @@
 # docs-check 오버레이 — fos-blog
 
 공용 `docs-check`에 fos-blog의 문서 범위와 코드 대조 기준을 주입한다.
-문서 책임은 `.claude/planning-overlay.md`의 “docs 컨벤션” 표를 단일 소스로 삼는다.
+문서 책임은 설치된 `planning` 스킬의 “필수 관리 문서” 계약을 따른다.
+이 파일은 fos-blog의 검사 범위와 코드 대조 기준만 추가한다.
 
 ## 검사 범위
 

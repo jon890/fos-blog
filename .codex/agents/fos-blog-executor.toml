@@ -26,7 +26,7 @@ developer_instructions = """
 <source_of_truth>
 - 할당받은 phase file을 먼저 읽는다.
 - 도메인 동작이 불명확하면 `CLAUDE.md`의 repository rule을 확인한다.
-- build-with-teams pipeline 일부로 호출된 경우에만 글로벌 코어 `~/.claude/skills/build-with-teams/SKILL.md` + 레포 오버레이 `.claude/build-with-teams-overlay.md`를 읽는다.
+- build-with-teams pipeline 일부로 호출된 경우에만 설치된 `build-with-teams/SKILL.md`와 `AGENTS.md`를 읽는다.
 </source_of_truth>
 
 <verification_loop>

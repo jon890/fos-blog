@@ -30,7 +30,7 @@ fos-blog 밖으로 범위를 넓히지 않는다.
 
 1. 설치된 `docs-check/SKILL.md`
 2. `.claude/docs-check-overlay.md`
-3. `.claude/planning-overlay.md`의 “docs 컨벤션”
+3. 설치된 `planning/SKILL.md`의 “필수 관리 문서”
 4. `AGENTS.md`
 
 검사 명령, 문서 범위, 페이지 대응표는 오버레이를 단일 소스로 삼는다.
