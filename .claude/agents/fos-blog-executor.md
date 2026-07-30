@@ -1,7 +1,6 @@
 ---
 name: fos-blog-executor
 description: fos-blog task phase 구현 executor. 도메인 규칙(레이어 규칙·logger·isActive·Drizzle 스키마)을 내장하고, scope 확장 자체 판단 금지·worktree 격리·특이사항 4종 보고를 준수한다. build-with-teams 파이프라인에서 team-lead 의 지시를 받아 단일 phase 를 실행한다.
-model: sonnet
 ---
 
 <Agent_Prompt>
@@ -20,17 +19,18 @@ app/ (routing) → services/ (business logic) → infra/db/ + infra/github/ (ext
 lib/ (공유 유틸 — 모든 레이어에서 사용 가능)
 ```
 
-- `app/` 은 `infra/` 를 직접 import 금지 — 반드시 `services/` 경유.
+- 단순 조회 페이지나 Route Handler는 기존 방식대로 `getRepositories()`를 직접 사용할 수 있다.
+- 여러 Repository를 조합하거나 외부 부수 효과를 다루는 흐름은 `services/`를 경유한다.
 
 ## Logging
 
-- 서버 코드: `import { logger } from '@/lib/logger'`, `logger.child({ module: '...' })` 사용.
+- 서버 코드: `import logger from "@/lib/logger"`, `logger.child({ module: "..." })` 사용.
 - `console.log` 금지. `console.error` 는 `"use client"` 컴포넌트의 catch 블록 dev 로그 한정.
 - `scripts/*.ts` (standalone 실행) 는 path alias 미동작 → `console.log/error` 허용.
 
 ## posts.isActive 필터
 
-- 모든 post 조회 쿼리에 `eq(posts.isActive, true)` 필터 필수 (소프트 삭제).
+- 특별한 이유가 없는 모든 post 조회 쿼리에 `eq(posts.isActive, true)` 필터를 사용한다.
 
 ## DB 스키마 변경
 
@@ -48,7 +48,8 @@ lib/ (공유 유틸 — 모든 레이어에서 사용 가능)
 
 ## 배포 환경
 
-- 홈서버(Docker + standalone Next.js). Vercel·Edge Functions 제안 금지.
+- 홈서버의 Docker 컨테이너에 `standalone` Next.js로 배포한다.
+- Vercel 전용 기능을 제안하지 않는다.
 
 전체 규칙은 `CLAUDE.md` 참조.
 </Domain_Rules>
@@ -89,7 +90,8 @@ git diff --name-only
 - **꼭 필요한 변경만** — task 범위 외 코드 수정(pre-existing 에러·bug·ADR 위반) 자체 판단 금지.
   필요 시 SendMessage 로 team-lead 에 보고 후 승인 대기.
 - **worktree 절대경로 사용** — main repo 루트 직접 편집 금지.
-- **SendMessage 필수** — 완료·실패 보고는 반드시 `SendMessage({to: "main"})` 사용. 화면 출력만 하면 team-lead 에 전달 안 됨.
+- **SendMessage 필수** — 완료·실패 보고는 반드시 `SendMessage({to: "team-lead"})`를 사용한다.
+  화면 출력만으로 종료하지 않는다.
 
 </Self_Discipline>
 

@@ -1,7 +1,7 @@
 # build-with-teams 오버레이 — fos-blog
 
 공용 코어(`~/.claude/skills/build-with-teams`)에 fos-blog 특화를 주입한다.
-빌드/검증 명령은 `CLAUDE.md` (`pnpm lint && pnpm type-check && pnpm test -- --run && pnpm build`) 를 따르며 여기서 반복하지 않는다.
+빌드와 검증 명령은 `AGENTS.md`를 따르며 여기서 반복하지 않는다.
 레이어별 phase 분해 가이드는 `.claude/planning-overlay.md` 를 참조한다 (중복 작성 금지).
 
 ## 에이전트 이름 (단일 소스 — 구체 agent 우선 사용)
@@ -19,7 +19,7 @@ Codex 환경에서는 `.codex/agents/fos-blog-executor.toml` / `.codex/agents/fo
 ## 브랜치 / worktree 규칙
 
 - worktree 루트: `.claude/worktrees/{plan}` (`.gitignore` 등록됨). 철자 오타(`.claire-worktrees` 등) pre/post-flight 정리 필수.
-- 작업 브랜치: `feat/{plan}` (`origin/main` 기반 분기).
+- 작업 브랜치: 변경 성격에 따라 `feat/`, `fix/`, `chore/`를 고르고 `{plan}-impl`을 붙인다.
 - base: `main`. PR 은 `main` 대상 (Merge commit 정책은 `review-fix-overlay.md` 참조).
 - worktree 생성 후 환경 setup:
   ```bash
@@ -46,16 +46,18 @@ PLAN_DIR=""
 `ls -d tasks/{plan}-*/ | wc -l` ≥ 2 (다중 매칭, 예: `plan007` → 2개 디렉터리) 면 단독 결정 금지 — `AskUserQuestion` 으로 대상 확인.
 이후 모든 `tasks/{plan}/...` 경로는 `tasks/$PLAN_DIR/...` 로 치환.
 
-## task 단독 PR 이 이미 열려있는 경우 — 옵션 A 우선 (필수)
+## task 정의 PR 확인
 
-원격 `feat/{plan}` 존재 + 오픈 PR 존재가 동시에 걸리고, `gh pr view <N> --json files,additions,deletions` 결과 `tasks/{plan}/...` 만 포함(코드 변경 0)이면 **옵션 A(이어서 작업)** 로 전환한다 — 차단이 아니라 그 PR 을 결과물 통합 PR 로 그대로 쓴다.
+`tasks/{plan}` 브랜치의 task 정의 PR에는 구현 코드를 추가하지 않는다.
+task 파일이 `main`에 반영된 뒤 `origin/main`에서 구현 브랜치를 만든다.
+task 정의 PR이 아직 열려 있으면 외부 선행 조건으로 보고하고 구현 브랜치 생성을 멈춘다.
 
-1. 새 브랜치 만들지 않고 기존 브랜치로 worktree 체크아웃: `git worktree add .claude/worktrees/{plan} feat/{plan}` (`-b` 없음)
-2. phase 실행 → commit → 같은 브랜치 push
-3. PR 제목을 `chore(task)` → `feat(...)`/`fix(...)` 로 갱신 (`gh pr edit <N> --title "..."`), body 도 결과물 반영
-4. 마지막 phase 의 완료 마킹도 같은 브랜치 안에서
+## 재발 방지 훅 (자동 차단)
 
-옵션 B(별도 `-impl` 브랜치)는 task PR 이 이미 머지된 후에만 사용 — 옵션 A 가 기본, B 는 예외.
+| 훅 | 파일 | 차단 대상 |
+|---|---|---|
+| bare Agent 스폰 (`team_name` 누락) | `.claude/hooks/agent-spawn-guard.sh` (PreToolUse) | `TeamCreate` 없이 `Agent({subagent_type})` 만 호출 |
+| 학습 브랜치 오염 | `.claude/hooks/branch-contamination-guard.sh` (PreToolUse) | 공용 학습 파일을 `docs/`·`chore/` 밖에서 커밋하는 경우 |
 
 ## common-pitfalls 경로
 
@@ -63,13 +65,19 @@ PLAN_DIR=""
 
 ## M4. Post-mortem 학습 누적 (선택 — 사용자 confirm 후)
 
-PR 생성 + 팀 종료 직전, `self-healing-postmortem` (`fast` 실행 등급) 를 spawn 해 본 plan 의 마찰/회복 패턴을 추출한다.
+PR 생성과 팀 종료 사이에 `self-healing-postmortem`을 `fast` 실행 등급으로 호출한다.
+이 에이전트는 현재 plan의 마찰과 회복 패턴을 추출한다.
 
-spawn 입력: 본 plan git log(PR 브랜치) + sub-agent 통신 요약(critic 사이클 횟수/재시도/무응답) + team-lead 가 마주친 분기점.
-산출: 재현·추상화·검증 가능 패턴 1-3개 draft. 누적 위치는 agent 가 라우팅 제안 (`common-pitfalls.md` BLG# / 본 SKILL / `docs/adr/NNN-slug.md` / `docs/pages/*.md`).
+입력은 다음과 같다.
 
-**승인 게이트**: `AskUserQuestion` 으로 확인한 뒤 `main`에 직접 commit한다.
-본 PR 브랜치에는 학습 내용을 commit하지 않는다.
+- PR 브랜치의 git log
+- critic 반복 횟수, 재시도, 무응답을 포함한 하위 에이전트 통신 요약
+- team-lead가 마주친 분기점
+
+산출물은 재현, 추상화, 검증이 가능한 패턴 초안 1개에서 3개다.
+누적 위치는 `common-pitfalls.md`, 본 스킬, ADR, 페이지 문서 중에서 제안한다.
+
+초안을 사용자에게 보여준 뒤 승인된 내용만 별도 `docs/` 또는 `chore/` 브랜치와 PR로 반영한다.
 호출 자체는 선택 — plan 규모가 작거나 새 마찰이 없으면 skip.
 
 ## 노하우 누적 위치 라우팅 (fos-blog)
@@ -78,7 +86,7 @@ spawn 입력: 본 plan git log(PR 브랜치) + sub-agent 통신 요약(critic �
 |---|---|
 | critic 반복 지적 패턴 | `.agents/skills/_shared/common-pitfalls.md` `P#` (Bad/Good/Why/How to apply) |
 | build-with-teams 프로세스 결함 | 이 오버레이 또는 공용 코어 SKILL.md 해당 섹션 |
-| 도메인 의사결정 (ADR 자명성 게이트 통과) | `docs/adr/NNN-slug.md` |
+| 도메인 의사결정 (ADR 자명성 점검 통과) | `docs/adr/NNN-slug.md` |
 | AI 에이전트 컨텍스트 (코딩 규칙·스택·레이어) | `CLAUDE.md` |
 | 페이지별 상세 | `docs/pages/{page}.md` |
 | 일회용 메모 | 누적 금지 — 사용자 보고로 종료 |

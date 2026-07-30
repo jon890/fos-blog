@@ -65,7 +65,7 @@ skills 가 공유하는 사고 / 실수 회피 패턴. 카테고리별로 호출
 | BLG7 | task 파일 테스트 스니펫에 `as any` 금지 (PR #92 관측) | as any, type guard, hast | code review |
 | BLG8 | prose-scoped 클래스 셀렉터 `.prose` prefix 일관성 유지 (PR #93 관측) | .prose, .code-card-body, globals.css | code review |
 | BLG9 | JSDoc/TSDoc 코멘트에 Tailwind 클래스 패턴 금지 (PR #94 관측) | 코멘트, text-[var(--], @source not | code review |
-| BLG10 | app/ 가 services/ 우회해 infra/ 직접 import 금지 (PR #114 관측) | @/infra, app/, services/ | code review |
+| BLG10 | 복합 도메인 흐름은 app에서 Repository를 직접 조합하지 않음 (PR #114 관측) | @/infra, app/, services/ | code review |
 | BLG11 | vitest mock 의 `as unknown as Repository` 캐스팅 금지 (PR #114 관측) | as unknown as, 좁은 인터페이스, structural typing | code review |
 | BLG12 | co-located CSS 페이지의 inline style 금지 (PR #114 관측) | inline style, .css, co-located | code review |
 | BLG13 | TS narrowing 후 `as` 단언 금지 (PR #118 관측) | as string, narrowing, strict | code review |
@@ -216,22 +216,25 @@ grep -lE "index\.json.*completed" tasks/{plan}/phase-*.md   # 마지막 phase �
 
 **Self-check**: rename plan 에서 sed `\b` → perl 교체? 검증식 일관성?
 
-## 1-10. 분리/이관 검증 게이트가 의도된 변형을 false-fail (plan052)
+## 1-10. 분리·이관 검증이 의도된 변형을 잘못 실패 처리함 (plan052)
 
-**증상**: 단일 파일 분리/이관 task 의 "본문 동일성" 게이트가 정상 산출물을 ❌ 로 잡음. plan052 의 ADR 분해에서 3원인이 누적 관측:
+**증상**: 단일 파일 분리·이관 task의 “본문 동일성” 검사가 정상 산출물을 실패로 처리함.
+plan052의 ADR 분해에서 3원인이 누적 관측됨:
 - 블록 순서 가정 — 원본이 숫자 순이 아닌데(018 이 017 앞) `cat $(ls|sort)` vs 물리순서 `diff` → 거짓 실패.
 - commit 타이밍 — `git show HEAD:old.md` 가 per-phase commit 후 파일 삭제로 깨짐 → old 공백 → 전건 불일치.
 - 의도된 변형 — 상호참조 링크(`(#adr-NNN)`→`(./NNN-slug.md)`)를 본문 변형으로 오인.
 
-검증: 게이트를 정상 분리 결과에 돌려 0 ❌ 가 나오는지 사전 확인.
-**왜**: false-fail 은 게이트 부재보다 나쁠 수 있다 — plan 완료 차단 + executor 가 멀쩡한 산출물을 "고치려다" 오염.
+검증: 검사를 정상 분리 결과에 실행해 잘못된 실패가 0건인지 사전 확인.
+**왜**: 잘못된 실패는 검사 부재보다 나쁠 수 있다.
+plan 완료를 차단하고 executor가 정상 산출물을 고치려다 오염시킬 수 있다.
 
-**대체**: 분리/이관 게이트는 의도된 변형을 정규화로 흡수한다.
+**대체**: 분리·이관 검사는 의도된 변형을 정규화로 흡수한다.
 - 순서 독립 — 번호/키별 개별 비교(awk 섹션 추출), concat+diff 금지.
 - 타이밍 독립 — 원본이 살아 있는 시점(예: `git rm` 직전)에 on-disk 비교, `git show HEAD` 의존 회피.
 - 의도된 변형 정규화 — 의도적으로 바뀌는 토큰(링크 형태 등)만 `sed` 로 중립화하고 그 외 유실은 그대로 검출.
 
-**Self-check**: 분리/이관 plan 의 동일성 게이트를 정상 결과에 돌려 false-fail 0 확인했는가? 순서·타이밍·의도된 변형 3축을 정규화했는가?
+**Self-check**: 분리·이관 plan의 동일성 검사를 정상 결과에 실행해 잘못된 실패가 0건인지 확인했는가?
+순서, 실행 시점, 의도된 변형을 정규화했는가?
 
 ## 섹션 1 사전 점검 체크리스트
 
@@ -246,7 +249,7 @@ plan 제출 전 10개 패턴 모두 self-check (자동 검출 5 / 사람 판단 
 - [ ] **1-7**: load-bearing 불변식 도입 시 4면 가드 (사람)
 - [ ] **1-8**: 마지막 phase 에 index.json `completed` 마킹 지시 (자동)
 - [ ] **1-9**: rename 시 `sed \b` 대신 `perl` (자동)
-- [ ] **1-10**: 분리/이관 동일성 게이트가 정상 결과에 false-fail 0 (순서·타이밍·의도된 변형 정규화) (사람)
+- [ ] **1-10**: 분리·이관 동일성 검사가 정상 결과를 잘못 실패 처리하지 않음 (사람)
 
 ---
 
@@ -270,7 +273,7 @@ team-lead 가 idle 알림 2회 연속 + 평가 메시지 0 → 즉시 강제 재
 ## 2-2. 팀원 자발적 실행
 
 **증상**: idle 대기 지시 무시하고 team-lead 의 SendMessage 전에 자발 실행 / 검증 시작.
-**왜**: critic 게이트 시점 정합성 망가짐.
+**왜**: critic 점검 시점의 정합성이 깨진다.
 
 스폰 프롬프트에:
 ```
@@ -302,7 +305,7 @@ team-lead 는 executor 작업 중 `git -C {main-repo} status` 주기 점검. dir
 ## 2-5. executor scope 확장 자체 판단
 
 **증상**: phase 도중 task 범위 외 (pre-existing 에러 / 발견한 bug / ADR 위반 자체 변경) 를 자체 추가. 또는 `eslint-disable` / `@ts-ignore` 자체 추가.
-**왜**: critic 게이트 우회 → 사후 평가 사이클 추가 + task 본문 / 성공 기준 어긋남.
+**왜**: critic 점검을 우회하면 사후 평가가 늘고 task 본문과 성공 기준이 어긋난다.
 
 executor 프롬프트에:
 ```
@@ -360,7 +363,8 @@ git -C /Users/.../fos-blog/.claude/worktrees/{plan} status --short
 **증상**: skill / docs 변경 commit 직전 `git branch --show-current` 안 함 → PR 작업 브랜치에 무관 commit 박힘.
 **왜**: skill 외부 작업이라도 자동 mode 가 자동 switch 하는 듯. 같은 세션 두 번 발생.
 
-**규칙**: 모든 commit 직전 `git branch --show-current` 강제 확인. main 작업이면 main, PR 브랜치 작업이면 PR 브랜치 확인 후 commit.
+**규칙**: 모든 commit 직전에 `git branch --show-current`를 확인한다.
+`main` 또는 `master`면 commit하지 않고 작업 성격에 맞는 브랜치를 먼저 만든다.
 
 ## 섹션 2 사전 점검 체크리스트
 
@@ -584,7 +588,7 @@ span: [
 
 # 섹션 4. 레포별 +α 패턴 (Stage 0 시드)
 
-레포 도메인 코드 작성 시 critic 이 추가로 검사하는 항목. 3 레포 (frontend-fos / backend-fos / dooray-cli / fos-blog) 동기화 시 공유.
+여러 저장소에서 도메인 코드를 작성할 때 critic이 추가로 검사하는 항목이다.
 
 ### frontend-fos (Next.js 16 / React 19)
 
@@ -679,16 +683,16 @@ plan017 의 shiki dual theme 규칙이 이 패턴을 어겨 리뷰 지적.
 
 **Why**: 한 번 발생하면 dev 통째로 다운. plan017 task 작성 중 직접 발생.
 
-## BLG10. app/ 가 services/ 우회해 infra/ 직접 import 금지 (PR #114 관측)
+## BLG10. 복합 도메인 흐름은 app에서 Repository를 직접 조합하지 않음 (PR #114 관측)
 
-**증상**: `import { getRepositories } from "@/infra/db/repositories"` 를 page.tsx 에 두면 layered architecture 위반.
-기존 코드가 같은 패턴을 쓰더라도 신규는 더 나은 방향.
+**증상**: 여러 Repository를 조합하거나 외부 부수 효과를 다루는 로직을 page.tsx 또는 Route Handler에 직접 구현하면 도메인 경계가 흐려진다.
+단일 Repository의 단순 조회에 `getRepositories()`를 사용하는 기존 방식은 허용한다.
 
-**Good**: service 에 `createDefaultStatsService()` 같은 factory 추가 → page 가 services 만 의존.
+**Good**: 복합 흐름은 service에 `createDefaultStatsService()` 같은 factory를 두고 app은 service를 호출한다.
 
-**검출**: `grep -nE 'from "@/infra/' src/app/**/*.tsx`
+**검출**: `rg -n 'getRepositories|from "@/infra/' src/app` 결과에서 Repository 조합 수와 부수 효과를 함께 확인한다.
 
-**Why**: layered 의존성 일관성. infra 변경 시 영향 범위 축소.
+**Why**: 단순 조회의 불필요한 wrapper는 피하면서 복합 도메인 로직의 변경 범위는 service 안으로 제한한다.
 
 ## BLG11. vitest mock 의 `as unknown as Repository` 캐스팅 금지 (PR #114 관측)
 
@@ -899,4 +903,5 @@ lightbox focus return 의 경우 image 전환할 때마다 닫기 버튼 자체�
 
 ---
 
-이 파일은 3 레포 (fos-blog / webtoon-maker-v1 / 기타) 에서 동기화된다. 레포 고유 패턴은 섹션 4 +α 섹션에만 추가.
+이 파일은 여러 저장소에서 동기화된다.
+저장소 고유 패턴은 섹션 4의 해당 저장소 영역에만 추가한다.

@@ -15,11 +15,11 @@
 
 | 내용 유형 | 단일 소스 | 다른 문서 |
 |---|---|---|
-| 제품 목적 / MVP 범위 | `docs/prd.md` | flow 는 목표만 재언급 |
+| 현재 제품 요구사항 / 구현 범위 | `docs/prd.md` | flow 는 목표만 재언급 |
 | 사용자 흐름 / 화면 전환 | `docs/flow.md` | prd 는 목표만, ADR 은 결정만 |
 | DB 테이블 / 관계 / 제약 | `docs/data-schema.md` | ADR 은 결정 근거만 |
 | 디렉터리 / 레이어 / API 전략 | `docs/code-architecture.md` | ADR 은 결정 근거만 |
-| 기술 결정 근거 (왜) | `docs/adr/README.md` + `docs/adr/NNN-slug.md` | 다른 docs 는 ADR 번호 링크 |
+| 기술 결정 근거 (왜) | `docs/adr/README.md`<br>`docs/adr/NNN-slug.md` | 다른 docs 는 ADR 번호 링크 |
 | 페이지별 PRD | `docs/pages/{page}.md` | flow 는 흐름만 |
 
 ### ADR 자명성 점검 (작성 전 필수 자문)
@@ -50,11 +50,11 @@
 1. **단일 소스**: 위 "문서 책임 표" 가 docs 갱신의 유일한 정의.
 2. **거울**: `fos-blog-docs-verifier` agent 의 검증 항목은 위 표를 거울처럼 참조 — 별도 체크리스트 보유 금지.
 3. **별도 회고 docs 신설 금지**: docs-verifier 반복 지적은 표에 행 추가로 흡수.
-4. **표 수정 시 거울 동기 검토** — `.claude/agents/fos-blog-docs-verifier.md` 도메인 지식 섹션과 함께 갱신.
+4. **표 수정 시 거울 동기 검토** — `.claude/docs-check-overlay.md`의 문서 책임과 함께 갱신.
 
 ## 검증
 
-- **common-pitfalls**: `.claude/skills/_shared/common-pitfalls.md` (섹션 1 = plan 작성 패턴). 코어 `verify-task.sh` 5 패턴은 이 시드에서 나왔다.
+- **common-pitfalls**: `.agents/skills/_shared/common-pitfalls.md` (섹션 1 = plan 작성 패턴). 코어 `verify-task.sh` 5 패턴은 이 시드에서 나왔다.
 - 추가 패턴 없음 (코어 5 패턴으로 충분).
 
 ## 레이어별 phase 가이드
@@ -63,15 +63,15 @@ CLAUDE.md "Architecture" 의 레이어(app → services → infra, lib 는 횡�
 
 | 작업 유형 | 권장 phase 분해 |
 |---|---|
-| 신규 페이지 (UI) | ① 컴포넌트 신규 (`src/components/`) ② 페이지 통합 (`src/app/`) ③ 검증 |
-| 신규 API 라우트 | ① service 메서드 (`src/services/`) ② route handler (`src/app/api/`) ③ 검증 |
-| DB 스키마 변경 | ① schema (`src/infra/db/schema/`) + `pnpm db:generate` ② repository 메서드 ③ 검증 (`pnpm db:migrate:runtime`) |
-| 마이그레이션 / GitHub 동기화 | ① `src/infra/github/` 또는 `src/services/SyncService.ts` ② 호출자 ③ 검증 + idempotency |
-| 디자인 토큰 / 스타일 | ① `src/app/globals.css` 토큰 ② 컴포넌트 적용 ③ legacy grep + Lighthouse |
+| 신규 페이지 (UI) | 컴포넌트 생성<br>페이지 통합<br>검증 |
+| 신규 API 라우트 | service 메서드<br>Route Handler<br>검증 |
+| DB 스키마 변경 | schema와 `pnpm db:generate`<br>Repository 메서드<br>`pnpm db:migrate:runtime` 검증 |
+| 마이그레이션·GitHub 동기화 | `src/infra/github/` 또는 `src/services/SyncService.ts`<br>호출자<br>멱등성 검증 |
+| 디자인 토큰·스타일 | `src/app/globals.css` 토큰<br>컴포넌트 적용<br>잔재 검색과 Lighthouse |
 
 ### 마지막 phase (검증 전용)
 
-`fast` 실행 등급. `pnpm lint && pnpm type-check && pnpm build && pnpm test`, 잔재 grep, dead code 정리, JSON-LD 회귀, Lighthouse smoke.
+`fast` 실행 등급. `pnpm type-check && pnpm lint && pnpm test && pnpm build`, 잔재 grep, dead code 정리, JSON-LD 회귀, Lighthouse smoke.
 **커밋은 별도 phase 로 분리하지 않는다** — build-with-teams 가 phase 단위 atomic commit 자동 생성.
 
 ## plan 네이밍 (번호 충돌 방지)
@@ -88,6 +88,7 @@ gh pr list --state open --json number,headRefName,title --jq '.[] | "\(.headRefN
 
 ## branch / 커밋 / 핸드오프
 
-- **branch**: `main`. PR 브랜치에서 작업 중이면 stash 후 main switch. 원격 protection 으로 차단 시 PR 경로 우회.
-- **커밋**: docs 변경 + task 파일을 **한 커밋** 으로 묶는다.
+- **브랜치**: `origin/main`에서 `tasks/{plan}`을 만들고 task 정의 PR을 생성한다.
+- **커밋**: 계획에 필요한 docs 변경과 task 파일을 한 커밋으로 묶는다.
+- **보호**: `main`에 직접 commit 또는 push하지 않는다.
 - **핸드오프**: `/build-with-teams plan{N}` 로 구현 시작 안내.

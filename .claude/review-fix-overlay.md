@@ -22,7 +22,7 @@ fos-blog 는 PR 머지 시 **Merge commit** 을 사용한다 (`git log` 에 `Mer
 | `Claude 코드 리뷰` workflow stuck (1시간+) | claude-code-action hang (issue #1290) | `timeout-minutes: 15` 설정 확인. hang 시 `gh run cancel` |
 | `actions/X@vN: Unable to find action` | floating tag 가 cutoff 이후 제거 / 오타 | `curl -s https://api.github.com/repos/actions/X/tags` 로 실존 확인 |
 
-표에 없는 증상은 사용자에게 로그 일부 + 의심 원인을 제시하고 진행 방향 확인.
+표에 없는 증상은 사용자에게 로그 일부와 의심 원인을 제시하고 진행 방향을 확인한다.
 
 ## 실패 체크 → 로컬 명령 매칭
 
@@ -30,34 +30,33 @@ fos-blog 는 PR 머지 시 **Merge commit** 을 사용한다 (`git log` 에 `Mer
 | --- | --- | --- |
 | `Lint`, `eslint`, `no-unused-vars`, `no-console` | `pnpm lint` | ~10s |
 | `Type check`, `tsc`, `Cannot find name`, `not assignable` | `pnpm type-check` | ~20s |
-| `Test`, `vitest`, `FAIL src/` | `pnpm test --run` | ~10-60s |
+| `Test`, `vitest`, `FAIL src/` | `pnpm test` | ~10-60s |
 | `Build`, `next build`, `Module not found` | `pnpm build` | ~60-120s |
-| `Drizzle migration`, `drizzle/` | `pnpm db:migrate:runtime` (로컬 DB 필요 시 `pnpm db:up` 먼저) | ~5s |
+| `Drizzle migration`, `drizzle/` | `docker compose -f local/docker-compose.yml up -d` 후 `pnpm db:migrate:runtime` | ~5s |
 | `ERR_PNPM_OUTDATED_LOCKFILE`, `frozen-lockfile` | `pnpm install --frozen-lockfile` | ~30-60s |
 
-실행 순서: lint → type-check → test → build (가벼운 순서, build 는 항상 마지막). 여러 체크 실패 시 매칭 명령을 모두 실행해 한 사이클로 전체 실패 지점 파악.
+실행 순서는 lint, type-check, test, build다.
+build는 항상 마지막에 실행한다.
+여러 검사가 실패하면 대응 명령을 한 주기에 모두 실행해 전체 실패 지점을 파악한다.
 
 ## CI 워크플로 설정 점검 (`.github/workflows/*.yml`)
 
-로컬 PASS + CI FAIL 일 때 (CI 환경 특수성) 점검한다.
+로컬에서는 통과하고 CI에서 실패할 때 환경 차이를 점검한다.
 
 | 점검 항목 | 확인 위치 | 흔한 수정 패턴 |
 | --- | --- | --- |
-| Node 버전 | `actions/setup-node` 의 `node-version` | 로컬 `node -v` 와 정합. floating major(`20`) 보다 명시(`20.18.0`) |
+| Node 버전 | `actions/setup-node` 의 `node-version` | 로컬 `node -v`와 정합<br>가능하면 정확한 버전 명시 |
 | pnpm 버전 | `pnpm/action-setup` 의 `version` 또는 `package.json` 의 `packageManager` | `package.json` 과 일치 (`pnpm@9.15.0`) |
-| env vars | job 의 `env:` 블록 + `secrets.*` | 누락 secret 은 repo Settings → Secrets 등록. `.env.example` 대비 정합 |
+| 환경 변수 | job의 `env:` 블록<br>`secrets.*` | 누락 secret은 저장소 설정에 등록<br>`.env.example`과 대조 |
 | actions 버전 (floating tag) | `uses: actions/checkout@v4` 등 | `@v4` floating → `@v4.x.x` 고정 또는 SHA 고정 |
 | 캐시 키 | `actions/cache` 의 `key:` | lockfile 해시 포함 정합 |
 
 workflow 변경은 CI fix 와 같은 PR 에 커밋. `actions/` 버전 변경은 보안 영향 — 사용자 confirm.
 
-## 커밋 이모지 규칙
+## 커밋 형식
 
-review-fix 커밋은 conventional `type(scope):` 앞에 이모지를 붙인다: `🩹 fix(scope): ...`.
-
-- `🩹` 버그/리뷰 수정 (review-fix 기본값)
-- `♻️` 리팩토링
-- `✨` 새 기능
+커밋 제목은 `AGENTS.md`의 `type(scope): description` 형식을 따른다.
+형식 앞에 이모지나 다른 접두사를 붙이지 않는다.
 
 ## 학습 누적 위치 — `_shared/common-pitfalls.md`
 
@@ -67,7 +66,7 @@ review-fix 커밋은 conventional `type(scope):` 앞에 이모지를 붙인다: 
 | --- | --- |
 | 라이브러리 / DB / 타입 함정 (Next.js·Drizzle·MySQL·pino 등) | "### fos-blog (Next.js 16 / Drizzle ORM / MySQL / pino)" 의 `BLG#` |
 | 일반 critic 시드 패턴 | 같은 파일 `P#` 시드 패턴 |
-| 도메인 의사결정 / ADR 가치 | `docs/adr/NNN-slug.md` (신규 ADR, 자명성 게이트 통과 후) |
+| 도메인 의사결정 / ADR 가치 | `docs/adr/NNN-slug.md` (신규 ADR, 자명성 점검 통과 후) |
 | 페이지/컴포넌트 흐름 변경 | `docs/pages/{page}.md` 해당 섹션 |
 
 작성 형식:
@@ -81,20 +80,8 @@ review-fix 커밋은 conventional `type(scope):` 앞에 이모지를 붙인다: 
 
 3-4줄 이상이면 시드 `P#` 형식(Bad/Good/Why/How to apply)으로 작성.
 
-### 학습 commit — 코어 기본값(같은 PR 추가 commit) 대신 별도 main 직접 commit
+### 학습 반영
 
-fos-blog 는 학습 누적을 **PR 브랜치 commit 에 포함하지 않는다** (PR scope 외 — 코어 9단계 기본값을 오버라이드). PR 머지 후 main 직접 commit 이 원칙:
-
-> **⚠️ 메인 디렉터리 사전 점검 (필수)** — main 디렉터리에 다른 브랜치 체크아웃·미푸시 commit·unstaged/untracked 변경이 있으면 학습 commit 이 그 작업과 섞일 위험.
-
-```bash
-[ "$(git status --short | wc -l | tr -d ' ')" = "0" ] && [ "$(git branch --show-current)" = "main" ] \
-  || { echo "🚫 main 직접 commit 차단 — 다른 변경 또는 다른 브랜치 체크아웃 상태"; exit 1; }
-git switch main && git pull --ff-only
-# common-pitfalls.md 편집
-git add .agents/skills/_shared/common-pitfalls.md
-git commit -m "docs(skill): accumulate review learnings from PR #<N>"
-git push origin main
-```
-
-`/review-fix` 자체는 학습 누적 commit 을 자동 수행하지 않고, 누적 내용을 보여준 뒤 "main 에 commit 할까요?" 확인한다.
+학습 누적은 리뷰 수정 PR에 섞지 않는다.
+초안을 사용자에게 보여준 뒤 승인된 내용만 별도 `docs/` 또는 `chore/` 브랜치와 PR로 반영한다.
+`main`에 직접 commit 또는 push하지 않는다.
