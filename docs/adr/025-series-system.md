@@ -1,21 +1,19 @@
-## ADR-025. 시리즈 시스템 — `posts.series VARCHAR + series_order INT` + 양쪽 필수 정책 (plan033)
+## ADR-025. 시리즈는 글 메타데이터와 명시적 순서로 관리한다
 
-**Context**: issue #127 — 다회 포스트 시리즈를 묶어 prev/next 네비게이션 + 시리즈 인덱스 페이지 제공. 데이터 모델, 누락 처리, URL 패턴, 인덱스 전략 4 결정이 코드/git log 로 자명하지 않음.
-
-**Decision**:
-
-1. **단일 테이블 컬럼** (별도 `series` 테이블 기각) — `posts.series VARCHAR(255) NULL` + `posts.series_order INT NULL` 두 컬럼 추가. 218 글 규모 + series 가 post 의 attribute 수준이라 별도 테이블 join 비용 회피. `tags JSON` (N:M, plan026) 와 모델링 차이 — series 는 post:series = N:1.
-2. **`series` + `seriesOrder` 양쪽 모두 있어야 series 인정** — frontmatter 한쪽만 있으면 둘 다 NULL + `log.warn` drop. 이유: order 없는 series 는 prev/next 의미 없음. sync 단계에서 빠르게 drop 해 down-stream 코드 (Repository / page / Hero / Footer) 가 양쪽 동시 존재만 가정 → 분기 단순화.
-3. **`seriesOrder == null` 가드 (`!seriesOrder` 기각)** — `series_order = 0` 이 valid 한 1번째 글 케이스. truthy 체크는 0 을 missing 으로 오인. `==` / `!=` 명시 사용 (`===` / `!==` 사용 금지 — `null` 과 `undefined` 둘 다 잡아야 함). `posts/[...slug]/page.tsx` 인라인 주석으로도 보존.
-4. **`/series/[name]` 만 (`/series` 인덱스 기각)** — tag 패턴과 일관 (`/tag` 인덱스도 OOS). 모든 시리즈 목록은 HomeHero `seriesCount` stat 으로만 노출. sitemap.xml 도 미포함 (tag 일관).
-5. **`series_idx` 단일 컬럼 인덱스** — 218 글 규모에서 무시 가능하나 향후 확장 대비 명시. `(series, series_order)` 복합 인덱스 미채택 — 시리즈당 글 수 (평균 3~5) 가 작아 series 필터 후 in-memory order 정렬 비용 무시.
-
-**Why (대안 기각)**:
-
-- **별도 `series` 테이블 + `series_id FK`** 기각: 218 글 규모에서 join 비용이 모델 복잡도 대비 가치 낮음. 시리즈가 1000+ 가 되면 재검토.
-- **`series` 만 있고 order 자동 추정 (sequence)** 기각: 글 추가 순서가 시리즈 순서와 다른 경우 (e.g. "1편" 을 늦게 작성) 자동 추정 실패. frontmatter 명시가 단순.
-- **`!seriesOrder` truthy 체크** 기각: 위 #3 사유.
-- **`/series` 인덱스 페이지** 기각: tag 와 일관성. `countSeries()` stat 만으로 사용자 인지 충분.
-- **`series TEXT`** 기각: VARCHAR(255) 가 인덱스 가능 + MySQL 인덱스 키 제한 우회. 시리즈 이름 길이는 충분.
-
-**Scope**: 본 ADR 결정은 plan033 한정. 시리즈 50+ 글 또는 `(series, series_order)` 정렬 hotspot 등장 시 복합 인덱스 / 캐시 / 별도 테이블 재검토.
+- **결정**:
+  - `posts.series`와 `posts.series_order`를 사용해 글이 속한 시리즈와 순서를 저장한다.
+  - 두 값이 모두 유효할 때만 시리즈 글로 인정한다.
+  - `seriesOrder`는 0을 허용하므로 누락 검사는 `== null`로 수행한다.
+  - `/series`에서 전체 시리즈를 발견하고 `/series/[name]`에서 글을 `seriesOrder` 오름차순으로 탐색한다.
+  - 조회용 인덱스는 `series_idx` 단일 컬럼으로 유지한다.
+- **맥락**:
+  - 시리즈는 글의 선택적 속성이며 현재 규모에서는 별도 테이블보다 글 테이블의 두 컬럼이 단순하다.
+  - 작성 순서와 독자가 읽어야 할 순서는 다를 수 있어 frontmatter에 순서를 명시해야 한다.
+  - 전체 시리즈 진입점과 시리즈별 순서 목록이 모두 있어야 독자가 시리즈를 발견하고 연속해서 읽을 수 있다.
+- **대안 기각**:
+  - 별도 `series` 테이블과 외래 키는 현재 글 규모에서 조인과 동기화 복잡도에 비해 이점이 작다.
+  - 순서를 작성일이나 파일 순서로 자동 추정하면 뒤늦게 추가한 앞 순서 글을 올바르게 배치할 수 없다.
+  - `!seriesOrder` 검사는 유효한 값 0을 누락으로 오인한다.
+  - `(series, series_order)` 복합 인덱스는 시리즈당 글 수가 적은 현재 데이터에서 단일 인덱스보다 실질적인 이점이 없다.
+- **재검토 조건**:
+  - 시리즈 규모나 조회 부하가 커져 정렬 비용이 측정될 때 복합 인덱스 또는 별도 테이블을 검토한다.

@@ -1,13 +1,13 @@
 # DESIGN.md — fos-blog 디자인 시스템
 
 **관련 ADR**: [ADR-029](./adr/029-design-md.md) (도입 결정) · [ADR-017](./adr/017-design-system.md) (디자인 시스템 톤) · [ADR-019](./adr/019-code-highlight.md) (코드 블록)
-**영감 보드 / 생성 과정**: [design-inspiration.md](./design-inspiration.md)
+**시각 방향 참고**: [design-inspiration.md](./design-inspiration.md)
 
 이 문서는 [Google Stitch DESIGN.md 컨벤션](https://github.com/voltagent/awesome-design-md) 9섹션 형식으로,
 AI agent 가 "이 디자인처럼 페이지/컴포넌트를 만들어줘" 를 일관되게 수행하도록 fos-blog 의 시각·상호작용 규칙을 정의한다.
 
 > **Source of truth 정책**
-> 모든 토큰 값의 단일 소스는 [`src/app/globals.css`](../src/app/globals.css) 의 `@theme` 블록이다.
+> 모든 토큰 값의 단일 소스는 [`src/app/globals.css`](../src/app/globals.css)의 `@theme`과 `:root` 블록이다.
 > 이 문서는 사람·외부 agent 가 읽기 위한 **스냅샷**이며, 값이 어긋나면 **`globals.css` 가 우선**한다.
 > 토큰 값을 바꿀 때는 `globals.css` 를 고치고, 이 문서의 해당 표를 함께 갱신한다.
 
@@ -76,8 +76,9 @@ brand-text 의 dark 값은 brand-400 과 같고, light 값은 `oklch(0.5 0.11 19
 | next | 0 | `--color-cat-next` |
 | system | 250 | `--color-cat-system` |
 
-데이터의 raw 카테고리 키(architecture/network/interview 등)는 `src/lib/category-meta.ts` 에서 9종으로 정규화(미매핑 → `system`).
-배지 배경은 `color-mix(in oklch, var(--color-cat-*) 12%, transparent)` (`.category-*` 클래스).
+알려진 별칭은 `src/lib/category-meta.ts`에서 9종 기준 키로 정규화한다.
+알 수 없는 카테고리는 원래 이름을 표시하고 이름 기반의 안정적인 색상을 계산한다.
+현재 카테고리 UI는 `getCategoryColor()` 결과를 인라인 스타일의 전경색이나 `--cat-color`로 전달한다.
 
 ### Semantic
 
@@ -162,7 +163,8 @@ focus-visible `ring-3 ring-ring/50`. invalid 시 destructive ring. disabled 시 
 
 ### Category badge / card
 
-- badge: `.category-{name}` — 카테고리 색 12% tint 배경 + 카테고리 색 전경
+- `PostCard` 배지는 `getCategoryColor()`의 전경색과 점 표시를 사용한다.
+- `ArticleHero` 배지는 같은 색으로 테두리와 10% 농도의 배경을 만든다.
 - `.cat-card::after`: radial blob, hover 시 opacity 0.07(dark)/0.08(light), blend-mode screen/multiply
 - `.post-list-row:hover`: 좌측 border 를 카테고리 색으로, 배경 4% tint
 
@@ -205,7 +207,7 @@ focus-visible `ring-3 ring-ring/50`. invalid 시 destructive ring. disabled 시 
 |---|---|---|---|
 | Hero | `HomeHero` | 강(mesh + 큰 텍스트 + 액션) | `/` |
 | SubHero | `PostsListSubHero` | 중(eyebrow + h1, mesh 없음) | `/posts/latest`·`/posts/popular` |
-| ArticleHero | `ArticleHero` | 강(article mesh + TOC) | `/posts/[...path]` |
+| ArticleHero | `ArticleHero` | 강한 mesh와 TOC | `/posts/[...slug]` |
 
 ---
 
@@ -230,7 +232,7 @@ light 는 순수 drop shadow. 정확한 값은 `globals.css`.
 ### Do
 
 - 색은 **토큰으로**(`bg-[var(--color-...)]` / shadcn 매핑 클래스). 새 색이 필요하면 `globals.css` 에 토큰부터 추가
-- 카테고리 색은 9 canonical + `category-meta.ts` 정규화를 거친다
+- 알려진 카테고리 색은 9종 기준 색을 사용하고 알 수 없는 이름은 안정적인 해시 색을 사용한다
 - focus 는 항상 `focus-visible:ring-3 ring-ring/50` 일관 적용(접근성)
 - 모션은 `prefers-reduced-motion` 대응을 함께 정의
 - 한글 텍스트는 `word-break: keep-all`(식별자·한글 글자단위 분해 방지)
@@ -267,7 +269,7 @@ AI agent 가 이 디자인으로 새 화면·컴포넌트를 만들 때 참조�
 1. 색·spacing·radius·shadow·motion 은 **`globals.css` 토큰**을 쓴다. raw 값 금지
 2. base 컴포넌트는 `src/components/ui/`(base-ui + cva) 패턴을 따른다
 3. focus-visible ring·reduced-motion·dark/light 3가지를 항상 같이 처리
-4. 카테고리 색이 필요하면 `category-meta.ts` 정규화를 거친 9 canonical 만 사용
+4. 카테고리 색은 `category-meta.ts`의 `getCategoryColor()`를 사용한다
 5. 본문(prose) 스타일을 건드리면 `.prose` 규칙(`globals.css`)과 충돌하지 않는지 확인
 
 ### 바로 쓰는 프롬프트 예시
@@ -282,7 +284,7 @@ fos-blog 의 DESIGN.md(docs/design.md)와 globals.css 토큰을 따라
 - base 는 src/components/ui 의 base-ui + cva 패턴
 ```
 
-### 새 mockup 이 필요할 때
+### 새 시안이 필요할 때
 
-Claude Design → 코드 구현 워크플로우는 [design-inspiration.md](./design-inspiration.md) 의 단계별 프롬프트를 사용한다.
-이 문서(DESIGN.md)는 **확정된 현재 상태**, design-inspiration 은 **생성 과정**으로 역할이 다르다.
+이 문서의 확정된 토큰과 컴포넌트 규칙을 먼저 적용한다.
+[design-inspiration.md](./design-inspiration.md)는 시각 방향과 참고 출처를 선택할 때 사용한다.

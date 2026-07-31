@@ -864,7 +864,7 @@ agent-spawn-guard.sh 의 guard 목록에 OMC writer 가 없어 `team_name` 없�
 **검출**: `for f in src/components/markdown/*.ts; do head -3 "$f" | grep -q '"server-only"' || echo "$f: missing"; done`
 
 **Why**: 디렉터리 단위 가드 규칙이 명시되어 있어도 신규 파일 작성 시 누락 가능 — 파일이 늘어날수록 누락 1건이 늘어날 확률 증가.
-`code-architecture.md:252` 의 규칙과 paired.
+`code-architecture.md`의 “마크다운 렌더링” 규칙과 함께 적용한다.
 
 ## BLG25. `useEffect` 한 번 캡처 + 변경 dep 혼합 금지 (PR #161 관측)
 
