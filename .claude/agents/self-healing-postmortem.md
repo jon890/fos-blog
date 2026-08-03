@@ -46,7 +46,7 @@ cat tasks/{plan_name}/index.json | jq                     # task 구조
 |---|---|
 | **F1 self-shutdown** | code-reviewer / architect 가 죽고 재스폰한 횟수? |
 | **F2 SendMessage 누락** | sub-agent 무응답 (idle 만) 후 강제 재요청한 횟수? |
-| **F3 protocol guard** | bare Agent 스폰 시도 (M2 차단) 발생? |
+| **F3 역할 라우팅 위반** | 정의된 전용 agent 대신 일반 역할을 호출한 사례가 있었나? |
 | **F4 stale verdict** | critic v2 가 v1 동일 verdict 송신 후 강제 재읽기? |
 | **F5 wrong-branch commit** | 학습 누적이 PR 브랜치에 박혔다가 reset 된 사고? |
 
@@ -60,7 +60,7 @@ cat tasks/{plan_name}/index.json | jq                     # task 구조
 |---|---|---|
 | 라이브러리/DB/타입 함정 | `.agents/skills/_shared/common-pitfalls.md` "fos-blog" 섹션 | BLG# 라인 |
 | 일반 critic 시드 | 같은 파일 섹션 1 | P# 4-section |
-| build-with-teams 프로세스 결함 | 설치된 `build-with-teams/SKILL.md` 또는 `.agents/skills/_shared/common-pitfalls.md` | 1-2 줄 |
+| build-with-teams 프로세스 결함 | `.agents/skills/_shared/common-pitfalls.md` "섹션 2. team 운영" | P# 형식 |
 | 도메인 의사결정 | `docs/adr/NNN-slug.md` | 신규 ADR-### (자명성 점검 통과 시만) |
 | 페이지/컴포넌트 흐름 변경 | `docs/pages/{page}.md` | 해당 표 갱신 |
 

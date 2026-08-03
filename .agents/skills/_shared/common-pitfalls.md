@@ -75,8 +75,8 @@ skills 가 공유하는 사고 / 실수 회피 패턴. 카테고리별로 호출
 | BLG17 | connection string / 시크릿이 에러 메시지를 통해 로그에 노출되는 패턴 금지 (PR #124 관측) | error.message, 마스킹, maskSecret | code review |
 | BLG18 | Drizzle MySQL `onDuplicateKeyUpdate` 의 `VALUES(literal)` deprecated 회피 (PR #146 관측) | VALUES(col), deprecated, onDuplicateKeyUpdate | code review |
 | BLG19 | Drizzle `notInArray(col, [])` 빈 배열 동작이 버전 의존적 (PR #146 관측) | notInArray, 빈 배열, NOT IN () | code review |
-| BLG20 | git 공유 config 에 사용자별 절대경로 금지 (PR #151 관측) | /Users/, settings.json, CLAUDE_PROJECT_DIR | code review |
-| BLG21 | bash `eval` + unquoted 변수 전개 금지 (PR #151 관측) | eval, word splitting, bash 배열 | code review |
+| BLG20 | git 공유 자동화에 사용자별 절대경로 금지 (PR #151 관측) | /Users/, /home/, 절대경로 | code review |
+| BLG21 | 셸 자동화의 `eval`과 따옴표 없는 변수 전개 금지 (PR #151 관측) | eval, word splitting, 셸 배열 | code review |
 | BLG22 | SKILL.md 의 agent 타입 참조와 `.claude/agents/` 실제 파일 불일치 금지 (PR #151 관측) | subagent_type, .claude/agents/, guard 목록 | code review |
 | BLG23 | 보조 섹션의 DB 쿼리는 try-catch + 빈 폴백 (PR #152 관측) | try-catch, getRelated, graceful degradation | code review |
 | BLG24 | `src/components/markdown/` 신규 모듈은 `import "server-only"` 필수 (PR #155 관측) | server-only, markdown/, 전이적 보호 | code review |
@@ -802,6 +802,26 @@ Drizzle 의 사전 검증이 빈 배열을 SQL 빌드 단에서 단락시킬 수
 **검출**: `grep -rnE "notInArray\([^,]+,\s*[a-zA-Z_$][a-zA-Z0-9_$]*\)" src/` 결과 중 분기 가드 없는 호출.
 
 **Why**: Drizzle 의 SQL builder 는 SQL 표준 동작과 라이브러리 단락 처리 사이에서 의도가 명확하지 않을 수 있음 — 명시적 분기가 의도 보존 + 버전 안전.
+
+## BLG20. git 공유 자동화에 사용자별 절대경로 금지 (PR #151 관측)
+
+**증상**: 저장소가 추적하는 설정이나 자동화에 `/Users/name/...` 또는 `/home/name/...` 경로를 넣으면 다른 개발 환경과 CI에서 즉시 깨진다.
+
+**Good**: 저장소 루트 기준 상대경로, 도구가 제공하는 프로젝트 경로, 실행 시 계산한 경로를 사용한다.
+
+**검출**: `git grep -nE '(/Users/|/home/)[^ ]+' -- .github .agents .claude .codex scripts` 결과에서 문서 예시가 아닌 실행 경로를 확인한다.
+
+**Why**: 개인 환경에서는 정상 동작해도 공유 시점에만 실패하므로 일반 검증에서 놓치기 쉽다.
+
+## BLG21. 셸 자동화의 `eval`과 따옴표 없는 변수 전개 금지 (PR #151 관측)
+
+**증상**: 외부 입력이나 조합한 명령을 `eval`로 실행하거나 변수를 따옴표 없이 넘기면 단어 분리와 명령 삽입이 발생할 수 있다.
+
+**Good**: 명령과 인자를 배열로 구성하고 `"${args[@]}"` 형태로 직접 실행한다.
+
+**검출**: `git grep -nE '(^|[[:space:]])eval([[:space:]]|$)' -- '*.sh' '.github/workflows/*'` 결과를 확인하고, 발견된 명령의 변수와 인자 인용 여부를 함께 검토한다.
+
+**Why**: 테스트 입력에서는 드러나지 않아도 공백과 셸 메타 문자가 포함된 값에서 보안 문제로 이어질 수 있다.
 
 ## BLG22. SKILL.md 의 agent 타입 참조와 `.claude/agents/` 실제 파일 불일치 금지 (PR #151 관측)
 
