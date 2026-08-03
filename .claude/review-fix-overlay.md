@@ -48,7 +48,7 @@ build는 항상 마지막에 실행한다.
 | 점검 항목 | 확인 위치 | 흔한 수정 패턴 |
 | --- | --- | --- |
 | Node 버전 | `actions/setup-node` 의 `node-version` | 로컬 `node -v`와 정합<br>가능하면 정확한 버전 명시 |
-| pnpm 버전 | `pnpm/action-setup` 의 `version` 또는 `package.json` 의 `packageManager` | `package.json` 과 일치 (`pnpm@9.15.0`) |
+| pnpm 버전 | `pnpm/action-setup` 의 `version` 또는 `package.json` 의 `packageManager` | `package.json`의 `packageManager`와 일치 |
 | 환경 변수 | job의 `env:` 블록<br>`secrets.*` | 누락 secret은 저장소 설정에 등록<br>`.env.example`과 대조 |
 | actions 버전 (floating tag) | `uses: actions/checkout@v4` 등 | `@v4` floating → `@v4.x.x` 고정 또는 SHA 고정 |
 | 캐시 키 | `actions/cache` 의 `key:` | lockfile 해시 포함 정합 |
