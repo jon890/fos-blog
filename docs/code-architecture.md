@@ -84,6 +84,8 @@ DB 구조와 제약의 단일 소스는 `src/infra/db/schema/`다.
 - 글 변경이 없어도 제목, README 메타데이터와 용어집 역참조를 다시 계산할 수 있다.
 - 삭제된 글은 `posts.is_active`를 이용해 비활성화한다.
 - 같은 GitHub 상태를 반복 처리해도 글이 중복되거나 유실되지 않아야 한다.
+- `PostSyncService`는 `thumbnail` 앞표지의 상대 경로를 검증한 GitHub raw URL로 바꿔 `posts.thumbnail_url`에 저장한다.
+- `thumbnail` 누락이나 잘못된 값은 글 동기화를 막지 않고 `NULL`로 저장한다.
 
 ## 페이지 조회
 
@@ -123,9 +125,27 @@ DB 구조와 제약의 단일 소스는 `src/infra/db/schema/`다.
 | `/api/visit` | 방문 기록 |
 | `/api/og/category/[...path]` | 카테고리 OG 이미지 |
 | `/api/og/posts/[...slug]` | 글 OG 이미지 |
+| `/api/og/thumbnails/[category]` | 전용 썸네일이 없는 카드의 카테고리별 생성 이미지 |
 
 요청과 응답 형식은 Route Handler의 타입과 테스트를 단일 소스로 삼는다.
 모든 API가 Bearer 인증을 사용한다고 가정하지 않는다.
+
+## 글 대표 이미지
+
+```text
+fos-study Markdown thumbnail
+  → PostSyncService 경로 검증과 raw URL 변환
+  → posts.thumbnail_url
+  → PostRepository 조회 결과
+  → PostThumbnail
+      → 전용 URL
+      → /api/og/thumbnails/<category>
+      → /og-default.png
+```
+
+- `PostThumbnail`만 이미지 오류 전환을 위해 클라이언트 경계를 사용한다.
+- `PostCard`와 목록 데이터 흐름은 서버 컴포넌트 우선 구조를 유지한다.
+- 글 상세 메타데이터는 전용 URL이 있으면 이를 공유 이미지로 사용하고, 없으면 기존 글 OG 경로를 사용한다.
 
 ## 마크다운 렌더링
 

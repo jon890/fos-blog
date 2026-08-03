@@ -33,6 +33,7 @@ AI 에이전트가 설계 철학을 빠르게 추론하기 위한 컨텍스트.
 - [ADR-008](./008-og-font-pretendard.md) — Pretendard subset WOFF 로컬 번들 (UI/OG 통일)
 - [ADR-009](./009-og-nodejs-runtime.md) — `ImageResponse` 런타임 = Node.js
 - [ADR-011](./011-og-catchall-api-route.md) — catch-all OG 이미지 = API Route 우회
+- [ADR-033](./033-post-thumbnail-fallback.md) — 글 전용 썸네일과 카테고리별 생성 이미지의 단계적 대체
 
 ## 도메인 & SEO 검색 노출
 
