@@ -803,31 +803,6 @@ Drizzle 의 사전 검증이 빈 배열을 SQL 빌드 단에서 단락시킬 수
 
 **Why**: Drizzle 의 SQL builder 는 SQL 표준 동작과 라이브러리 단락 처리 사이에서 의도가 명확하지 않을 수 있음 — 명시적 분기가 의도 보존 + 버전 안전.
 
-## BLG20. git 공유 config 에 사용자별 절대경로 금지 (PR #151 관측)
-
-**증상**: `.claude/settings.json` hook command 에 `cd /Users/nhn/personal/fos-blog` 처럼 로컬 머신 절대경로 → 다른 환경 / CI / 다른 개발자 머신에서 hook 즉시 실패.
-PreToolUse 와 PostToolUse 가 비대칭이면 더 잘 놓침.
-
-**Good**: `cd "$CLAUDE_PROJECT_DIR"` 또는 hook 스크립트 자체를 `$CLAUDE_PROJECT_DIR/.claude/hooks/*.sh` 로 참조.
-inline command 안의 cd 도 동일 placeholder.
-
-**검출**: `grep -nE '/Users/|/home/' .claude/settings.json .claude/hooks/*.sh`
-
-**Why**: settings.json 은 git 추적 대상이라 머지 즉시 다른 환경 break.
-hook 실패는 silent 인 경우가 많아 한참 후에 발견.
-
-## BLG21. bash `eval` + unquoted 변수 전개 금지 (PR #151 관측)
-
-**증상**: `FLAG="-C /path"` 후 `eval git $FLAG diff` 패턴 → 경로에 공백 포함 시 word splitting + `eval` 자체로 임의 명령 실행 가능성 (외부 입력이 한 단계 거쳐 들어오면 RCE).
-hook 스크립트는 `$CMD` 같은 외부 입력을 자주 다루므로 특히 위험.
-
-**Good**: bash 배열 사용 — `flags=(-C "${BASH_REMATCH[1]}")` 후 `git "${flags[@]}" diff`.
-빈 배열도 안전 (`git "${flags[@]}"` = `git` 호출).
-
-**검출**: `grep -rnE 'eval[[:space:]]+(git|sh|bash|[a-z]+)[[:space:]]+\$' .claude/hooks/`
-
-**Why**: 배열 전개는 단어 경계가 보존되고 eval 의 재해석 단계가 없어 두 위험 모두 0.
-
 ## BLG22. SKILL.md 의 agent 타입 참조와 `.claude/agents/` 실제 파일 불일치 금지 (PR #151 관측)
 
 **증상**: SKILL.md 본문에 "`oh-my-claudecode:writer` 를 spawn" 이라 적었지만 실제 `.claude/agents/` 에는 `self-healing-postmortem.md` 커스텀 에이전트 정의가 있고 호출 메커니즘이 다름.
