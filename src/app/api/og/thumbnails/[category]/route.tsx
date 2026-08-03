@@ -7,12 +7,20 @@ export const revalidate = 86_400;
 const WIDTH = 1200;
 const HEIGHT = 675;
 
+function decodeCategory(encodedCategory: string): string {
+  try {
+    return decodeURIComponent(encodedCategory) || "system";
+  } catch {
+    return encodedCategory || "system";
+  }
+}
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ category: string }> },
 ) {
   const { category: encodedCategory } = await params;
-  const category = decodeURIComponent(encodedCategory);
+  const category = decodeCategory(encodedCategory);
   const pattern = createThumbnailPattern(category);
   const accent = `hsl(${pattern.hue} 68% 62%)`;
   const secondary = `hsl(${(pattern.hue + 54) % 360} 72% 58%)`;

@@ -26,6 +26,7 @@ const makePostData = (path: string) => ({
   subcategory: null,
   folders: [],
   description: "desc",
+  thumbnailUrl: `https://example.com${path}.jpg`,
 });
 
 function makeRequest(params: Record<string, string> = {}) {
@@ -93,6 +94,7 @@ describe("GET /api/posts/popular", () => {
     const body = await res.json();
     expect(body.items[0].path).toBe("/b");
     expect(body.items[1].path).toBe("/a");
+    expect(body.items[0].thumbnailUrl).toBe("https://example.com/b.jpg");
   });
 
   it("hasMore — offset + popularPaths.length < total 이면 true (pathRows 기준)", async () => {

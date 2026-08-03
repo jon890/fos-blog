@@ -1,7 +1,7 @@
 {
   "name": "plan056-post-card-thumbnails",
   "description": "글 전용 썸네일을 동기화하고 기존 글에는 카테고리별 생성 이미지를 표시한다.",
-  "status": "in_progress",
+  "status": "completed",
   "created_at": "2026-08-03",
   "total_phases": 3,
   "related_docs": [
@@ -34,7 +34,7 @@
       "file": "phase-03.md",
       "title": "공유 메타데이터와 통합 검증",
       "execution_profile": "fast",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }

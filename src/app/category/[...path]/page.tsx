@@ -254,6 +254,7 @@ export default async function FolderPage({ params }: FolderPageProps) {
                   href={`/posts/${p.path.split("/").map(encodeURIComponent).join("/")}`}
                   updatedAt={p.updatedAt ?? null}
                   categorySlug={category}
+                  thumbnailUrl={p.thumbnailUrl}
                 />
               ))}
             </div>
