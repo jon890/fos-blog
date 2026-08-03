@@ -1,412 +1,189 @@
-# fos-blog — Agent Project Context
+# fos-blog 에이전트 작업 지침
 
-**Updated:** 2026-04-24 | **Repo:** github.com/jon890/fos-blog | **Live:** https://blog.fosworld.co.kr
+**갱신일:** 2026-07-30 · **저장소:** `github.com/jon890/fos-blog` · **운영 주소:** `https://blog.fosworld.co.kr`
 
----
+## 이 문서의 역할
 
-## What This Is
+이 문서는 모든 작업에 항상 적용하는 프로젝트 불변 조건만 담는다.
+세부 실행 절차는 관련 스킬과 저장소 오버레이를 작업 시작 전에 읽는다.
 
-Next.js 16 developer blog that syncs Markdown from `jon890/fos-study` (GitHub) → MySQL → renders with GFM/mermaid. Features: categorization, dark/light mode, visit tracking, comments, full-text search.
+지침은 다음 순서로 나눈다.
 
-**Deployment: Home server (Docker + standalone Next.js). NOT Vercel.**
+1. `AGENTS.md`: 프로젝트 구조, 불변 조건, 검증 기준
+2. 설치된 `SKILL.md`: 계획, 구현, 문서 점검, 리뷰 반영 절차
+3. `.claude/*-overlay.md`: 공용 스킬에 주입하는 fos-blog 전용 규칙
+4. `.codex/agents/*.toml`: 역할별 책임과 출력 계약
 
----
+`AGENTS.md`는 `CLAUDE.md`를 가리키는 심볼릭 링크다.
+두 파일을 별도로 편집하거나 서로 다른 내용을 두지 않는다.
 
-## Tech Stack
+팀 실행의 저장소 전용 역할은 `fos-blog-executor`와 `fos-blog-docs-verifier`다.
+각 역할 정의 파일을 책임과 출력 계약의 단일 소스로 삼는다.
+반복되는 계획·검토 함정은 `.agents/skills/_shared/common-pitfalls.md`에 누적한다.
+재사용 가능한 실행 마찰을 별도로 분석할 때만 `self-healing-postmortem`을 사용한다.
 
-| Layer       | Stack                                                                  |
-| ----------- | ---------------------------------------------------------------------- |
-| Framework   | Next.js 16.1.6 (App Router, Turbopack)                                 |
-| Language    | TypeScript 5.7 (strict)                                                |
-| Styling     | Tailwind CSS 4.1 + @tailwindcss/typography + shadcn/ui                 |
-| Database    | MySQL 8.4 (Docker) + Drizzle ORM 0.45.1                                |
-| GitHub API  | @octokit/rest 21.0.0                                                   |
-| Markdown    | unified (remark-parse + remark-gfm + remark-math + remark-rehype) + rehype-pretty-code (shiki, dual theme) + rehype-slug + rehype-raw + rehype-katex (output:"html") + rehype-sanitize + hast-util-to-jsx-runtime + mermaid |
-| Logging     | pino (JSON) + pino-pretty (dev only) — server only                     |
-| Forms       | react-hook-form 7.x + @hookform/resolvers + zod (CommentForm 등 client form) |
-| Toast       | sonner 2.x (client 알림, ThemeProvider 바깥 mount)                       |
-| Testing     | Vitest 4.1.0                                                           |
-| Package mgr | pnpm 9.15.0                                                            |
+코드와 문서가 충돌하면 현재 동작은 코드와 설정으로 확인하고, 의사결정 이유는 문서에서 확인한다.
+충돌을 발견하면 근거 없이 한쪽을 선택하지 말고 작업 범위 안에서 함께 정리한다.
 
----
+## 프로젝트 개요
 
-## Directory Structure
+`jon890/fos-study`의 마크다운을 GitHub에서 동기화해 MySQL에 저장하고 웹으로 제공하는 Next.js 개발자 블로그다.
 
-```
-fos-blog/
-├── src/
-│   ├── app/              # Next.js App Router (pages + API routes)
-│   ├── components/       # Reusable React UI components
-│   ├── services/         # Business logic (SyncService, PostService, etc.)
-│   ├── infra/
-│   │   ├── db/           # Drizzle ORM — schema/, repositories/
-│   │   └── github/       # Octokit client, API, file-filter, image-rewrite
-│   ├── lib/              # Shared utils — markdown.ts, logger.ts, path-utils.ts
-│   ├── middleware/       # Per-concern middleware — visit.ts (visit tracking), rateLimit.ts (1000/min/IP fixed window, RFC1918/봇 우회)
-│   └── proxy.ts          # Next.js 16 proxy file convention (구 middleware.ts) — Node runtime 고정, `runtime` config 사용 불가
-├── scripts/              # Build-time/start-up scripts — migrate.ts (drizzle migrator, 컨테이너 부팅 시 자동 apply)
-├── local/                # Docker Compose + MySQL init.sql
-├── drizzle/              # Migration artifacts (auto-generated, do not edit)
-└── Dockerfile            # Multi-stage build (output: standalone)
-```
+- GFM, Mermaid, KaTeX, 코드 강조, HTML 정화를 포함한 마크다운 렌더링
+- 카테고리, 하위 폴더, 태그, 시리즈 탐색
+- MySQL 전문 검색과 `LIKE` 대체 검색
+- 댓글, 방문 통계, 관련 글, RSS
+- 용어집 동기화와 본문 용어 도움말
+- 다크 모드와 라이트 모드
 
----
+배포 대상은 홈서버의 Docker 컨테이너다.
 
-## Key Scripts
+주요 기술은 Next.js 16, React 19, TypeScript strict, Tailwind CSS 4, MySQL 8.4, Drizzle ORM이다.
+정확한 패키지 버전은 `package.json`과 `pnpm-lock.yaml`을 단일 소스로 삼는다.
 
-```bash
-pnpm dev           # Dev server (http://localhost:3000)
-pnpm build         # Production build
-pnpm lint          # ESLint
-pnpm type-check    # tsc --noEmit
-pnpm test          # Vitest
+## 주요 디렉터리
 
-pnpm db:up         # Start MySQL container
-pnpm db:down       # Stop MySQL container
-pnpm db:push       # Apply schema changes
-pnpm db:generate   # Generate migration files
-pnpm db:migrate:runtime  # Run scripts/migrate.ts via tsx (로컬 검증; production 은 Dockerfile 에서 컴파일된 migrate.js 자동 실행)
-pnpm db:studio     # Drizzle Studio GUI
-pnpm setup         # db:up + db:push (first-time setup)
-```
+- `src/app/`: 페이지, Route Handler, 메타데이터, OG 이미지
+- `src/components/`: 재사용 UI와 클라이언트 상호작용
+- `src/services/`: 동기화, 용어집, RSS, 통계 등 도메인 흐름
+- `src/infra/`: Drizzle DB 계층과 GitHub 연동
+- `src/lib/`: 공용 유틸리티와 마크다운 기반 기능
+- `src/middleware/`, `src/proxy.ts`: 방문 기록, 요청 제한, Proxy 진입점
+- `scripts/`, `drizzle/`, `local/`: 마이그레이션과 로컬 DB 설정
+- `docs/`, `tasks/`: 유지 문서와 계획별 실행 작업
 
----
+## 아키텍처 경계
 
-## Environment Variables
+의존 방향의 기본형은 `app → services → infra`이며 `lib`는 공용 기능을 제공한다.
 
-```env
-# Required
-GITHUB_TOKEN=ghp_...               # GitHub PAT
-GITHUB_OWNER=jon890
-GITHUB_REPO=fos-study
-DATABASE_URL=mysql://fos_user:fos_password@localhost:13307/fos_blog
-SYNC_API_KEY=...                   # Protects POST /api/sync
+- `app`은 라우팅과 조합을 담당한다.
+  단순 조회 페이지나 Route Handler는 기존 방식대로 `getRepositories()`를 직접 사용할 수 있다.
+- 여러 Repository를 조합하거나 외부 부수 효과를 다루는 도메인 흐름은 `services`에 둔다.
+- `components`는 DB 연결이나 Repository 인스턴스를 만들지 않는다.
+  표시용 타입과 상수 import는 기존 경계를 따른다.
+- `infra`는 DB와 GitHub 같은 외부 시스템을 캡슐화한다.
+- 새 추상화나 의존성보다 기존 Repository, 서비스, 유틸리티 재사용을 우선한다.
 
-# Public / SEO
-NEXT_PUBLIC_SITE_URL=https://blog.fosworld.co.kr
-NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=...
-NEXT_PUBLIC_GOOGLE_ADSENSE_ID=ca-pub-...
-```
+도메인 불변 조건은 다음과 같다.
 
-See `.env.example` for full list.
+- `posts.path`는 GitHub 파일 경로이며 고유 식별 기준이다.
+- 글 조회는 특별한 이유가 없으면 `eq(posts.isActive, true)`를 포함한다.
+- 동기화는 같은 입력을 반복해도 중복이나 데이터 손실이 없어야 한다.
+- 스키마 단일 소스는 `src/infra/db/schema/`다.
+- 마크다운 변경은 GFM, Mermaid, KaTeX, 링크 변환, HTML 정화 회귀를 함께 확인한다.
 
----
-
-## Conventions
-
-- **Routing:** Next.js App Router (file-system based)
-- **Components:** PascalCase, named exports, no direct DB calls
-- **TypeScript:** strict mode, `@/*` path alias, `_` prefix for unused vars
-- **Tailwind:** `src/app/globals.css` must include `@source` for every dir with Tailwind classes
-- **Logging:** `logger.child({ module: '...' })` from `@/lib/logger` — no `console.log`. **예외**: ① `scripts/*.ts` 는 standalone 실행이라 path alias 미동작 → `console.log/error` 허용 (eslint.config.mjs 에서 globals 명시). ② `"use client"` 컴포넌트는 pino 가 server-only 라 `console.error` 만 사용 가능 (catch 블록의 dev 로그용 — 사용자 노출은 별도 toast/UI 로 처리, raw error 는 직접 노출 금지)
-- **Error handling:** `err: error instanceof Error ? error : new Error(String(error))`
-- **Tests:** co-located `*.test.ts`, Vitest, mock repositories with `vi.mock()`. **Component DOM 테스트** (plan039 이후): `@testing-library/react` + `jsdom` 도입 — 파일 상단 `// @vitest-environment jsdom` directive 사용 (vitest.config.ts 의 `environment: "node"` 전역 변경 회피, 기존 node 환경 테스트와 격리)
-- **API routes:** Bearer token auth via `SYNC_API_KEY`
-
----
-
-## Architecture
-
-```
-app/ (routing)
-  ↓
-services/ (business logic)
-  ↓
-infra/db/ + infra/github/ (external systems)
-  ↑
-lib/ (shared utils — used everywhere)
-```
-
-- `app/` should not import directly from `infra/` — go through `services/`
-- Schema source of truth: `src/infra/db/schema/` — 변경 후 `pnpm db:generate` 로 SQL 생성 → 커밋 → `pnpm db:migrate` 로 apply (아래 "DB 스키마 변경 규칙" 참조)
-- `posts.path` = canonical GitHub file path (unique key, not `slug`)
-- `posts.isActive` = soft delete — always filter `eq(posts.isActive, true)`
-
----
-
-## DB 스키마 변경 규칙
-
-- **`pnpm db:push` 프로덕션 사용 금지** — 마이그레이션 이력이 남지 않아 홈서버 배포 시 schema drift + 데이터 손실 위험
-- 반드시 `pnpm db:generate`로 `drizzle/` 하위 SQL 파일 생성 → **git 커밋에 포함** → `pnpm db:migrate`로 apply
-- 파괴적 변경(drop column/table, rename)은 SQL 파일 수동 검토 후 apply
-- **로컬 실험** 한정으로 `pnpm db:push` 사용 가능. 단 커밋 전 반드시 `db:generate`로 마이그레이션화하거나 revert
-- `drizzle/` 디렉터리는 git 추적 대상 (자동 생성물이지만 배포 환경에서 apply 필요)
-
----
-
-## Home Server Deployment
-
-**Not Vercel.** Do NOT suggest Vercel Cron, Edge Functions, or Vercel-specific ISR invalidation.
+## 명령어
 
 ```bash
-docker build -t fos-blog .
-docker run -d --name fos-blog -p 3000:3000 --env-file .env fos-blog
+pnpm dev
+pnpm build
+pnpm lint
+pnpm type-check
+pnpm test
+
+pnpm db:generate
+pnpm db:migrate
+pnpm db:migrate:runtime
+pnpm db:push
+pnpm db:studio
 ```
 
-Content sync cron (crontab):
+로컬 MySQL은 `package.json` 스크립트가 아니라 Docker Compose로 실행한다.
 
 ```bash
-0 * * * * curl -s -X POST http://localhost:3000/api/sync -H "Authorization: Bearer $SYNC_API_KEY"
+docker compose -f local/docker-compose.yml up -d
+docker compose -f local/docker-compose.yml down
 ```
 
----
+## 환경 변수
 
-## Agent Operating Rules
+실행 계약은 `src/env.ts`, 예시는 `.env.example`을 단일 소스로 삼는다.
 
-webtoon-maker-v1에서 검증된 3 레포 공통 규칙.
-`planning` 은 하네스 원본을 `.agents/skills/planning`에 두고 `.claude/skills/planning`을 Claude Code 호환 symlink 경로로 유지한다.
-`build-with-teams`와 `docs-check`는 공용 코어(글로벌 `~/.claude/skills/{build-with-teams,docs-check}`)를 쓰고, fos-blog 특화는 `.claude/build-with-teams-overlay.md` / `.claude/docs-check-overlay.md` 가 주입한다.
+- 시작 시 검증 필수: `GITHUB_TOKEN`, `SYNC_API_KEY`
+- DB 기능과 운영 배포에 필요: `DATABASE_URL`
+- 기본값 제공: `GITHUB_OWNER`, `GITHUB_REPO`, `GITHUB_BRANCH`, `NEXT_PUBLIC_SITE_URL`
+- 선택: `USE_FULLTEXT_SEARCH`, `LOG_LEVEL`, Google 검증·광고 식별자
 
-### Claude / Codex 공용 운영
+`SYNC_API_KEY` 인증은 `/api/sync`에 적용한다.
+모든 API Route가 Bearer 인증을 사용한다고 가정하지 않는다.
 
-- `CLAUDE.md`와 `AGENTS.md`는 분기하지 않는다.
-  이 repo에서는 `AGENTS.md`를 `CLAUDE.md` symlink로 두고, 실제 내용은 이 파일 하나에서 유지한다.
-- skill 원본은 `.agents/skills`에 둔다.
-  `.claude/skills`는 Claude Code 호환 symlink 경로로만 사용한다.
-- Codex custom agent 원본은 `.codex/agents/*.toml`에 둔다.
-  Claude custom agent 원본은 `.claude/agents/*.md`에 둔다.
-- 구체 custom agent가 존재하는 작업은 프롬프트로 역할을 흉내내지 말고 해당 agent를 우선 사용한다.
-  예: docs 검증은 `fos-blog-docs-verifier`, phase 구현은 `fos-blog-executor`, 사후 학습 추출은 `self-healing-postmortem`.
-- 특정 coding agent 종류를 일반 원칙으로 강제하지 않는다.
-  구체 tool, custom agent, runtime 절차가 필요한 경우에만 해당 파일과 사용법을 명시한다.
-- agent, skill, task, 운영 문서는 사람이 함께 읽고 수정하는 유지보수 문서다.
-  본문 prose는 한국어로 작성한다.
-  기술 식별자, 경로, command, verdict 토큰, model 이름은 번역하지 않는다.
-
-### 실행 등급 라우팅
-
-- 공용 task와 운영 문서는 모델 공급자나 모델 버전을 고정하지 않는다.
-- **논의·계획·docs 작성**: main 세션. 복잡한 설계 판단은 `deep` 등급을 허용한다.
-- **task phase 실행**: `standard` 기본. rename, 리팩토링, 다중 파일 수정도 `standard`를 사용한다.
-- **task phase에서 `deep`을 사용하는 경우**:
-  - 새 아키텍처 설계가 phase 안에 있는 경우
-  - 도메인 핵심의 복잡 알고리즘을 새로 설계하는 경우
-- **기계적 작업은 `fast`**: rename, 이동, 경로 수정, 빌드 검증은 파일 수와 무관하게 `deep`을 사용하지 않는다.
-- 실제 모델 선택은 현재 실행 surface의 parent session, 설치 role, 사용자 override가 결정한다.
-- 빌드 검증·커밋 phase는 `fast`를 사용한다.
-
-### 파일 읽기 효율
-
-- **전체 파일 읽기 금지** (200줄 초과 시) — offset+limit로 필요한 섹션만
-- **같은 파일 반복 읽기 금지** — 같은 세션 내에서는 기억해서 재사용
-- **대형 docs 파일**은 grep으로 필요 섹션만 찾아 offset 지정
-
-### 조사/탐색 접근 방식
-
-- **직접 질문에는 직접 답변부터** — 사용자가 특정 파일/영역/패턴을 명시했다면 해당 위치부터 확인. 광범위한 codebase 탐색 금지
-- **사용자가 조사 경로를 제시했으면 그 경로부터** — 지시받은 영역에서 codebase 전체를 먼저 뒤지지 않는다
-- **Explore agent는 최후 수단** — Grep/Glob/Read로 3번 이상 시도한 후에도 못 찾을 때만 사용
-- **가정 없이 주장하지 않기** — "dead code", "미사용" 같은 판단은 실제로 참조를 grep한 후에만 제기
-
-### 사용자 상호작용
-
-- **선택지를 제시할 때는 현재 agent 환경의 질문 도구 사용** — Claude Code에서는 `AskUserQuestion`을 사용한다.
-  다른 환경에서는 사용 가능한 structured input tool을 쓰고, 없으면 정확히 하나의 간결한 plain-text 질문으로 묻는다.
-  자유 형식 답이 필요한 진짜 open-ended 질문(e.g. "어떤 docs 를 더 보강할까요?") 만 평문 사용.
-
-### Task 작업 규칙 (build-with-teams 사용 시)
-
-- 각 phase는 **원자적 단일 책임** — 다른 관심사면 별도 phase로 분리. **작업 항목 5개 이하** 엄수
-- **task 파일 생성 즉시 git commit** — `tasks/{plan}/index.json` + phase 파일을 실행 전에 커밋
-- task 완료 즉시 git commit (index.json 상태 갱신 포함)
-- 각 phase 프롬프트는 **자기완결적** (이전 대화 없이 독립 실행 가능)
-- **docs 최신화는 task 생성 전 필수** — task phase 내에서 docs 변경 금지
-- 산출된 critic 지적은 `.agents/skills/_shared/common-pitfalls.md`에 반영한다.
-
-### 문서 작성 원칙
-
-- **사람과 AI 에이전트가 함께 읽는 문서** — agent 관련 문서도 사람이 직접 읽고 수정한다.
-  영어 프롬프트 조각을 새로 만들지 말고, 본문 prose는 한국어로 작성한다.
-- **AI 에이전트 컨텍스트 효율** — 컨텍스트를 낭비하지 않도록 간결하게
-- **반복·중복 제거** — 같은 내용을 두 문서에 쓰지 않는다
-- **의사결정 의도 보존** — "왜 이렇게 했는가" 반드시 기록
-- **구현 세부사항은 코드에, docs에는 "무엇을·왜"만**
-- **자기-면제 금지**: code-reviewer / docs-verifier 회신에 "재검사 불필요" / "trivial 면제" 같은 자기-면제 문구 등장 시 team-lead 는 무시하고 재검사 강제 (build-with-teams SKILL.md "자기-면제 금지" 섹션)
-- **docs 의 단일 소스**: planning SKILL "거울 구조 원칙" 준수 — 같은 체크리스트를 두 곳에 유지하지 않음. `fos-blog-docs-verifier` agent 의 검증 항목은 planning 의 "문서 책임 표" 거울로만 운영
-- **가독성 + 토큰 효율 6가지 패턴**: 아래 "docs / ADR 작성 형식" 섹션 참조
-
-### 한국어 표현 정책
-
-docs / skill / task 파일을 한국어로 작성할 때 **한국인이 자연스럽게 읽히는 표현을 우선** 한다.
-영어 단어를 한자/한글 음차한 표현 (특히 "X 게이트", "X 트리아지", "X 매트릭스" 같은 외래어 합성) 은 사용 금지.
-
-| 금지                  | 권장 대체                                                                     |
-| --------------------- | ----------------------------------------------------------------------------- |
-| 매트릭스 (matrix)     | **표** / **영향 표** / **분류 표** / **변경-docs 매핑 표**                    |
-| 트리아지 (triage)     | **분류** / **우선순위 분류**                                                  |
-| 베이스라인 (baseline) | **기준선** / **기준값**                                                       |
-| 스파이크 (spike)      | **사전 조사** / **API 검증**                                                  |
-| 게이트 (gate)         | **점검** / **사전 점검** / **통과 조건**                                      |
-| 사전 소진             | **사전 해소** ("소진" 은 자원 고갈 비유 — 직관 어려움)                        |
-| 단일 진실원           | **단일 소스** ("진실원" 은 truth-source 직역, 한국어 자연어 아님)             |
-| 변질 의심             | **변질 우려** ("의심" 보다 "우려" 가 더 자연)                                 |
-| 패턴 답습             | **동일 패턴 적용** / **그대로 적용** ("답습" 은 "낡은 것 베끼기" 부정 뉘앙스) |
-
-이 정책은 **새 작성물에 우선 적용**한다. 기존 문서에서 위 표현이 발견되면:
-
-- 현재 편집 중인 파일이면 함께 정리
-- 작업 외 파일이면 사용자에게 알려 별도 정리 여부를 물어본다 (일괄 교체 PR 등)
-
-표에 없는 외래어라도 같은 원칙 (한국인 독해 자연스러움) 으로 자체 판단.
-단 **기술 용어 그대로 쓰는 게 표준인 경우** (예: `rebase`, `merge`, `commit`, `endpoint`, `payload`) 는 그대로 유지 — 한국어 대체가 오히려 어색.
-
-### docs / ADR 작성 형식 (가독성 + 토큰 효율)
-
-대상: `docs/*.md` / `CLAUDE.md` / `AGENTS.md` / `tasks/**/*.md` / `README.md` / `.agents/skills/*/SKILL.md` / `.codex/agents/*.toml` / `.claude/agents/*.md`.
-
-목표는 두 가지 — 작성자가 읽기 쉬울 것 (가독성), LLM 컨텍스트 비용을 늘리지 않을 것.
-두 목표가 충돌할 때는 가독성을 우선한다.
-
-#### 1. semantic line break (문장당 1줄)
-
-한 단락 안의 문장은 줄바꿈으로 분리.
-markdown 렌더링 결과는 동일하지만 소스 가독성 ↑ + git diff 정밀 + 토큰 동일.
-
-**금지**: 한 단락에 2 문장 이상 같은 줄에 이어쓰기.
-
-#### 2. enumerated inline 금지
-
-`① ... ② ... ③ ...` / `1) ... 2) ... 3) ...` / 슬래시 나열 (`A / B / C` 3개 이상) 형식은 markdown bullet list 로 변환한다.
-
-#### 3. 괄호 중첩 2겹 이상 금지
-
-`(... (...) ...)` 같은 중첩이 발생하면 단락 분리 또는 bullet 분리로 평탄화한다.
-
-#### 4. `=` / `→` 동치·인과 압축은 한 단락 1회만
-
-여러 동치 / 인과 관계를 한 문장에 압축하지 않는다.
-각 관계마다 별 문장 + 줄바꿈으로 분리.
-
-#### 5. 한 문장이 길면 의미 단위 분할
-
-한 문장이 약 80자 초과 + 백틱 3개 이상 또는 괄호 다수면 의미 단위로 나눈다.
-"한국어 문장 + 영어 약어 + 코드 inline" 혼재는 가독성 손실의 주범.
-
-#### 6. 한 bullet 에 다중 속성 압축 금지 — sub-bullet 으로 분리
-
-한 bullet 안에 **무엇 / 어떻게 / 예외 / 조건 / 근거** 중 2개 이상의 독립 속성을 다음 연결로 이어 압축하지 않는다.
-각 속성은 sub-bullet 으로 분리.
-
-- 마침표 (`. ... .`) — 여러 문장
-- 콤마 (`A, B, C`) — 병렬 항목
-- 더하기 (`A + B + C`) — 변경 사항·구성 요소 나열
-- 슬래시 (`A / B / C` 3개 이상) — 패턴 2 와 중첩
-
-#### 적용 시점
-
-- **신규 작성**: 위 6가지 패턴 자체 점검 후 commit
-- **기존 docs**: 편집 중인 파일은 함께 정리. 일괄 정리는 별도 task (이 PR scope 외)
-- **review**: code-reviewer / critic / docs-verifier 가 6가지 패턴 위반을 지적할 수 있음
-
-출처: dooray-cli repo 의 같은 정리 작업 (task 034 + 일련의 commit).
-
-### Git & PR Conventions
-
-PR 제목은 반드시 아래 형식을 따른다:
-
-```
-type(scope): description
-```
-
-예시: `feat(sync): add retry with exponential backoff`, `fix(db): prevent duplicate post insertion`, `docs(task): add layered architecture ADR`
-
-이 repo의 PR 제목과 본문은 기본적으로 한국어로 작성한다.
-단 `type(scope):` prefix, command, file path, symbol, error message 같은 기술 식별자는 원문을 유지한다.
-
-PR은 기본적으로 ready-for-review 상태로 생성한다.
-Draft PR은 사용자가 명시적으로 요청했거나, 검증이 아직 끝나지 않아 reviewer가 머지 판단을 할 수 없는 경우에만 사용한다.
-
-**브랜치 네이밍 규칙** — 작업 성격에 따라 prefix 분리:
-
-| PR 종류 | 브랜치 prefix | 예시 |
-|---|---|---|
-| task 정의 (`tasks/plan{N}-...` 디렉터리 생성 + index.json + phase 파일) | `tasks/` | `tasks/plan038-foo` |
-| 구현 (build-with-teams 또는 수동 phase 실행 결과) | `feat/` | `feat/plan038-foo-impl` |
-| 단발성 버그 수정 (plan 우회) | `fix/` | `fix/blockquote-padding` |
-| 정리 / 의존성 / 빌드 등 메타 | `chore/` | `chore/cleanup-stray` |
-| 문서 단독 변경 | `docs/` | `docs/adr-016-update` |
-
-이 형식에서 절대 벗어나지 않는다. 특히 task 정의 PR 에 `feat/` 를 쓰지 않는다 — 기능 추가가 아니라 메타 작업이라 의미 충돌.
-
-#### 금지 파일 목록 (커밋 차단 대상)
-
-다음 파일은 git 추적 / 커밋 금지. 발견 시 즉시 stop:
-
-- `.env` / `.env.local` / `.env*.local` — 환경 시크릿
-- `*.pem` / `id_rsa` / `credentials.*` / `secrets.*` — 키/자격증명
-- `.next/` / `node_modules/` / `.omc/` — 빌드/도구 산출물
-
-의심 시 stop 후 사용자에게 확인.
-
-`drizzle/` 디렉터리는 **커밋 필수** (위 "DB 스키마 변경 규칙" 의 SQL 커밋 정책 참조).
-단 자동 생성 SQL 의 **수동 편집은 금지** — `pnpm db:generate` 산출물만 staged.
-`drizzle/AGENTS.md` 는 수동 작성 가능 (예외).
-
-#### `package.json` ↔ `pnpm-lock.yaml` 동시 커밋
-
-`pnpm-lock.yaml` 변경 (`pnpm add` / `pnpm remove` / `pnpm update` 결과) 은 **반드시 `package.json` 변경과 같은 커밋에 포함**.
-분리하면 CI 의 `--frozen-lockfile` 단계가 실패.
-
-검출:
+격리 worktree에서는 다음 순서로 환경을 준비한다.
 
 ```bash
-git status --short | grep -E "^(M|A) pnpm-lock\.yaml" && \
-  ! git diff --cached --name-only | grep -q "package\.json"
-# 출력 있으면 (lockfile staged + package.json 미포함) → stop
+pnpm install
+[ -e .env ] || ln -s "$(dirname "$(git rev-parse --git-common-dir)")/.env" .env
 ```
 
-#### PR 본문 포맷
+## 구현 규칙
 
-`gh pr create --body` HEREDOC 으로 다음 포맷:
+- TypeScript strict와 `@/*` 경로 별칭을 유지한다.
+- 컴포넌트는 PascalCase와 이름 있는 export를 기본으로 한다.
+- 서버 코드는 `@/lib/logger`의 자식 로거를 사용한다.
+- `src/`에 `console.log`를 남기지 않는다.
+- `scripts/*.ts`는 독립 실행 제약 때문에 `console.log`와 `console.error`를 사용할 수 있다.
+- 클라이언트 컴포넌트는 서버 전용 pino를 import하지 않는다.
+  실패는 UI로 알리고 catch 블록의 개발 진단에는 `console.error`만 사용한다.
+- 알 수 없는 오류는 `error instanceof Error ? error : new Error(String(error))`로 정규화한다.
+- `src/app/globals.css`는 Tailwind 자동 탐색을 끈다.
+  Tailwind class가 있는 새 디렉터리를 만들면 `@source`를 추가한다.
+- 명시적 승인 없이 새 의존성, `eslint-disable`, `@ts-ignore`, `@ts-nocheck`를 추가하지 않는다.
 
-```markdown
-## 요약
-- {핵심 변경 한 줄}
-- {핵심 변경 한 줄}
+테스트는 대상 코드와 가까운 `*.test.ts` 또는 `*.test.tsx`에 둔다.
+DOM 테스트는 파일 상단에 `// @vitest-environment jsdom`을 선언해 기본 Node 환경과 격리한다.
 
-## 검증
-- [ ] {검증 방법 — 자동 또는 수동}
-- [ ] {검증 방법}
+## DB 스키마 변경
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-```
+1. `src/infra/db/schema/`를 수정한다.
+2. `pnpm db:generate`로 `drizzle/` 산출물을 만든다.
+3. 생성 SQL을 직접 편집하지 말고 파괴적 변경 여부를 검토한다.
+4. 스키마 변경과 생성된 마이그레이션을 같은 커밋에 포함한다.
+5. `pnpm db:migrate` 또는 `pnpm db:migrate:runtime`으로 적용을 검증한다.
 
-`요약` 은 변경의 *왜* 와 *무엇*.
-`검증` 은 reviewer 가 머지 전 확인할 항목.
-항목 0 개면 PR 본문 생략 (단발 docs PR 등 예외 명시).
+프로덕션에 `pnpm db:push`를 사용하지 않는다.
+`pnpm db:push`는 버려도 되는 로컬 실험에만 허용하며 커밋 전에 마이그레이션으로 바꾸거나 되돌린다.
+컨테이너는 시작할 때 `migrate.js`를 실행한 뒤 `server.js`를 실행한다.
 
-#### 의미 단위 atomic 커밋
+## 문서 작성
 
-여러 관심사를 한 커밋에 섞지 않는다. 관심사별 분리 예시:
+문서 책임은 설치된 `planning` 스킬의 “필수 관리 문서” 계약을 따른다.
+구현 방법은 코드에 두고 문서에는 무엇을 결정했는지와 왜 결정했는지를 남긴다.
 
-- 기능 변경 파일 → `feat: ...`
-- 스킬/설정 파일 → `chore: ...`
-- 문서 변경 → `docs: ...`
+- 설명 문장은 자연스러운 한국어로 작성하고 점검, 분류, 표, 기준선 같은 직관적인 표현을 사용한다.
+- 기술 식별자, 경로, 명령어, API 필드, 판정 토큰은 원문을 유지하고 백틱으로 감싼다.
+- 한 문장 또는 의미 단위마다 줄을 나눈다.
+- 한 문단이나 항목에 정보가 3개 이상이면 목록이나 표로 나눈다.
+- 같은 규칙을 여러 문서에 복사하지 않고 단일 소스를 링크한다.
+- 편집한 문서에서는 깨진 링크, 긴 문장, 중첩 괄호, 인라인 나열을 함께 정리한다.
 
-다만 **강하게 연관된 파일은 함께** — 예: `package.json` + `pnpm-lock.yaml`, schema 변경 + 그에 따른 `drizzle/*.sql`.
+Dooray, GitHub, 블로그, 메일처럼 외부에 게시할 문안은 등록 전에 채팅에서 본문을 미리 보여준다.
+블로그 글은 가능하면 실제 스타일의 HTML 미리보기도 만든다.
 
-커밋 단위 검증:
+## Git과 PR
 
-```bash
-# 한 커밋에 src/ 변경 + docs/ 변경 + .claude/ 변경이 모두 있으면 분리 후보
-git show --stat HEAD | tail -20
-```
+`planning` 산출물 브랜치는 `plan{N}-<slug>` 형식을 사용한다.
+기능은 `feat/`, 단발 버그 수정은 `fix/`, 정리는 `chore/`, 문서는 `docs/`를 사용한다.
 
-보호 규칙 (`main`/`master` 직접 push 금지 / `--force` / `--no-verify` 금지) 은 user `~/.claude/CLAUDE.md` 가 단일 소스 — 본 섹션에서 중복 작성하지 않는다.
+PR 제목은 `type(scope): description` 형식을 사용하며 제목과 본문은 기본적으로 한국어로 작성한다.
+본문에는 변경 이유와 내용을 요약하고 검증 항목을 체크리스트로 적는다.
+PR은 검증이 끝났다면 검토 가능한 상태로 생성하고, 사용자가 요청했거나 검증이 끝나지 않았을 때만 초안으로 만든다.
 
----
+커밋은 관심사별로 나눈다.
+강하게 결합된 `package.json`과 `pnpm-lock.yaml`, 스키마와 생성 마이그레이션은 같은 커밋에 둔다.
 
-## Summary for Agents
+다음 파일은 추적하거나 커밋하지 않는다.
+발견하면 작업을 멈추고 범위를 확인한다.
 
-**Next.js 16 blog with layered architecture: app → services → infra.**
+- `.env`, `.env.local`, `.env*.local`
+- `*.pem`, `id_rsa`, `credentials.*`, `secrets.*`
+- `.next/`, `node_modules/`, `.omc/`
 
-- **Key files:** `src/services/SyncService.ts`, `src/app/api/sync/route.ts`, `src/components/MarkdownRenderer.tsx`, `src/infra/db/schema/posts.ts`
-- **Deployment:** Home server (Docker + standalone Next.js) + MySQL (Docker Compose)
-- **Testing:** Vitest + co-located test files
+`drizzle/`은 금지 대상이 아니며 스키마 변경 시 반드시 추적한다.
 
-**Agents should prioritize:**
+## 검증과 완료 보고
 
-1. Schema integrity (Drizzle types)
-2. Sync idempotency (no duplicate/lost data)
-3. Markdown fidelity (GFM, mermaid, links)
-4. Type safety across API boundaries
+변경 동작을 직접 증명하는 대상 테스트부터 실행한다.
+그다음 `pnpm type-check`, `pnpm lint`, `pnpm test`, `pnpm build` 순서로 검증 범위를 넓힌다.
+
+문서만 변경했다면 링크, 경로, 명령어, 코드와의 사실 정합성을 우선 검증한다.
+
+최종 보고에는 변경 파일, 바로잡거나 단순화한 내용, 검증 결과, 남은 위험을 포함한다.

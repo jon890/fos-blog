@@ -1,112 +1,121 @@
 # docs-check 오버레이 — fos-blog
 
-공용 코어(`~/.claude/skills/docs-check`)에 fos-blog docs 구조·검증 세부를 채운다.
-문서 책임 표(단일 소스 정의)는 `.claude/planning-overlay.md` 의 "docs 컨벤션" 표를 그대로 참조한다 (중복 작성 금지).
+공용 `docs-check`에 fos-blog의 문서 범위와 코드 대조 기준을 주입한다.
+문서 책임은 설치된 `planning` 스킬의 “필수 관리 문서” 계약을 따른다.
+이 파일은 fos-blog의 검사 범위와 코드 대조 기준만 추가한다.
 
-## docs 구조 + 대상 파일
+## 검사 범위
+
+- 제품 문서: `README.md`, `docs/**/*.md`
+- 상시 지침: `AGENTS.md`
+- 저장소 오버레이: `.claude/*-overlay.md`
+- 저장소 스킬 자료: `.agents/skills/*/SKILL.md`, `.agents/skills/_shared/*.md`
+- 역할 지침: `.claude/agents/*.md`, `.codex/agents/*.toml`
+
+`AGENTS.md`는 `CLAUDE.md`를 가리키는 심볼릭 링크다.
+같은 내용으로 두 번 집계하지 않고 실제 파일인 `CLAUDE.md`를 검사한다.
+
+`.claude/skills/*`는 `.agents/skills/*` 호환 심볼릭 링크다.
+링크가 끊어졌는지만 확인하고 내용을 중복 검사하지 않는다.
+
+ADR 본문은 `docs/adr/[0-9]*.md`, 인덱스는 `docs/adr/README.md`다.
+ADR-012는 결번이며 새 결정에 재사용하지 않는다.
+
+## 정적 검사 실행
+
+공용 `static-check.sh`는 ADR 인덱스 파일명을 `INDEX.md`로 고정하고 추적된 모든 마크다운을 검사한다.
+fos-blog의 `README.md` 인덱스와 검사 범위 제외를 표현할 수 없으므로 현재는 실행하지 않는다.
+거짓 양성이 섞인 대량 출력을 판정 근거로 사용하지 말고 아래 저장소 전용 대조를 실행한다.
+
+편집한 파일은 `git diff --check`와 한국어 검사기로 별도 확인한다.
+기존 위반이 많은 파일은 현재 diff에서 새 위반이 늘지 않았는지 비교하고 기존 부채를 별도 보고한다.
+공용 검사기가 인덱스 경로와 파일 목록 인자를 지원하게 되면 이 예외를 제거한다.
+
+## 검증 위임
+
+의미 검증은 읽기 전용 `fos-blog-docs-verifier`에 맡긴다.
+
+- Codex: `.codex/agents/fos-blog-docs-verifier.toml`
+- Claude: `.claude/agents/fos-blog-docs-verifier.md`
+
+검증기는 발견을 미리 걸러내지 않고 모두 보고한다.
+심각도는 메인 에이전트가 근거를 검토한 뒤 정한다.
+
+## fos-blog 전용 대조
+
+### ADR 인덱스
 
 ```bash
-# cwd: <repo root>
-ls docs/*.md docs/pages/*.md .agents/skills/*/SKILL.md .agents/skills/_shared/*.md
-find .claude/skills -maxdepth 1 -type l -print -exec test -e {} \;
+BODY=$(find docs/adr -maxdepth 1 -type f -name '[0-9][0-9][0-9]-*.md' -exec basename {} \; | cut -c1-3 | sort -u)
+INDEX=$(grep -oE '\[ADR-[0-9]{3}\]' docs/adr/README.md | grep -oE '[0-9]{3}' | sort -u)
+diff <(printf '%s\n' "$BODY") <(printf '%s\n' "$INDEX")
+test -z "$(find docs/adr -maxdepth 1 -type f -name '012-*.md' -print -quit)"
 ```
 
-- ADR 디렉터리: `docs/adr/`, INDEX 파일은 `docs/adr/README.md` (코어 예시의 `INDEX.md` 아님).
-- 결번 ADR: **ADR-012** (사유는 `docs/adr/README.md` 참조). 새 ADR 에 재할당 금지.
+본문과 인덱스의 번호 집합이 같아야 한다.
+인덱스의 상대 링크도 모두 실제 파일을 가리켜야 한다.
 
-## 검증 위임 — `fos-blog-docs-verifier` (필수)
+### Drizzle 스키마
 
-6축 의미 검증 + 아래 grep 전체를 `fos-blog-docs-verifier` custom agent (`.claude/agents/fos-blog-docs-verifier.md`) 에 위임한다.
-Codex 환경은 `.codex/agents/fos-blog-docs-verifier.toml`. agent 본문이 검증 항목·grep 명령·도메인 지식의 단일 소스 — main session 이 직접 grep 을 베끼면 정의가 두 곳으로 갈라진다.
+여러 줄로 작성된 `mysqlTable()` 선언도 잡도록 다중 행 검색을 사용한다.
 
-```
-Agent({
-  subagent_type: "fos-blog-docs-verifier",
-  description: "5-axis docs audit",
-  prompt: "전체 docs (docs/*.md + docs/pages/*.md + .claude/skills/*/SKILL.md + _shared/*.md) 6축 점검. ADR Index 동기화 / 30줄 bloat / page.tsx ↔ docs/pages 정합 / Drizzle schema ↔ data-schema.md / 홈서버 배포 가드 / 매트릭스 용어 모두 자동 검증. Critical / Warning / Safe 분류 보고."
-})
-```
-
-agent 사용 불가 환경에서만 아래 grep 을 main session 이 직접 실행한다.
-
-## fos-blog 전용 부패 검사 grep
-
-**Drizzle schema ↔ data-schema.md 테이블 일치**:
 ```bash
-# cwd: <repo root>
-SCHEMA_TABLES=$(grep -oE 'mysqlTable\("[a-z_]+"' src/infra/db/schema/*.ts | grep -oE '"[a-z_]+"' | sort -u)
-DOC_TABLES=$(grep -oE '^### `[a-z_]+`' docs/data-schema.md | grep -oE '`[a-z_]+`' | sort -u)
-diff <(echo "$SCHEMA_TABLES") <(echo "$DOC_TABLES") && echo "OK: data-schema sync"
+SCHEMA_TABLES=$(rg -U --no-filename -o 'mysqlTable\(\s*"[a-z_]+"' src/infra/db/schema/*.ts | rg -o '"[a-z_]+"' | sort -u)
+DOC_TABLES=$(rg -o '^### `[a-z_]+`' docs/data-schema.md | rg -o '`[a-z_]+`' | tr -d '`' | sort -u)
+diff <(printf '%s\n' "$SCHEMA_TABLES" | tr -d '"') <(printf '%s\n' "$DOC_TABLES")
 ```
 
-**page.tsx ↔ docs/pages/{name}.md 정합**:
+테이블 이름뿐 아니라 컬럼의 null 허용, 고유성, 기본값, 인덱스도 코드와 문서를 대조한다.
+
+### 페이지 문서
+
+모든 `src/app/**/page.tsx`는 아래 대응 문서를 가져야 한다.
+실제 라우트가 추가되면 이 표와 페이지 문서를 함께 갱신한다.
+
+| 페이지 파일 | 페이지 문서 |
+| --- | --- |
+| `src/app/page.tsx` | `docs/pages/home.md` |
+| `src/app/about/page.tsx` | `docs/pages/about.md` |
+| `src/app/categories/page.tsx` | `docs/pages/categories.md` |
+| `src/app/category/[...path]/page.tsx` | `docs/pages/category-detail.md` |
+| `src/app/contact/page.tsx` | `docs/pages/contact.md` |
+| `src/app/glossary/page.tsx` | `docs/pages/glossary.md` |
+| `src/app/posts/[...slug]/page.tsx` | `docs/pages/post-detail.md` |
+| `src/app/posts/latest/page.tsx` | `docs/pages/posts-latest.md` |
+| `src/app/posts/popular/page.tsx` | `docs/pages/posts-popular.md` |
+| `src/app/privacy/page.tsx` | `docs/pages/privacy.md` |
+| `src/app/series/page.tsx` | `docs/pages/series-index.md` |
+| `src/app/series/[name]/page.tsx` | `docs/pages/series-detail.md` |
+| `src/app/tag/[name]/page.tsx` | `docs/pages/tag.md` |
+
+현재 라우트 집합은 다음 명령으로 확인한다.
+
 ```bash
-# cwd: <repo root>
-ROUTES=$(find src/app -name "page.tsx" ! -path "*api*" ! -path "*\\(*" | sed 's|src/app/||;s|/page\.tsx||' | grep -vE '^\[|/\[' | sort)
-DOCS=$(ls docs/pages/*.md 2>/dev/null | xargs -n1 basename | sed 's|\.md||' | sort)
-# 신규 page.tsx 인데 docs/pages/{name}.md 부재 시 UPDATE_NEEDED
+find src/app -name 'page.tsx' -type f | sort
 ```
 
-**page docs Related Files 정합** (경로 존재 확인):
+`docs/pages/*.md`의 `Related Files` 또는 `File` 경로는 실제로 존재해야 한다.
+
+### 레이어 경계
+
+`AGENTS.md`의 아키텍처 경계를 기준으로 판정한다.
+단순 조회 페이지나 Route Handler의 `getRepositories()` 직접 사용은 허용한다.
+여러 Repository 조합이나 외부 부수 효과를 새로 추가하면서 `services`를 우회한 경우만 위반 후보로 보고한다.
+
+### 홈서버 배포
+
+`Vercel Cron`, `Edge Functions`, `vercel.json` 검색 결과를 자동 위반으로 판정하지 않는다.
+금지 문장, 과거 결정, 디자인 출처 언급은 허용한다.
+홈서버 배포에 해당 기능을 사용하라고 권장하거나 필수 구성으로 제시한 경우만 `VIOLATION`이다.
+
 ```bash
-# cwd: <repo root>
-for doc in docs/pages/*.md; do
-  awk '
-    /^## Related Files/ { in_section=1; next }
-    /^## / && in_section { in_section=0 }
-    in_section {
-      n = split($0, parts, "`")
-      for (i=2; i<=n; i+=2) {
-        p = parts[i]
-        if (p ~ /^(src|drizzle|scripts|local|public)\//) print FILENAME ":" NR ": " p
-      }
-    }
-  ' "$doc"
-done | while IFS= read -r line; do
-  path="${line##*: }"; path="${path%% *}"
-  test -e "$path" || echo "BROKEN: $line"
-done
-# 기대: "BROKEN:" 0건. 발견 시 (1) docs 행 제거 (2) 경로 수정 (3) 파일 복구 중 AskUserQuestion
+rg -n 'Vercel Cron|Edge Functions|vercel\.json|ISR invalidation' README.md CLAUDE.md docs .claude
 ```
 
-**ADR 에 page docs 전용 헤딩 등장 여부** (문서 책임 표 위반 — B2 옵션):
-```bash
-# cwd: <repo root>
-for f in docs/adr/[0-9]*.md; do
-  awk '
-    /^## ADR-/ { adr=$0; next }
-    /^### (Related Files|Components|Interactions|Client State|Server-side Processing|Layout|SEO|Data)/ {
-      print adr " — page docs 전용 헤딩 출현: " $0
-    }
-  ' "$f"
-done
-# 기대: 0건 — 발견 시 해당 정보를 docs/pages/{page}.md 로 이전 + ADR 에는 결정 근거만 남김
-```
+## 판정
 
-**홈서버 배포 가드** (Vercel-only 기능 권장 검출):
-```bash
-grep -rnE "Vercel Cron|Edge Functions|vercel\.json" docs/ CLAUDE.md README.md 2>/dev/null && echo "VIOLATION: Vercel-only 기능 권장 docs 에 등장"
-```
+- `VIOLATION`: 코드 또는 운영 정책을 어기는 지침
+- `UPDATE_NEEDED`: 오래됐거나 빠졌거나 중복된 문서
+- `PASS`: 검사 범위와 근거를 제시하고 불일치가 없음
 
-**ADR Index 동기화 + bloat** (INDEX 파일 = `docs/adr/README.md`):
-```bash
-# cwd: <repo root>
-BODY=$(ls docs/adr/[0-9]*.md | grep -oE '[0-9]{3}' | sort -u | sed 's/^/ADR-/')
-INDEX=$(grep -oE '\[ADR-[0-9]+\]' docs/adr/README.md | grep -oE 'ADR-[0-9]+' | sort -u)
-diff <(echo "$BODY") <(echo "$INDEX") && echo "OK: ADR Index synced"
-
-for f in docs/adr/[0-9]*.md; do
-  n=$(basename "$f" | grep -oE '^[0-9]+')
-  size=$(wc -l < "$f" | tr -d ' ')
-  [ "$size" -gt 30 ] && echo "BLOAT: ADR-$n ($size lines, > 30) — 슬림화 검토"
-done
-```
-
-## common-pitfalls / 문서 책임
-
-- common-pitfalls 경로: `.agents/skills/_shared/common-pitfalls.md` (`.claude/skills/_shared` 는 symlink).
-- 문서 책임 표(단일 소스) + ADR 자명성 게이트 + 거울 구조 원칙: `.claude/planning-overlay.md` 참조.
-
-## build-with-teams 연계
-
-파이프라인 내부 docs-verifier(현재 task 범위만) 와 이 스킬(전체 docs 6축) 의 역할 분담은 코어 "task 범위 검증과의 분담" 절 그대로 적용한다. fos-blog 는 양쪽 모두 `fos-blog-docs-verifier` 로 위임한다는 점만 추가.
+전체 점검은 부패, 과대화, 추론성, 중복, 자명성, 가독성의 6축을 모두 보고한다.

@@ -10,7 +10,7 @@ developer_instructions = """
 - layer 방향을 지킨다: app -> services -> infra, lib는 shared utilities다.
 - 기존 repo convention이 명시적으로 허용하지 않는 한 app에서 infra를 직접 import하지 않는다.
 - server code는 `@/lib/logger`를 사용하고, src code에 `console.log`를 남기지 않는다.
-- post 조회에서는 `posts.isActive` filtering을 보존한다.
+- 특별한 이유가 없는 post 조회에서는 `posts.isActive` filtering을 보존한다.
 - DB schema 변경은 migration 기반으로 처리한다. production path로 `pnpm db:push`를 쓰지 않는다.
 - 명시 승인 없이 `eslint-disable`, `@ts-ignore`, `@ts-nocheck`, `@ts-expect-error`를 추가하지 않는다.
 - fos-blog는 Docker/standalone Next.js 기반 홈서버 배포다. Vercel-only 가정을 도입하지 않는다.
@@ -26,7 +26,7 @@ developer_instructions = """
 <source_of_truth>
 - 할당받은 phase file을 먼저 읽는다.
 - 도메인 동작이 불명확하면 `CLAUDE.md`의 repository rule을 확인한다.
-- build-with-teams pipeline 일부로 호출된 경우에만 글로벌 코어 `~/.claude/skills/build-with-teams/SKILL.md` + 레포 오버레이 `.claude/build-with-teams-overlay.md`를 읽는다.
+- build-with-teams pipeline 일부로 호출된 경우에만 설치된 `build-with-teams/SKILL.md`와 `AGENTS.md`를 읽는다.
 </source_of_truth>
 
 <verification_loop>
