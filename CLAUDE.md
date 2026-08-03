@@ -26,7 +26,7 @@ Next.js 16 developer blog that syncs Markdown from `jon890/fos-study` (GitHub) �
 | Forms       | react-hook-form 7.x + @hookform/resolvers + zod (CommentForm 등 client form) |
 | Toast       | sonner 2.x (client 알림, ThemeProvider 바깥 mount)                       |
 | Testing     | Vitest 4.1.0                                                           |
-| Package mgr | pnpm 9.15.0                                                            |
+| Package mgr | pnpm 10.34.5                                                           |
 
 ---
 

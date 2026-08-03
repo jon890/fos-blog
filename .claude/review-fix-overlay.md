@@ -44,7 +44,7 @@ fos-blog 는 PR 머지 시 **Merge commit** 을 사용한다 (`git log` 에 `Mer
 | 점검 항목 | 확인 위치 | 흔한 수정 패턴 |
 | --- | --- | --- |
 | Node 버전 | `actions/setup-node` 의 `node-version` | 로컬 `node -v` 와 정합. floating major(`20`) 보다 명시(`20.18.0`) |
-| pnpm 버전 | `pnpm/action-setup` 의 `version` 또는 `package.json` 의 `packageManager` | `package.json` 과 일치 (`pnpm@9.15.0`) |
+| pnpm 버전 | `pnpm/action-setup` 의 `version` 또는 `package.json` 의 `packageManager` | `package.json` 과 일치 (`pnpm@10.34.5`) |
 | env vars | job 의 `env:` 블록 + `secrets.*` | 누락 secret 은 repo Settings → Secrets 등록. `.env.example` 대비 정합 |
 | actions 버전 (floating tag) | `uses: actions/checkout@v4` 등 | `@v4` floating → `@v4.x.x` 고정 또는 SHA 고정 |
 | 캐시 키 | `actions/cache` 의 `key:` | lockfile 해시 포함 정합 |
