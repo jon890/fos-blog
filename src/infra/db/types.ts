@@ -10,6 +10,7 @@ export interface PostData {
   folders?: string[];
   content?: string | null;
   description?: string | null;
+  thumbnailUrl?: string | null;
   series?: string | null;
   seriesOrder?: number | null;
   createdAt?: Date | null;

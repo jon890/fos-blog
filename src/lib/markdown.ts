@@ -15,6 +15,7 @@ export interface FrontMatter {
   title?: string;
   date?: string;
   description?: string;
+  thumbnail?: string;
   tags?: string[];
   categories?: string[];
   series?: string;
