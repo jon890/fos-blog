@@ -109,7 +109,7 @@ docs(skill): accumulate review learnings from PR #{N}
 학습 누적은 **반드시 main 직접 commit**. team-lead 가:
 1. `git switch main && git pull --ff-only`
 2. 본 draft 의 위치별 파일 편집
-3. `git commit -m "docs(skill): ..."` (branch-contamination-guard.sh 가 자동 검증)
+3. `git commit -m "docs(skill): ..."`
 4. `git push origin main`
 
 본 sub-agent 는 위 commit 절차에 직접 관여 금지. team-lead 가 사용자 승인 후 수행.

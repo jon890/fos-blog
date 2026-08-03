@@ -827,15 +827,15 @@ hook 스크립트는 `$CMD` 같은 외부 입력을 자주 다루므로 특히 �
 ## BLG22. SKILL.md 의 agent 타입 참조와 `.claude/agents/` 실제 파일 불일치 금지 (PR #151 관측)
 
 **증상**: SKILL.md 본문에 "`oh-my-claudecode:writer` 를 spawn" 이라 적었지만 실제 `.claude/agents/` 에는 `self-healing-postmortem.md` 커스텀 에이전트 정의가 있고 호출 메커니즘이 다름.
-agent-spawn-guard.sh 의 guard 목록에 OMC writer 가 없어 `team_name` 없이 spawn 해도 차단되지 않음 → 잘못된 타입이 silent 로 통과.
+설치된 에이전트 정의와 호출 규칙을 대조하지 않으면 잘못된 타입이 그대로 실행 단계에 들어간다.
 
 **Good**: SKILL.md 작성 시 spawn 대상은:
 - (a) `.claude/agents/<name>.md` 파일이 실제 존재하는지
-- (b) guard 목록과 정합한지
+- (b) 현재 실행 환경의 호출 규칙과 맞는지
 
 두 체크 후 확정.
 
-**검출**: `grep -nE 'spawn|subagent_type' .claude/skills/*/SKILL.md` 결과의 agent 이름이 `ls .claude/agents/` + agent-spawn-guard.sh 의 case 목록에 있는지 cross-check.
+**검출**: `grep -nE 'spawn|subagent_type' .claude/skills/*/SKILL.md` 결과의 에이전트 이름을 `.claude/agents/` 와 현재 실행 환경의 에이전트 목록에서 확인한다.
 
 **Why**: SKILL.md 는 team-lead 가 매 사이클 참조하는 운영 문서 — 잘못된 타입은 곧바로 실행 사고.
 산출 파일 구조 섹션과 본문이 어긋나면 review 가 잡지 못하면 그대로 운영 진입.
