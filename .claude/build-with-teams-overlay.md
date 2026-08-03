@@ -57,13 +57,6 @@ PLAN_DIR=""
 
 옵션 B(별도 `-impl` 브랜치)는 task PR 이 이미 머지된 후에만 사용 — 옵션 A 가 기본, B 는 예외.
 
-## 재발 방지 훅 (자동 차단)
-
-| 훅 | 파일 | 차단 대상 |
-|---|---|---|
-| bare Agent 스폰 (`team_name` 누락) | `.claude/hooks/agent-spawn-guard.sh` (PreToolUse) | `TeamCreate` 없이 `Agent({subagent_type})` 만 호출 |
-| wrong-branch 학습 commit | `.claude/hooks/branch-contamination-guard.sh` (PreToolUse) | 학습 누적 파일이 PR 브랜치에 커밋되는 경우 |
-
 ## common-pitfalls 경로
 
 `.agents/skills/_shared/common-pitfalls.md` (`.claude/skills/_shared` 는 symlink). critic 반복 지적 패턴을 이 파일의 `P#` 섹션에 누적한다.
@@ -75,7 +68,8 @@ PR 생성 + 팀 종료 직전, `self-healing-postmortem` (`fast` 실행 등급) 
 spawn 입력: 본 plan git log(PR 브랜치) + sub-agent 통신 요약(critic 사이클 횟수/재시도/무응답) + team-lead 가 마주친 분기점.
 산출: 재현·추상화·검증 가능 패턴 1-3개 draft. 누적 위치는 agent 가 라우팅 제안 (`common-pitfalls.md` BLG# / 본 SKILL / `docs/adr/NNN-slug.md` / `docs/pages/*.md`).
 
-**승인 게이트**: `AskUserQuestion` 으로 확인 후 main 직접 commit (본 PR 브랜치 commit 은 `branch-contamination-guard.sh` 가 차단).
+**승인 게이트**: `AskUserQuestion` 으로 확인한 뒤 `main`에 직접 commit한다.
+본 PR 브랜치에는 학습 내용을 commit하지 않는다.
 호출 자체는 선택 — plan 규모가 작거나 새 마찰이 없으면 skip.
 
 ## 노하우 누적 위치 라우팅 (fos-blog)
