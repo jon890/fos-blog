@@ -47,6 +47,7 @@ export function PostThumbnail({
           src={source}
           alt=""
           fill
+          unoptimized={source.startsWith("/api/og/thumbnails/")}
           sizes={sizes}
           className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.025] motion-reduce:transition-none"
           onError={() => setSourceIndex((current) => current + 1)}

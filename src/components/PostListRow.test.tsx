@@ -40,4 +40,21 @@ describe("PostListRow", () => {
     );
     expect(thumbnail.getAttribute("data-category")).toBe("AI");
   });
+
+  it("날짜 없이 읽기 시간만 있으면 앞쪽 구분점을 표시하지 않는다", () => {
+    const { container } = render(
+      <PostListRow
+        index={2}
+        title="읽기 시간 테스트"
+        excerpt=""
+        href="/posts/reading-time"
+        updatedAt={null}
+        readingMinutes={5}
+        categorySlug="AI"
+      />,
+    );
+
+    expect(container.textContent).toContain("5 min");
+    expect(container.textContent).not.toContain("— · 5 min");
+  });
 });

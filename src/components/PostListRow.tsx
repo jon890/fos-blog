@@ -27,6 +27,11 @@ export function PostListRow({
 }: PostListRowProps) {
   const catColor = getCategoryColor(categorySlug);
   const numStr = `— ${String(index).padStart(3, "0")}`;
+  const mobileMeta = updatedAt
+    ? `${formatYYYYMMDD(updatedAt)} · ${readingMinutes ? `${readingMinutes} min` : formatRelativeKo(updatedAt)}`
+    : readingMinutes
+      ? `${readingMinutes} min`
+      : null;
 
   return (
     <Link
@@ -52,9 +57,9 @@ export function PostListRow({
         {excerpt && (
           <p className="text-[13px] text-[var(--color-fg-secondary)] line-clamp-1">{excerpt}</p>
         )}
-        {(updatedAt || readingMinutes) && (
+        {mobileMeta && (
           <div className="mt-2 font-mono text-[11px] text-[var(--color-fg-muted)] md:hidden">
-            {formatYYYYMMDD(updatedAt)} · {readingMinutes ? `${readingMinutes} min` : formatRelativeKo(updatedAt)}
+            {mobileMeta}
           </div>
         )}
       </div>

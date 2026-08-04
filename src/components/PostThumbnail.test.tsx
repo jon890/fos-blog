@@ -5,8 +5,12 @@ import { describe, expect, it, vi } from "vitest";
 import { buildThumbnailSources, PostThumbnail } from "./PostThumbnail";
 
 vi.mock("next/image", () => ({
-  default: ({ fill: _fill, ...props }: React.ComponentProps<"img"> & { fill?: boolean }) => (
-    <img {...props} />
+  default: ({
+    fill: _fill,
+    unoptimized,
+    ...props
+  }: React.ComponentProps<"img"> & { fill?: boolean; unoptimized?: boolean }) => (
+    <img data-unoptimized={unoptimized ? "true" : "false"} {...props} />
   ),
 }));
 
@@ -45,6 +49,7 @@ describe("PostThumbnail", () => {
     const categoryFallback = container.querySelector("img");
     expect(categoryFallback).not.toBeNull();
     expect(categoryFallback?.getAttribute("src")).toBe("/api/og/thumbnails/java");
+    expect(categoryFallback?.getAttribute("data-unoptimized")).toBe("true");
 
     fireEvent.error(categoryFallback!);
     const siteFallback = container.querySelector("img");

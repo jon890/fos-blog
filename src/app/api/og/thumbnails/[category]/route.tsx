@@ -2,7 +2,6 @@ import { ImageResponse } from "next/og";
 import { createThumbnailPattern } from "@/lib/thumbnail-fallback";
 
 export const runtime = "nodejs";
-export const revalidate = 86_400;
 
 const WIDTH = 1200;
 const HEIGHT = 675;
