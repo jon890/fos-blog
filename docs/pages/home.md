@@ -39,7 +39,7 @@
 | `HomeHero` (plan013) | eyebrow + h1 + lead + `<dl>` 4 stats 한 컴포넌트 — 기존 별도 Hero/Stats 섹션 통합 |
 | `HeroMesh` (plan013) | SVG `<radialGradient>` + CSS slow rotate 배경 mesh (server, prefers-reduced-motion 자동 처리) |
 | `CategoryList` | 카테고리 그리드 (최대 9개 표시, lg 3×3) |
-| `PostCard` | 인기 글 / 최근 글 카드 |
+| `PostCard` | 인기 글 / 최근 글 카드. 전용 썸네일 또는 카테고리별 생성 이미지 표시 (plan056) |
 | `SeriesCard` (plan047) | 시리즈 섹션 카드 |
 | `WebsiteJsonLd` | JSON-LD 구조화 데이터 |
 

@@ -31,6 +31,7 @@ export class PostRepository extends BaseRepository {
         subcategory: posts.subcategory,
         folders: posts.folders,
         description: posts.description,
+        thumbnailUrl: posts.thumbnailUrl,
         createdAt: posts.createdAt,
       })
       .from(posts)
@@ -54,6 +55,7 @@ export class PostRepository extends BaseRepository {
         subcategory: posts.subcategory,
         folders: posts.folders,
         description: posts.description,
+        thumbnailUrl: posts.thumbnailUrl,
         createdAt: posts.createdAt,
       })
       .from(posts)
@@ -164,6 +166,7 @@ export class PostRepository extends BaseRepository {
         subcategory: posts.subcategory,
         folders: posts.folders,
         description: posts.description,
+        thumbnailUrl: posts.thumbnailUrl,
         updatedAt: posts.updatedAt,
         id: posts.id,
       })
@@ -217,6 +220,7 @@ export class PostRepository extends BaseRepository {
         subcategory: post.subcategory,
         folders: post.folders || [],
         description: post.description,
+        thumbnailUrl: post.thumbnailUrl,
         series: post.series,
         seriesOrder: post.seriesOrder,
         createdAt: post.createdAt,
@@ -254,6 +258,7 @@ export class PostRepository extends BaseRepository {
         subcategory: posts.subcategory,
         folders: posts.folders,
         description: posts.description,
+        thumbnailUrl: posts.thumbnailUrl,
         createdAt: posts.createdAt,
       })
       .from(posts)
@@ -391,6 +396,7 @@ export class PostRepository extends BaseRepository {
         subcategory: posts.subcategory,
         folders: posts.folders,
         description: posts.description,
+        thumbnailUrl: posts.thumbnailUrl,
         createdAt: posts.createdAt,
         updatedAt: posts.updatedAt,
       })
@@ -419,6 +425,7 @@ export class PostRepository extends BaseRepository {
         subcategory: posts.subcategory,
         folders: posts.folders,
         description: posts.description,
+        thumbnailUrl: posts.thumbnailUrl,
         categories: posts.categories,
       })
       .from(posts)
@@ -571,6 +578,7 @@ export class PostRepository extends BaseRepository {
         subcategory: posts.subcategory,
         folders: posts.folders,
         description: posts.description,
+        thumbnailUrl: posts.thumbnailUrl,
         series: posts.series,
         seriesOrder: posts.seriesOrder,
       })
@@ -624,6 +632,7 @@ export class PostRepository extends BaseRepository {
           subcategory: posts.subcategory,
           folders: posts.folders,
           description: posts.description,
+          thumbnailUrl: posts.thumbnailUrl,
           series: posts.series,
           seriesOrder: posts.seriesOrder,
           createdAt: posts.createdAt,
@@ -656,6 +665,7 @@ export class PostRepository extends BaseRepository {
         subcategory: p.subcategory,
         folders: p.folders || [],
         description: p.description,
+        thumbnailUrl: p.thumbnailUrl,
         series: p.series,
         seriesOrder: p.seriesOrder,
         createdAt: p.createdAt,

@@ -62,6 +62,7 @@ export async function generateMetadata({
     const modifiedTime = data.post.updatedAt?.toISOString();
 
     const ogImageUrl = `${siteUrl}/api/og/posts/${slug.split("/").map(encodeURIComponent).join("/")}`;
+    const socialImageUrl = data.post.thumbnailUrl || ogImageUrl;
 
     return {
       title,
@@ -75,13 +76,15 @@ export async function generateMetadata({
         url: postUrl,
         ...(publishedTime && { publishedTime }),
         ...(modifiedTime && { modifiedTime }),
-        images: [{ url: ogImageUrl, width: 1200, height: 630, alt: title }],
+        images: data.post.thumbnailUrl
+          ? [{ url: socialImageUrl, alt: title }]
+          : [{ url: socialImageUrl, width: 1200, height: 630, alt: title }],
       },
       twitter: {
         card: "summary_large_image",
         title,
         description,
-        images: [ogImageUrl],
+        images: [socialImageUrl],
       },
     };
   } catch {

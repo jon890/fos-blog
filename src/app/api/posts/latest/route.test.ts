@@ -24,6 +24,7 @@ const makeRow = (id: number) => ({
   subcategory: null,
   folders: [],
   description: "desc",
+  thumbnailUrl: `https://example.com/post-${id}.jpg`,
   updatedAt: now,
   id,
 });
@@ -90,5 +91,6 @@ describe("GET /api/posts/latest", () => {
     const body = await res.json();
     expect(body.items[0]).not.toHaveProperty("updatedAt");
     expect(body.items[0]).not.toHaveProperty("id");
+    expect(body.items[0].thumbnailUrl).toBe("https://example.com/post-1.jpg");
   });
 });

@@ -5,6 +5,7 @@ import type { PostData } from "@/infra/db/types";
 import { getCategoryColor, getCategoryLabel } from "@/lib/category-meta";
 import { formatDate } from "@/lib/date-utils";
 import { Eye } from "lucide-react";
+import { PostThumbnail } from "./PostThumbnail";
 
 interface PostCardProps {
   post: PostData;
@@ -35,6 +36,12 @@ export function PostCard({
         style={inlineStyle}
         className="group flex flex-col overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)] transition-[border-color,transform] duration-[var(--duration-default)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:border-[var(--color-border-strong)] motion-reduce:transform-none motion-reduce:transition-none"
       >
+        <PostThumbnail
+          thumbnailUrl={post.thumbnailUrl}
+          category={post.category}
+          sizes="(min-width: 1024px) 360px, 100vw"
+          className="aspect-video w-full border-b border-[var(--color-border-subtle)]"
+        />
         <div className="flex flex-1 flex-col gap-2 p-5">
           {showCategory && (
             <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.06em]">
@@ -79,8 +86,14 @@ export function PostCard({
       <Link
         href={postHref(post.slug)}
         style={inlineStyle}
-        className="group relative grid grid-cols-[1fr_auto] items-baseline gap-4 border-t border-[var(--color-border-subtle)] py-5 @lg:grid-cols-[1fr_180px_100px] @lg:gap-6 @lg:py-6"
+        className="group relative grid grid-cols-[112px_minmax(0,1fr)] items-center gap-4 border-t border-[var(--color-border-subtle)] py-5 @lg:grid-cols-[160px_minmax(0,1fr)_180px_100px] @lg:gap-6 @lg:py-6"
       >
+        <PostThumbnail
+          thumbnailUrl={post.thumbnailUrl}
+          category={post.category}
+          sizes="(min-width: 1024px) 160px, 112px"
+          className="aspect-video w-full rounded-md border border-[var(--color-border-subtle)]"
+        />
         <div className="min-w-0">
           <div className="text-[16px] font-medium leading-snug tracking-tight text-[var(--color-fg-primary)] transition-colors duration-150 group-hover:text-[var(--color-brand-400)] @lg:text-[17px]">
             {post.title}

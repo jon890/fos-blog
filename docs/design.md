@@ -164,6 +164,11 @@ focus-visible `ring-3 ring-ring/50`. invalid 시 destructive ring. disabled 시 
 ### Category badge / card
 
 - `PostCard` 배지는 `getCategoryColor()`의 전경색과 점 표시를 사용한다.
+- `PostCard` 대표 이미지는 16:9 비율을 유지한다.
+  행 변형은 왼쪽의 작은 이미지 창으로 사용하고 격자 변형은 카드 상단 전체 폭에 둔다.
+- 전용 이미지가 없으면 카테고리 색을 중심으로 생성한 대체 이미지를 사용한다.
+  제목과 설명은 이미지 위에 겹치지 않고 기존 정보 영역에 유지한다.
+- 이미지 자체는 장식 정보이므로 빈 `alt`를 사용하고 카드 링크의 글 제목이 접근 가능한 이름을 담당한다.
 - `ArticleHero` 배지는 같은 색으로 테두리와 10% 농도의 배경을 만든다.
 - `.cat-card::after`: radial blob, hover 시 opacity 0.07(dark)/0.08(light), blend-mode screen/multiply
 - `.post-list-row:hover`: 좌측 border 를 카테고리 색으로, 배경 4% tint

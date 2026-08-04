@@ -200,6 +200,45 @@ describe("PostSyncService", () => {
     );
   });
 
+  it("원본 frontmatter thumbnail을 raw URL로 정규화해 새 글에 저장한다", async () => {
+    const { postRepo, githubApi } = makeMocks();
+    vi.mocked(githubApi.getFileContent).mockResolvedValue({
+      content: "---\nthumbnail: ./images/cover 01.webp\n---\n# 제목",
+      sha: "sha",
+    });
+
+    await new PostSyncService(postRepo, githubApi).syncChanged(
+      [{ status: "added", filename: "AI/intro.md" }],
+      "head-sha",
+    );
+
+    expect(postRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        thumbnailUrl:
+          "https://raw.githubusercontent.com/jon890/fos-study/main/AI/images/cover%2001.webp",
+      }),
+    );
+  });
+
+  it("유효하지 않은 thumbnail은 null로 기존 글에 저장하고 upsert는 계속한다", async () => {
+    const { postRepo, githubApi } = makeMocks();
+    vi.mocked(postRepo.getPostId).mockResolvedValue(7);
+    vi.mocked(githubApi.getFileContent).mockResolvedValue({
+      content: "---\nthumbnail: https://example.com/cover.png\n---\n# 제목",
+      sha: "sha",
+    });
+
+    await new PostSyncService(postRepo, githubApi).syncChanged(
+      [{ status: "modified", filename: "AI/intro.md" }],
+      "head-sha",
+    );
+
+    expect(postRepo.update).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({ thumbnailUrl: null }),
+    );
+  });
+
   it("폴더 조회 실패는 category 경고 없이 글을 저장한다", async () => {
     const { postRepo, githubApi } = makeMocks();
     vi.mocked(githubApi.getRepositoryFolderPaths).mockResolvedValue(null);

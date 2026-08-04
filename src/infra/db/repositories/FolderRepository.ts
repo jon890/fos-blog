@@ -55,6 +55,7 @@ export class FolderRepository extends BaseRepository {
         subcategory: p.subcategory,
         folders: p.folders || [],
         description: p.description,
+        thumbnailUrl: p.thumbnailUrl,
       }))
       .sort((a, b) => a.title.localeCompare(b.title));
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { shouldSyncFile } from "@/infra/github/file-filter";
-import { rewriteImagePaths } from "@/infra/github/image-rewrite";
+import { resolveThumbnailUrl, rewriteImagePaths } from "@/infra/github/image-rewrite";
 
 describe("shouldSyncFile", () => {
   // ===== 정상 동기화 대상 =====
@@ -149,5 +149,30 @@ describe("rewriteImagePaths", () => {
     const content = `<img src="https://example.com/img.png" alt="x">`;
     const result = rewriteImagePaths(content, "database/design/erd.md");
     expect(result).toBe(content);
+  });
+});
+
+describe("resolveThumbnailUrl", () => {
+  const BASE = "https://raw.githubusercontent.com/jon890/fos-study/main";
+
+  it("마크다운 파일 기준 상대 썸네일 경로를 인코딩된 GitHub raw URL로 변환한다", () => {
+    expect(
+      resolveThumbnailUrl("./images/썸네일 01.webp", "AI/RAG/storm-parse.md"),
+    ).toBe(`${BASE}/AI/RAG/images/%EC%8D%B8%EB%84%A4%EC%9D%BC%2001.webp`);
+  });
+
+  it("상위 디렉터리 상대경로는 저장소 루트 안에서만 허용한다", () => {
+    expect(resolveThumbnailUrl("../shared/banner.png", "devops/k8s/pods.md")).toBe(
+      `${BASE}/devops/shared/banner.png`,
+    );
+    expect(resolveThumbnailUrl("../escape.png", "intro.md")).toBeNull();
+  });
+
+  it("허용 확장자가 아니거나 절대 URL, query, fragment, 빈 값이면 null을 반환한다", () => {
+    expect(resolveThumbnailUrl("https://example.com/a.png", "AI/doc.md")).toBeNull();
+    expect(resolveThumbnailUrl("images/a.svg", "AI/doc.md")).toBeNull();
+    expect(resolveThumbnailUrl("images/a.png?raw=1", "AI/doc.md")).toBeNull();
+    expect(resolveThumbnailUrl("images/a.png#hash", "AI/doc.md")).toBeNull();
+    expect(resolveThumbnailUrl(" ", "AI/doc.md")).toBeNull();
   });
 });

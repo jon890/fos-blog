@@ -20,7 +20,6 @@
 팀 실행의 저장소 전용 역할은 `fos-blog-executor`와 `fos-blog-docs-verifier`다.
 각 역할 정의 파일을 책임과 출력 계약의 단일 소스로 삼는다.
 반복되는 계획·검토 함정은 `.agents/skills/_shared/common-pitfalls.md`에 누적한다.
-재사용 가능한 실행 마찰을 별도로 분석할 때만 `self-healing-postmortem`을 사용한다.
 
 코드와 문서가 충돌하면 현재 동작은 코드와 설정으로 확인하고, 의사결정 이유는 문서에서 확인한다.
 충돌을 발견하면 근거 없이 한쪽을 선택하지 말고 작업 범위 안에서 함께 정리한다.

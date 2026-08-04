@@ -113,6 +113,25 @@
 | JS 비활성화                              | SSR 10개는 보임, 추가 로드 불가 (graceful degradation)                                                            |
 | 키보드만 사용                            | 수동 "더 보기" 버튼으로 동일 동작 (focus ring 유지)                                                               |
 | 스크린리더                               | `aria-live="polite"` 로 새 글 추가 알림                                                                           |
+
+---
+
+## 글 카드 대표 이미지 선택 (plan056)
+
+```text
+PostCard 렌더
+  → posts.thumbnail_url 있음
+      → 전용 이미지 표시
+      → 로드 실패 시 카테고리별 생성 이미지
+  → posts.thumbnail_url 없음
+      → 카테고리별 생성 이미지
+  → 카테고리별 생성 이미지도 실패
+      → /og-default.png
+```
+
+- `fos-study` 동기화는 마크다운 파일 기준 상대 `thumbnail` 경로를 GitHub raw 절대 URL로 바꿔 저장한다.
+- 카테고리별 대체 이미지는 AI 호출 없이 `ImageResponse`로 생성하고 장기 캐시한다.
+- 글 전용 이미지가 없는 것은 정상 상태이며 동기화 실패로 기록하지 않는다.
 | 인기 글 데이터 매우 적음 (예: 3개)       | 끝 도달 UX 그대로 — "더 이상 글이 없습니다."                                                                      |
 | 무한 스크롤 중 DB sync 발생 (새 글 추가) | cursor 기반(최신)은 영향 없음. offset 기반(인기)은 경계 중복 가능하지만 visitCount 변동은 느림 — 실질적 영향 미미 |
 

@@ -60,6 +60,7 @@ const baseRow = {
   subcategory: null,
   folders: ["cat"],
   description: "desc",
+  thumbnailUrl: "https://raw.githubusercontent.com/jon890/fos-study/main/cat/a.png",
   updatedAt: now,
   id: 42,
 };
@@ -94,6 +95,15 @@ describe("PostRepository.getRecentPostsCursor", () => {
     const result = await repo.getRecentPostsCursor({ limit: 10 });
     expect(result[0].updatedAt).toBeInstanceOf(Date);
     expect(typeof result[0].id).toBe("number");
+  });
+
+  it("최신 글 카드 조회에 thumbnailUrl을 포함한다", async () => {
+    const { repo, db } = makeRepo([baseRow]);
+    const result = await repo.getRecentPostsCursor({ limit: 10 });
+    const selectedFields = Object.keys(db.select.mock.calls[0]?.[0] ?? {});
+
+    expect(selectedFields).toContain("thumbnailUrl");
+    expect(result[0].thumbnailUrl).toBe(baseRow.thumbnailUrl);
   });
 
   it("folders null → 빈 배열로 치환", async () => {

@@ -27,6 +27,7 @@ export const posts = mysqlTable(
     seriesOrder: int("series_order"),
     content: text("content"),
     description: text("description"),
+    thumbnailUrl: varchar("thumbnail_url", { length: 2048 }),
     sha: varchar("sha", { length: 64 }), // GitHub file SHA for change detection
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at").notNull().defaultNow(),

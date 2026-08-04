@@ -1,7 +1,7 @@
 import { PostRepository } from "@/infra/db/repositories/PostRepository";
 import { extractDescription, extractTitle, parseFrontMatter } from "@/lib/markdown";
 import type { FrontMatter } from "@/lib/markdown";
-import { rewriteImagePaths } from "@/infra/github/image-rewrite";
+import { resolveThumbnailUrl, rewriteImagePaths } from "@/infra/github/image-rewrite";
 import type { ChangedFile } from "@/infra/github/api";
 import logger from "@/lib/logger";
 import { isKnownCategoryKey } from "@/lib/category-meta";
@@ -310,10 +310,11 @@ export class PostSyncService {
       subcategory,
       title: filenameTitle,
     } = parsePath(filePath);
+    const { frontMatter } = parseFrontMatter(fileData.content);
+    const thumbnailUrl = resolveThumbnailUrl(frontMatter.thumbnail, filePath);
     const content = rewriteImagePaths(fileData.content, filePath);
     const title = extractTitle(content) || filenameTitle;
     const description = extractDescription(content, 200);
-    const { frontMatter } = parseFrontMatter(content);
     const { tags, series, seriesOrder } = resolveFrontMatterMeta(frontMatter, filePath);
     warnUnknownFrontMatterCategories(
       filePath,
@@ -330,6 +331,7 @@ export class PostSyncService {
         title,
         content,
         description,
+        thumbnailUrl,
         sha: fileData.sha,
         category,
         subcategory,
@@ -356,6 +358,7 @@ export class PostSyncService {
         categories,
         content,
         description,
+        thumbnailUrl,
         sha: fileData.sha,
         ...(commitDates && {
           createdAt: commitDates.createdAt,
