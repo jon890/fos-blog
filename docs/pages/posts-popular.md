@@ -2,7 +2,7 @@
 
 **Route:** `/posts/popular`
 **File:** `src/app/posts/popular/page.tsx`
-**Updated:** 2026-04-19
+**Updated:** 2026-08-05
 
 ---
 
@@ -36,9 +36,9 @@
 | Component | Role |
 |---|---|
 | `PostsListSubHero` (accent=`"popular"`) | 페이지 eyebrow + h1 + Flame accent + meta + divider (server, plan016) |
-| `PostsInfiniteList` (mode=`"popular"`) | 클라이언트 — IntersectionObserver + 수동 버튼 + 끝 도달 UX |
-| `PostCard` | 각 글 카드 (visitCount 표시) |
-| `PostCardSkeleton` | 로딩 스켈레톤 (3개) |
+| `PostsInfiniteList` (mode=`"popular"`) | 클라이언트 — IntersectionObserver + 수동 버튼 + 행 목록 + 끝 도달 UX |
+| `PostCard` | `variant="row"`로 제목·소개·분류·날짜·조회수 표시 |
+| `PostCardSkeleton` | 행형 로딩 스켈레톤 3개 |
 | `BackToTopButton` | 플로팅 + 인라인 공용 |
 
 ---
@@ -72,7 +72,7 @@
   [PostsListSubHero eyebrow="INDEX · POPULAR" title="인기 글" meta="방문수 순" accent="popular"]
    └ h1 우측 Flame 아이콘 (--color-cat-algorithm, hue 25 orange-red)
 [PostsInfiniteList mode="popular"]
-  ├ PostCard × N (visitCount 강조)
+  ├ row PostCard × N (visitCount 강조, 고밀도 행 목록 유지)
   ├ [스켈레톤 × 3 | 인라인 "더 보기" 버튼 | "재시도" 버튼 | 끝 문구 + 인라인 "맨 위로"]
 [플로팅 BackToTop 버튼 (스크롤 > 300px)]
 ```

@@ -2,13 +2,15 @@
 
 **Route:** `/category/[...path]`  
 **File:** `src/app/category/[...path]/page.tsx`  
-**Updated:** 2026-07-01
+**Updated:** 2026-08-05
 
 ---
 
 ## Purpose
 
-특정 카테고리 또는 하위 폴더의 내용을 보여주는 페이지. tinted sub-hero (좌 2px cat-color + 5% gradient), README frame, 하위 폴더 카드, post list row 를 표시한다. 다단계 중첩 경로를 지원한다. plan015 기반 리디자인.
+특정 카테고리 또는 하위 폴더의 내용을 보여주는 페이지.
+분류 색을 입힌 보조 영웅 영역, README 본문 틀, 하위 폴더 카드, 썸네일 중심 글 카드를 표시한다.
+다단계 중첩 경로를 지원한다.
 
 ---
 
@@ -40,12 +42,12 @@ frontmatter `categories` 는 `AI` 같은 최상위 폴더뿐 아니라 `AI/RAG` 
 | Component | Role |
 |-----------|------|
 | `Breadcrumb` | 다단계 경로 네비 (`fos-blog / categories / ... / current`) |
-| `CategoryDetailSubHero` | tinted sub-hero (좌 2px cat-color + gradient bg) |
+| `CategoryDetailSubHero` | 왼쪽에 2px 분류 색을 두고 배경에 그러데이션을 적용한 보조 영웅 영역 |
 | `CategoriesSection` | 섹션 헤더 helper |
-| `ReadmeFrame` | README.md frame (file + ext head + body wrapper) |
+| `ReadmeFrame` | 파일명, 확장자 머리글, 본문을 감싸는 README.md 틀 |
 | `MarkdownRenderer` | README.md 본문 렌더링 (있을 때만) |
 | `SubfolderCard` | 하위 폴더 카드 (folder icon + name + count + ↗) |
-| `PostListRow` | 글 목록 row (60px num / 1fr title+excerpt / 90px date+rel) |
+| `PostCard` | `variant="grid"`로 전용·대체 썸네일과 최대 두 줄 제목 표시 |
 | `BreadcrumbJsonLd` | JSON-LD 브레드크럼 (SEO 그대로 유지) |
 
 ---
@@ -54,8 +56,8 @@ frontmatter `categories` 는 `AI` 같은 최상위 폴더뿐 아니라 `AI/RAG` 
 
 - **Breadcrumb 링크**: 경로 중간 세그먼트 / `/categories` / `/` 이동
 - **하위 폴더 카드 클릭**: `/category/<folder.path>` 이동 (`-translate-y-0.5` lift + cat-color border + ↗ translate)
-- **PostListRow 클릭**: `/posts/<post.path>` 이동
-- **PostListRow hover**: 좌 border cat-color + bg `color-mix(in oklch, var(--cat-color), transparent 96%)` (globals.css `.post-list-row:hover` 규칙)
+- **PostCard 클릭**: `/posts/<post.path>` 이동
+- **PostCard hover**: 카드 경계 강조, 이미지 확대, 미세한 위쪽 이동
 
 ## plan054 README 용어 툴팁 상호작용
 
@@ -75,10 +77,10 @@ frontmatter `categories` 는 `AI` 같은 최상위 폴더뿐 아니라 `AI/RAG` 
 
 ```
 Breadcrumb (fos-blog > categories > ... > current)
-CategoryDetailSubHero (eyebrow + h1 + sublines, tinted)
-README 섹션 (있을 때만, ReadmeFrame wrap)
+CategoryDetailSubHero (윗문구 + h1 + 보조 문구, 분류 색 적용)
+README 섹션 (있을 때만, ReadmeFrame으로 감쌈)
 01. 하위 폴더 grid (있을 때만, SubfolderCard)
-02. 이 폴더의 글 (폴더 직속 글 + cross-post 글이 있을 때만, PostListRow)
+02. 이 폴더의 글 (폴더 직속 글 + cross-post 글이 있을 때만, 1→2→3열 PostCard)
 ```
 
 ---
@@ -91,7 +93,7 @@ README 섹션 (있을 때만, ReadmeFrame wrap)
 - `src/components/CategoriesSection.tsx`
 - `src/components/ReadmeFrame.tsx`
 - `src/components/SubfolderCard.tsx`
-- `src/components/PostListRow.tsx`
+- `src/components/PostCard.tsx`
 - `src/components/MarkdownRenderer.tsx`
 - `src/components/JsonLd.tsx`
 - `src/lib/subline.ts` — `SublinePart` 공유 타입
