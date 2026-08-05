@@ -100,7 +100,7 @@ pnpm lint
 pnpm test
 pnpm build
 git diff --check
-rg -n "PostListRow|post-list-row|post-list-rows" src
+rg -n "PostListRow|post-list-row|post-list-rows" src docs
 ```
 
 기대값:
