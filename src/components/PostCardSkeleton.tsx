@@ -1,8 +1,30 @@
-export function PostCardSkeleton() {
+interface PostCardSkeletonProps {
+  variant?: "row" | "grid";
+}
+
+export function PostCardSkeleton({ variant = "row" }: PostCardSkeletonProps) {
+  if (variant === "grid") {
+    return (
+      <div className="flex animate-pulse flex-col overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)] motion-reduce:animate-none">
+        <div className="aspect-video w-full bg-[var(--color-bg-overlay)]" />
+        <div className="flex flex-1 flex-col gap-3 p-5">
+          <div className="h-3 w-20 rounded bg-[var(--color-bg-overlay)]" />
+          <div className="space-y-2">
+            <div className="h-4 w-full rounded bg-[var(--color-bg-overlay)]" />
+            <div className="h-4 w-3/4 rounded bg-[var(--color-bg-overlay)]" />
+          </div>
+          <div className="mt-auto border-t border-[var(--color-border-subtle)] pt-3">
+            <div className="h-3 w-16 rounded bg-[var(--color-bg-overlay)]" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid animate-pulse grid-cols-[112px_minmax(0,1fr)] items-center gap-4 border-t border-[var(--color-border-subtle)] py-5 md:grid-cols-[160px_minmax(0,1fr)_180px_100px] md:gap-6 md:py-6">
+    <div className="grid animate-pulse grid-cols-[112px_minmax(0,1fr)] items-center gap-4 border-t border-[var(--color-border-subtle)] py-5 motion-reduce:animate-none md:grid-cols-[160px_minmax(0,1fr)_180px_100px] md:gap-6 md:py-6">
       <div className="aspect-video w-full rounded-md bg-[var(--color-bg-overlay)]" />
-      <div className="space-y-2 min-w-0">
+      <div className="min-w-0 space-y-2">
         <div className="h-4 w-3/4 rounded bg-[var(--color-bg-overlay)]" />
         <div className="h-3 w-1/2 rounded bg-[var(--color-bg-overlay)]" />
       </div>
