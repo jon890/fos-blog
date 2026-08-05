@@ -1,0 +1,1881 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="국내외 기술 블로그의 썸네일 미술 방향을 비교하고 FOS 블로그의 권장안을 검토하는 시각화 자료"
+    />
+    <title>기술 블로그 썸네일 비교 연구 — FOS Study</title>
+    <style>
+      @font-face {
+        font-family: "Pretendard FOS";
+        src: url("../../public/fonts/Pretendard-Bold-subset.woff") format("woff");
+        font-weight: 700;
+        font-display: swap;
+      }
+
+      :root {
+        color-scheme: dark;
+        --bg: #000000;
+        --panel: #0d0d0f;
+        --panel-soft: #141417;
+        --line: #27272a;
+        --line-strong: #3f3f46;
+        --text: #f4f4f5;
+        --muted: #a1a1aa;
+        --faint: #71717a;
+        --brand: #35ddd0;
+        --brand-deep: #0d7773;
+        --amber: #f4b860;
+        --rose: #ff7c8a;
+        --violet: #a78bfa;
+        --blue: #60a5fa;
+        --radius: 14px;
+        --content: 1180px;
+        --sans: "Pretendard FOS", Pretendard, "Noto Sans KR", system-ui, sans-serif;
+        --body: Pretendard, "Noto Sans KR", system-ui, sans-serif;
+        --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background:
+          linear-gradient(rgba(53, 221, 208, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(53, 221, 208, 0.035) 1px, transparent 1px),
+          var(--bg);
+        background-size: 48px 48px;
+        color: var(--text);
+        font-family: var(--body);
+        line-height: 1.65;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      button,
+      a {
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--brand);
+        outline-offset: 4px;
+      }
+
+      .skip-link {
+        position: fixed;
+        z-index: 100;
+        top: 12px;
+        left: 12px;
+        padding: 8px 12px;
+        transform: translateY(-160%);
+        border-radius: 8px;
+        background: var(--brand);
+        color: #001412;
+        font-weight: 700;
+      }
+
+      .skip-link:focus {
+        transform: translateY(0);
+      }
+
+      .site-header {
+        position: sticky;
+        z-index: 20;
+        top: 0;
+        border-bottom: 1px solid var(--line);
+        background: rgba(0, 0, 0, 0.88);
+        backdrop-filter: blur(18px);
+      }
+
+      .header-inner,
+      main,
+      footer {
+        width: min(calc(100% - 40px), var(--content));
+        margin-inline: auto;
+      }
+
+      .header-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 58px;
+        gap: 20px;
+      }
+
+      .brand-lockup {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-family: var(--mono);
+        font-size: 13px;
+        letter-spacing: 0.03em;
+      }
+
+      .brand-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--brand);
+        box-shadow: 0 0 18px var(--brand);
+      }
+
+      .header-meta {
+        color: var(--faint);
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.7fr);
+        min-height: 590px;
+        border-inline: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .hero-copy {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 86px 7vw 72px 0;
+      }
+
+      .eyebrow,
+      .section-kicker,
+      .metric-label,
+      .kind,
+      .ratio,
+      .source-label {
+        font-family: var(--mono);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+
+      .eyebrow,
+      .section-kicker {
+        color: var(--brand);
+        font-size: 12px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        max-width: 780px;
+        margin-bottom: 30px;
+        font-family: var(--sans);
+        font-size: clamp(48px, 6.7vw, 94px);
+        line-height: 0.96;
+        letter-spacing: -0.065em;
+        word-break: keep-all;
+      }
+
+      h1 span {
+        display: block;
+        color: var(--brand);
+      }
+
+      .hero-summary {
+        max-width: 680px;
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: clamp(16px, 1.7vw, 20px);
+        word-break: keep-all;
+      }
+
+      .hero-summary strong {
+        color: var(--text);
+      }
+
+      .hero-instrument {
+        display: grid;
+        grid-template-rows: repeat(3, 1fr);
+        border-left: 1px solid var(--line);
+        background: rgba(13, 13, 15, 0.7);
+      }
+
+      .metric {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 30px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .metric:last-child {
+        border-bottom: 0;
+      }
+
+      .metric-label {
+        color: var(--faint);
+        font-size: 10px;
+      }
+
+      .metric-value {
+        font-family: var(--sans);
+        font-size: 54px;
+        letter-spacing: -0.05em;
+      }
+
+      .metric-note {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .section {
+        padding: 100px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .section-heading {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 0.58fr);
+        gap: 56px;
+        align-items: end;
+        margin-bottom: 50px;
+      }
+
+      h2 {
+        margin-bottom: 0;
+        font-family: var(--sans);
+        font-size: clamp(34px, 5vw, 64px);
+        line-height: 1.04;
+        letter-spacing: -0.045em;
+        word-break: keep-all;
+      }
+
+      .section-heading p {
+        margin-bottom: 4px;
+        color: var(--muted);
+      }
+
+      .pattern-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border-block: 1px solid var(--line);
+      }
+
+      .pattern-card {
+        min-height: 310px;
+        padding: 32px;
+        border-right: 1px solid var(--line);
+      }
+
+      .pattern-card:last-child {
+        border-right: 0;
+      }
+
+      .pattern-index {
+        display: inline-grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        margin-bottom: 60px;
+        border: 1px solid currentColor;
+        border-radius: 50%;
+        color: var(--brand);
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+
+      .pattern-card:nth-child(2) .pattern-index {
+        color: var(--amber);
+      }
+
+      .pattern-card:nth-child(3) .pattern-index {
+        color: var(--violet);
+      }
+
+      .pattern-card h3 {
+        margin-bottom: 14px;
+        font-family: var(--sans);
+        font-size: 25px;
+        letter-spacing: -0.025em;
+      }
+
+      .pattern-card p {
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 30px;
+      }
+
+      .filter-button,
+      .mode-button {
+        min-height: 40px;
+        padding: 8px 14px;
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font-family: var(--body);
+        font-size: 13px;
+      }
+
+      .filter-button:hover,
+      .mode-button:hover {
+        border-color: var(--brand-deep);
+        color: var(--text);
+      }
+
+      .filter-button[aria-pressed="true"],
+      .mode-button[aria-pressed="true"] {
+        border-color: var(--brand);
+        background: var(--brand);
+        color: #001412;
+        font-weight: 700;
+      }
+
+      .case-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 28px 18px;
+      }
+
+      .case-card {
+        min-width: 0;
+        border-top: 1px solid var(--line-strong);
+        transition: opacity 160ms ease, transform 160ms ease;
+      }
+
+      .case-card[hidden] {
+        display: none;
+      }
+
+      .case-visual {
+        position: relative;
+        overflow: hidden;
+        aspect-ratio: 16 / 9;
+        margin: 12px 0 18px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--panel-soft);
+      }
+
+      .case-visual img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .case-visual::after {
+        position: absolute;
+        inset: 8px;
+        border: 1px solid transparent;
+        content: "";
+        pointer-events: none;
+        transition: border-color 180ms ease;
+      }
+
+      .case-card:hover .case-visual::after {
+        border-color: rgba(53, 221, 208, 0.46);
+      }
+
+      .case-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 8px;
+      }
+
+      .kind,
+      .ratio {
+        color: var(--faint);
+        font-size: 9px;
+      }
+
+      .case-card h3 {
+        margin-bottom: 9px;
+        font-family: var(--sans);
+        font-size: 21px;
+        line-height: 1.25;
+        letter-spacing: -0.025em;
+        word-break: keep-all;
+      }
+
+      .case-card h3 a {
+        text-decoration-color: transparent;
+        text-underline-offset: 4px;
+      }
+
+      .case-card h3 a:hover {
+        text-decoration-color: var(--brand);
+      }
+
+      .case-card p {
+        margin-bottom: 12px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .case-verdict {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        color: var(--text);
+        font-size: 13px;
+      }
+
+      .case-verdict::before {
+        width: 6px;
+        height: 6px;
+        flex: 0 0 auto;
+        border-radius: 50%;
+        background: var(--brand);
+        content: "";
+      }
+
+      .text-visual {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 26px;
+        background:
+          linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+          #0b0c0f;
+        background-size: 26px 100%;
+      }
+
+      .text-visual .mock-label {
+        color: var(--faint);
+        font-family: var(--mono);
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+      }
+
+      .text-visual .mock-title {
+        max-width: 86%;
+        font-family: var(--sans);
+        font-size: clamp(18px, 2.1vw, 28px);
+        line-height: 1.15;
+        letter-spacing: -0.035em;
+      }
+
+      .text-visual .mock-rule {
+        width: 44px;
+        height: 2px;
+        background: var(--brand);
+      }
+
+      .list-preview-shell {
+        overflow: hidden;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius);
+        background: #050507;
+      }
+
+      .list-preview-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .list-preview-toolbar > span {
+        color: var(--faint);
+        font-family: var(--mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+
+      .list-view-switch {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+      }
+
+      .list-comparison {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .list-comparison[data-view="current"] {
+        grid-template-columns: 1fr;
+      }
+
+      .list-comparison[data-view="proposal"] {
+        grid-template-columns: 1fr;
+      }
+
+      .list-comparison[data-view="current"] .proposal-panel,
+      .list-comparison[data-view="proposal"] .current-panel {
+        display: none;
+      }
+
+      .list-panel {
+        min-width: 0;
+        padding: 22px;
+      }
+
+      .list-panel + .list-panel {
+        border-left: 1px solid var(--line);
+      }
+
+      .list-panel-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        min-height: 70px;
+        gap: 20px;
+        margin-bottom: 18px;
+      }
+
+      .list-panel-title {
+        margin-bottom: 4px;
+        font-family: var(--sans);
+        font-size: 23px;
+        letter-spacing: -0.035em;
+      }
+
+      .list-panel-copy {
+        max-width: 340px;
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .list-panel-mark {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex: 0 0 auto;
+        color: var(--faint);
+        font-family: var(--mono);
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .list-panel-mark::before {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: currentColor;
+        content: "";
+      }
+
+      .proposal-panel .list-panel-mark {
+        color: var(--brand);
+      }
+
+      .current-list {
+        border-top: 1px solid var(--line);
+      }
+
+      .current-row {
+        display: grid;
+        grid-template-columns: 124px minmax(0, 1fr);
+        gap: 16px;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .current-row img {
+        width: 124px;
+        height: 70px;
+        border-radius: 7px;
+        object-fit: cover;
+      }
+
+      .current-row-meta,
+      .thumb-card-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        color: var(--faint);
+        font-family: var(--mono);
+        font-size: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .current-row h3 {
+        margin: 5px 0 4px;
+        font-family: var(--sans);
+        font-size: 15px;
+        line-height: 1.35;
+        letter-spacing: -0.025em;
+        word-break: keep-all;
+      }
+
+      .current-row p {
+        display: -webkit-box;
+        overflow: hidden;
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.5;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+      }
+
+      .thumb-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px 14px;
+      }
+
+      .thumb-card {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+        transition: border-color 160ms ease, transform 160ms ease;
+      }
+
+      .thumb-card:hover {
+        border-color: var(--brand-deep);
+        transform: translateY(-2px);
+      }
+
+      .thumb-card-media {
+        position: relative;
+        overflow: hidden;
+        aspect-ratio: 16 / 9;
+        background: var(--panel-soft);
+      }
+
+      .thumb-card-media img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 240ms ease;
+      }
+
+      .thumb-card:hover .thumb-card-media img {
+        transform: scale(1.025);
+      }
+
+      .thumb-card-body {
+        padding: 13px 13px 15px;
+      }
+
+      .thumb-card h3 {
+        display: -webkit-box;
+        overflow: hidden;
+        min-height: 45px;
+        margin: 8px 0 8px;
+        font-family: var(--sans);
+        font-size: 17px;
+        line-height: 1.32;
+        letter-spacing: -0.03em;
+        word-break: keep-all;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+      }
+
+      .list-observation {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border-top: 1px solid var(--line);
+      }
+
+      .observation-cell {
+        padding: 18px 20px;
+        border-right: 1px solid var(--line);
+      }
+
+      .observation-cell:last-child {
+        border-right: 0;
+      }
+
+      .observation-cell span {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--faint);
+        font-family: var(--mono);
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .observation-cell strong {
+        font-family: var(--sans);
+        font-size: 15px;
+        letter-spacing: -0.025em;
+      }
+
+      .matrix {
+        overflow-x: auto;
+        border-block: 1px solid var(--line);
+      }
+
+      .matrix-row {
+        display: grid;
+        grid-template-columns: minmax(180px, 1.2fr) repeat(4, minmax(120px, 1fr));
+        min-width: 760px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .matrix-row:last-child {
+        border-bottom: 0;
+      }
+
+      .matrix-cell {
+        padding: 18px 16px;
+        border-right: 1px solid var(--line);
+      }
+
+      .matrix-cell:last-child {
+        border-right: 0;
+      }
+
+      .matrix-head {
+        color: var(--faint);
+        font-family: var(--mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .score {
+        display: flex;
+        gap: 5px;
+      }
+
+      .score i {
+        display: block;
+        width: 18px;
+        height: 7px;
+        border: 1px solid var(--line-strong);
+        border-radius: 2px;
+      }
+
+      .score i.on {
+        border-color: var(--brand);
+        background: var(--brand);
+      }
+
+      .decision-lab {
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+        gap: 42px;
+        align-items: start;
+      }
+
+      .lab-stage {
+        padding: 20px;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius);
+        background: #05070a;
+      }
+
+      .lab-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 16px;
+      }
+
+      .lab-toolbar span {
+        color: var(--faint);
+        font-family: var(--mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .mode-switch {
+        display: flex;
+        gap: 7px;
+      }
+
+      .fos-preview {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        aspect-ratio: 16 / 9;
+        border: 1px solid #1f6662;
+        border-radius: 10px;
+        background:
+          radial-gradient(circle at 68% 45%, rgba(53, 221, 208, 0.36), transparent 8%),
+          radial-gradient(circle at 40% 60%, rgba(96, 165, 250, 0.2), transparent 24%),
+          linear-gradient(135deg, #041216, #07101f 48%, #170d29);
+      }
+
+      .fos-preview::before {
+        position: absolute;
+        z-index: -1;
+        inset: 0;
+        background:
+          linear-gradient(rgba(53, 221, 208, 0.12) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(53, 221, 208, 0.12) 1px, transparent 1px);
+        background-size: 9% 16%;
+        mask-image: linear-gradient(to right, black, transparent 85%);
+        content: "";
+      }
+
+      .orbit,
+      .node,
+      .core {
+        position: absolute;
+        border-radius: 50%;
+      }
+
+      .core {
+        top: 31%;
+        left: 57%;
+        width: 20%;
+        aspect-ratio: 1;
+        border: 1px solid rgba(53, 221, 208, 0.9);
+        background: rgba(7, 34, 39, 0.72);
+        box-shadow: 0 0 70px rgba(53, 221, 208, 0.28), inset 0 0 24px rgba(53, 221, 208, 0.22);
+      }
+
+      .core::before,
+      .core::after {
+        position: absolute;
+        inset: 22%;
+        border: 1px solid rgba(53, 221, 208, 0.65);
+        border-radius: 24%;
+        content: "";
+        transform: rotate(45deg);
+      }
+
+      .core::after {
+        inset: 38%;
+        background: var(--brand);
+        box-shadow: 0 0 22px var(--brand);
+      }
+
+      .orbit {
+        top: 17%;
+        left: 46%;
+        width: 42%;
+        aspect-ratio: 1.6;
+        border: 1px solid rgba(96, 165, 250, 0.34);
+        transform: rotate(-12deg);
+      }
+
+      .node {
+        width: 9px;
+        height: 9px;
+        background: var(--blue);
+        box-shadow: 0 0 14px var(--blue);
+      }
+
+      .node-a {
+        top: 25%;
+        left: 49%;
+      }
+
+      .node-b {
+        top: 67%;
+        left: 81%;
+      }
+
+      .node-c {
+        top: 74%;
+        left: 52%;
+      }
+
+      .fos-badge {
+        position: absolute;
+        top: 8%;
+        left: 5%;
+        padding: 5px 8px;
+        border: 1px solid rgba(53, 221, 208, 0.52);
+        border-radius: 999px;
+        color: var(--brand);
+        font-family: var(--mono);
+        font-size: clamp(8px, 1.2vw, 12px);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .fos-watermark {
+        position: absolute;
+        right: 4%;
+        bottom: 6%;
+        color: rgba(244, 244, 245, 0.48);
+        font-family: var(--mono);
+        font-size: clamp(7px, 1vw, 11px);
+        letter-spacing: 0.08em;
+      }
+
+      .preview-title {
+        position: absolute;
+        z-index: 3;
+        bottom: 12%;
+        left: 5%;
+        width: 58%;
+        margin: 0;
+        opacity: 0;
+        transform: translateY(10px);
+        font-family: var(--sans);
+        font-size: clamp(21px, 4vw, 48px);
+        line-height: 1.05;
+        letter-spacing: -0.05em;
+        transition: opacity 180ms ease, transform 180ms ease;
+      }
+
+      .fos-preview.share-mode::after {
+        position: absolute;
+        z-index: 2;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.18) 72%);
+        content: "";
+      }
+
+      .fos-preview.share-mode .preview-title {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .lab-caption {
+        display: grid;
+        grid-template-columns: 158px 1fr;
+        gap: 18px;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+      }
+
+      .miniature {
+        overflow: hidden;
+        width: 158px;
+        height: 88px;
+        border-radius: 7px;
+        background: #07101f;
+      }
+
+      .miniature .fos-preview {
+        width: 158px;
+        height: 88px;
+        border: 0;
+        border-radius: 0;
+      }
+
+      .miniature .preview-title,
+      .miniature .fos-watermark {
+        display: none;
+      }
+
+      .mock-card-title {
+        align-self: center;
+      }
+
+      .mock-card-title small {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--brand);
+        font-family: var(--mono);
+        font-size: 9px;
+        text-transform: uppercase;
+      }
+
+      .mock-card-title strong {
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.3;
+      }
+
+      .lab-notes {
+        padding-top: 4px;
+      }
+
+      .lab-notes h3 {
+        margin-bottom: 18px;
+        font-family: var(--sans);
+        font-size: 30px;
+        letter-spacing: -0.035em;
+      }
+
+      .rule-list {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+        counter-reset: rules;
+      }
+
+      .rule-list li {
+        display: grid;
+        grid-template-columns: 34px 1fr;
+        gap: 14px;
+        padding: 16px 0;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        counter-increment: rules;
+      }
+
+      .rule-list li::before {
+        color: var(--brand);
+        font-family: var(--mono);
+        font-size: 11px;
+        content: "0" counter(rules);
+      }
+
+      .rule-list strong {
+        display: block;
+        margin-bottom: 3px;
+        color: var(--text);
+      }
+
+      .verdict-box {
+        margin-top: 26px;
+        padding: 20px;
+        border-left: 3px solid var(--brand);
+        background: rgba(53, 221, 208, 0.07);
+      }
+
+      .verdict-box strong {
+        display: block;
+        margin-bottom: 6px;
+        font-family: var(--sans);
+        font-size: 18px;
+      }
+
+      .verdict-box p {
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .source-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px 24px;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+      }
+
+      .source-grid a {
+        display: block;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 13px;
+        text-decoration: none;
+      }
+
+      .source-grid a:hover {
+        color: var(--brand);
+      }
+
+      footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 34px 0 50px;
+        color: var(--faint);
+        font-family: var(--mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      @media (max-width: 900px) {
+        .hero,
+        .section-heading,
+        .decision-lab,
+        .list-comparison {
+          grid-template-columns: 1fr;
+        }
+
+        .list-panel + .list-panel {
+          border-top: 1px solid var(--line);
+          border-left: 0;
+        }
+
+        .hero-copy {
+          padding-right: 24px;
+          padding-left: 24px;
+        }
+
+        .hero-instrument {
+          grid-template-columns: repeat(3, 1fr);
+          grid-template-rows: none;
+          border-top: 1px solid var(--line);
+          border-left: 0;
+        }
+
+        .metric {
+          min-height: 180px;
+          border-right: 1px solid var(--line);
+          border-bottom: 0;
+        }
+
+        .metric:last-child {
+          border-right: 0;
+        }
+
+        .pattern-grid,
+        .case-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .pattern-card:nth-child(2) {
+          border-right: 0;
+        }
+
+        .pattern-card:last-child {
+          grid-column: 1 / -1;
+          border-top: 1px solid var(--line);
+        }
+
+        .source-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 620px) {
+        .header-meta {
+          display: none;
+        }
+
+        .header-inner,
+        main,
+        footer {
+          width: min(calc(100% - 24px), var(--content));
+        }
+
+        .hero {
+          min-height: auto;
+        }
+
+        .hero-copy {
+          padding: 70px 10px 54px;
+        }
+
+        h1 {
+          font-size: clamp(44px, 15vw, 72px);
+        }
+
+        .hero-instrument,
+        .pattern-grid,
+        .case-grid,
+        .source-grid,
+        .thumb-grid,
+        .list-observation {
+          grid-template-columns: 1fr;
+        }
+
+        .list-preview-toolbar,
+        .list-panel-head {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .list-view-switch {
+          width: 100%;
+        }
+
+        .list-view-switch .mode-button {
+          flex: 1 1 auto;
+        }
+
+        .list-panel {
+          padding: 16px;
+        }
+
+        .current-row {
+          grid-template-columns: 104px minmax(0, 1fr);
+          gap: 12px;
+        }
+
+        .current-row img {
+          width: 104px;
+          height: 59px;
+        }
+
+        .current-row p {
+          display: none;
+        }
+
+        .observation-cell {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .observation-cell:last-child {
+          border-bottom: 0;
+        }
+
+        .metric {
+          min-height: 150px;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .pattern-card,
+        .pattern-card:nth-child(2) {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .pattern-card:last-child {
+          grid-column: auto;
+          border-top: 0;
+          border-bottom: 0;
+        }
+
+        .section {
+          padding: 72px 0;
+        }
+
+        .section-heading {
+          gap: 24px;
+        }
+
+        .lab-toolbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .lab-caption {
+          grid-template-columns: 120px 1fr;
+        }
+
+        .miniature,
+        .miniature .fos-preview {
+          width: 120px;
+          height: 67px;
+        }
+
+        footer {
+          flex-direction: column;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">본문으로 이동</a>
+
+    <header class="site-header">
+      <div class="header-inner">
+        <div class="brand-lockup"><span class="brand-dot"></span>fos-blog / visual study</div>
+        <div class="header-meta">thumbnail direction · 2026.08.05</div>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <p class="eyebrow">기술 블로그 썸네일 비교 연구</p>
+          <h1 id="page-title">이미지는 장식이 아니라 <span>글의 첫 문장이다.</span></h1>
+          <p class="hero-summary">
+            국내외 기술 블로그 12곳을 실제 목록 화면으로 비교했다.
+            결론은 하나다.
+            <strong>FOS에는 제목을 반복하는 표지보다, 주제를 압축하는 일관된 삽화가 맞다.</strong>
+          </p>
+        </div>
+        <aside class="hero-instrument" aria-label="조사 요약">
+          <div class="metric">
+            <span class="metric-label">관찰 사례</span>
+            <strong class="metric-value">12</strong>
+            <span class="metric-note">국내 6곳 · 해외 6곳</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">대표 유형</span>
+            <strong class="metric-value">03</strong>
+            <span class="metric-note">브랜드 · 자료 · 텍스트</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">FOS 카드 크기</span>
+            <strong class="metric-value">158</strong>
+            <span class="metric-note">158 × 88px에서 읽혀야 한다</span>
+          </div>
+        </aside>
+      </section>
+
+      <section class="section" aria-labelledby="patterns-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">관찰 결과</p>
+            <h2 id="patterns-title">세 가지 운영 방식</h2>
+          </div>
+          <p>
+            좋은 썸네일의 정답은 하나가 아니다.
+            제작 역량과 글의 성격에 맞춰 시선을 끄는 힘, 기술 정확성, 운영 비용의 균형을 고른다.
+          </p>
+        </div>
+
+        <div class="pattern-grid">
+          <article class="pattern-card">
+            <span class="pattern-index">A</span>
+            <h3>브랜드 삽화형</h3>
+            <p>
+              Toss, GitHub, Cloudflare처럼 글마다 전용 장면을 만든다.
+              가장 눈에 띄지만 반복 가능한 미술 규칙이 없으면 금방 산만해진다.
+            </p>
+          </article>
+          <article class="pattern-card">
+            <span class="pattern-index">B</span>
+            <h3>기술 자료형</h3>
+            <p>
+              Netflix, Slack, NAVER D2처럼 실제 화면과 구조도를 사용한다.
+              내용은 정확하지만 이미지 품질과 비율이 글마다 달라질 수 있다.
+            </p>
+          </article>
+          <article class="pattern-card">
+            <span class="pattern-index">C</span>
+            <h3>텍스트 중심형</h3>
+            <p>
+              우아한형제들, 컬리, Stripe처럼 제목과 요약을 전면에 둔다.
+              관리가 쉽고 차분하지만 목록에서 글 사이의 시각적 구분은 약하다.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="cases-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">비교 표본</p>
+            <h2 id="cases-title">12개 기술 블로그</h2>
+          </div>
+          <p>
+            이미지는 각 공식 블로그의 공개 대표 이미지를 참조한다.
+            필터를 바꿔 같은 운영 유형끼리 비교할 수 있다.
+          </p>
+        </div>
+
+        <div class="filter-bar" role="group" aria-label="사례 유형 필터">
+          <button class="filter-button" type="button" data-filter="all" aria-pressed="true">전체 12</button>
+          <button class="filter-button" type="button" data-filter="brand" aria-pressed="false">브랜드 삽화형</button>
+          <button class="filter-button" type="button" data-filter="artifact" aria-pressed="false">기술 자료형</button>
+          <button class="filter-button" type="button" data-filter="text" aria-pressed="false">텍스트 중심형</button>
+        </div>
+
+        <div class="case-grid" id="case-grid">
+          <article class="case-card" data-kind="brand">
+            <div class="case-visual">
+              <img src="https://static.toss.im/disposables/og/llm_thumb.png" alt="Toss Tech의 LLM 글 대표 이미지" />
+            </div>
+            <div class="case-meta"><span class="kind">브랜드 삽화</span><span class="ratio">약 16:9</span></div>
+            <h3><a href="https://toss.tech/" target="_blank" rel="noreferrer">Toss Tech ↗</a></h3>
+            <p>제품 수준의 전용 삽화와 3D 장면으로 기술 개념을 감각적으로 번역한다.</p>
+            <div class="case-verdict">주목도 최고 · 제작 비용 높음</div>
+          </article>
+
+          <article class="case-card" data-kind="brand">
+            <div class="case-visual">
+              <img
+                src="https://github.blog/wp-content/uploads/2026/01/generic-mona-github.png?w=800"
+                alt="GitHub의 Mona 캐릭터 기반 대표 이미지"
+              />
+            </div>
+            <div class="case-meta"><span class="kind">브랜드 삽화</span><span class="ratio">800:450</span></div>
+            <h3><a href="https://github.blog/engineering/" target="_blank" rel="noreferrer">GitHub Engineering ↗</a></h3>
+            <p>Mona, Copilot, 블록 조형을 반복해 서로 다른 글에도 한 브랜드의 인상을 남긴다.</p>
+            <div class="case-verdict">고유 자산 반복이 핵심</div>
+          </article>
+
+          <article class="case-card" data-kind="brand">
+            <div class="case-visual">
+              <img
+                src="https://techblog.lycorp.co.jp/static/0353972d1da63445369ef621837a83b9/d990e/ad19ce961e3943b2bfbfaf11898d743b.png"
+                alt="LY Corporation Tech Blog의 표준화된 대표 이미지"
+              />
+            </div>
+            <div class="case-meta"><span class="kind">표준 표지</span><span class="ratio">760:400</span></div>
+            <h3><a href="https://techblog.lycorp.co.jp/ko" target="_blank" rel="noreferrer">LY Corporation ↗</a></h3>
+            <p>동일한 크기와 표지 문법을 유지해 대량 발행에서도 높은 통일성을 확보한다.</p>
+            <div class="case-verdict">확장성 최고 · 제목 중복 주의</div>
+          </article>
+
+          <article class="case-card" data-kind="brand">
+            <div class="case-visual">
+              <img
+                src="https://blog.cloudflare.com/_image?href=https%3A%2F%2Fblog.cloudflare.com%2F_emdash%2Fapi%2Fmedia%2Ffile%2F01KZ6A4Q5CY65JFVVYMJCV4AG7.png&amp;w=640&amp;h=360&amp;f=webp&amp;fit=cover&amp;position=center"
+                alt="Cloudflare Blog의 편집 삽화"
+              />
+            </div>
+            <div class="case-meta"><span class="kind">편집 삽화</span><span class="ratio">16:9</span></div>
+            <h3><a href="https://blog.cloudflare.com/" target="_blank" rel="noreferrer">Cloudflare Blog ↗</a></h3>
+            <p>제품과 사건을 한 장면으로 요약한다. 오렌지 계열의 브랜드 인상도 자연스럽게 유지한다.</p>
+            <div class="case-verdict">설명력과 브랜드의 균형</div>
+          </article>
+
+          <article class="case-card" data-kind="artifact">
+            <div class="case-visual">
+              <img
+                src="https://miro.medium.com/v2/resize:fit:660/format:webp/1*GKGOrp0xddZwHomMhiSeCA.png"
+                alt="Netflix TechBlog의 기술 자료형 대표 이미지"
+              />
+            </div>
+            <div class="case-meta"><span class="kind">기술 자료</span><span class="ratio">가변</span></div>
+            <h3><a href="https://netflixtechblog.com/" target="_blank" rel="noreferrer">Netflix TechBlog ↗</a></h3>
+            <p>연구 그림과 시스템 도식, 제품 화면을 사용해 글의 실제 내용을 가장 직접적으로 보여준다.</p>
+            <div class="case-verdict">내용 정확성 최고 · 통일성 낮음</div>
+          </article>
+
+          <article class="case-card" data-kind="artifact">
+            <div class="case-visual">
+              <img
+                src="https://slack.engineering/wp-content/uploads/sites/7/2026/06/agent_vs_traditional.png?resize=1160,773"
+                alt="Slack Engineering의 테스트 경로 도식 썸네일"
+              />
+            </div>
+            <div class="case-meta"><span class="kind">사진·도식 혼합</span><span class="ratio">약 3:2</span></div>
+            <h3><a href="https://slack.engineering/" target="_blank" rel="noreferrer">Slack Engineering ↗</a></h3>
+            <p>글의 성격에 따라 사진, 아키텍처 그림, 전용 표지를 자유롭게 선택한다.</p>
+            <div class="case-verdict">유연성 높음 · 품질 관리 필요</div>
+          </article>
+
+          <article class="case-card" data-kind="artifact">
+            <div class="case-visual">
+              <img
+                src="https://tech.devsisters.com/static/0562448c4faeba9b1603af49f6500a26/b16e5/template_02.webp"
+                alt="데브시스터즈 DEVTECH의 글 대표 이미지"
+              />
+            </div>
+            <div class="case-meta"><span class="kind">전용 이미지 혼합</span><span class="ratio">목록 약 2:1</span></div>
+            <h3><a href="https://tech.devsisters.com/" target="_blank" rel="noreferrer">데브시스터즈 DEVTECH ↗</a></h3>
+            <p>제품 이미지와 행사 사진, 템플릿 그래픽을 긴 가로형 카드로 정돈한다.</p>
+            <div class="case-verdict">실무 자료를 자연스럽게 활용</div>
+          </article>
+
+          <article class="case-card" data-kind="artifact">
+            <div class="case-visual">
+              <img
+                src="https://d2.naver.com/content/images/2026/07/-----------2026-07-24------3-25-05.png"
+                alt="NAVER D2의 기술 자료형 썸네일"
+              />
+            </div>
+            <div class="case-meta"><span class="kind">기술 자료</span><span class="ratio">목록 17:12</span></div>
+            <h3><a href="https://d2.naver.com/home" target="_blank" rel="noreferrer">NAVER D2 ↗</a></h3>
+            <p>발표 자료와 제품 화면을 작은 썸네일로 사용한다. 장식보다 정보 식별에 가깝다.</p>
+            <div class="case-verdict">실용적 · 원본 비율 편차 큼</div>
+          </article>
+
+          <article class="case-card" data-kind="text">
+            <div class="case-visual text-visual" role="img" aria-label="우아한형제들 기술블로그의 텍스트 중심 방식을 표현한 모형">
+              <span class="mock-label">우아한형제들 기술블로그</span>
+              <strong class="mock-title">경험의 밀도를 제목과 요약으로 전달한다</strong>
+              <span class="mock-rule"></span>
+            </div>
+            <div class="case-meta"><span class="kind">텍스트 중심</span><span class="ratio">이미지 비중 낮음</span></div>
+            <h3><a href="https://techblog.woowahan.com/" target="_blank" rel="noreferrer">우아한형제들 ↗</a></h3>
+            <p>제목과 요약, 작성자 정보의 계층을 중심으로 긴 기술 글을 차분하게 탐색하게 한다.</p>
+            <div class="case-verdict">가독성 높음 · 구분감 약함</div>
+          </article>
+
+          <article class="case-card" data-kind="text">
+            <div class="case-visual text-visual" role="img" aria-label="컬리 기술 블로그의 텍스트 중심 방식을 표현한 모형">
+              <span class="mock-label">Kurly Tech Blog</span>
+              <strong class="mock-title">기술 제목 자체를 가장 강한 시각 요소로 사용한다</strong>
+              <span class="mock-rule" style="background: #7b2cbf"></span>
+            </div>
+            <div class="case-meta"><span class="kind">텍스트 중심</span><span class="ratio">이미지 비중 낮음</span></div>
+            <h3><a href="https://helloworld.kurly.com/" target="_blank" rel="noreferrer">컬리 기술 블로그 ↗</a></h3>
+            <p>긴 제목과 작성자, 날짜가 중심이다. 이미지 제작 부담 없이 꾸준히 운영하기 좋다.</p>
+            <div class="case-verdict">운영 비용 낮음 · 시선 유도 약함</div>
+          </article>
+
+          <article class="case-card" data-kind="text">
+            <div class="case-visual text-visual" role="img" aria-label="Vercel Blog의 타이포그래피 중심 방식을 표현한 모형">
+              <span class="mock-label">Vercel / Blog</span>
+              <strong class="mock-title">정보 구조와 여백이 곧 브랜드가 된다</strong>
+              <span class="mock-rule" style="background: #ffffff"></span>
+            </div>
+            <div class="case-meta"><span class="kind">타이포그래피</span><span class="ratio">CSS 시각 요소</span></div>
+            <h3><a href="https://vercel.com/blog" target="_blank" rel="noreferrer">Vercel Blog ↗</a></h3>
+            <p>일반적인 사진보다 정밀한 글꼴, 여백, 추상적인 인터페이스 그래픽을 앞세운다.</p>
+            <div class="case-verdict">정제된 브랜드 · 설계 난도 높음</div>
+          </article>
+
+          <article class="case-card" data-kind="text">
+            <div class="case-visual text-visual" role="img" aria-label="Stripe 개발자 블로그의 타이포그래피 중심 방식을 표현한 모형">
+              <span class="mock-label">Stripe Developer Blog</span>
+              <strong class="mock-title">작성자와 기술 주제를 전면에 둔다</strong>
+              <span class="mock-rule" style="background: #635bff"></span>
+            </div>
+            <div class="case-meta"><span class="kind">타이포그래피</span><span class="ratio">이미지 비중 낮음</span></div>
+            <h3><a href="https://stripe.dev/blog/topic/engineering" target="_blank" rel="noreferrer">Stripe 개발자 블로그 ↗</a></h3>
+            <p>카드 이미지보다 제목과 필자 정보를 선명하게 배치해 전문성과 신뢰를 만든다.</p>
+            <div class="case-verdict">차분하고 명료 · 발견성 제한</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="list-preview-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">목록 화면 실험</p>
+            <h2 id="list-preview-title">읽는 목록에서 보는 목록으로</h2>
+          </div>
+          <p>
+            현재 화면은 제목과 소개를 읽은 뒤 클릭을 결정한다.
+            제안 화면은 썸네일로 관심을 만든 뒤 제목으로 판단을 확정한다.
+          </p>
+        </div>
+
+        <div class="list-preview-shell">
+          <div class="list-preview-toolbar">
+            <span>FOS 글 목록 방향 비교</span>
+            <div class="list-view-switch" role="group" aria-label="글 목록 비교 화면 선택">
+              <button class="mode-button" type="button" data-list-view="compare" aria-pressed="true">나란히 비교</button>
+              <button class="mode-button" type="button" data-list-view="current" aria-pressed="false">현재 목록만</button>
+              <button class="mode-button" type="button" data-list-view="proposal" aria-pressed="false">썸네일 중심만</button>
+            </div>
+          </div>
+
+          <div class="list-comparison" id="list-comparison" data-view="compare">
+            <section class="list-panel current-panel" aria-labelledby="current-list-title">
+              <div class="list-panel-head">
+                <div>
+                  <h3 class="list-panel-title" id="current-list-title">현재 · 정보 목록</h3>
+                  <p class="list-panel-copy">제목과 소개글을 순서대로 읽으며 관심 있는 글을 찾는다.</p>
+                </div>
+                <span class="list-panel-mark">read first</span>
+              </div>
+
+              <div class="current-list">
+                <article class="current-row">
+                  <img
+                    src="https://raw.githubusercontent.com/jon890/fos-study/main/AI/images/harness-engineering-thumbnail.jpg"
+                    alt="하네스 엔지니어링 글 썸네일"
+                  />
+                  <div>
+                    <div class="current-row-meta"><span>AI</span><span>2026.04.02</span></div>
+                    <h3>하네스 엔지니어링 — 오래 실행되는 AI 에이전트를 위한 설계</h3>
+                    <p>에이전트가 복잡한 작업을 수행할 때 필요한 구조와 운영 원칙을 정리합니다.</p>
+                  </div>
+                </article>
+                <article class="current-row">
+                  <img
+                    src="https://raw.githubusercontent.com/jon890/fos-study/main/AI/images/mvp-with-ai-agent-thumbnail.jpg"
+                    alt="AI 에이전트와 MVP 만들기 글 썸네일"
+                  />
+                  <div>
+                    <div class="current-row-meta"><span>AI</span><span>2026.04.03</span></div>
+                    <h3>AI 에이전트와 함께 MVP 만들기 — dooray-cli 사례</h3>
+                    <p>기존 도구를 CLI로 바꾸며 에이전트가 스스로 일할 수 있는 환경을 실험했습니다.</p>
+                  </div>
+                </article>
+                <article class="current-row">
+                  <img
+                    src="https://raw.githubusercontent.com/jon890/fos-study/main/AI/RAG/images/embedding-thumbnail.jpg"
+                    alt="Embedding 글 썸네일"
+                  />
+                  <div>
+                    <div class="current-row-meta"><span>AI / RAG</span><span>2025.08.22</span></div>
+                    <h3>Embedding(임베딩)</h3>
+                    <p>문장과 문서를 벡터로 표현하고 의미 기반 검색에 활용하는 원리를 살펴봅니다.</p>
+                  </div>
+                </article>
+                <article class="current-row">
+                  <img
+                    src="https://raw.githubusercontent.com/jon890/fos-study/main/algorithm/live-coding/images/binary-tree-thumbnail.jpg"
+                    alt="이진 트리 글 썸네일"
+                  />
+                  <div>
+                    <div class="current-row-meta"><span>Algorithm</span><span>2026.04.30</span></div>
+                    <h3>라이브 코딩에서 이진 트리 문제를 푸는 사고 순서</h3>
+                    <p>트리 순회와 재귀 종료 조건을 면접 상황에서 빠르게 구성하는 방법입니다.</p>
+                  </div>
+                </article>
+              </div>
+            </section>
+
+            <section class="list-panel proposal-panel" aria-labelledby="proposal-list-title">
+              <div class="list-panel-head">
+                <div>
+                  <h3 class="list-panel-title" id="proposal-list-title">제안 · 썸네일 중심</h3>
+                  <p class="list-panel-copy">이미지로 글을 발견하고, 짧은 제목으로 클릭 여부를 확정한다.</p>
+                </div>
+                <span class="list-panel-mark">see first</span>
+              </div>
+
+              <div class="thumb-grid">
+                <article class="thumb-card">
+                  <div class="thumb-card-media">
+                    <img
+                      src="https://raw.githubusercontent.com/jon890/fos-study/main/AI/images/harness-engineering-thumbnail.jpg"
+                      alt="하네스 엔지니어링 글 썸네일"
+                    />
+                  </div>
+                  <div class="thumb-card-body">
+                    <div class="thumb-card-meta"><span>AI</span><span>2026.04.02</span></div>
+                    <h3>하네스 엔지니어링 — 오래 실행되는 AI 에이전트를 위한 설계</h3>
+                  </div>
+                </article>
+                <article class="thumb-card">
+                  <div class="thumb-card-media">
+                    <img
+                      src="https://raw.githubusercontent.com/jon890/fos-study/main/AI/images/mvp-with-ai-agent-thumbnail.jpg"
+                      alt="AI 에이전트와 MVP 만들기 글 썸네일"
+                    />
+                  </div>
+                  <div class="thumb-card-body">
+                    <div class="thumb-card-meta"><span>AI</span><span>2026.04.03</span></div>
+                    <h3>AI 에이전트와 함께 MVP 만들기</h3>
+                  </div>
+                </article>
+                <article class="thumb-card">
+                  <div class="thumb-card-media">
+                    <img
+                      src="https://raw.githubusercontent.com/jon890/fos-study/main/AI/RAG/images/embedding-thumbnail.jpg"
+                      alt="Embedding 글 썸네일"
+                    />
+                  </div>
+                  <div class="thumb-card-body">
+                    <div class="thumb-card-meta"><span>AI / RAG</span><span>2025.08.22</span></div>
+                    <h3>Embedding(임베딩)</h3>
+                  </div>
+                </article>
+                <article class="thumb-card">
+                  <div class="thumb-card-media">
+                    <img
+                      src="https://raw.githubusercontent.com/jon890/fos-study/main/algorithm/live-coding/images/binary-tree-thumbnail.jpg"
+                      alt="이진 트리 글 썸네일"
+                    />
+                  </div>
+                  <div class="thumb-card-body">
+                    <div class="thumb-card-meta"><span>Algorithm</span><span>2026.04.30</span></div>
+                    <h3>라이브 코딩에서 이진 트리 문제를 푸는 사고 순서</h3>
+                  </div>
+                </article>
+              </div>
+            </section>
+          </div>
+
+          <div class="list-observation" aria-label="목록 방향 비교 요약">
+            <div class="observation-cell"><span>첫 판단 단서</span><strong>소개글 → 썸네일</strong></div>
+            <div class="observation-cell"><span>목록 밀도</span><strong>높음 → 중간</strong></div>
+            <div class="observation-cell"><span>기대 효과</span><strong>빠른 탐색과 클릭 유도</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="matrix-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">운영 관점</p>
+            <h2 id="matrix-title">무엇을 얻고 잃는가</h2>
+          </div>
+          <p>점이 많을수록 해당 기준에서 유리하다. FOS처럼 글이 300개 이상이면 확장성과 일관성을 함께 봐야 한다.</p>
+        </div>
+
+        <div class="matrix" role="table" aria-label="썸네일 유형 비교">
+          <div class="matrix-row matrix-head" role="row">
+            <div class="matrix-cell" role="columnheader">운영 유형</div>
+            <div class="matrix-cell" role="columnheader">주목도</div>
+            <div class="matrix-cell" role="columnheader">일관성</div>
+            <div class="matrix-cell" role="columnheader">대량 확장</div>
+            <div class="matrix-cell" role="columnheader">기술 정확성</div>
+          </div>
+          <div class="matrix-row" role="row">
+            <div class="matrix-cell" role="rowheader"><strong>글별 전용 삽화</strong></div>
+            <div class="matrix-cell"><span class="score" aria-label="5점"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+            <div class="matrix-cell"><span class="score" aria-label="3점"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></div>
+            <div class="matrix-cell"><span class="score" aria-label="2점"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></div>
+            <div class="matrix-cell"><span class="score" aria-label="3점"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></div>
+          </div>
+          <div class="matrix-row" role="row">
+            <div class="matrix-cell" role="rowheader"><strong>공통 미술 규칙 + 생성</strong></div>
+            <div class="matrix-cell"><span class="score" aria-label="4점"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></div>
+            <div class="matrix-cell"><span class="score" aria-label="5점"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+            <div class="matrix-cell"><span class="score" aria-label="5점"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+            <div class="matrix-cell"><span class="score" aria-label="4점"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></div>
+          </div>
+          <div class="matrix-row" role="row">
+            <div class="matrix-cell" role="rowheader"><strong>본문 자료 재사용</strong></div>
+            <div class="matrix-cell"><span class="score" aria-label="3점"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></div>
+            <div class="matrix-cell"><span class="score" aria-label="2점"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></div>
+            <div class="matrix-cell"><span class="score" aria-label="4점"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></div>
+            <div class="matrix-cell"><span class="score" aria-label="5점"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+          </div>
+          <div class="matrix-row" role="row">
+            <div class="matrix-cell" role="rowheader"><strong>텍스트 중심</strong></div>
+            <div class="matrix-cell"><span class="score" aria-label="2점"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></div>
+            <div class="matrix-cell"><span class="score" aria-label="5점"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+            <div class="matrix-cell"><span class="score" aria-label="5점"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+            <div class="matrix-cell"><span class="score" aria-label="3점"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="decision-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">FOS 권장안</p>
+            <h2 id="decision-title">한 삽화, 두 가지 사용법</h2>
+          </div>
+          <p>
+            카드에서는 이미지를 작게 본다.
+            공유 화면에서는 이미지만 크게 본다.
+            같은 원본을 사용하되 제목 합성 여부를 용도별로 나눈다.
+          </p>
+        </div>
+
+        <div class="decision-lab">
+          <div class="lab-stage">
+            <div class="lab-toolbar">
+              <span>실시간 비교</span>
+              <div class="mode-switch" role="group" aria-label="이미지 사용 모드">
+                <button class="mode-button" type="button" data-mode="card" aria-pressed="true">카드 썸네일</button>
+                <button class="mode-button" type="button" data-mode="share" aria-pressed="false">공유 이미지</button>
+              </div>
+            </div>
+
+            <div class="fos-preview" id="fos-preview" role="img" aria-label="FOS RAG 글의 미술 방향 예시">
+              <span class="fos-badge">AI / RAG</span>
+              <span class="orbit"></span>
+              <span class="core"></span>
+              <span class="node node-a"></span>
+              <span class="node node-b"></span>
+              <span class="node node-c"></span>
+              <h3 class="preview-title">환각을 줄이는 RAG 평가와 운영 전략</h3>
+              <span class="fos-watermark">fos-study / dev notes</span>
+            </div>
+
+            <div class="lab-caption" id="card-context">
+              <div class="miniature" aria-hidden="true">
+                <div class="fos-preview">
+                  <span class="fos-badge">AI / RAG</span>
+                  <span class="orbit"></span>
+                  <span class="core"></span>
+                  <span class="node node-a"></span>
+                  <span class="node node-b"></span>
+                  <span class="node node-c"></span>
+                </div>
+              </div>
+              <div class="mock-card-title">
+                <small>AI · RAG</small>
+                <strong>환각을 줄이는 RAG 평가와 운영 전략</strong>
+              </div>
+            </div>
+          </div>
+
+          <aside class="lab-notes">
+            <h3>FOS 미술 규칙 초안</h3>
+            <ol class="rule-list">
+              <li><span><strong>전체 제목은 카드 이미지에서 제외한다.</strong>카드 본문의 제목과 중복되고 158×88px에서는 읽히지 않는다.</span></li>
+              <li><span><strong>공유 이미지에서만 제목을 합성한다.</strong>큰 화면에서는 제목이 맥락을 보완하고 공유 클릭률에 도움을 준다.</span></li>
+              <li><span><strong>분류 색상과 하나의 중심 객체를 고정한다.</strong>AI는 보라·청록, DevOps는 녹색, DB는 주황 계열처럼 계열을 유지한다.</span></li>
+              <li><span><strong>FOS 고유 문법을 반복한다.</strong>격자, 얇은 연결선, 한 개의 발광 핵심, 작은 분류 표식을 공통 자산으로 쓴다.</span></li>
+              <li><span><strong>전형적인 AI 장식을 제한한다.</strong>무의미한 로봇 얼굴, 과도한 네온, 읽히지 않는 가짜 코드는 피한다.</span></li>
+            </ol>
+
+            <div class="verdict-box">
+              <strong>권장 결론</strong>
+              <p>
+                FOS에는 GitHub의 반복 가능한 브랜드 자산과 Cloudflare의 주제 압축 방식을 결합한 생성 체계가 적합하다.
+                전체 제목은 공유용 이미지에서만 동적으로 합성한다.
+              </p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="sources-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">출처</p>
+            <h2 id="sources-title">공식 블로그 목록</h2>
+          </div>
+          <p>2026년 8월 5일 목록 화면 기준으로 확인했다. 사이트 개편에 따라 표현 방식은 달라질 수 있다.</p>
+        </div>
+        <ul class="source-grid">
+          <li><a href="https://toss.tech/" target="_blank" rel="noreferrer">Toss Tech ↗</a></li>
+          <li><a href="https://techblog.woowahan.com/" target="_blank" rel="noreferrer">우아한형제들 ↗</a></li>
+          <li><a href="https://tech.devsisters.com/" target="_blank" rel="noreferrer">데브시스터즈 DEVTECH ↗</a></li>
+          <li><a href="https://helloworld.kurly.com/" target="_blank" rel="noreferrer">컬리 기술 블로그 ↗</a></li>
+          <li><a href="https://techblog.lycorp.co.jp/ko" target="_blank" rel="noreferrer">LY Corporation ↗</a></li>
+          <li><a href="https://d2.naver.com/home" target="_blank" rel="noreferrer">NAVER D2 ↗</a></li>
+          <li><a href="https://github.blog/engineering/" target="_blank" rel="noreferrer">GitHub Engineering ↗</a></li>
+          <li><a href="https://netflixtechblog.com/" target="_blank" rel="noreferrer">Netflix TechBlog ↗</a></li>
+          <li><a href="https://blog.cloudflare.com/" target="_blank" rel="noreferrer">Cloudflare Blog ↗</a></li>
+          <li><a href="https://vercel.com/blog" target="_blank" rel="noreferrer">Vercel Blog ↗</a></li>
+          <li><a href="https://stripe.dev/blog/topic/engineering" target="_blank" rel="noreferrer">Stripe 개발자 블로그 ↗</a></li>
+          <li><a href="https://slack.engineering/" target="_blank" rel="noreferrer">Slack Engineering ↗</a></li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      <span>FOS thumbnail research board</span>
+      <span>read → compare → decide</span>
+    </footer>
+
+    <script>
+      const filterButtons = document.querySelectorAll("[data-filter]");
+      const caseCards = document.querySelectorAll(".case-card");
+
+      filterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const filter = button.dataset.filter;
+
+          filterButtons.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+          caseCards.forEach((card) => {
+            card.hidden = filter !== "all" && card.dataset.kind !== filter;
+          });
+        });
+      });
+
+      const listViewButtons = document.querySelectorAll("[data-list-view]");
+      const listComparison = document.querySelector("#list-comparison");
+
+      listViewButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          listViewButtons.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+          listComparison.dataset.view = button.dataset.listView;
+        });
+      });
+
+      const modeButtons = document.querySelectorAll("[data-mode]");
+      const preview = document.querySelector("#fos-preview");
+      const cardContext = document.querySelector("#card-context");
+
+      modeButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const isShare = button.dataset.mode === "share";
+
+          modeButtons.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+          preview.classList.toggle("share-mode", isShare);
+          cardContext.style.opacity = isShare ? "0.35" : "1";
+        });
+      });
+    </script>
+  </body>
+</html>
