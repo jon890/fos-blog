@@ -16,7 +16,7 @@ export function RelatedPosts({ posts }: Props) {
           이런 글도
         </h2>
       </div>
-      <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         {posts.map((p) => (
           <li key={p.path}>
             <PostCard post={p} variant="grid" />

@@ -136,7 +136,7 @@ export default async function HomePage() {
                   preloadThumbnail
                 />
                 {recentPosts.length > 1 && (
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                     {recentPosts.slice(1).map((post) => (
                       <PostCard
                         key={post.path}

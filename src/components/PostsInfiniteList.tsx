@@ -106,7 +106,7 @@ export function PostsInfiniteList(props: Props) {
         role="feed"
         className={
           isLatest
-            ? "grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+            ? "grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"
             : "space-y-3"
         }
       >
@@ -128,7 +128,7 @@ export function PostsInfiniteList(props: Props) {
           <div
             className={
               isLatest
-                ? "grid w-full grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+                ? "grid w-full grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"
                 : "w-full space-y-3"
             }
           >

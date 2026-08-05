@@ -237,7 +237,7 @@ export default async function FolderPage({ params }: FolderPageProps) {
             title="이 폴더의 글"
             meta={`${mergedPosts.length} posts`}
           >
-            <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
               {mergedPosts.map((post, index) => (
                 <li key={post.path}>
                   <PostCard

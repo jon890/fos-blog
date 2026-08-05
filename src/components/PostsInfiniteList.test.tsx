@@ -88,6 +88,9 @@ describe("PostsInfiniteList", () => {
     expect(screen.getByTestId("post-card").getAttribute("data-variant")).toBe(
       "grid",
     );
+    expect(screen.getByRole("feed").className).toContain("md:grid-cols-2");
+    expect(screen.getByRole("feed").className).toContain("xl:grid-cols-3");
+    expect(screen.getByRole("feed").className).not.toContain("lg:grid-cols-3");
 
     fireEvent.click(screen.getByRole("button", { name: "더 보기" }));
 
@@ -167,6 +170,11 @@ describe("PostsInfiniteList", () => {
       expectedVariant,
       expectedVariant,
     ]);
+    if (mode === "latest") {
+      expect(skeletons[0].parentElement?.className).toContain("md:grid-cols-2");
+      expect(skeletons[0].parentElement?.className).toContain("xl:grid-cols-3");
+      expect(skeletons[0].parentElement?.className).not.toContain("lg:grid-cols-3");
+    }
   });
 
   it("요청 실패 뒤 재시도하고 완료 안내를 표시한다", async () => {

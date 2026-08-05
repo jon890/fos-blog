@@ -44,7 +44,7 @@ export default async function SeriesPage({ params }: Props) {
         title={series}
         meta={`${seriesPosts.length} POSTS`}
       />
-      <ol className="grid grid-cols-1 gap-6 pb-16 md:grid-cols-2 lg:grid-cols-3">
+      <ol className="grid grid-cols-1 gap-6 pb-16 md:grid-cols-2 xl:grid-cols-3">
         {seriesPosts.map((p, i) => (
           <li key={p.path} className="relative">
             <span className="absolute -left-2 -top-2 z-10 font-mono text-[11px] text-[var(--color-fg-muted)]">

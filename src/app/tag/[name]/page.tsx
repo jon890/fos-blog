@@ -42,7 +42,7 @@ export default async function TagPage({ params }: Props) {
         title={`#${tag}`}
         meta={`${total} POSTS`}
       />
-      <ul className="grid grid-cols-1 gap-6 pb-16 md:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid grid-cols-1 gap-6 pb-16 md:grid-cols-2 xl:grid-cols-3">
         {posts.map((p, index) => (
           <li key={p.path}>
             <PostCard post={p} variant="grid" preloadThumbnail={index === 0} />
