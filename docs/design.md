@@ -176,7 +176,6 @@ focus-visible `ring-3 ring-ring/50`. invalid 시 destructive ring. disabled 시 
 - 이미지 자체는 장식 정보이므로 빈 `alt`를 사용하고 카드 링크의 글 제목이 접근 가능한 이름을 담당한다.
 - `ArticleHero` 배지는 같은 색으로 테두리와 10% 농도의 배경을 만든다.
 - `.cat-card::after`: radial blob, hover 시 opacity 0.07(dark)/0.08(light), blend-mode screen/multiply
-- `.post-list-row:hover`: 좌측 border 를 카테고리 색으로, 배경 4% tint
 
 ### Hero mesh (`.hero-mesh`, `HeroMesh.tsx`)
 

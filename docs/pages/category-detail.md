@@ -103,4 +103,4 @@ README 섹션 (있을 때만, ReadmeFrame으로 감쌈)
 - `src/infra/db/repositories/PostRepository.ts` — `getCrossCategoryPosts`
 - `src/infra/db/constants.ts` — `categoryIcons`, `DEFAULT_CATEGORY_ICON`
 - `src/lib/path-utils.ts` — `computeFolderPaths`
-- `src/app/globals.css` — `.post-list-row:hover`, `.readme-body code`
+- `src/app/globals.css` — `.readme-body code`
