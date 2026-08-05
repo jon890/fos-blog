@@ -13,6 +13,7 @@ interface PostCardProps {
   variant?: "row" | "grid" | "featured";
   showCategory?: boolean;
   viewCount?: number;
+  preloadThumbnail?: boolean;
 }
 
 function postHref(slug: string): string {
@@ -24,6 +25,7 @@ export function PostCard({
   variant = "row",
   showCategory = true,
   viewCount,
+  preloadThumbnail = false,
 }: PostCardProps) {
   const cats = post.categories?.length ? post.categories : [post.category];
   const catColor = getCategoryColor(post.category);
@@ -42,6 +44,7 @@ export function PostCard({
           category={post.category}
           sizes="(min-width: 1024px) 1120px, 100vw"
           className="absolute inset-0 h-full w-full"
+          preload={preloadThumbnail}
         />
         <div
           className="absolute inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.92)_0%,rgba(0,0,0,0.68)_42%,rgba(0,0,0,0.08)_78%)]"
@@ -84,6 +87,7 @@ export function PostCard({
           category={post.category}
           sizes="(min-width: 1024px) 360px, 100vw"
           className="aspect-video w-full border-b border-[var(--color-border-subtle)]"
+          preload={preloadThumbnail}
         />
         <div className="flex flex-1 flex-col gap-2 p-5">
           {showCategory && (
@@ -131,6 +135,7 @@ export function PostCard({
           category={post.category}
           sizes="(min-width: 1024px) 160px, 112px"
           className="aspect-video w-full rounded-md border border-[var(--color-border-subtle)]"
+          preload={preloadThumbnail}
         />
         <div className="min-w-0">
           <h3 className="text-[16px] font-medium leading-snug tracking-tight text-[var(--color-fg-primary)] transition-colors duration-150 group-hover:text-[var(--color-brand-400)] motion-reduce:transition-none @lg:text-[17px]">

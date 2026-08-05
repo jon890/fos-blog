@@ -647,12 +647,6 @@ html:not(.dark) .prose .code-card-body pre span {
   opacity: 0.08;
 }
 
-/* === PostListRow hover (plan015) === */
-.post-list-row:hover {
-  border-left-color: var(--cat-color);
-  background: color-mix(in oklch, var(--cat-color), transparent 96%);
-}
-
 /* === ReadmeFrame body code color (plan015) === */
 .readme-body :where(code):not(:where([class~="not-prose"] *)) {
   color: var(--cat-color);

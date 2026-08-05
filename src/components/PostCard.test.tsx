@@ -11,17 +11,20 @@ vi.mock("./PostThumbnail", () => ({
     category,
     sizes,
     className,
+    preload,
   }: {
     thumbnailUrl?: string | null;
     category: string;
     sizes: string;
     className?: string;
+    preload?: boolean;
   }) => (
     <span
       data-testid="post-thumbnail"
       data-thumbnail-url={thumbnailUrl ?? ""}
       data-category={category}
       data-sizes={sizes}
+      data-preload={preload ? "true" : "false"}
       className={className}
     />
   ),
@@ -72,7 +75,7 @@ describe("PostCard", () => {
   it.each(["row", "grid", "featured"] as const)(
     "%s 변형은 같은 글 링크와 썸네일 입력을 사용한다",
     (variant) => {
-      render(<PostCard post={post} variant={variant} />);
+      render(<PostCard post={post} variant={variant} preloadThumbnail />);
 
       expect(screen.getByRole("link").getAttribute("href")).toBe(
         "/posts/AI/%ED%85%8C%EC%8A%A4%ED%8A%B8%20%EA%B8%80",
@@ -81,6 +84,7 @@ describe("PostCard", () => {
       expect(thumbnail.getAttribute("data-thumbnail-url")).toBe(post.thumbnailUrl);
       expect(thumbnail.getAttribute("data-category")).toBe(post.category);
       expect(thumbnail.getAttribute("data-sizes")).toBeTruthy();
+      expect(thumbnail.getAttribute("data-preload")).toBe("true");
     },
   );
 });

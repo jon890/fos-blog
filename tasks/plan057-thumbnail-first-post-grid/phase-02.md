@@ -1,7 +1,7 @@
 # Phase 02 — 글 목록 화면 통합과 검증
 
 **Execution profile**: standard
-**Status**: pending
+**Status**: completed
 
 ---
 

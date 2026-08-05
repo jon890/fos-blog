@@ -1,7 +1,7 @@
 # Phase 01 — 글 카드 표시 변형과 로딩 상태
 
 **Execution profile**: standard
-**Status**: pending
+**Status**: completed
 
 ---
 
