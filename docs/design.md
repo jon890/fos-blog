@@ -260,7 +260,8 @@ light 는 순수 drop shadow. 정확한 값은 `globals.css`.
 
 ## 8. Responsive Behavior
 
-mobile-first. 주요 breakpoint 는 Tailwind `md`(768px) · `lg`(1024px), 일부 `sm`(640px).
+모바일 우선으로 구성한다.
+주요 분기점은 Tailwind `md`(768px), `lg`(1024px), `xl`(1280px)이며 일부 화면은 `sm`(640px)을 사용한다.
 
 - 컨테이너는 `max-w-[1180px]` 안에서 `px-4` 로 모바일 좌우 여백 확보
 - 글 본문 inline code/긴 URL/한글은 `overflow-wrap: anywhere` + `word-break` 으로 가로 스크롤 사고 방지(375px 기준)
