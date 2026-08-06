@@ -15,20 +15,22 @@ fos-blog 는 PR 머지 시 **Merge commit** 을 사용한다 (`git log` 에 `Mer
 | `ERR_PNPM_OUTDATED_LOCKFILE` / `frozen-lockfile` 실패 | 로컬 의존성 변경 후 lockfile 미커밋 | `pnpm install` 후 `pnpm-lock.yaml` 같이 커밋 |
 | `Cannot find module '@/...'` | `scripts/*` 는 path alias 미지원 | 상대 경로로 변경 |
 | `tsc --noEmit` 실패 | strict mode 위반 / 타입 누락 / `as any` 회귀 | 해당 파일 타입 가드 추가 또는 시그니처 정합 |
-| `eslint` 실패 | 미사용 import / `no-unused-vars` / `console.log` 위반 | `pnpm lint` 로 로컬 재현 후 픽스. `scripts/*` 의 console.log 는 eslint config globals 예외 |
+| `eslint` 실패 | 미사용 import / `no-unused-vars` / `no-explicit-any` 경고 승격 | `pnpm lint` 로 로컬 재현 후 픽스. `eslint.config.mjs` 에 `no-console` 규칙은 없으므로 `console.log` 는 lint 로 잡히지 않는다 |
 | `vitest` 테스트 실패 | repository mock / Drizzle 타입 변경 영향 | 실패 테스트 파일 직접 읽고 픽스. mock 은 `vi.mock()` 패턴 일관 |
 | `Drizzle migration` 실패 (`drizzle/0NNN_*.sql`) | 스키마 변경 후 `pnpm db:generate` 누락 / migration 파일 미커밋 | 로컬 `pnpm db:generate` → `drizzle/` 커밋 (`pnpm db:push` 프로덕션 금지) |
 | `Next.js build` 실패 | env 변수 누락 (`SYNC_API_KEY` 등) / route 충돌 | `.env.example` 대비 env 변수 정합. CI secrets 등록 확인 |
-| `Claude 코드 리뷰` workflow stuck (1시간+) | claude-code-action hang (issue #1290) | `timeout-minutes: 15` 설정 확인. hang 시 `gh run cancel` |
+| `Claude 코드 리뷰` workflow stuck (1시간+) | claude-code-action hang (issue #1290) | `gh run cancel` 후 재실행. `claude-code-review.yml` 의 `timeout-minutes` 가 워크플로를 끊어 준다 |
 | `actions/X@vN: Unable to find action` | floating tag 가 cutoff 이후 제거 / 오타 | `curl -s https://api.github.com/repos/actions/X/tags` 로 실존 확인 |
 
 표에 없는 증상은 사용자에게 로그 일부와 의심 원인을 제시하고 진행 방향을 확인한다.
 
 ## 실패 체크 → 로컬 명령 매칭
 
-| CI 체크 이름 / 로그 키워드 | 로컬 명령 | 기대 소요 |
+CI 의 `ci.yml` 은 `Lint, Test & Build` 단일 job 이므로 체크 이름이 아니라 실패한 step 이름과 로그 키워드로 구분한다.
+
+| step 이름 / 로그 키워드 | 로컬 명령 | 기대 소요 |
 | --- | --- | --- |
-| `Lint`, `eslint`, `no-unused-vars`, `no-console` | `pnpm lint` | ~10s |
+| `Run lint`, `eslint`, `no-unused-vars` | `pnpm lint` | ~10s |
 | `Type check`, `tsc`, `Cannot find name`, `not assignable` | `pnpm type-check` | ~20s |
 | `Test`, `vitest`, `FAIL src/` | `pnpm test` | ~10-60s |
 | `Build`, `next build`, `Module not found` | `pnpm build` | ~60-120s |

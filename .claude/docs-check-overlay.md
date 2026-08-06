@@ -19,13 +19,16 @@
 링크가 끊어졌는지만 확인하고 내용을 중복 검사하지 않는다.
 
 ADR 본문은 `docs/adr/[0-9]*.md`, 인덱스는 `docs/adr/README.md`다.
-ADR-012는 결번이며 새 결정에 재사용하지 않는다.
+결번은 재사용하지 않는다. 어느 번호가 결번인지는 `docs/adr/README.md`를 단일 소스로 삼는다.
 
 ## 정적 검사 실행
 
-공용 `static-check.sh`는 ADR 인덱스 파일명을 `INDEX.md`로 고정하고 추적된 모든 마크다운을 검사한다.
-fos-blog의 `README.md` 인덱스와 검사 범위 제외를 표현할 수 없으므로 현재는 실행하지 않는다.
-거짓 양성이 섞인 대량 출력을 판정 근거로 사용하지 말고 아래 저장소 전용 대조를 실행한다.
+공용 `static-check.sh`는 추적된 모든 마크다운을 검사하며 제외 경로를 인자로 받지 못한다.
+fos-blog는 `tasks/**`가 추적 대상이라 출력이 1000줄을 넘고 대부분이 판정과 무관한 계획 문서다.
+전체 실행 대신 아래 저장소 전용 대조를 사용한다.
+
+ADR 인덱스 검사도 이 스크립트에 맡기지 않는다.
+스크립트는 인덱스 파일명을 `INDEX.md`로 고정하는데 fos-blog는 `README.md`를 쓴다.
 
 편집한 파일은 `git diff --check`와 한국어 검사기로 별도 확인한다.
 기존 위반이 많은 파일은 현재 diff에서 새 위반이 늘지 않았는지 비교하고 기존 부채를 별도 보고한다.
@@ -49,11 +52,11 @@ fos-blog의 `README.md` 인덱스와 검사 범위 제외를 표현할 수 없�
 BODY=$(find docs/adr -maxdepth 1 -type f -name '[0-9][0-9][0-9]-*.md' -exec basename {} \; | cut -c1-3 | sort -u)
 INDEX=$(grep -oE '\[ADR-[0-9]{3}\]' docs/adr/README.md | grep -oE '[0-9]{3}' | sort -u)
 diff <(printf '%s\n' "$BODY") <(printf '%s\n' "$INDEX")
-test -z "$(find docs/adr -maxdepth 1 -type f -name '012-*.md' -print -quit)"
 ```
 
 본문과 인덱스의 번호 집합이 같아야 한다.
 인덱스의 상대 링크도 모두 실제 파일을 가리켜야 한다.
+번호가 비어 있으면 결번이므로 새 ADR에 그 번호를 배정하지 않는다.
 
 ### Drizzle 스키마
 
