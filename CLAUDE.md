@@ -7,18 +7,13 @@
 이 문서는 모든 작업에 항상 적용하는 프로젝트 불변 조건만 담는다.
 세부 실행 절차는 관련 스킬과 저장소 오버레이를 작업 시작 전에 읽는다.
 
-지침은 다음 순서로 나눈다.
+지침은 다음 순서로 읽는다.
 
-1. `AGENTS.md`: 프로젝트 구조, 불변 조건, 검증 기준
+1. `CLAUDE.md` (= `AGENTS.md` 심볼릭 링크): 불변 조건과 검증 기준
 2. 설치된 `SKILL.md`: 계획, 구현, 문서 점검, 리뷰 반영 절차
 3. `.claude/*-overlay.md`: 공용 스킬에 주입하는 fos-blog 전용 규칙
-4. `.codex/agents/*.toml`: 역할별 책임과 출력 계약
+4. `.claude/agents/*.md`, `.codex/agents/*.toml`: 역할별 책임과 출력 계약
 
-`AGENTS.md`는 `CLAUDE.md`를 가리키는 심볼릭 링크다.
-두 파일을 별도로 편집하거나 서로 다른 내용을 두지 않는다.
-
-팀 실행의 저장소 전용 역할은 `fos-blog-executor`와 `fos-blog-docs-verifier`다.
-각 역할 정의 파일을 책임과 출력 계약의 단일 소스로 삼는다.
 반복되는 계획·검토 함정은 `.agents/skills/_shared/common-pitfalls.md`에 누적한다.
 
 코드와 문서가 충돌하면 현재 동작은 코드와 설정으로 확인하고, 의사결정 이유는 문서에서 확인한다.
@@ -27,29 +22,10 @@
 ## 프로젝트 개요
 
 `jon890/fos-study`의 마크다운을 GitHub에서 동기화해 MySQL에 저장하고 웹으로 제공하는 Next.js 개발자 블로그다.
-
-- GFM, Mermaid, KaTeX, 코드 강조, HTML 정화를 포함한 마크다운 렌더링
-- 카테고리, 하위 폴더, 태그, 시리즈 탐색
-- MySQL 전문 검색과 `LIKE` 대체 검색
-- 댓글, 방문 통계, 관련 글, RSS
-- 용어집 동기화와 본문 용어 도움말
-- 다크 모드와 라이트 모드
-
 배포 대상은 홈서버의 Docker 컨테이너다.
 
-주요 기술은 Next.js 16, React 19, TypeScript strict, Tailwind CSS 4, MySQL 8.4, Drizzle ORM이다.
-정확한 패키지 버전은 `package.json`과 `pnpm-lock.yaml`을 단일 소스로 삼는다.
-
-## 주요 디렉터리
-
-- `src/app/`: 페이지, Route Handler, 메타데이터, OG 이미지
-- `src/components/`: 재사용 UI와 클라이언트 상호작용
-- `src/services/`: 동기화, 용어집, RSS, 통계 등 도메인 흐름
-- `src/infra/`: Drizzle DB 계층과 GitHub 연동
-- `src/lib/`: 공용 유틸리티와 마크다운 기반 기능
-- `src/middleware/`, `src/proxy.ts`: 방문 기록, 요청 제한, Proxy 진입점
-- `scripts/`, `drizzle/`, `local/`: 마이그레이션과 로컬 DB 설정
-- `docs/`, `tasks/`: 유지 문서와 계획별 실행 작업
+기능 목록, 기술 스택, 디렉터리 구조는 `README.md`를 단일 소스로 삼는다.
+패키지 버전은 `package.json`과 `pnpm-lock.yaml`에서 확인한다.
 
 ## 아키텍처 경계
 
@@ -73,21 +49,8 @@
 
 ## 명령어
 
-```bash
-pnpm dev
-pnpm build
-pnpm lint
-pnpm type-check
-pnpm test
-
-pnpm db:generate
-pnpm db:migrate
-pnpm db:migrate:runtime
-pnpm db:push
-pnpm db:studio
-```
-
-로컬 MySQL은 `package.json` 스크립트가 아니라 Docker Compose로 실행한다.
+명령 목록은 `package.json`의 `scripts`를 단일 소스로 삼는다.
+로컬 MySQL만 스크립트에 없고 Docker Compose로 실행한다.
 
 ```bash
 docker compose -f local/docker-compose.yml up -d
@@ -97,11 +60,6 @@ docker compose -f local/docker-compose.yml down
 ## 환경 변수
 
 실행 계약은 `src/env.ts`, 예시는 `.env.example`을 단일 소스로 삼는다.
-
-- 시작 시 검증 필수: `GITHUB_TOKEN`, `SYNC_API_KEY`
-- DB 기능과 운영 배포에 필요: `DATABASE_URL`
-- 기본값 제공: `GITHUB_OWNER`, `GITHUB_REPO`, `GITHUB_BRANCH`, `NEXT_PUBLIC_SITE_URL`
-- 선택: `USE_FULLTEXT_SEARCH`, `LOG_LEVEL`, Google 검증·광고 식별자
 
 `SYNC_API_KEY` 인증은 `/api/sync`에 적용한다.
 모든 API Route가 Bearer 인증을 사용한다고 가정하지 않는다.
@@ -160,23 +118,14 @@ Dooray, GitHub, 블로그, 메일처럼 외부에 게시할 문안은 등록 전
 ## Git과 PR
 
 `planning` 산출물 브랜치는 `plan{N}-<slug>` 형식을 사용한다.
-기능은 `feat/`, 단발 버그 수정은 `fix/`, 정리는 `chore/`, 문서는 `docs/`를 사용한다.
+그 밖의 브랜치와 커밋·PR 제목 형식은 기존 히스토리를 따른다.
 
-PR 제목은 `type(scope): description` 형식을 사용하며 제목과 본문은 기본적으로 한국어로 작성한다.
+PR 제목과 본문은 기본적으로 한국어로 작성한다.
 본문에는 변경 이유와 내용을 요약하고 검증 항목을 체크리스트로 적는다.
 PR은 검증이 끝났다면 검토 가능한 상태로 생성하고, 사용자가 요청했거나 검증이 끝나지 않았을 때만 초안으로 만든다.
 
 커밋은 관심사별로 나눈다.
 강하게 결합된 `package.json`과 `pnpm-lock.yaml`, 스키마와 생성 마이그레이션은 같은 커밋에 둔다.
-
-다음 파일은 추적하거나 커밋하지 않는다.
-발견하면 작업을 멈추고 범위를 확인한다.
-
-- `.env`, `.env.local`, `.env*.local`
-- `*.pem`, `id_rsa`, `credentials.*`, `secrets.*`
-- `.next/`, `node_modules/`, `.omc/`
-
-`drizzle/`은 금지 대상이 아니며 스키마 변경 시 반드시 추적한다.
 
 ## 검증과 완료 보고
 
