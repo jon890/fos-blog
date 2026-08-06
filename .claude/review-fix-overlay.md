@@ -68,7 +68,7 @@ workflow 변경은 CI fix 와 같은 PR 에 커밋. `actions/` 버전 변경은 
 | --- | --- |
 | 라이브러리 / DB / 타입 함정 (Next.js·Drizzle·MySQL·pino 등) | "### fos-blog (Next.js 16 / Drizzle ORM / MySQL / pino)" 의 `BLG#` |
 | 일반 critic 시드 패턴 | 같은 파일 `P#` 시드 패턴 |
-| 도메인 의사결정 / ADR 가치 | `docs/adr/NNN-slug.md` (신규 ADR, 자명성 점검 통과 후) |
+| 도메인 의사결정 / ADR 가치 | `docs/adr/` 에 신규 ADR (자명성 점검 통과 후) |
 | 페이지/컴포넌트 흐름 변경 | `docs/pages/{page}.md` 해당 섹션 |
 
 작성 형식:

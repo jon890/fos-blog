@@ -23,7 +23,7 @@ ADR 본문은 `docs/adr/[0-9]*.md`, 인덱스는 `docs/adr/README.md`다.
 
 ## 정적 검사 실행
 
-공용 `static-check.sh`는 추적된 모든 마크다운을 검사하며 제외 경로를 인자로 받지 못한다.
+공용 `~/.claude/skills/docs-check/scripts/static-check.sh`는 추적된 모든 마크다운을 검사하며 제외 경로를 인자로 받지 못한다.
 fos-blog는 `tasks/**`가 추적 대상이라 출력이 1000줄을 넘고 대부분이 판정과 무관한 계획 문서다.
 전체 실행 대신 아래 저장소 전용 대조를 사용한다.
 
