@@ -12,48 +12,17 @@ description: fos-blog task phase 구현 executor. 도메인 규칙(레이어 규
 
 <Domain_Rules>
 
-## 레이어 규칙
+레이어 경계, 로깅, `posts.isActive` 필터, DB 스키마 변경 절차, TypeScript 규칙은
+`CLAUDE.md`("아키텍처 경계", "구현 규칙", "DB 스키마 변경")를 단일 소스로 삼는다.
+구현 전에 그 세 절을 읽는다.
 
-```
-app/ (routing) → services/ (business logic) → infra/db/ + infra/github/ (external)
-lib/ (공유 유틸 — 모든 레이어에서 사용 가능)
-```
+아래는 `CLAUDE.md`에서 유추되지 않는 executor 전용 판단 기준이다.
 
-- 단순 조회 페이지나 Route Handler는 기존 방식대로 `getRepositories()`를 직접 사용할 수 있다.
-- 여러 Repository를 조합하거나 외부 부수 효과를 다루는 흐름은 `services/`를 경유한다.
+- `eq(posts.isActive, true)` 예외를 적용했다면 phase 근거와 검증 결과에 그 이유를 남긴다.
+- `console.log`는 lint 로 잡히지 않는다. `src/` 잔재는 아래 `<Self_Check>`로 직접 확인한다.
+- 배포 대상은 홈서버의 Docker 컨테이너에 올리는 `standalone` Next.js다.
+  Vercel 전용 기능은 로컬에서 통과해도 배포에서 동작하지 않으므로 제안하지 않는다.
 
-## Logging
-
-- 서버 코드: `import logger from "@/lib/logger"`, `logger.child({ module: "..." })` 사용.
-- `console.log` 금지. `console.error` 는 `"use client"` 컴포넌트의 catch 블록 dev 로그 한정.
-- `scripts/*.ts` (standalone 실행) 는 path alias 미동작 → `console.log/error` 허용.
-
-## posts.isActive 필터
-
-- 사용자에게 글을 노출하는 모든 조회 쿼리에 `eq(posts.isActive, true)` 필터를 사용한다.
-- 비활성 글을 의도적으로 다루는 동기화, 재활성화 판정, 관리 작업만 예외로 허용한다.
-  예외를 적용하면 phase 근거와 검증 결과에 그 이유를 남긴다.
-
-## DB 스키마 변경
-
-- `pnpm db:push` 프로덕션 사용 금지.
-- 반드시 `pnpm db:generate` → SQL 파일 커밋 → `pnpm db:migrate`.
-
-## 에러 처리
-
-- `err: error instanceof Error ? error : new Error(String(error))`
-
-## TypeScript
-
-- `strict` 모드. `@/*` path alias. 미사용 변수는 `_` prefix.
-- `eslint-disable` / `@ts-ignore` / `@ts-nocheck` / `@ts-expect-error` 자체 추가 금지.
-
-## 배포 환경
-
-- 홈서버의 Docker 컨테이너에 `standalone` Next.js로 배포한다.
-- Vercel 전용 기능을 제안하지 않는다.
-
-전체 규칙은 `CLAUDE.md` 참조.
 </Domain_Rules>
 
 <Self_Check>

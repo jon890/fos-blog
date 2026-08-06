@@ -83,7 +83,7 @@ pnpm install
 - 알 수 없는 오류는 `error instanceof Error ? error : new Error(String(error))`로 정규화한다.
 - `src/app/globals.css`는 Tailwind 자동 탐색을 끈다.
   Tailwind class가 있는 새 디렉터리를 만들면 `@source`를 추가한다.
-- 명시적 승인 없이 새 의존성, `eslint-disable`, `@ts-ignore`, `@ts-nocheck`를 추가하지 않는다.
+- 명시적 승인 없이 새 의존성, `eslint-disable`, `@ts-ignore`, `@ts-nocheck`, `@ts-expect-error`를 추가하지 않는다.
 
 테스트는 대상 코드와 가까운 `*.test.ts` 또는 `*.test.tsx`에 둔다.
 DOM 테스트는 파일 상단에 `// @vitest-environment jsdom`을 선언해 기본 Node 환경과 격리한다.

@@ -72,38 +72,21 @@ diff <(printf '%s\n' "$SCHEMA_TABLES" | tr -d '"') <(printf '%s\n' "$DOC_TABLES"
 
 ### 페이지 문서
 
-모든 `src/app/**/page.tsx`는 아래 대응 문서를 가져야 한다.
-실제 라우트가 추가되면 이 표와 페이지 문서를 함께 갱신한다.
-
-| 페이지 파일 | 페이지 문서 |
-| --- | --- |
-| `src/app/page.tsx` | `docs/pages/home.md` |
-| `src/app/about/page.tsx` | `docs/pages/about.md` |
-| `src/app/categories/page.tsx` | `docs/pages/categories.md` |
-| `src/app/category/[...path]/page.tsx` | `docs/pages/category-detail.md` |
-| `src/app/contact/page.tsx` | `docs/pages/contact.md` |
-| `src/app/glossary/page.tsx` | `docs/pages/glossary.md` |
-| `src/app/posts/[...slug]/page.tsx` | `docs/pages/post-detail.md` |
-| `src/app/posts/latest/page.tsx` | `docs/pages/posts-latest.md` |
-| `src/app/posts/popular/page.tsx` | `docs/pages/posts-popular.md` |
-| `src/app/privacy/page.tsx` | `docs/pages/privacy.md` |
-| `src/app/series/page.tsx` | `docs/pages/series-index.md` |
-| `src/app/series/[name]/page.tsx` | `docs/pages/series-detail.md` |
-| `src/app/tag/[name]/page.tsx` | `docs/pages/tag.md` |
-
-현재 라우트 집합은 다음 명령으로 확인한다.
+모든 `src/app/**/page.tsx`는 `docs/pages/`에 대응 문서를 가져야 한다.
+문서 이름은 라우트 경로를 따르되 목록이 아닌 코드에서 확인한다.
 
 ```bash
 find src/app -name 'page.tsx' -type f | sort
+ls docs/pages/*.md
 ```
 
+개수가 다르면 어느 라우트에 문서가 없는지 짚는다.
 `docs/pages/*.md`의 `Related Files` 또는 `File` 경로는 실제로 존재해야 한다.
 
 ### 레이어 경계
 
-`AGENTS.md`의 아키텍처 경계를 기준으로 판정한다.
-단순 조회 페이지나 Route Handler의 `getRepositories()` 직접 사용은 허용한다.
-여러 Repository 조합이나 외부 부수 효과를 새로 추가하면서 `services`를 우회한 경우만 위반 후보로 보고한다.
+`AGENTS.md`의 “아키텍처 경계”를 판정 기준의 단일 소스로 삼는다.
+경계 자체를 여기에 옮겨 적지 않는다.
 
 ## 판정
 

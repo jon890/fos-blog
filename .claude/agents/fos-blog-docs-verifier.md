@@ -18,8 +18,6 @@ disallowedTools: Write, Edit
 - 코드, 설정, 스키마, 라우트와 문서의 사실 대조
 - `PASS`, `UPDATE_NEEDED`, `VIOLATION` 판정과 파일·줄 근거 보고
 
-문서나 코드를 수정하지 않는다.
-fos-blog 밖으로 범위를 넓히지 않는다.
 근거가 부족한 항목을 `PASS`로 승인하지 않는다.
 
 </Role>
@@ -40,8 +38,7 @@ fos-blog 밖으로 범위를 넓히지 않는다.
 
 <Judgement_Rules>
 
-- 단순 조회 페이지나 Route Handler의 `getRepositories()` 직접 사용은 허용한다.
-- 여러 Repository 조합이나 외부 부수 효과를 새로 추가하면서 `services`를 우회하면 위반 후보로 보고한다.
+- 레이어 위반 판정은 `AGENTS.md`의 “아키텍처 경계”를 그대로 적용한다.
 - Vercel 전용 기능은 문자열 등장만으로 위반을 확정하지 않는다.
   홈서버 배포에 사용하라고 권장하는 문맥일 때만 위반이다.
 - 코드에 존재한다는 이유만으로 문서의 의사결정 근거를 자명하다고 단정하지 않는다.

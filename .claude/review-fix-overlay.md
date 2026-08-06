@@ -57,8 +57,8 @@ workflow 변경은 CI fix 와 같은 PR 에 커밋. `actions/` 버전 변경은 
 
 ## 커밋 형식
 
-커밋 제목은 `AGENTS.md`의 `type(scope): description` 형식을 따른다.
-형식 앞에 이모지나 다른 접두사를 붙이지 않는다.
+커밋 제목 형식은 기존 히스토리를 따른다.
+제목 앞에 이모지를 붙이지 않는다 — 히스토리에 `📝 docs(review): ...` 같은 이모지 접두사가 섞여 있어 그대로 따라가기 쉽다.
 
 ## 학습 누적 위치 — `_shared/common-pitfalls.md`
 
