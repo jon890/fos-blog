@@ -12,7 +12,12 @@
 1. `CLAUDE.md` (= `AGENTS.md` 심볼릭 링크): 불변 조건과 검증 기준
 2. 설치된 `SKILL.md`: 계획, 구현, 문서 점검, 리뷰 반영 절차
 3. `.claude/*-overlay.md`: 공용 스킬에 주입하는 fos-blog 전용 규칙
-4. `.claude/agents/*.md`, `.codex/agents/*.toml`: 역할별 책임과 출력 계약
+4. `.agents/roles/*.md`: 역할별 책임과 출력 계약
+
+역할 계약은 `.agents/roles/`가 단일 소스다.
+`.claude/agents/*.md`와 `.codex/agents/*.toml`은 그 파일을 가리키는 얇은 래퍼이며
+하네스별로 다른 부분(보고 경로, 도구 제한)만 담는다.
+역할을 고칠 때는 `.agents/roles/`를 고치고 래퍼는 건드리지 않는다.
 
 반복되는 계획·검토 함정은 `.agents/skills/_shared/common-pitfalls.md`에 누적한다.
 

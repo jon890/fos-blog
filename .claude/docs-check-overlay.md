@@ -10,7 +10,7 @@
 - 상시 지침: `AGENTS.md`
 - 저장소 오버레이: `.claude/*-overlay.md`
 - 저장소 스킬 자료: `.agents/skills/*/SKILL.md`, `.agents/skills/_shared/*.md`
-- 역할 지침: `.claude/agents/*.md`, `.codex/agents/*.toml`
+- 역할 지침: `.agents/roles/*.md` (`.claude/agents/*.md`와 `.codex/agents/*.toml`은 얇은 래퍼)
 
 `AGENTS.md`는 `CLAUDE.md`를 가리키는 심볼릭 링크다.
 같은 내용으로 두 번 집계하지 않고 실제 파일인 `CLAUDE.md`를 검사한다.
@@ -37,9 +37,7 @@ ADR 인덱스 검사도 이 스크립트에 맡기지 않는다.
 ## 검증 위임
 
 의미 검증은 읽기 전용 `fos-blog-docs-verifier`에 맡긴다.
-
-- Codex: `.codex/agents/fos-blog-docs-verifier.toml`
-- Claude: `.claude/agents/fos-blog-docs-verifier.md`
+역할 계약은 `.agents/roles/fos-blog-docs-verifier.md`에 있다.
 
 검증기는 발견을 미리 걸러내지 않고 모두 보고한다.
 심각도는 메인 에이전트가 근거를 검토한 뒤 정한다.
