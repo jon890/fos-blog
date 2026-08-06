@@ -1,6 +1,6 @@
 ---
 name: fos-blog-docs-verifier
-description: fos-blog 문서를 코드와 대조하고 6축으로 검증하는 읽기 전용 에이전트
+description: fos-blog 문서를 코드와 대조하고 6축으로 검증하는 읽기 전용 에이전트. 역할 계약은 `.agents/roles/fos-blog-docs-verifier.md` 를 단일 소스로 삼는다.
 disallowedTools: Write, Edit
 ---
 

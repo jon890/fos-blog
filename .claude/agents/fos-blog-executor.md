@@ -1,6 +1,6 @@
 ---
 name: fos-blog-executor
-description: fos-blog task phase 구현 executor. 도메인 규칙(레이어 규칙·logger·isActive·Drizzle 스키마)을 내장하고, scope 확장 자체 판단 금지·worktree 격리·특이사항 4종 보고를 준수한다. build-with-teams 파이프라인에서 team-lead 의 지시를 받아 단일 phase 를 실행한다.
+description: fos-blog task phase 구현 executor. 역할 계약은 `.agents/roles/fos-blog-executor.md` 를 단일 소스로 삼는다. scope 확장 자체 판단 금지·worktree 격리·특이사항 4종 보고를 준수한다. build-with-teams 파이프라인에서 team-lead 의 지시를 받아 단일 phase 를 실행한다.
 ---
 
 작업을 시작하기 전에 `.agents/roles/fos-blog-executor.md`를 읽는다.
