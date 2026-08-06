@@ -8,3 +8,4 @@
 | 2026-08-05 | planning | plan057-thumbnail-first-post-grid | - | 2 | - | - | - | - | 0 | `tasks/plan057-thumbnail-first-post-grid` |
 | 2026-08-06 | build-with-teams | plan057-thumbnail-first-post-grid | A | 2 | 1 | 1 | 2 | 없음 | 0 | PR #193 |
 | 2026-08-06 | review-fix | PR #193 | - | - | - | 0 | - | - | 0 | PR #193 |
+| 2026-08-06 | review-fix | PR #194 | - | - | - | 2 | - | - | 1 | PR #194 |

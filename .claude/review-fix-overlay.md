@@ -1,7 +1,7 @@
 # review-fix 오버레이 — fos-blog
 
 공용 코어(`~/.claude/skills/review-fix`)에 fos-blog 고유 진단 지식을 채운다.
-검증 명령(lint/type-check/test/build)·PR 제목 형식·브랜치 네이밍은 레포 `CLAUDE.md` 를 그대로 따르며 여기서 반복하지 않는다.
+검증 명령(lint/type-check/test/build)과 PR 규칙은 레포 `CLAUDE.md` 를 그대로 따르며 여기서 반복하지 않는다.
 
 ## 머지 정책 — Merge commit (squash/rebase 아님)
 
@@ -15,20 +15,22 @@ fos-blog 는 PR 머지 시 **Merge commit** 을 사용한다 (`git log` 에 `Mer
 | `ERR_PNPM_OUTDATED_LOCKFILE` / `frozen-lockfile` 실패 | 로컬 의존성 변경 후 lockfile 미커밋 | `pnpm install` 후 `pnpm-lock.yaml` 같이 커밋 |
 | `Cannot find module '@/...'` | `scripts/*` 는 path alias 미지원 | 상대 경로로 변경 |
 | `tsc --noEmit` 실패 | strict mode 위반 / 타입 누락 / `as any` 회귀 | 해당 파일 타입 가드 추가 또는 시그니처 정합 |
-| `eslint` 실패 | 미사용 import / `no-unused-vars` / `console.log` 위반 | `pnpm lint` 로 로컬 재현 후 픽스. `scripts/*` 의 console.log 는 eslint config globals 예외 |
+| `eslint` 실패 | 파싱 오류 또는 `error` 등급 규칙 위반 (`js.configs.recommended`, `react-hooks/rules-of-hooks`) | `pnpm lint` 로 로컬 재현 후 픽스. `no-unused-vars` 와 `no-explicit-any` 는 `warn` 이라 exit 0 이고, `no-console` 규칙은 아예 없다 |
 | `vitest` 테스트 실패 | repository mock / Drizzle 타입 변경 영향 | 실패 테스트 파일 직접 읽고 픽스. mock 은 `vi.mock()` 패턴 일관 |
 | `Drizzle migration` 실패 (`drizzle/0NNN_*.sql`) | 스키마 변경 후 `pnpm db:generate` 누락 / migration 파일 미커밋 | 로컬 `pnpm db:generate` → `drizzle/` 커밋 (`pnpm db:push` 프로덕션 금지) |
 | `Next.js build` 실패 | env 변수 누락 (`SYNC_API_KEY` 등) / route 충돌 | `.env.example` 대비 env 변수 정합. CI secrets 등록 확인 |
-| `Claude 코드 리뷰` workflow stuck (1시간+) | claude-code-action hang (issue #1290) | `timeout-minutes: 15` 설정 확인. hang 시 `gh run cancel` |
+| `Claude 코드 리뷰` workflow stuck (1시간+) | claude-code-action hang (issue #1290) | `gh run cancel` 후 재실행. `claude-code-review.yml` 의 `timeout-minutes` 가 워크플로를 끊어 준다 |
 | `actions/X@vN: Unable to find action` | floating tag 가 cutoff 이후 제거 / 오타 | `curl -s https://api.github.com/repos/actions/X/tags` 로 실존 확인 |
 
 표에 없는 증상은 사용자에게 로그 일부와 의심 원인을 제시하고 진행 방향을 확인한다.
 
 ## 실패 체크 → 로컬 명령 매칭
 
-| CI 체크 이름 / 로그 키워드 | 로컬 명령 | 기대 소요 |
+CI 의 `ci.yml` 은 `Lint, Test & Build` 단일 job 이므로 체크 이름이 아니라 실패한 step 이름과 로그 키워드로 구분한다.
+
+| step 이름 / 로그 키워드 | 로컬 명령 | 기대 소요 |
 | --- | --- | --- |
-| `Lint`, `eslint`, `no-unused-vars`, `no-console` | `pnpm lint` | ~10s |
+| `Run lint`, `eslint`, `1 error` | `pnpm lint` | ~10s |
 | `Type check`, `tsc`, `Cannot find name`, `not assignable` | `pnpm type-check` | ~20s |
 | `Test`, `vitest`, `FAIL src/` | `pnpm test` | ~10-60s |
 | `Build`, `next build`, `Module not found` | `pnpm build` | ~60-120s |
@@ -55,8 +57,8 @@ workflow 변경은 CI fix 와 같은 PR 에 커밋. `actions/` 버전 변경은 
 
 ## 커밋 형식
 
-커밋 제목은 `AGENTS.md`의 `type(scope): description` 형식을 따른다.
-형식 앞에 이모지나 다른 접두사를 붙이지 않는다.
+커밋 제목 형식은 기존 히스토리를 따른다.
+제목 앞에 이모지를 붙이지 않는다 — 히스토리에 `📝 docs(review): ...` 같은 이모지 접두사가 섞여 있어 그대로 따라가기 쉽다.
 
 ## 학습 누적 위치 — `_shared/common-pitfalls.md`
 
@@ -66,7 +68,7 @@ workflow 변경은 CI fix 와 같은 PR 에 커밋. `actions/` 버전 변경은 
 | --- | --- |
 | 라이브러리 / DB / 타입 함정 (Next.js·Drizzle·MySQL·pino 등) | "### fos-blog (Next.js 16 / Drizzle ORM / MySQL / pino)" 의 `BLG#` |
 | 일반 critic 시드 패턴 | 같은 파일 `P#` 시드 패턴 |
-| 도메인 의사결정 / ADR 가치 | `docs/adr/NNN-slug.md` (신규 ADR, 자명성 점검 통과 후) |
+| 도메인 의사결정 / ADR 가치 | `docs/adr/` 에 신규 ADR (자명성 점검 통과 후) |
 | 페이지/컴포넌트 흐름 변경 | `docs/pages/{page}.md` 해당 섹션 |
 
 작성 형식:

@@ -10,7 +10,7 @@
 - 상시 지침: `AGENTS.md`
 - 저장소 오버레이: `.claude/*-overlay.md`
 - 저장소 스킬 자료: `.agents/skills/*/SKILL.md`, `.agents/skills/_shared/*.md`
-- 역할 지침: `.claude/agents/*.md`, `.codex/agents/*.toml`
+- 역할 지침: `.agents/roles/*.md` (`.claude/agents/*.md`와 `.codex/agents/*.toml`은 얇은 래퍼)
 
 `AGENTS.md`는 `CLAUDE.md`를 가리키는 심볼릭 링크다.
 같은 내용으로 두 번 집계하지 않고 실제 파일인 `CLAUDE.md`를 검사한다.
@@ -19,13 +19,16 @@
 링크가 끊어졌는지만 확인하고 내용을 중복 검사하지 않는다.
 
 ADR 본문은 `docs/adr/[0-9]*.md`, 인덱스는 `docs/adr/README.md`다.
-ADR-012는 결번이며 새 결정에 재사용하지 않는다.
+결번은 재사용하지 않는다. 어느 번호가 결번인지는 `docs/adr/README.md`를 단일 소스로 삼는다.
 
 ## 정적 검사 실행
 
-공용 `static-check.sh`는 ADR 인덱스 파일명을 `INDEX.md`로 고정하고 추적된 모든 마크다운을 검사한다.
-fos-blog의 `README.md` 인덱스와 검사 범위 제외를 표현할 수 없으므로 현재는 실행하지 않는다.
-거짓 양성이 섞인 대량 출력을 판정 근거로 사용하지 말고 아래 저장소 전용 대조를 실행한다.
+공용 `~/.claude/skills/docs-check/scripts/static-check.sh`는 추적된 모든 마크다운을 검사하며 제외 경로를 인자로 받지 못한다.
+fos-blog는 `tasks/**`가 추적 대상이라 출력이 1000줄을 넘고 대부분이 판정과 무관한 계획 문서다.
+전체 실행 대신 아래 저장소 전용 대조를 사용한다.
+
+ADR 인덱스 검사도 이 스크립트에 맡기지 않는다.
+스크립트는 인덱스 파일명을 `INDEX.md`로 고정하는데 fos-blog는 `README.md`를 쓴다.
 
 편집한 파일은 `git diff --check`와 한국어 검사기로 별도 확인한다.
 기존 위반이 많은 파일은 현재 diff에서 새 위반이 늘지 않았는지 비교하고 기존 부채를 별도 보고한다.
@@ -34,9 +37,7 @@ fos-blog의 `README.md` 인덱스와 검사 범위 제외를 표현할 수 없�
 ## 검증 위임
 
 의미 검증은 읽기 전용 `fos-blog-docs-verifier`에 맡긴다.
-
-- Codex: `.codex/agents/fos-blog-docs-verifier.toml`
-- Claude: `.claude/agents/fos-blog-docs-verifier.md`
+역할 계약은 `.agents/roles/fos-blog-docs-verifier.md`에 있다.
 
 검증기는 발견을 미리 걸러내지 않고 모두 보고한다.
 심각도는 메인 에이전트가 근거를 검토한 뒤 정한다.
@@ -49,11 +50,11 @@ fos-blog의 `README.md` 인덱스와 검사 범위 제외를 표현할 수 없�
 BODY=$(find docs/adr -maxdepth 1 -type f -name '[0-9][0-9][0-9]-*.md' -exec basename {} \; | cut -c1-3 | sort -u)
 INDEX=$(grep -oE '\[ADR-[0-9]{3}\]' docs/adr/README.md | grep -oE '[0-9]{3}' | sort -u)
 diff <(printf '%s\n' "$BODY") <(printf '%s\n' "$INDEX")
-test -z "$(find docs/adr -maxdepth 1 -type f -name '012-*.md' -print -quit)"
 ```
 
 본문과 인덱스의 번호 집합이 같아야 한다.
 인덱스의 상대 링크도 모두 실제 파일을 가리켜야 한다.
+번호가 비어 있으면 결번이므로 새 ADR에 그 번호를 배정하지 않는다.
 
 ### Drizzle 스키마
 
@@ -69,8 +70,13 @@ diff <(printf '%s\n' "$SCHEMA_TABLES" | tr -d '"') <(printf '%s\n' "$DOC_TABLES"
 
 ### 페이지 문서
 
-모든 `src/app/**/page.tsx`는 아래 대응 문서를 가져야 한다.
-실제 라우트가 추가되면 이 표와 페이지 문서를 함께 갱신한다.
+모든 `src/app/**/page.tsx`는 `docs/pages/`에 대응 문서를 가져야 한다.
+
+문서 이름은 라우트 경로에서 유추되지 않는다.
+`page.tsx`는 `home.md`, `series/page.tsx`는 `series-index.md`이고,
+catch-all 라우트는 `-detail` 접미사를 쓴다.
+`docs/pages/*.md` 중 `**File:**`로 대응 라우트를 밝힌 것은 일부뿐이라 코드에서 역추적할 수도 없다.
+그래서 아래 표가 이 대응의 단일 소스다.
 
 | 페이지 파일 | 페이지 문서 |
 | --- | --- |
@@ -88,29 +94,22 @@ diff <(printf '%s\n' "$SCHEMA_TABLES" | tr -d '"') <(printf '%s\n' "$DOC_TABLES"
 | `src/app/series/[name]/page.tsx` | `docs/pages/series-detail.md` |
 | `src/app/tag/[name]/page.tsx` | `docs/pages/tag.md` |
 
-현재 라우트 집합은 다음 명령으로 확인한다.
+표가 라우트 집합과 어긋났는지 먼저 확인한다.
+개수 비교로는 라우트 추가와 문서 삭제가 상쇄돼 통과하므로 집합을 대조한다.
 
 ```bash
-find src/app -name 'page.tsx' -type f | sort
+ROUTES=$(find src/app -name 'page.tsx' -type f | sort)
+TABLE=$(grep -E '^\| `src/app/' .claude/docs-check-overlay.md | cut -d'`' -f2 | sort -u)
+diff <(printf '%s\n' "$ROUTES") <(printf '%s\n' "$TABLE")
 ```
 
+차이가 있으면 표와 페이지 문서를 함께 갱신한다.
 `docs/pages/*.md`의 `Related Files` 또는 `File` 경로는 실제로 존재해야 한다.
 
 ### 레이어 경계
 
-`AGENTS.md`의 아키텍처 경계를 기준으로 판정한다.
-단순 조회 페이지나 Route Handler의 `getRepositories()` 직접 사용은 허용한다.
-여러 Repository 조합이나 외부 부수 효과를 새로 추가하면서 `services`를 우회한 경우만 위반 후보로 보고한다.
-
-### 홈서버 배포
-
-`Vercel Cron`, `Edge Functions`, `vercel.json` 검색 결과를 자동 위반으로 판정하지 않는다.
-금지 문장, 과거 결정, 디자인 출처 언급은 허용한다.
-홈서버 배포에 해당 기능을 사용하라고 권장하거나 필수 구성으로 제시한 경우만 `VIOLATION`이다.
-
-```bash
-rg -n 'Vercel Cron|Edge Functions|vercel\.json|ISR invalidation' README.md CLAUDE.md docs .claude
-```
+`AGENTS.md`의 “아키텍처 경계”를 판정 기준의 단일 소스로 삼는다.
+경계 자체를 여기에 옮겨 적지 않는다.
 
 ## 판정
 
