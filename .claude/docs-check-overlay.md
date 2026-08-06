@@ -73,14 +73,39 @@ diff <(printf '%s\n' "$SCHEMA_TABLES" | tr -d '"') <(printf '%s\n' "$DOC_TABLES"
 ### 페이지 문서
 
 모든 `src/app/**/page.tsx`는 `docs/pages/`에 대응 문서를 가져야 한다.
-문서 이름은 라우트 경로를 따르되 목록이 아닌 코드에서 확인한다.
+
+문서 이름은 라우트 경로에서 유추되지 않는다.
+`page.tsx`는 `home.md`, `series/page.tsx`는 `series-index.md`이고,
+catch-all 라우트는 `-detail` 접미사를 쓴다.
+`docs/pages/*.md` 중 `**File:**`로 대응 라우트를 밝힌 것은 일부뿐이라 코드에서 역추적할 수도 없다.
+그래서 아래 표가 이 대응의 단일 소스다.
+
+| 페이지 파일 | 페이지 문서 |
+| --- | --- |
+| `src/app/page.tsx` | `docs/pages/home.md` |
+| `src/app/about/page.tsx` | `docs/pages/about.md` |
+| `src/app/categories/page.tsx` | `docs/pages/categories.md` |
+| `src/app/category/[...path]/page.tsx` | `docs/pages/category-detail.md` |
+| `src/app/contact/page.tsx` | `docs/pages/contact.md` |
+| `src/app/glossary/page.tsx` | `docs/pages/glossary.md` |
+| `src/app/posts/[...slug]/page.tsx` | `docs/pages/post-detail.md` |
+| `src/app/posts/latest/page.tsx` | `docs/pages/posts-latest.md` |
+| `src/app/posts/popular/page.tsx` | `docs/pages/posts-popular.md` |
+| `src/app/privacy/page.tsx` | `docs/pages/privacy.md` |
+| `src/app/series/page.tsx` | `docs/pages/series-index.md` |
+| `src/app/series/[name]/page.tsx` | `docs/pages/series-detail.md` |
+| `src/app/tag/[name]/page.tsx` | `docs/pages/tag.md` |
+
+표가 라우트 집합과 어긋났는지 먼저 확인한다.
+개수 비교로는 라우트 추가와 문서 삭제가 상쇄돼 통과하므로 집합을 대조한다.
 
 ```bash
-find src/app -name 'page.tsx' -type f | sort
-ls docs/pages/*.md
+ROUTES=$(find src/app -name 'page.tsx' -type f | sort)
+TABLE=$(grep -E '^\| `src/app/' .claude/docs-check-overlay.md | cut -d'`' -f2 | sort -u)
+diff <(printf '%s\n' "$ROUTES") <(printf '%s\n' "$TABLE")
 ```
 
-개수가 다르면 어느 라우트에 문서가 없는지 짚는다.
+차이가 있으면 표와 페이지 문서를 함께 갱신한다.
 `docs/pages/*.md`의 `Related Files` 또는 `File` 경로는 실제로 존재해야 한다.
 
 ### 레이어 경계

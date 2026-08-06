@@ -1,7 +1,7 @@
 # review-fix 오버레이 — fos-blog
 
 공용 코어(`~/.claude/skills/review-fix`)에 fos-blog 고유 진단 지식을 채운다.
-검증 명령(lint/type-check/test/build)·PR 제목 형식·브랜치 네이밍은 레포 `CLAUDE.md` 를 그대로 따르며 여기서 반복하지 않는다.
+검증 명령(lint/type-check/test/build)과 PR 규칙은 레포 `CLAUDE.md` 를 그대로 따르며 여기서 반복하지 않는다.
 
 ## 머지 정책 — Merge commit (squash/rebase 아님)
 
@@ -15,7 +15,7 @@ fos-blog 는 PR 머지 시 **Merge commit** 을 사용한다 (`git log` 에 `Mer
 | `ERR_PNPM_OUTDATED_LOCKFILE` / `frozen-lockfile` 실패 | 로컬 의존성 변경 후 lockfile 미커밋 | `pnpm install` 후 `pnpm-lock.yaml` 같이 커밋 |
 | `Cannot find module '@/...'` | `scripts/*` 는 path alias 미지원 | 상대 경로로 변경 |
 | `tsc --noEmit` 실패 | strict mode 위반 / 타입 누락 / `as any` 회귀 | 해당 파일 타입 가드 추가 또는 시그니처 정합 |
-| `eslint` 실패 | 미사용 import / `no-unused-vars` / `no-explicit-any` 경고 승격 | `pnpm lint` 로 로컬 재현 후 픽스. `eslint.config.mjs` 에 `no-console` 규칙은 없으므로 `console.log` 는 lint 로 잡히지 않는다 |
+| `eslint` 실패 | 파싱 오류 또는 `error` 등급 규칙 위반 (`js.configs.recommended`, `react-hooks/rules-of-hooks`) | `pnpm lint` 로 로컬 재현 후 픽스. `no-unused-vars` 와 `no-explicit-any` 는 `warn` 이라 exit 0 이고, `no-console` 규칙은 아예 없다 |
 | `vitest` 테스트 실패 | repository mock / Drizzle 타입 변경 영향 | 실패 테스트 파일 직접 읽고 픽스. mock 은 `vi.mock()` 패턴 일관 |
 | `Drizzle migration` 실패 (`drizzle/0NNN_*.sql`) | 스키마 변경 후 `pnpm db:generate` 누락 / migration 파일 미커밋 | 로컬 `pnpm db:generate` → `drizzle/` 커밋 (`pnpm db:push` 프로덕션 금지) |
 | `Next.js build` 실패 | env 변수 누락 (`SYNC_API_KEY` 등) / route 충돌 | `.env.example` 대비 env 변수 정합. CI secrets 등록 확인 |
@@ -30,7 +30,7 @@ CI 의 `ci.yml` 은 `Lint, Test & Build` 단일 job 이므로 체크 이름이 �
 
 | step 이름 / 로그 키워드 | 로컬 명령 | 기대 소요 |
 | --- | --- | --- |
-| `Run lint`, `eslint`, `no-unused-vars` | `pnpm lint` | ~10s |
+| `Run lint`, `eslint`, `1 error` | `pnpm lint` | ~10s |
 | `Type check`, `tsc`, `Cannot find name`, `not assignable` | `pnpm type-check` | ~20s |
 | `Test`, `vitest`, `FAIL src/` | `pnpm test` | ~10-60s |
 | `Build`, `next build`, `Module not found` | `pnpm build` | ~60-120s |

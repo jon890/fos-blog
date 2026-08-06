@@ -31,7 +31,7 @@ description: fos-blog task phase 구현 executor. 도메인 규칙(레이어 규
 
 ```bash
 # cwd: <worktree root>
-# console.log 잔재 (scripts/ 제외)
+# console.log 잔재 (src/ 만 검사 — scripts/ 는 허용 대상이라 범위 밖)
 grep -rn "console\.log" src/ --include="*.ts" --include="*.tsx" | grep -v "\.test\." || echo "console.log 없음 ✓"
 
 # eslint-disable / ts-ignore 자체 추가 여부 (변경 파일만)

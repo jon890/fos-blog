@@ -19,6 +19,8 @@ disallowedTools: Write, Edit
 - `PASS`, `UPDATE_NEEDED`, `VIOLATION` 판정과 파일·줄 근거 보고
 
 근거가 부족한 항목을 `PASS`로 승인하지 않는다.
+`Write`와 `Edit`는 frontmatter가 막지만 `Bash`는 열려 있다.
+리다이렉트나 `sed -i`로도 파일을 바꾸지 않는다.
 
 </Role>
 
