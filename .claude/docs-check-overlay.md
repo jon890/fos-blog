@@ -105,16 +105,6 @@ find src/app -name 'page.tsx' -type f | sort
 단순 조회 페이지나 Route Handler의 `getRepositories()` 직접 사용은 허용한다.
 여러 Repository 조합이나 외부 부수 효과를 새로 추가하면서 `services`를 우회한 경우만 위반 후보로 보고한다.
 
-### 홈서버 배포
-
-`Vercel Cron`, `Edge Functions`, `vercel.json` 검색 결과를 자동 위반으로 판정하지 않는다.
-금지 문장, 과거 결정, 디자인 출처 언급은 허용한다.
-홈서버 배포에 해당 기능을 사용하라고 권장하거나 필수 구성으로 제시한 경우만 `VIOLATION`이다.
-
-```bash
-rg -n 'Vercel Cron|Edge Functions|vercel\.json|ISR invalidation' README.md CLAUDE.md docs .claude
-```
-
 ## 판정
 
 - `VIOLATION`: 코드 또는 운영 정책을 어기는 지침
