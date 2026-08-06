@@ -130,7 +130,8 @@ PR은 검증이 끝났다면 검토 가능한 상태로 생성하고, 사용자�
 ## 검증과 완료 보고
 
 변경 동작을 직접 증명하는 대상 테스트부터 실행한다.
-그다음 `pnpm type-check`, `pnpm lint`, `pnpm test`, `pnpm build` 순서로 검증 범위를 넓힌다.
+그다음 `pnpm lint`, `pnpm type-check`, `pnpm test`, `pnpm build` 순서로 검증 범위를 넓힌다.
+CI(`.github/workflows/ci.yml`)와 같은 순서라 실패 지점이 일치한다.
 
 문서만 변경했다면 링크, 경로, 명령어, 코드와의 사실 정합성을 우선 검증한다.
 
