@@ -92,6 +92,7 @@ export default async function HomePage() {
                 <PostCard
                   key={post.path}
                   post={post}
+                  variant="row"
                   viewCount={post.visitCount}
                 />
               ))}
@@ -127,14 +128,25 @@ export default async function HomePage() {
           </div>
           {recentPosts.length > 0 ? (
             <>
-              <div className="space-y-2 md:space-y-4">
-                {recentPosts.map((post) => (
-                  <PostCard
-                    key={post.path}
-                    post={post}
-                    viewCount={visitCounts[post.path] ?? 0}
-                  />
-                ))}
+              <div className="space-y-6">
+                <PostCard
+                  post={recentPosts[0]}
+                  variant="featured"
+                  viewCount={visitCounts[recentPosts[0].path] ?? 0}
+                  preloadThumbnail
+                />
+                {recentPosts.length > 1 && (
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                    {recentPosts.slice(1).map((post) => (
+                      <PostCard
+                        key={post.path}
+                        post={post}
+                        variant="grid"
+                        viewCount={visitCounts[post.path] ?? 0}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
               <SectionCTAButton href="/posts/latest" label="최신 글 더 보기" />
             </>

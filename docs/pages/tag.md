@@ -9,7 +9,7 @@
 | 컴포넌트 | 역할 |
 |---|---|
 | `PostsListSubHero` | eyebrow="TAG", title=`#${tag}`, meta=`${total} POSTS` 헤더 |
-| `PostCard` | variant="grid" 카드, posts 배열 렌더 |
+| `PostCard` | `variant="grid"` 썸네일 중심 카드. 소개글 없이 분류·날짜·최대 두 줄 제목 표시 |
 
 ## 데이터 흐름
 

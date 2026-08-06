@@ -8,9 +8,18 @@ vi.mock("next/image", () => ({
   default: ({
     fill: _fill,
     unoptimized,
+    preload,
     ...props
-  }: React.ComponentProps<"img"> & { fill?: boolean; unoptimized?: boolean }) => (
-    <img data-unoptimized={unoptimized ? "true" : "false"} {...props} />
+  }: React.ComponentProps<"img"> & {
+    fill?: boolean;
+    unoptimized?: boolean;
+    preload?: boolean;
+  }) => (
+    <img
+      data-unoptimized={unoptimized ? "true" : "false"}
+      data-preload={preload ? "true" : "false"}
+      {...props}
+    />
   ),
 }));
 
@@ -32,6 +41,19 @@ describe("buildThumbnailSources", () => {
 });
 
 describe("PostThumbnail", () => {
+  it("선로딩 요청을 next/image에 전달한다", () => {
+    const { container } = render(
+      <PostThumbnail
+        thumbnailUrl="https://example.com/post.jpg"
+        category="java"
+        sizes="160px"
+        preload
+      />,
+    );
+
+    expect(container.querySelector("img")?.getAttribute("data-preload")).toBe("true");
+  });
+
   it("이미지 오류마다 다음 대체 경로로 이동하고 마지막에는 숨긴다", () => {
     const { container } = render(
       <PostThumbnail

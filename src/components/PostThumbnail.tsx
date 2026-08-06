@@ -9,6 +9,7 @@ interface PostThumbnailProps {
   category: string;
   sizes: string;
   className?: string;
+  preload?: boolean;
 }
 
 export function buildThumbnailSources(
@@ -29,6 +30,7 @@ export function PostThumbnail({
   category,
   sizes,
   className,
+  preload = false,
 }: PostThumbnailProps) {
   const sources = buildThumbnailSources(thumbnailUrl, category);
   const [sourceIndex, setSourceIndex] = useState(0);
@@ -47,6 +49,7 @@ export function PostThumbnail({
           src={source}
           alt=""
           fill
+          preload={preload}
           unoptimized={source.startsWith("/api/og/thumbnails/")}
           sizes={sizes}
           className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.025] motion-reduce:transition-none"

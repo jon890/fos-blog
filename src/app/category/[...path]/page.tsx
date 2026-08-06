@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import { cache } from "react";
 import { getRepositories } from "@/infra/db/repositories";
 import { computeFolderPaths } from "@/lib/path-utils";
@@ -8,9 +7,8 @@ import { Breadcrumb } from "@/components/Breadcrumb";
 import { CategoryDetailSubHero } from "@/components/CategoryDetailSubHero";
 import { CategoriesSection } from "@/components/CategoriesSection";
 import { SubfolderCard } from "@/components/SubfolderCard";
-import { PostListRow } from "@/components/PostListRow";
+import { PostCard } from "@/components/PostCard";
 import { ReadmeFrame } from "@/components/ReadmeFrame";
-import { getCategoryColor } from "@/lib/category-meta";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { env } from "@/env";
@@ -179,8 +177,6 @@ export default async function FolderPage({ params }: FolderPageProps) {
     })),
   ];
 
-  const catColor = getCategoryColor(category);
-
   return (
     <>
       <BreadcrumbJsonLd items={breadcrumbJsonLdItems} />
@@ -241,23 +237,17 @@ export default async function FolderPage({ params }: FolderPageProps) {
             title="이 폴더의 글"
             meta={`${mergedPosts.length} posts`}
           >
-            <div
-              className="post-list-rows"
-              style={{ "--cat-color": catColor } as CSSProperties}
-            >
-              {mergedPosts.map((p, i) => (
-                <PostListRow
-                  key={p.path}
-                  index={i + 1}
-                  title={p.title}
-                  excerpt={p.description ?? ""}
-                  href={`/posts/${p.path.split("/").map(encodeURIComponent).join("/")}`}
-                  updatedAt={p.updatedAt ?? null}
-                  categorySlug={category}
-                  thumbnailUrl={p.thumbnailUrl}
-                />
+            <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {mergedPosts.map((post, index) => (
+                <li key={post.path}>
+                  <PostCard
+                    post={post}
+                    variant="grid"
+                    preloadThumbnail={index === 0}
+                  />
+                </li>
               ))}
-            </div>
+            </ul>
           </CategoriesSection>
         )}
       </main>

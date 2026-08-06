@@ -144,6 +144,9 @@ fos-study Markdown thumbnail
 ```
 
 - `PostThumbnail`만 이미지 오류 전환을 위해 클라이언트 경계를 사용한다.
+- `PostCard`는 글 도메인 안에서 `row`, `grid`, `featured` 표시 변형을 소유한다.
+  인기 글은 `row`, 일반 탐색 목록은 `grid`, 홈 최근 첫 글은 `featured`를 사용한다.
+- `PostsInfiniteList`는 조회 방식과 로딩 상태를 소유하고, `mode`에 따라 카드 배열과 스켈레톤 변형만 선택한다.
 - `PostCard`와 목록 데이터 흐름은 서버 컴포넌트 우선 구조를 유지한다.
 - 글 상세 메타데이터는 전용 URL이 있으면 이를 공유 이미지로 사용하고, 없으면 기존 글 OG 경로를 사용한다.
 

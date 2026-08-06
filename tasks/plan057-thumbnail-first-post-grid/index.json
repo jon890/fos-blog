@@ -1,0 +1,37 @@
+{
+  "name": "plan057-thumbnail-first-post-grid",
+  "description": "일반 글 목록을 썸네일 중심 카드로 통일하고 홈 최근 첫 글을 대표 카드로 강조한다.",
+  "status": "completed",
+  "created_at": "2026-08-05",
+  "total_phases": 2,
+  "related_docs": [
+    "docs/prd.md",
+    "docs/flow.md",
+    "docs/code-architecture.md",
+    "docs/design.md",
+    "docs/pages/home.md",
+    "docs/pages/posts-latest.md",
+    "docs/pages/posts-popular.md",
+    "docs/pages/category-detail.md",
+    "docs/pages/tag.md",
+    "docs/pages/series-detail.md",
+    "docs/pages/post-detail.md",
+    "docs/adr/033-post-thumbnail-fallback.md"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "글 카드 표시 변형과 로딩 상태",
+      "execution_profile": "standard",
+      "status": "completed"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "title": "글 목록 화면 통합과 검증",
+      "execution_profile": "standard",
+      "status": "completed"
+    }
+  ]
+}

@@ -25,6 +25,7 @@ type Props =
     };
 
 export function PostsInfiniteList(props: Props) {
+  const isLatest = props.mode === "latest";
   const [items, setItems] = useState<PostItem[]>(props.initialItems);
   const [status, setStatus] = useState<"idle" | "loading" | "error" | "done">(
     () => {
@@ -101,9 +102,22 @@ export function PostsInfiniteList(props: Props) {
 
   return (
     <div>
-      <div role="feed" className="space-y-3">
-        {items.map((item) => (
-          <PostCard key={item.path} post={item} viewCount={item.visitCount} />
+      <div
+        role="feed"
+        className={
+          isLatest
+            ? "grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"
+            : "space-y-3"
+        }
+      >
+        {items.map((item, index) => (
+          <PostCard
+            key={item.path}
+            post={item}
+            variant={isLatest ? "grid" : "row"}
+            viewCount={item.visitCount}
+            preloadThumbnail={index === 0}
+          />
         ))}
       </div>
 
@@ -111,10 +125,16 @@ export function PostsInfiniteList(props: Props) {
 
       <div aria-live="polite" className="mt-6 flex flex-col items-center gap-4">
         {status === "loading" && (
-          <div className="w-full space-y-3">
-            <PostCardSkeleton />
-            <PostCardSkeleton />
-            <PostCardSkeleton />
+          <div
+            className={
+              isLatest
+                ? "grid w-full grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"
+                : "w-full space-y-3"
+            }
+          >
+            <PostCardSkeleton variant={isLatest ? "grid" : "row"} />
+            <PostCardSkeleton variant={isLatest ? "grid" : "row"} />
+            <PostCardSkeleton variant={isLatest ? "grid" : "row"} />
           </div>
         )}
 
