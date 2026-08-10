@@ -297,4 +297,5 @@ fos-blog 의 DESIGN.md(docs/design.md)와 globals.css 토큰을 따라
 ### 새 시안이 필요할 때
 
 이 문서의 확정된 토큰과 컴포넌트 규칙을 먼저 적용한다.
-시각 방향을 판단해야 하면 [ADR-017](./adr/017-design-system.md)의 결정과 기각 근거를 따른다.
+시각 방향은 이 문서 1장, 컴포넌트별 기준은 4장이 소유한다.
+왜 그 방향을 골랐는지는 [ADR-017](./adr/017-design-system.md)의 기각 근거에서 확인한다.

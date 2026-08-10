@@ -8,8 +8,8 @@
 세부 실행 절차는 관련 스킬과 `.claude/*-overlay.md`를 작업 시작 전에 읽는다.
 
 작업 종류별 규칙은 `.claude/rules/`에 둔다.
-Claude Code는 대상 파일을 열 때 자동으로 읽고, 다른 하네스는 직접 읽어야 한다.
-지금은 DB 스키마(`db-schema.md`)와 문서 작성(`docs-writing.md`) 두 개다.
+각 파일의 `paths` 조건에 맞는 작업에서 Claude Code가 자동으로 읽는다.
+다른 하네스는 이 디렉터리를 모르므로 작업 전에 직접 확인한다.
 
 역할 계약은 `.agents/roles/`가 단일 소스다.
 `.claude/agents/*.md`와 `.codex/agents/*.toml`은 그 파일을 가리키는 얇은 래퍼이므로
@@ -78,6 +78,7 @@ pnpm install
 - 컴포넌트는 PascalCase와 이름 있는 export를 기본으로 한다.
 - 서버 코드는 `@/lib/logger`의 자식 로거를 사용한다.
   `src/`의 `console` 사용은 `no-console` lint 규칙이 막고 `console.error`만 허용한다.
+  테스트 파일은 규칙에서 제외하고, `scripts/*.ts`는 독립 실행 제약 때문에 규칙을 걸지 않는다.
 - 클라이언트 컴포넌트는 서버 전용 pino를 import하지 않는다.
   실패는 UI로 알리고 catch 블록의 개발 진단에는 `console.error`만 사용한다.
 - 알 수 없는 오류는 `error instanceof Error ? error : new Error(String(error))`로 정규화한다.
@@ -96,6 +97,7 @@ PR 제목과 본문은 기본적으로 한국어로 작성한다.
 본문에는 변경 이유와 내용을 요약하고 검증 항목을 체크리스트로 적는다.
 PR은 검증이 끝났다면 검토 가능한 상태로 생성하고, 사용자가 요청했거나 검증이 끝나지 않았을 때만 초안으로 만든다.
 
+관심사별 커밋 분리의 예외는 두 가지다.
 강하게 결합된 `package.json`과 `pnpm-lock.yaml`, 스키마와 생성 마이그레이션은 같은 커밋에 둔다.
 
 ## 검증과 완료 보고

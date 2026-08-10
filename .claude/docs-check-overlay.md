@@ -8,6 +8,7 @@
 
 - 제품 문서: `README.md`, `docs/**/*.md`
 - 상시 지침: `AGENTS.md`
+- 작업 종류별 규칙: `.claude/rules/*.md`
 - 저장소 오버레이: `.claude/*-overlay.md`
 - 저장소 스킬 자료: `.agents/skills/*/SKILL.md`, `.agents/skills/_shared/*.md`
 - 역할 지침: `.agents/roles/*.md` (`.claude/agents/*.md`와 `.codex/agents/*.toml`은 얇은 래퍼)

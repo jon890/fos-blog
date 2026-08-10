@@ -6,4 +6,4 @@
   - **DESIGN.md 미도입** 기각 — 코드를 읽을 수 있는 agent 에겐 중복이지만, 외부 design agent·사람에게는 토큰이 흩어져 있어 일관 생성이 어렵다. 단일 진입점 가치가 중복 비용보다 크다.
   - **포인터형(값 복제 없이 globals.css 참조만)** 기각 — 자립적으로 읽히지 않아 외부 agent 핸드오프 시 globals.css 동반 필요. Stitch 컨벤션의 "툴 없이 markdown 만으로 읽힌다" 이점 상실.
 - **트레이드오프**: 자립형이라 oklch 값이 `globals.css` 와 design.md 두 곳에 존재 → dual source 동기화 위험. "globals.css 우선" 명시 + 토큰 변경 시 design.md 표 동반 갱신 규칙으로 완화. 향후 빈도가 잦아지면 globals.css → design.md 자동 생성 스크립트를 별도 plan 으로 검토.
-- **적용 범위**: design.md는 확정된 토큰 스냅샷이며 시각 방향의 판단 근거는 [ADR-017](./017-design-system.md)이 소유한다.
+- **적용 범위**: design.md는 확정된 토큰 스냅샷이자 현재 시각 방향과 컴포넌트별 적용 기준의 단일 소스다. 그 방향을 고른 이유와 기각한 대안은 [ADR-017](./017-design-system.md)이 소유한다.
