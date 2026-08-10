@@ -29,6 +29,7 @@ phase 01이 바꾼 추출 규칙이 `posts.description`에 저장된 값에도 �
 
 전체 글을 한 번만 순회하면서 저장된 `content`로 제목과 요약을 다시 계산한다.
 본문을 두 번 읽지 않으려고 순회를 합치는 것이므로 `getAllWithContent()` 호출은 한 번만 남긴다.
+`src/infra/db/repositories/PostRepository.ts`의 `getAllWithContent()`가 저장된 `description`도 조회해 반환하도록 확장한다.
 
 각 글에서 계산한 값이 저장된 값과 다를 때만 갱신하고, 제목과 요약 중 달라진 필드만 `update`에 담는다.
 둘 다 같으면 건너뛴다.
@@ -68,6 +69,7 @@ phase 01이 바꾼 추출 규칙이 `posts.description`에 저장된 값에도 �
 - 둘 다 같으면 `update`를 호출하지 않는다.
 - `content`가 없는 글은 갱신하지 않는다.
 - 전체 글을 한 번만 조회한다.
+- `syncAll`과 `syncChanged`의 기존 결과 기대값도 `descriptions`가 포함된 새 반환 형태로 갱신한다.
 
 `src/services/SyncService.test.ts`에서 `retitleAll` 모의 구현과 호출 검증을 새 이름과 새 반환 형태로 바꾼다.
 
@@ -77,6 +79,7 @@ phase 01이 바꾼 추출 규칙이 `posts.description`에 저장된 값에도 �
 
 | 파일 | 변경 |
 |---|---|
+| `src/infra/db/repositories/PostRepository.ts` | `getAllWithContent()`가 저장된 요약도 반환하도록 확장 |
 | `src/services/PostSyncService.ts` | `retitleAll` → `refreshDerivedFields` 확장 |
 | `src/services/SyncService.ts` | 호출 이름과 `SyncResult` 필드 조립 |
 | `src/services/PostSyncService.test.ts` | 보정 동작 회귀 테스트 갱신 |
