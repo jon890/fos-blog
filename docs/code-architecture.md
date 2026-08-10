@@ -162,7 +162,8 @@ fos-study Markdown thumbnail
   → JSX 컴포넌트 매핑
 ```
 
-- `src/components/markdown/`의 서버 모듈은 각 파일에서 `import "server-only"`를 선언한다.
+- `src/components/markdown/`에서 서버 런타임에 의존하는 모듈은 `import "server-only"`를 선언한다.
+  타입만 내보내는 모듈은 선언하지 않는다.
 - sanitize는 스크립트, 이벤트 속성과 위험한 URL을 제거한다.
 - `CodeCard`, Mermaid, 용어 도움말과 이미지 확대는 컴포넌트 매핑으로 연결한다.
 - 클라이언트 상태가 필요한 기능만 client island로 분리한다.

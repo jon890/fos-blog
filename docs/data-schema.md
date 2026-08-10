@@ -175,8 +175,8 @@ Notes:
 | `description` | text | NOT NULL | `/glossary`용 Markdown 설명 |
 | `case_sensitive` | boolean | NOT NULL DEFAULT false | 영문 매칭의 대소문자 구분 여부 |
 | `references` | json | NOT NULL DEFAULT '[]' | 검증된 외부 참고 링크 |
-| `created_at` | timestamp | DEFAULT NOW | |
-| `updated_at` | timestamp | DEFAULT NOW ON UPDATE | |
+| `created_at` | timestamp | NOT NULL DEFAULT NOW | |
+| `updated_at` | timestamp | NOT NULL DEFAULT NOW ON UPDATE | |
 
 Notes:
 
@@ -195,17 +195,17 @@ Notes:
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
 | `id` | int | PK, autoincrement | |
-| `term_id` | varchar(128) | NOT NULL, FK → `glossary_terms.id` | 용어 식별자 |
+| `term_id` | varchar(128) | NOT NULL, FK → `glossary_terms.id` ON DELETE CASCADE | 용어 식별자 |
 | `page_type` | varchar(32) | NOT NULL | `post` 또는 `category-readme` |
 | `page_path` | varchar(500) | NOT NULL | 글 또는 폴더의 canonical 경로 |
 | `page_title` | varchar(500) | NOT NULL | 목록 표시용 제목 snapshot |
 | `page_updated_at` | timestamp | | 최근 수정 순 정렬 기준 |
-| `created_at` | timestamp | DEFAULT NOW | |
+| `created_at` | timestamp | NOT NULL DEFAULT NOW | |
 
 인덱스와 제약:
 
-- UNIQUE `(term_id, page_type, page_path)` — 한 페이지는 용어별 한 번만 저장한다.
-- INDEX `(term_id, page_updated_at)` — 용어별 최근 언급 페이지를 조회한다.
+- `glossary_mentions_term_page_unique` UNIQUE on `(term_id, page_type, page_path)` — 한 페이지는 용어별 한 번만 저장한다.
+- `glossary_mentions_term_updated_idx` on `(term_id, page_updated_at)` — 용어별 최근 언급 페이지를 조회한다.
 
 Notes:
 

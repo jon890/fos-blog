@@ -2,10 +2,10 @@
 
 **Context**: 현재 `start.sh` 가 `docker compose up -d` 만 호출 → 매 배포마다 사용자가 수동으로 `pnpm db:migrate` 실행. plan006 의 `0004_cleanup_stale_visits` 같은 마이그레이션이 자동 적용 안 됨 → 운영 누락 위험.
 
-**Decision**: production 이미지에 `scripts/migrate.js` 포함 + Dockerfile CMD 를 `node migrate.js && node server.js` 로 교체. 컨테이너 부팅 시 미적용 마이그레이션 자동 apply.
+**Decision**: `scripts/migrate.ts` 를 번들해 production 이미지 루트에 `migrate.js` 로 넣고 Dockerfile CMD 를 `node migrate.js && node server.js` 로 교체. 컨테이너 부팅 시 미적용 마이그레이션 자동 apply.
 
 - 스크립트: `drizzle-orm/mysql2/migrator` 의 `migrate()` 사용 — drizzle-kit CLI 미포함 가능 (production deps 만으로 실행)
-- 이미지에 `drizzle/` 디렉터리 + 빌드된 `migrate.js` 복사
+- 이미지에 `drizzle/` 디렉터리와 번들된 `migrate.js` 를 복사
 - 적용 idempotent: drizzle journal (`__drizzle_migrations` 테이블) 이 이미 적용된 마이그레이션 skip
 - 부팅 시간: 신규 마이그레이션 0개면 ~수백 ms 추가, 1개 이상이면 SQL 크기에 비례
 

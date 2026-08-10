@@ -61,7 +61,7 @@
   │    [/posts/popular]
   │         │
   │         ├─ SSR: 인기 10개 렌더 (visitCount DESC, pagePath ASC)
-  │         │       — visitStats에 등록된 글만 (visitCount > 0)
+  │         │       — visitStats에 행이 있는 글만
   │         │
   │         ├─ 스크롤 바닥 근처 도달
   │         │    │
