@@ -434,7 +434,9 @@ export class PostRepository extends BaseRepository {
         and(
           eq(posts.isActive, true),
           sql`JSON_CONTAINS(LOWER(CAST(${posts.categories} AS CHAR)), JSON_QUOTE(${normalizedFolderPath}))`,
-          sql`${posts.path} NOT LIKE ${escapedFolderPrefix} ESCAPE '\\\\'`,
+          // 위 JSON_CONTAINS 와 같이 양쪽을 소문자로 맞춘다.
+          // collation 의 대소문자 무시 동작에 기대면 컬럼 collation 이 바뀔 때 이 조건만 조용히 회귀한다.
+          sql`LOWER(${posts.path}) NOT LIKE ${escapedFolderPrefix} ESCAPE '\\\\'`,
         ),
       )
       .orderBy(asc(posts.title));
