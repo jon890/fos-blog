@@ -236,6 +236,62 @@ const hidden = true;
     expect(extractDescription(content)).toBe("첫 문단 마지막 문단");
   });
 
+  it("Setext 헤더와 밑줄을 제외한다", () => {
+    const content = `첫 Setext 제목
+=================
+
+둘째 Setext 제목
+----------------
+
+실제 산문`;
+
+    expect(extractDescription(content)).toBe("실제 산문");
+  });
+
+  it("여러 줄 Setext 헤더의 모든 줄을 제외한다", () => {
+    const content = `첫 제목 줄
+둘째 제목 줄
+---
+
+본문`;
+
+    expect(extractDescription(content)).toBe("본문");
+  });
+
+  it("4칸 들여쓰기와 탭 기반 코드 블록을 제외한다", () => {
+    const content = `첫 문단
+
+    const hidden = true;
+	console.log(hidden);
+
+마지막 문단`;
+
+    expect(extractDescription(content)).toBe("첫 문단 마지막 문단");
+  });
+
+  it("문단에 이어지는 4칸 들여쓰기 산문은 유지한다", () => {
+    expect(extractDescription("첫 문장\n    이어지는 문장")).toBe(
+      "첫 문장 이어지는 문장",
+    );
+  });
+
+  it("목록에 이어지는 4칸 들여쓰기 설명은 유지한다", () => {
+    expect(extractDescription("- 첫 항목\n    이어지는 설명")).toBe(
+      "첫 항목 이어지는 설명",
+    );
+  });
+
+  it("선두 파이프가 없는 GFM 표 전체를 제외한다", () => {
+    const content = `이름 | 값
+--- | ---
+숨김 | 첫째
+숨김 | 둘째
+
+실제 산문`;
+
+    expect(extractDescription(content)).toBe("실제 산문");
+  });
+
   it("닫히지 않은 코드 펜스는 문서 끝까지 제외한다", () => {
     const content = `첫 문단
 

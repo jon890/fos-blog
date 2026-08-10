@@ -1,6 +1,9 @@
 // Markdown utility functions
 import GithubSlugger from "github-slugger";
 import type { Element as HastElement, ElementContent, Text } from "hast";
+import remarkGfm from "remark-gfm";
+import remarkParse from "remark-parse";
+import { unified } from "unified";
 
 const HTML_TAG_RE = /<[^>]+>/g;
 
@@ -102,47 +105,52 @@ function unescapeMarkdown(text: string): string {
   return text.replace(/\\([!-/:-@[-`{-~])/g, "$1");
 }
 
-function isHorizontalRule(line: string): boolean {
-  return /^ {0,3}([*_-])(?:[ \t]*\1){2,}[ \t]*$/.test(line);
+type PositionedMarkdownNode = {
+  type: string;
+  position?: {
+    start: { line: number };
+    end: { line: number };
+  };
+  children?: PositionedMarkdownNode[];
+};
+
+const descriptionParser = unified().use(remarkParse).use(remarkGfm);
+const EXCLUDED_DESCRIPTION_BLOCKS = new Set([
+  "heading",
+  "code",
+  "thematicBreak",
+  "table",
+]);
+
+function collectExcludedLines(
+  node: PositionedMarkdownNode,
+  excludedLines: Set<number>,
+): void {
+  if (EXCLUDED_DESCRIPTION_BLOCKS.has(node.type) && node.position) {
+    for (
+      let line = node.position.start.line;
+      line <= node.position.end.line;
+      line++
+    ) {
+      excludedLines.add(line);
+    }
+    return;
+  }
+
+  for (const child of node.children ?? []) {
+    collectExcludedLines(child, excludedLines);
+  }
 }
 
 function collectProseLines(markdown: string): string[] {
-  const proseLines: string[] = [];
-  let codeFence: { character: string; length: number } | null = null;
+  const tree = descriptionParser.parse(markdown) as PositionedMarkdownNode;
+  const excludedLines = new Set<number>();
+  collectExcludedLines(tree, excludedLines);
 
-  for (const line of markdown.split(/\r?\n/)) {
-    if (codeFence) {
-      const closingFence = line.match(/^ {0,3}(`+|~+)[ \t]*$/);
-      if (
-        closingFence &&
-        closingFence[1][0] === codeFence.character &&
-        closingFence[1].length >= codeFence.length
-      ) {
-        codeFence = null;
-      }
-      continue;
-    }
-
-    const openingFence = line.match(/^ {0,3}(`{3,}|~{3,})/);
-    if (openingFence) {
-      codeFence = {
-        character: openingFence[1][0],
-        length: openingFence[1].length,
-      };
-      continue;
-    }
-
-    if (
-      /^ {0,3}#{1,6}(?:[ \t]|$)/.test(line) ||
-      isHorizontalRule(line) ||
-      /^ {0,3}\|/.test(line)
-    ) {
-      proseLines.push("");
-      continue;
-    }
-
-    proseLines.push(line);
-  }
+  const lines = markdown.split(/\r?\n/);
+  const proseLines = lines.map((line, index) =>
+    excludedLines.has(index + 1) || /^ {0,3}\|/.test(line) ? "" : line,
+  );
 
   const firstBlockStart = proseLines.findIndex((line) => line.trim() !== "");
   if (firstBlockStart === -1) return proseLines;
