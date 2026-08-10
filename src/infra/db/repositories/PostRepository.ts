@@ -414,7 +414,8 @@ export class PostRepository extends BaseRepository {
   }
 
   async getCrossCategoryPosts(folderPath: string): Promise<PostData[]> {
-    const escapedFolderPrefix = `${escapeLikePattern(folderPath)}/%`;
+    const normalizedFolderPath = folderPath.toLowerCase();
+    const escapedFolderPrefix = `${escapeLikePattern(normalizedFolderPath)}/%`;
 
     const result = await this.db
       .select({
@@ -432,8 +433,10 @@ export class PostRepository extends BaseRepository {
       .where(
         and(
           eq(posts.isActive, true),
-          sql`JSON_CONTAINS(${posts.categories}, JSON_QUOTE(${folderPath}))`,
-          sql`${posts.path} NOT LIKE ${escapedFolderPrefix} ESCAPE '\\\\'`,
+          sql`JSON_CONTAINS(LOWER(CAST(${posts.categories} AS CHAR)), JSON_QUOTE(${normalizedFolderPath}))`,
+          // 위 JSON_CONTAINS 와 같이 양쪽을 소문자로 맞춘다.
+          // collation 의 대소문자 무시 동작에 기대면 컬럼 collation 이 바뀔 때 이 조건만 조용히 회귀한다.
+          sql`LOWER(${posts.path}) NOT LIKE ${escapedFolderPrefix} ESCAPE '\\\\'`,
         ),
       )
       .orderBy(asc(posts.title));

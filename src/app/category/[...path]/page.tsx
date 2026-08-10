@@ -1,6 +1,9 @@
 import { cache } from "react";
 import { getRepositories } from "@/infra/db/repositories";
-import { computeFolderPaths } from "@/lib/path-utils";
+import {
+  computeFolderPaths,
+  normalizeCategoryPathSegments,
+} from "@/lib/path-utils";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
 import { Breadcrumb } from "@/components/Breadcrumb";
@@ -90,7 +93,9 @@ export async function generateMetadata({
     };
   }
 
-  const canonicalUrl = `${siteUrl}/category/${pathSegments
+  const canonicalUrl = `${siteUrl}/category/${normalizeCategoryPathSegments(
+    pathSegments,
+  )
     .map(encodeURIComponent)
     .join("/")}`;
   const description = `${pathSegments.join(" > ")} 폴더의 모든 글을 확인하세요.`;

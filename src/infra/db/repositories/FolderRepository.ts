@@ -13,8 +13,9 @@ export class FolderRepository extends BaseRepository {
       .from(posts)
       .where(eq(posts.isActive, true));
 
+    const normalizedFolderPrefix = `${folderPath.toLowerCase()}/`;
     const matchingPosts = allPosts.filter((post) => {
-      return post.path.startsWith(folderPath + "/");
+      return post.path.toLowerCase().startsWith(normalizedFolderPrefix);
     });
 
     const directPosts = matchingPosts.filter((post) => {

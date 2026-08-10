@@ -45,9 +45,10 @@
 Notes:
 - `path` = unique key (slug 이 아닌 path 기준 업서트)
 - `is_active = false` = soft delete — 모든 조회에 `WHERE is_active = 1` 필수
-- 카테고리 페이지는 폴더 직속 글(경로 매칭)에 더해 cross-post 글을 `JSON_CONTAINS(categories, JSON_QUOTE(folderPath))` 조건과 현재 폴더 경로 prefix 제외를 함께 적용해 노출한다 (plan051, plan053, ADR-030).
+- 카테고리 페이지는 폴더 직속 글(경로 매칭)에 더해 교차 게시 글을 노출한다.
+  교차 게시 글은 `categories`와 `folderPath`를 소문자로 맞춘 `JSON_CONTAINS` 조건과 현재 폴더 경로 접두사 제외를 함께 적용해 찾는다 (plan051, plan053, plan059, ADR-030, ADR-035).
   `folderPath`는 `AI`뿐 아니라 `AI/RAG` 같은 하위 폴더 경로도 가능하다.
-  폴더 브라우저(`path` prefix 매칭)는 그대로 유지한다.
+  폴더 브라우저(`path` 접두사 매칭)도 대소문자를 구분하지 않는다.
   글 수가 적어 인덱스 없이 풀스캔을 허용한다.
 
 ---
