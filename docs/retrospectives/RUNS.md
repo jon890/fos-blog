@@ -14,3 +14,4 @@
 | 2026-08-10 | planning | plan059-sitemap-dedup | - | 1 | - | - | - | - | 1 | `tasks/plan059-sitemap-dedup` |
 | 2026-08-10 | build-with-teams | plan059-sitemap-dedup | B | 1 | 1 | 1 | 2 | 없음 | 3 | PR #203 |
 | 2026-08-11 | planning | plan060-thin-category-index | - | 1 | - | - | - | - | 2 | `tasks/plan060-thin-category-index` |
+| 2026-08-11 | build-with-teams | plan060-thin-category-index | B | 1 | 1 | 0 | 2 | 없음 | 0 | PR #205 |
