@@ -1,0 +1,21 @@
+{
+  "name": "plan059-sitemap-dedup",
+  "description": "카테고리 URL을 소문자로 정규화해 sitemap 중복을 없애고 canonical이 정규 형태를 가리키게 한다.",
+  "status": "pending",
+  "created_at": "2026-08-10",
+  "total_phases": 1,
+  "current_phases": 1,
+  "related_docs": [
+    "docs/adr/035-category-url-canonical.md",
+    "docs/adr/030-multi-category.md"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "카테고리 URL 정규화와 중복 제거",
+      "execution_profile": "standard",
+      "status": "pending"
+    }
+  ]
+}
