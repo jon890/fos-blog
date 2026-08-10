@@ -8,6 +8,7 @@
 
 - 제품 문서: `README.md`, `docs/**/*.md`
 - 상시 지침: `AGENTS.md`
+- 작업 종류별 규칙: `.claude/rules/*.md`
 - 저장소 오버레이: `.claude/*-overlay.md`
 - 저장소 스킬 자료: `.agents/skills/*/SKILL.md`, `.agents/skills/_shared/*.md`
 - 역할 지침: `.agents/roles/*.md` (`.claude/agents/*.md`와 `.codex/agents/*.toml`은 얇은 래퍼)
@@ -17,6 +18,11 @@
 
 `.claude/skills/*`는 `.agents/skills/*` 호환 심볼릭 링크다.
 링크가 끊어졌는지만 확인하고 내용을 중복 검사하지 않는다.
+
+`tasks/`는 검사 대상이 아니다.
+완결된 plan의 phase 파일은 실행 당시의 사실을 기록한 것이라,
+그때 존재하던 문서가 나중에 삭제돼도 소급해 고치지 않는다.
+아직 실행하지 않은 plan이 삭제된 문서를 참조하면 그 plan을 실행할 때 함께 갱신한다.
 
 ADR 본문은 `docs/adr/[0-9]*.md`, 인덱스는 `docs/adr/README.md`다.
 결번은 재사용하지 않는다. 어느 번호가 결번인지는 `docs/adr/README.md`를 단일 소스로 삼는다.

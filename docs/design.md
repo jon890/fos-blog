@@ -1,7 +1,6 @@
 # DESIGN.md — fos-blog 디자인 시스템
 
 **관련 ADR**: [ADR-029](./adr/029-design-md.md) (도입 결정) · [ADR-017](./adr/017-design-system.md) (디자인 시스템 톤) · [ADR-019](./adr/019-code-highlight.md) (코드 블록)
-**시각 방향 참고**: [design-inspiration.md](./design-inspiration.md)
 
 이 문서는 [Google Stitch DESIGN.md 컨벤션](https://github.com/voltagent/awesome-design-md) 9섹션 형식으로,
 AI agent 가 "이 디자인처럼 페이지/컴포넌트를 만들어줘" 를 일관되게 수행하도록 fos-blog 의 시각·상호작용 규칙을 정의한다.
@@ -298,4 +297,5 @@ fos-blog 의 DESIGN.md(docs/design.md)와 globals.css 토큰을 따라
 ### 새 시안이 필요할 때
 
 이 문서의 확정된 토큰과 컴포넌트 규칙을 먼저 적용한다.
-[design-inspiration.md](./design-inspiration.md)는 시각 방향과 참고 출처를 선택할 때 사용한다.
+시각 방향은 이 문서 1장, 컴포넌트별 기준은 4장이 소유한다.
+왜 그 방향을 골랐는지는 [ADR-017](./adr/017-design-system.md)의 기각 근거에서 확인한다.
