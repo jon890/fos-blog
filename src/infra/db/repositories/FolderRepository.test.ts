@@ -60,3 +60,25 @@ describe("FolderRepository.getFolderContents", () => {
     expect(result.posts.map(({ path }) => path)).toEqual(["ai/intro.md"]);
   });
 });
+
+describe("FolderRepository.getReadmeLengths", () => {
+  it("경로를 소문자로 정규화하고 SQL 길이를 숫자로 반환한다", async () => {
+    const folderQuery = {
+      from: vi.fn().mockResolvedValue([
+        { path: "AI", readmeLength: 800 },
+        { path: "DevOps/Docker", readmeLength: "1200" },
+      ]),
+    };
+    const db = {
+      select: vi.fn().mockReturnValue(folderQuery),
+    };
+    const repository = new FolderRepository(db as unknown as DbInstance);
+
+    await expect(repository.getReadmeLengths()).resolves.toEqual(
+      new Map([
+        ["ai", 800],
+        ["devops/docker", 1200],
+      ]),
+    );
+  });
+});

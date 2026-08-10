@@ -16,6 +16,7 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { env } from "@/env";
 import logger from "@/lib/logger";
+import { isCategoryIndexable } from "@/lib/category-index-policy";
 import { parseFrontMatter, stripLeadingH1 } from "@/lib/markdown";
 import { createGlossaryService } from "@/services";
 
@@ -99,10 +100,15 @@ export async function generateMetadata({
     .map(encodeURIComponent)
     .join("/")}`;
   const description = `${pathSegments.join(" > ")} 폴더의 모든 글을 확인하세요.`;
+  const indexable = isCategoryIndexable({
+    readmeLength: new TextEncoder().encode(readme ?? "").byteLength,
+    directPostCount: posts.length,
+  });
 
   return {
     title: currentFolder,
     description,
+    ...(!indexable && { robots: { index: false, follow: true } }),
     alternates: { canonical: canonicalUrl },
     openGraph: {
       title: `${currentFolder} | FOS Study`,

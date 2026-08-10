@@ -2,7 +2,7 @@
 
 **Route:** `/category/[...path]`  
 **File:** `src/app/category/[...path]/page.tsx`  
-**Updated:** 2026-08-05
+**Updated:** 2026-08-11
 
 ---
 
@@ -69,6 +69,11 @@ frontmatter `categories` 는 `AI` 같은 최상위 폴더뿐 아니라 `AI/RAG` 
 ## SEO
 
 - `generateMetadata()`: title=currentFolder, description, canonical, og type=website
+- 내용이 전혀 없는 카테고리: `robots: { index: false, follow: false }`
+- 내용이 있지만 얇은 카테고리: `robots: { index: false, follow: true }`
+  - `README` 길이가 800바이트 미만이고 직속 글이 5개 미만일 때 적용한다.
+  - 교차 카테고리 글은 직속 글 수에 포함하지 않는다.
+  - sitemap과 공용 판정 함수를 쓰며 근거는 [ADR-036](../adr/036-thin-category-noindex.md)이다.
 - `BreadcrumbJsonLd`: 홈 → 카테고리 세그먼트들
 
 ---
@@ -99,6 +104,7 @@ README 섹션 (있을 때만, ReadmeFrame으로 감쌈)
 - `src/lib/subline.ts` — `SublinePart` 공유 타입
 - `src/lib/time.ts` — `formatYYYYMMDD`, `formatRelativeKo`
 - `src/lib/category-meta.ts` — `getCategoryColor`
+- `src/lib/category-index-policy.ts` — sitemap과 메타데이터가 공유하는 색인 판정
 - `src/infra/db/repositories/FolderRepository.ts`
 - `src/infra/db/repositories/PostRepository.ts` — `getCrossCategoryPosts`
 - `src/infra/db/constants.ts` — `categoryIcons`, `DEFAULT_CATEGORY_ICON`

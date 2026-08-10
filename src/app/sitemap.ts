@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { getRepositories } from "@/infra/db/repositories";
 import { env } from "@/env";
 import logger from "@/lib/logger";
+import { isCategoryIndexable } from "@/lib/category-index-policy";
 import {
   computeFolderPaths,
   normalizeCategoryPathSegments,
@@ -11,6 +12,22 @@ const log = logger.child({ module: "app/sitemap" });
 
 // ISR - 60초마다 재생성
 export const revalidate = 60;
+
+function normalizedCategoryPath(pathSegments: string[]): string {
+  return normalizeCategoryPathSegments(pathSegments).join("/");
+}
+
+function countDirectPostsByFolder(postPaths: string[]): Map<string, number> {
+  const counts = new Map<string, number>();
+
+  for (const postPath of postPaths) {
+    const pathSegments = postPath.split("/");
+    const folderPath = normalizedCategoryPath(pathSegments.slice(0, -1));
+    counts.set(folderPath, (counts.get(folderPath) ?? 0) + 1);
+  }
+
+  return counts;
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = env.NEXT_PUBLIC_SITE_URL;
@@ -59,32 +76,47 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let postPages: MetadataRoute.Sitemap = [];
 
   try {
-    const { category, post } = getRepositories();
+    const { category, folder, post } = getRepositories();
 
-    const [categories, postsData] = await Promise.all([
+    const [categories, readmeLengths, postsData] = await Promise.all([
       category.getCategories(),
+      folder.getReadmeLengths(),
       post.getAllPostsForSitemap(),
     ]);
 
     const folderPaths = computeFolderPaths(postsData.map(({ path }) => path));
+    const directPostCounts = countDirectPostsByFolder(
+      postsData.map(({ path }) => path),
+    );
+    const shouldIncludeCategory = (pathSegments: string[]) => {
+      const folderPath = normalizedCategoryPath(pathSegments);
+      return isCategoryIndexable({
+        readmeLength: readmeLengths.get(folderPath) ?? 0,
+        directPostCount: directPostCounts.get(folderPath) ?? 0,
+      });
+    };
 
-    categoryPages = categories.map((cat) => ({
-      url: `${baseUrl}/category/${normalizeCategoryPathSegments([cat.slug])
-        .map(encodeURIComponent)
-        .join("/")}`,
-      lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.6,
-    }));
+    categoryPages = categories
+      .filter((cat) => shouldIncludeCategory([cat.slug]))
+      .map((cat) => ({
+        url: `${baseUrl}/category/${normalizeCategoryPathSegments([cat.slug])
+          .map(encodeURIComponent)
+          .join("/")}`,
+        lastModified: new Date(),
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+      }));
 
-    folderPages = folderPaths.map((pathSegments) => ({
-      url: `${baseUrl}/category/${normalizeCategoryPathSegments(pathSegments)
-        .map(encodeURIComponent)
-        .join("/")}`,
-      lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.6,
-    }));
+    folderPages = folderPaths
+      .filter(shouldIncludeCategory)
+      .map((pathSegments) => ({
+        url: `${baseUrl}/category/${normalizeCategoryPathSegments(pathSegments)
+          .map(encodeURIComponent)
+          .join("/")}`,
+        lastModified: new Date(),
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+      }));
 
     postPages = postsData.map(({ path, updatedAt }) => ({
       url: `${baseUrl}/posts/${path
