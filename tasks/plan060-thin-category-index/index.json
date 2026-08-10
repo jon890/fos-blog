@@ -1,7 +1,7 @@
 {
   "name": "plan060-thin-category-index",
   "description": "내용이 얇은 카테고리 페이지를 sitemap과 색인에서 제외해 사이트 전체가 저가치로 평가받을 위험을 줄인다.",
-  "status": "pending",
+  "status": "completed",
   "created_at": "2026-08-11",
   "total_phases": 1,
   "current_phases": 1,
@@ -16,7 +16,7 @@
       "file": "phase-01.md",
       "title": "얇은 카테고리 색인 제외",
       "execution_profile": "standard",
-      "status": "pending"
+      "status": "completed"
     }
   ]
 }

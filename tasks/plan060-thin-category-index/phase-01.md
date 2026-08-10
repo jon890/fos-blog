@@ -1,7 +1,7 @@
 # Phase 01 — 얇은 카테고리 색인 제외
 
 **Execution profile**: standard
-**Status**: pending
+**Status**: completed
 
 ---
 
@@ -49,9 +49,11 @@ plan059에서 정규화 함수로 같은 교훈을 얻었다.
 `src/infra/db/repositories/FolderRepository.ts`에 폴더별 `README` 길이를 가져오는 메서드를 추가한다.
 
 `README` 전문이 아니라 길이만 필요하므로 SQL의 `LENGTH`로 계산해 전송량을 줄인다.
-반환 형태는 폴더 경로로 조회할 수 있는 구조가 편하다.
+반환 형태는 소문자로 정규화한 폴더 경로를 키로 쓰는 `Map<string, number>`로 한다.
+저장된 경로의 대소문자가 달라도 sitemap의 소문자 canonical 경로와 같은 키로 조회되어야 한다.
 
 기존 `getReadmeMentionSources()`를 재사용하지 않는다. 그 메서드는 용어집 역참조용이라 의미가 섞인다.
+새 조회는 `src/infra/db/repositories/FolderRepository.test.ts`에서 SQL 결과를 소문자 경로와 숫자 길이로 매핑하는 동작을 고정한다.
 
 ### 3. sitemap에서 얇은 카테고리 제외
 
@@ -60,6 +62,7 @@ plan059에서 정규화 함수로 같은 교훈을 얻었다.
 폴더별 `README` 길이와 직속 글 수를 구해 판정 함수를 통과한 카테고리만 남긴다.
 직속 글 수는 이미 조회하는 `getAllPostsForSitemap()`의 `path`로 계산할 수 있어 추가 조회가 필요 없다.
 직속 글은 그 폴더 바로 아래 글만 센다. 하위 폴더의 글은 포함하지 않는다.
+`README` 길이 맵과 직속 글 수 맵은 모두 `normalizeCategoryPathSegments(...).join("/")`과 같은 소문자 경로 기준을 써서 대소문자 차이로 색인 대상을 잘못 빼지 않는다.
 
 plan059가 넣은 URL 기준 중복 제거와 소문자 정규화는 그대로 유지한다.
 필터는 그 앞 단계에 넣는다. 제외된 항목이 중복 제거 대상에 들어갈 이유가 없다.
@@ -70,6 +73,8 @@ plan059가 넣은 URL 기준 중복 제거와 소문자 정규화는 그대로 �
 
 이 함수는 이미 `getCachedFolderContents`로 `{ folders, posts, readme }`를 받고 있어
 추가 조회 없이 판정에 필요한 값을 갖고 있다.
+직속 글 수는 `posts.length`를 쓴다.
+`getCrossCategoryPosts()` 결과를 합친 `mergedPosts.length`는 직속 글이 아니므로 색인 판정에 쓰지 않는다.
 
 얇으면 `robots: { index: false, follow: true }`를 넣는다.
 `follow`를 유지하는 이유는 얇은 카테고리에도 글 링크가 있어 크롤러가 글에 도달하는 경로를 막을 이유가 없기 때문이다.
@@ -95,6 +100,12 @@ canonical과 화면 렌더는 건드리지 않는다.
 - 임계를 넘는 카테고리는 그대로 남는다.
 - 기존 중복 제거와 소문자 정규화 동작이 유지된다.
 
+`src/app/category/[...path]/page.test.ts`에 `generateMetadata` 케이스를 추가한다.
+
+- 내용이 전혀 없으면 기존 `index: false, follow: false`를 유지한다.
+- 없는 페이지가 아니지만 얇으면 `index: false, follow: true`를 반환한다.
+- `README` 바이트나 직속 글 수가 임계에 닿으면 `robots` 제한을 반환하지 않는다.
+
 ---
 
 ## Critical Files
@@ -104,16 +115,20 @@ canonical과 화면 렌더는 건드리지 않는다.
 | `src/lib/category-index-policy.ts` | 신규. 판정 함수와 임계값 |
 | `src/lib/category-index-policy.test.ts` | 신규. 판정 회귀 |
 | `src/infra/db/repositories/FolderRepository.ts` | README 길이 조회 추가 |
+| `src/infra/db/repositories/FolderRepository.test.ts` | README 길이 맵 회귀 추가 |
 | `src/app/sitemap.ts` | 얇은 카테고리 필터 |
 | `src/app/sitemap.test.ts` | 필터 회귀 추가 |
 | `src/app/category/[...path]/page.tsx` | 얇으면 noindex |
+| `src/app/category/[...path]/page.test.ts` | 메타데이터 robots 회귀 추가 |
 
 ## 검증
 
 ```bash
 # cwd: /Users/nhn/personal/fos-blog
 pnpm test src/lib/category-index-policy.test.ts
+pnpm test src/infra/db/repositories/FolderRepository.test.ts
 pnpm test src/app/sitemap.test.ts
+pnpm test 'src/app/category/[...path]/page.test.ts'
 pnpm lint
 pnpm type-check
 pnpm test

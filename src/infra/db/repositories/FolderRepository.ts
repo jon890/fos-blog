@@ -1,9 +1,25 @@
-import { and, eq, isNotNull } from "drizzle-orm";
+import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { posts, folders } from "../schema";
 import type { PostData, FolderItemData, FolderContentsResult } from "../types";
 import { BaseRepository } from "./BaseRepository";
 
 export class FolderRepository extends BaseRepository {
+  async getReadmeLengths(): Promise<Map<string, number>> {
+    const rows = await this.db
+      .select({
+        path: folders.path,
+        readmeLength: sql<number>`COALESCE(LENGTH(${folders.readme}), 0)`,
+      })
+      .from(folders);
+
+    return new Map(
+      rows.map(({ path, readmeLength }) => [
+        path.toLowerCase(),
+        Number(readmeLength),
+      ]),
+    );
+  }
+
   async getFolderContents(folderPath: string): Promise<FolderContentsResult> {
     const pathParts = folderPath.split("/").filter(Boolean);
     const depth = pathParts.length;

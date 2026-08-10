@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getCategories: vi.fn(),
+  getReadmeLengths: vi.fn(),
   getAllPostsForSitemap: vi.fn(),
   warn: vi.fn(),
 }));
@@ -19,6 +20,7 @@ vi.mock("@/lib/logger", () => ({
 vi.mock("@/infra/db/repositories", () => ({
   getRepositories: vi.fn(() => ({
     category: { getCategories: mocks.getCategories },
+    folder: { getReadmeLengths: mocks.getReadmeLengths },
     post: { getAllPostsForSitemap: mocks.getAllPostsForSitemap },
   })),
 }));
@@ -33,6 +35,7 @@ describe("sitemap", () => {
     vi.useFakeTimers();
     vi.setSystemTime(now);
     mocks.getCategories.mockResolvedValue([]);
+    mocks.getReadmeLengths.mockResolvedValue(new Map());
     mocks.getAllPostsForSitemap.mockResolvedValue([]);
   });
 
@@ -43,6 +46,12 @@ describe("sitemap", () => {
   it("카테고리 경로를 소문자로 정규화하고 URL 중복을 제거한다", async () => {
     const updatedAt = new Date("2026-08-09T00:00:00.000Z");
     mocks.getCategories.mockResolvedValue([{ slug: "AI" }]);
+    mocks.getReadmeLengths.mockResolvedValue(
+      new Map([
+        ["ai", 800],
+        ["ai/agent", 800],
+      ]),
+    );
     mocks.getAllPostsForSitemap.mockResolvedValue([
       { path: "AI/agent/intro.md", updatedAt },
       { path: "ai/agent/second.md", updatedAt: null },
@@ -63,6 +72,7 @@ describe("sitemap", () => {
   it("기존 sitemap 메타데이터 값을 유지한다", async () => {
     const updatedAt = new Date("2026-08-09T00:00:00.000Z");
     mocks.getCategories.mockResolvedValue([{ slug: "AI" }]);
+    mocks.getReadmeLengths.mockResolvedValue(new Map([["ai", 800]]));
     mocks.getAllPostsForSitemap.mockResolvedValue([
       { path: "AI/intro.md", updatedAt },
     ]);
@@ -101,6 +111,44 @@ describe("sitemap", () => {
     expect(result).toHaveLength(6);
     expect(result.every(({ url }) => !url.includes("/category/"))).toBe(true);
     expect(result.every(({ url }) => !url.includes("/posts/"))).toBe(true);
+  });
+
+  it("두 임계에 미달하는 얇은 카테고리를 제외한다", async () => {
+    mocks.getCategories.mockResolvedValue([{ slug: "AI" }]);
+    mocks.getAllPostsForSitemap.mockResolvedValue([
+      { path: "AI/intro.md", updatedAt: now },
+    ]);
+
+    const urls = (await sitemap()).map(({ url }) => url);
+
+    expect(urls).not.toContain("https://example.com/category/ai");
+    expect(urls).toContain("https://example.com/posts/AI/intro.md");
+  });
+
+  it("README 바이트 임계를 넘는 카테고리를 유지한다", async () => {
+    mocks.getCategories.mockResolvedValue([{ slug: "AI" }]);
+    mocks.getReadmeLengths.mockResolvedValue(new Map([["ai", 800]]));
+    mocks.getAllPostsForSitemap.mockResolvedValue([
+      { path: "AI/intro.md", updatedAt: now },
+    ]);
+
+    const urls = (await sitemap()).map(({ url }) => url);
+
+    expect(urls).toContain("https://example.com/category/ai");
+  });
+
+  it("직속 글 수 임계를 넘는 카테고리를 유지한다", async () => {
+    mocks.getCategories.mockResolvedValue([{ slug: "AI" }]);
+    mocks.getAllPostsForSitemap.mockResolvedValue(
+      Array.from({ length: 5 }, (_, index) => ({
+        path: `AI/post-${index}.md`,
+        updatedAt: now,
+      })),
+    );
+
+    const urls = (await sitemap()).map(({ url }) => url);
+
+    expect(urls).toContain("https://example.com/category/ai");
   });
 
   it("Repository 조회가 실패하면 정적 페이지만 반환한다", async () => {
