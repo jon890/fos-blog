@@ -39,6 +39,7 @@ AI 에이전트가 설계 철학을 빠르게 추론하기 위한 컨텍스트.
 
 - [ADR-013](./013-main-domain.md) — 메인 도메인 단일화 (`blog.fosworld.co.kr`, `/ads.txt` 만 예외)
 - [ADR-014](./014-adsense-approval.md) — AdSense 승인 요건 (privacy/about/contact, GitHub 프로필 fetch)
+- [ADR-035](./035-category-url-canonical.md) — 카테고리 URL 소문자 정규화와 canonical 고정 (plan059)
 
 ## 보안 & 안정성
 
