@@ -4,6 +4,12 @@ import type { ChangedFile } from "@/infra/github/api";
 import { SyncService } from "./SyncService";
 
 const emptyTitles = { total: 0, updated: 0, skipped: 0 };
+const emptyDescriptions = { total: 0, updated: 0, skipped: 0 };
+const emptyDerivedFields = {
+  total: 0,
+  titles: { updated: 0, skipped: 0 },
+  descriptions: { updated: 0, skipped: 0 },
+};
 
 function makeMocks() {
   const postSyncService: ConstructorParameters<typeof SyncService>[0] = {
@@ -13,6 +19,7 @@ function makeMocks() {
       deleted: 0,
       changedPosts: [{ path: "AI/intro.md", operation: "upsert" }],
       titles: emptyTitles,
+      descriptions: emptyDescriptions,
     }),
     syncChanged: vi.fn().mockResolvedValue({
       added: 0,
@@ -20,8 +27,9 @@ function makeMocks() {
       deleted: 0,
       changedPosts: [{ path: "AI/intro.md", operation: "upsert" }],
       titles: emptyTitles,
+      descriptions: emptyDescriptions,
     }),
-    retitleAll: vi.fn().mockResolvedValue(emptyTitles),
+    refreshDerivedFields: vi.fn().mockResolvedValue(emptyDerivedFields),
   };
   const metadataSyncService: ConstructorParameters<typeof SyncService>[1] = {
     refresh: vi.fn().mockResolvedValue({ changedReadmes: [] }),
@@ -85,6 +93,8 @@ describe("SyncService.sync", () => {
     expect(result).toMatchObject({
       added: 1,
       commitSha: "head-sha",
+      titles: emptyTitles,
+      descriptions: emptyDescriptions,
       glossary: {
         definitionsChanged: false,
         terms: 2,
@@ -183,7 +193,7 @@ describe("SyncService.sync", () => {
     expect(order).toEqual([...order].sort((left, right) => left - right));
   });
 
-  it("HEAD가 같아도 metadata를 갱신하고 title 보정을 유지한다", async () => {
+  it("HEAD가 같아도 metadata와 제목 및 요약 보정을 유지한다", async () => {
     const mocks = makeMocks();
     vi.mocked(mocks.githubApi.getCurrentHeadSha).mockResolvedValue("same-sha");
     vi.mocked(mocks.syncLogRepo.getLatest).mockResolvedValue({
@@ -193,12 +203,14 @@ describe("SyncService.sync", () => {
     const result = await createService(mocks).sync();
 
     expect(result.upToDate).toBe(true);
+    expect(result.titles).toEqual(emptyTitles);
+    expect(result.descriptions).toEqual(emptyDescriptions);
     expect(mocks.glossarySyncService.syncDefinitions).toHaveBeenCalledWith(
       "incremental",
       [],
     );
     expect(mocks.metadataSyncService.refresh).toHaveBeenCalledOnce();
-    expect(mocks.postSyncService.retitleAll).toHaveBeenCalledOnce();
+    expect(mocks.postSyncService.refreshDerivedFields).toHaveBeenCalledOnce();
     expect(mocks.syncLogRepo.create).not.toHaveBeenCalled();
   });
 

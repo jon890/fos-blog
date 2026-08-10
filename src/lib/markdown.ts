@@ -1,6 +1,9 @@
 // Markdown utility functions
 import GithubSlugger from "github-slugger";
 import type { Element as HastElement, ElementContent, Text } from "hast";
+import remarkGfm from "remark-gfm";
+import remarkParse from "remark-parse";
+import { unified } from "unified";
 
 const HTML_TAG_RE = /<[^>]+>/g;
 
@@ -102,6 +105,89 @@ function unescapeMarkdown(text: string): string {
   return text.replace(/\\([!-/:-@[-`{-~])/g, "$1");
 }
 
+type PositionedMarkdownNode = {
+  type: string;
+  position?: {
+    start: { line: number };
+    end: { line: number };
+  };
+  children?: PositionedMarkdownNode[];
+};
+
+const descriptionParser = unified().use(remarkParse).use(remarkGfm);
+const EXCLUDED_DESCRIPTION_BLOCKS = new Set([
+  "heading",
+  "code",
+  "thematicBreak",
+  "table",
+]);
+
+function collectExcludedLines(
+  node: PositionedMarkdownNode,
+  excludedLines: Set<number>,
+): void {
+  if (EXCLUDED_DESCRIPTION_BLOCKS.has(node.type) && node.position) {
+    for (
+      let line = node.position.start.line;
+      line <= node.position.end.line;
+      line++
+    ) {
+      excludedLines.add(line);
+    }
+    return;
+  }
+
+  for (const child of node.children ?? []) {
+    collectExcludedLines(child, excludedLines);
+  }
+}
+
+function collectProseLines(markdown: string): string[] {
+  const tree = descriptionParser.parse(markdown) as PositionedMarkdownNode;
+  const excludedLines = new Set<number>();
+  collectExcludedLines(tree, excludedLines);
+
+  const lines = markdown.split(/\r?\n/);
+  const proseLines = lines.map((line, index) =>
+    excludedLines.has(index + 1) || /^ {0,3}\|/.test(line) ? "" : line,
+  );
+
+  const firstBlockStart = proseLines.findIndex((line) => line.trim() !== "");
+  if (firstBlockStart === -1) return proseLines;
+
+  let firstBlockEnd = firstBlockStart;
+  while (
+    firstBlockEnd < proseLines.length &&
+    proseLines[firstBlockEnd].trim() !== ""
+  ) {
+    firstBlockEnd++;
+  }
+
+  const firstBlock = proseLines.slice(firstBlockStart, firstBlockEnd);
+  const isOpeningQuote = /^ {0,3}>/.test(firstBlock[0]);
+  const hasLink = /(^|[^!])\[[^\]\n]+\]\([^)]+\)/.test(
+    firstBlock.join("\n"),
+  );
+
+  if (isOpeningQuote && hasLink) {
+    proseLines.splice(firstBlockStart, firstBlock.length);
+  }
+
+  return proseLines;
+}
+
+function stripLeadingMarkers(line: string): string {
+  let stripped = line;
+
+  while (true) {
+    const next = stripped
+      .replace(/^ {0,3}(?:>[ \t]?)+/, "")
+      .replace(/^\s*(?:[-*+]|\d+[.)])[ \t]+/, "");
+    if (next === stripped) return stripped;
+    stripped = next;
+  }
+}
+
 // Extract description from markdown content
 export function extractDescription(
   content: string,
@@ -117,13 +203,15 @@ export function extractDescription(
     );
   }
 
-  // Remove markdown syntax and get first paragraph
-  const plainText = unescapeMarkdown(mainContent)
-    .replace(HTML_TAG_RE, " ") // Remove HTML tags (<br>, <details> 등)
-    .replace(/^#+\s+.+$/gm, "") // Remove headers
+  const proseLines = collectProseLines(
+    unescapeMarkdown(mainContent).replace(HTML_TAG_RE, " "),
+  );
+  const plainText = proseLines
+    .map(stripLeadingMarkers)
+    .join(" ")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, "") // Remove images before link conversion
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Replace links with text
     .replace(/[*_`~]/g, "") // Remove formatting
-    .replace(/\n+/g, " ") // Replace newlines with spaces
     .replace(/\s+/g, " ") // Collapse repeated whitespace from tag removal
     .trim();
 

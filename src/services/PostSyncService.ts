@@ -46,6 +46,13 @@ export type PostSyncResult = {
   deleted: number;
   changedPosts: SyncedPageChange[];
   titles: { total: number; updated: number; skipped: number };
+  descriptions: { total: number; updated: number; skipped: number };
+};
+
+type DerivedFieldRefreshResult = {
+  total: number;
+  titles: { updated: number; skipped: number };
+  descriptions: { updated: number; skipped: number };
 };
 
 type MarkdownFile = {
@@ -200,12 +207,18 @@ export class PostSyncService {
       log.info({ deleted }, `비활성화 완료: ${deleted}개`);
     }
 
+    const derivedFields = await this.refreshDerivedFields();
+
     return {
       added,
       updated,
       deleted,
       changedPosts,
-      titles: await this.retitleAll(),
+      titles: { total: derivedFields.total, ...derivedFields.titles },
+      descriptions: {
+        total: derivedFields.total,
+        ...derivedFields.descriptions,
+      },
     };
   }
 
@@ -262,35 +275,57 @@ export class PostSyncService {
       );
     }
 
+    const derivedFields = await this.refreshDerivedFields();
+
     return {
       added,
       updated,
       deleted,
       changedPosts,
-      titles: await this.retitleAll(),
+      titles: { total: derivedFields.total, ...derivedFields.titles },
+      descriptions: {
+        total: derivedFields.total,
+        ...derivedFields.descriptions,
+      },
     };
   }
 
-  async retitleAll(): Promise<{ total: number; updated: number; skipped: number }> {
+  async refreshDerivedFields(): Promise<DerivedFieldRefreshResult> {
     const allPosts = await this.postRepo.getAllWithContent();
-    let updated = 0;
-    let skipped = 0;
+    const titles = { updated: 0, skipped: 0 };
+    const descriptions = { updated: 0, skipped: 0 };
 
     for (const post of allPosts) {
       if (!post.content) {
-        skipped++;
+        titles.skipped++;
+        descriptions.skipped++;
         continue;
       }
-      const extractedTitle = extractTitle(post.content);
-      if (!extractedTitle || extractedTitle === post.title) {
-        skipped++;
-        continue;
+
+      const updates: { title?: string; description?: string } = {};
+      const parsed = parseFrontMatter(post.content);
+      const extractedTitle = extractTitle(post.content, parsed.frontMatter);
+      if (extractedTitle && extractedTitle !== post.title) {
+        updates.title = extractedTitle;
+        titles.updated++;
+      } else {
+        titles.skipped++;
       }
-      await this.postRepo.update(post.id, { title: extractedTitle });
-      updated++;
+
+      const extractedDescription = extractDescription(post.content, 200, parsed);
+      if (extractedDescription !== post.description) {
+        updates.description = extractedDescription;
+        descriptions.updated++;
+      } else {
+        descriptions.skipped++;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await this.postRepo.update(post.id, updates);
+      }
     }
 
-    return { total: allPosts.length, updated, skipped };
+    return { total: allPosts.length, titles, descriptions };
   }
 
   private async upsert(

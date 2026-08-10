@@ -21,7 +21,7 @@ type GithubApi = {
 
 type PostSync = Pick<
   PostSyncService,
-  "retitleAll" | "syncAll" | "syncChanged"
+  "refreshDerivedFields" | "syncAll" | "syncChanged"
 >;
 type MetadataSync = Pick<MetadataSyncService, "refresh">;
 type GlossarySync = Pick<
@@ -37,6 +37,7 @@ export type SyncResult = {
   commitSha: string;
   upToDate?: boolean;
   titles: { total: number; updated: number; skipped: number };
+  descriptions: { total: number; updated: number; skipped: number };
   glossary: GlossaryDefinitionSyncResult & {
     mentions: number;
     pagesReindexed: number;
@@ -77,7 +78,7 @@ export class SyncService {
         log.info("이미 최신 상태 — posts 변경 없음, metadata 만 재계산");
         const glossaryDefinitions =
           await this.glossarySyncService.syncDefinitions("incremental", []);
-        const titles = await this.postSyncService.retitleAll();
+        const derivedFields = await this.postSyncService.refreshDerivedFields();
         const metadataResult = await this.metadataSyncService.refresh();
         const glossaryMentions =
           await this.glossarySyncService.syncMentions({
@@ -91,7 +92,11 @@ export class SyncService {
           deleted: 0,
           commitSha: headSha,
           upToDate: true,
-          titles,
+          titles: { total: derivedFields.total, ...derivedFields.titles },
+          descriptions: {
+            total: derivedFields.total,
+            ...derivedFields.descriptions,
+          },
           glossary: { ...glossaryDefinitions, ...glossaryMentions },
         };
       }
@@ -134,6 +139,7 @@ export class SyncService {
         deleted: postResult.deleted,
         commitSha: headSha,
         titles: postResult.titles,
+        descriptions: postResult.descriptions,
         glossary: { ...glossaryDefinitions, ...glossaryMentions },
       };
     } catch (error) {

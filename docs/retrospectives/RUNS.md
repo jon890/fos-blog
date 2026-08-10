@@ -9,3 +9,5 @@
 | 2026-08-06 | build-with-teams | plan057-thumbnail-first-post-grid | A | 2 | 1 | 1 | 2 | 없음 | 0 | PR #193 |
 | 2026-08-06 | review-fix | PR #193 | - | - | - | 0 | - | - | 0 | PR #193 |
 | 2026-08-06 | review-fix | PR #194 | - | - | - | 2 | - | - | 1 | PR #194 |
+| 2026-08-10 | planning | plan058-description-extraction | - | 2 | - | - | - | - | 1 | `tasks/plan058-description-extraction` |
+| 2026-08-10 | build-with-teams | plan058-description-extraction | B→A(p2) | 2 | 1 | 0 | 3 | 없음 | 2 | PR #196 |

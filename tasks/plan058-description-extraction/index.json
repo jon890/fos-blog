@@ -1,0 +1,30 @@
+{
+  "name": "plan058-description-extraction",
+  "description": "글 요약을 산문 블록만으로 만들어 마크다운 마커 노출을 없애고, 링크가 있는 첫머리 인용문을 제외하며, 저장된 요약 값을 동기화 때 다시 계산한다.",
+  "status": "completed",
+  "created_at": "2026-08-10",
+  "total_phases": 2,
+  "current_phases": 1,
+  "related_docs": [
+    "docs/flow.md",
+    "docs/data-schema.md",
+    "docs/adr/034-description-extraction.md",
+    "docs/adr/010-strip-leading-h1.md"
+  ],
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "title": "요약 추출 규칙 재구현",
+      "execution_profile": "standard",
+      "status": "completed"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "title": "저장된 요약 값 보정과 전체 검증",
+      "execution_profile": "standard",
+      "status": "completed"
+    }
+  ]
+}

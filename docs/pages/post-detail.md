@@ -135,7 +135,7 @@
 - `parseFrontMatter(content)` — frontmatter 제거 + `frontMatter.tags` 추출
 - `stripLeadingH1(mainContent)` — 본문 첫 H1 제거 (ADR-010, 제목 중복 방지)
 - `extractTitle(content)` — h1 헤딩 추출
-- `extractDescription(content)` — 첫 단락 추출 → ArticleHero `lead`
+- `extractDescription(content)` — 산문 블록을 평문 요약으로 만들고 링크가 있는 첫머리 인용은 제외 → ArticleHero `lead` (ADR-034)
 - `getReadingTime(content)` — 읽기 시간 계산 → ArticleHero meta row
 - `generateTableOfContents(stripped)` — TOC 항목 생성. page.tsx 에서 `filter((i) => i.level === 2 || i.level === 3)` 로 H2 + H3 추림 (plan019)
 
