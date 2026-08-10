@@ -13,3 +13,4 @@
 | 2026-08-10 | build-with-teams | plan058-description-extraction | B→A(p2) | 2 | 1 | 0 | 3 | 없음 | 2 | PR #196 |
 | 2026-08-10 | planning | plan059-sitemap-dedup | - | 1 | - | - | - | - | 1 | `tasks/plan059-sitemap-dedup` |
 | 2026-08-10 | build-with-teams | plan059-sitemap-dedup | B | 1 | 1 | 1 | 2 | 없음 | 3 | PR #203 |
+| 2026-08-11 | planning | plan060-thin-category-index | - | 1 | - | - | - | - | 2 | `tasks/plan060-thin-category-index` |
