@@ -414,7 +414,8 @@ export class PostRepository extends BaseRepository {
   }
 
   async getCrossCategoryPosts(folderPath: string): Promise<PostData[]> {
-    const escapedFolderPrefix = `${escapeLikePattern(folderPath)}/%`;
+    const normalizedFolderPath = folderPath.toLowerCase();
+    const escapedFolderPrefix = `${escapeLikePattern(normalizedFolderPath)}/%`;
 
     const result = await this.db
       .select({
@@ -432,7 +433,7 @@ export class PostRepository extends BaseRepository {
       .where(
         and(
           eq(posts.isActive, true),
-          sql`JSON_CONTAINS(${posts.categories}, JSON_QUOTE(${folderPath}))`,
+          sql`JSON_CONTAINS(LOWER(CAST(${posts.categories} AS CHAR)), JSON_QUOTE(${normalizedFolderPath}))`,
           sql`${posts.path} NOT LIKE ${escapedFolderPrefix} ESCAPE '\\\\'`,
         ),
       )

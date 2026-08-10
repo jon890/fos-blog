@@ -115,7 +115,7 @@ describe("PostRepository.getRecentPostsCursor", () => {
 });
 
 describe("PostRepository.getCrossCategoryPosts", () => {
-  it("folderPath category를 조회하고 해당 folderPath 아래 실제 글은 제외한다", async () => {
+  it("카테고리를 대소문자 없이 조회하고 해당 폴더 아래 실제 글은 제외한다", async () => {
     const rows = [
       {
         title: "Cross Post",
@@ -136,19 +136,39 @@ describe("PostRepository.getCrossCategoryPosts", () => {
     };
     const repo = new PostRepository(db as unknown as DbInstance);
 
-    const result = await repo.getCrossCategoryPosts("AI/RAG");
+    const result = await repo.getCrossCategoryPosts("ai/rag");
 
     expect(db.where).toHaveBeenCalledOnce();
     const whereCondition = db.where.mock.calls[0]?.[0];
     const sqlCondition = flattenSqlTokens(whereCondition).join(" ");
     expect(sqlCondition).toContain("JSON_CONTAINS(");
+    expect(sqlCondition).toContain("LOWER(");
+    expect(sqlCondition).toContain("CAST(");
     expect(sqlCondition).toContain("categories");
-    expect(sqlCondition).toContain("AI/RAG");
+    expect(sqlCondition).toContain("ai/rag");
     expect(sqlCondition).toContain("path");
     expect(sqlCondition).toContain("NOT LIKE");
-    expect(sqlCondition).toContain("AI/RAG/%");
+    expect(sqlCondition).toContain("ai/rag/%");
     expect(sqlCondition).toContain("ESCAPE '\\\\'");
     expect(result).toEqual([{ ...rows[0], folders: ["opensearch"] }]);
+  });
+
+  it("대문자 요청도 소문자로 정규화해 같은 카테고리를 조회한다", async () => {
+    const db = {
+      select: vi.fn().mockReturnThis(),
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      orderBy: vi.fn().mockResolvedValue([]),
+    };
+    const repo = new PostRepository(db as unknown as DbInstance);
+
+    await repo.getCrossCategoryPosts("AI");
+
+    const whereCondition = db.where.mock.calls[0]?.[0];
+    const sqlCondition = flattenSqlTokens(whereCondition).join(" ");
+    expect(sqlCondition).toContain("JSON_QUOTE( ai )");
+    expect(sqlCondition).toContain("ai/%");
+    expect(sqlCondition).not.toContain("AI/%");
   });
 
   it("folderPath prefix 제외 조건의 LIKE 특수문자를 escape한다", async () => {
@@ -164,7 +184,7 @@ describe("PostRepository.getCrossCategoryPosts", () => {
 
     const whereCondition = db.where.mock.calls[0]?.[0];
     const sqlCondition = flattenSqlTokens(whereCondition).join(" ");
-    expect(sqlCondition).toContain("AI/R\\%\\_\\\\/%");
+    expect(sqlCondition).toContain("ai/r\\%\\_\\\\/%");
     expect(sqlCondition).toContain("ESCAPE '\\\\'");
   });
 });
