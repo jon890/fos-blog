@@ -77,8 +77,8 @@ pnpm install
 - TypeScript strict와 `@/*` 경로 별칭을 유지한다.
 - 컴포넌트는 PascalCase와 이름 있는 export를 기본으로 한다.
 - 서버 코드는 `@/lib/logger`의 자식 로거를 사용한다.
-  `src/`의 `console` 사용은 `no-console` lint 규칙이 막고 `console.error`만 허용한다.
-  테스트 파일은 규칙에서 제외하고, `scripts/*.ts`는 독립 실행 제약 때문에 규칙을 걸지 않는다.
+- `src/`는 `no-console` lint 규칙이 막고 `console.error`만 허용한다. 테스트 파일은 제외한다.
+- `scripts/*.ts`는 독립 실행 제약 때문에 규칙 대상에서 제외한다.
 - 클라이언트 컴포넌트는 서버 전용 pino를 import하지 않는다.
   실패는 UI로 알리고 catch 블록의 개발 진단에는 `console.error`만 사용한다.
 - 알 수 없는 오류는 `error instanceof Error ? error : new Error(String(error))`로 정규화한다.
