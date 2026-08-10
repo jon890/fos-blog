@@ -29,7 +29,7 @@ canonical은 이미 있지만 `src/app/category/[...path]/page.tsx:93`이 요청
 
 ---
 
-## 작업 항목 (6)
+## 작업 항목 (7)
 
 ### 1. 정규화 함수 추가
 
@@ -101,6 +101,17 @@ Repository는 기존 Route Handler 테스트와 같은 방식으로 `vi.mock`해
 - 대문자 요청으로 소문자 저장 경로의 글을 조회한다.
 - `ai` 요청에 `aiops`처럼 접두사만 같은 다른 폴더의 글이 섞이지 않는다.
 
+### 7. 대표 URL의 교차 카테고리 조회 동등성 보장
+
+`PostRepository.getCrossCategoryPosts`가 저장된 카테고리 배열과 요청 경로를 소문자로 맞춰 비교하게 한다.
+저장 값은 화면 표시를 위해 원본 표기를 유지한다.
+
+다음을 회귀 테스트로 고정한다.
+
+- 소문자 요청이 대문자로 저장된 교차 카테고리와 일치한다.
+- 대문자 요청도 같은 소문자 비교값을 사용한다.
+- `JSON_CONTAINS`의 정확 일치를 유지해 `ai` 요청에 `aiops`가 섞이지 않는다.
+
 ---
 
 ## Critical Files
@@ -114,6 +125,8 @@ Repository는 기존 Route Handler 테스트와 같은 방식으로 `vi.mock`해
 | `src/app/category/[...path]/page.tsx` | canonical을 정규 형태로 |
 | `src/infra/db/repositories/FolderRepository.ts` | 폴더 글 경로를 대소문자 구분 없이 비교 |
 | `src/infra/db/repositories/FolderRepository.test.ts` | 신규. 대표 URL의 조회 동등성 회귀 |
+| `src/infra/db/repositories/PostRepository.ts` | 교차 카테고리 값을 대소문자 구분 없이 비교 |
+| `src/infra/db/repositories/PostRepository.test.ts` | 교차 카테고리 비교와 경계값 회귀 |
 
 ## 검증
 
@@ -122,6 +135,7 @@ Repository는 기존 Route Handler 테스트와 같은 방식으로 `vi.mock`해
 pnpm test src/lib/path-utils.test.ts
 pnpm test src/app/sitemap.test.ts
 pnpm test src/infra/db/repositories/FolderRepository.test.ts
+pnpm test src/infra/db/repositories/PostRepository.test.ts
 pnpm lint
 pnpm type-check
 pnpm test
