@@ -81,7 +81,7 @@ DB 구조와 제약의 단일 소스는 `src/infra/db/schema/`다.
 
 - `/api/sync`는 `SYNC_API_KEY` Bearer 인증을 확인한다.
 - `SyncService`는 GitHub HEAD와 마지막 성공 커밋을 비교해 전체 또는 증분 동기화를 선택한다.
-- 글 변경이 없어도 제목, README 메타데이터와 용어집 역참조를 다시 계산할 수 있다.
+- 글 변경이 없어도 제목과 요약 파생 필드, README 메타데이터, 용어집 역참조를 다시 계산할 수 있다.
 - 삭제된 글은 `posts.is_active`를 이용해 비활성화한다.
 - 같은 GitHub 상태를 반복 처리해도 글이 중복되거나 유실되지 않아야 한다.
 - `PostSyncService`는 `thumbnail` 앞표지의 상대 경로를 검증한 GitHub raw URL로 바꿔 `posts.thumbnail_url`에 저장한다.
