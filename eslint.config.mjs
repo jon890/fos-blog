@@ -36,6 +36,19 @@ export default [
     },
   },
   {
+    // src/ 는 @/lib/logger 를 쓴다. 클라이언트 컴포넌트의 개발 진단용 console.error 만 예외.
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "no-console": ["error", { allow: ["error"] }],
+    },
+  },
+  {
+    files: ["src/**/*.test.{ts,tsx}"],
+    rules: {
+      "no-console": "off",
+    },
+  },
+  {
     files: ["*.config.{js,mjs,cjs}", "*.config.*.{js,mjs,cjs}", "scripts/**/*.ts"],
     languageOptions: {
       globals: {
@@ -49,6 +62,16 @@ export default [
     },
   },
   {
-    ignores: [".next/**", "node_modules/**", "out/**", "build/**", "dist/**", "tasks/**", ".claude/**"],
+    ignores: [
+      ".next/**",
+      "node_modules/**",
+      "out/**",
+      "build/**",
+      "dist/**",
+      "tasks/**",
+      ".claude/**",
+      // Orca 가 만드는 자식 worktree. 그 안에서 각자 lint 를 돌린다.
+      "worktrees/**",
+    ],
   },
 ];
