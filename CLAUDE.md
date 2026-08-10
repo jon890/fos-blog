@@ -1,22 +1,18 @@
 # fos-blog 에이전트 작업 지침
 
-**갱신일:** 2026-07-30 · **저장소:** `github.com/jon890/fos-blog` · **운영 주소:** `https://blog.fosworld.co.kr`
+**갱신일:** 2026-08-10 · **저장소:** `github.com/jon890/fos-blog` · **운영 주소:** `https://blog.fosworld.co.kr`
 
 ## 이 문서의 역할
 
 이 문서는 모든 작업에 항상 적용하는 프로젝트 불변 조건만 담는다.
-세부 실행 절차는 관련 스킬과 저장소 오버레이를 작업 시작 전에 읽는다.
+세부 실행 절차는 관련 스킬과 `.claude/*-overlay.md`를 작업 시작 전에 읽는다.
 
-지침은 다음 순서로 읽는다.
-
-1. `CLAUDE.md` (= `AGENTS.md` 심볼릭 링크): 불변 조건과 검증 기준
-2. 설치된 `SKILL.md`: 계획, 구현, 문서 점검, 리뷰 반영 절차
-3. `.claude/*-overlay.md`: 공용 스킬에 주입하는 fos-blog 전용 규칙
-4. `.agents/roles/*.md`: 역할별 책임과 출력 계약
+작업 종류별 규칙은 `.claude/rules/`에 둔다.
+Claude Code는 대상 파일을 열 때 자동으로 읽고, 다른 하네스는 직접 읽어야 한다.
+지금은 DB 스키마(`db-schema.md`)와 문서 작성(`docs-writing.md`) 두 개다.
 
 역할 계약은 `.agents/roles/`가 단일 소스다.
-`.claude/agents/*.md`와 `.codex/agents/*.toml`은 그 파일을 가리키는 얇은 래퍼이며
-하네스별로 다른 부분(보고 경로, 도구 제한)만 담는다.
+`.claude/agents/*.md`와 `.codex/agents/*.toml`은 그 파일을 가리키는 얇은 래퍼이므로
 역할을 고칠 때는 `.agents/roles/`를 고치고 래퍼는 건드리지 않는다.
 
 반복되는 계획·검토 함정은 `.agents/skills/_shared/common-pitfalls.md`에 누적한다.
@@ -81,8 +77,7 @@ pnpm install
 - TypeScript strict와 `@/*` 경로 별칭을 유지한다.
 - 컴포넌트는 PascalCase와 이름 있는 export를 기본으로 한다.
 - 서버 코드는 `@/lib/logger`의 자식 로거를 사용한다.
-- `src/`에 `console.log`를 남기지 않는다.
-- `scripts/*.ts`는 독립 실행 제약 때문에 `console.log`와 `console.error`를 사용할 수 있다.
+  `src/`의 `console` 사용은 `no-console` lint 규칙이 막고 `console.error`만 허용한다.
 - 클라이언트 컴포넌트는 서버 전용 pino를 import하지 않는다.
   실패는 UI로 알리고 catch 블록의 개발 진단에는 `console.error`만 사용한다.
 - 알 수 없는 오류는 `error instanceof Error ? error : new Error(String(error))`로 정규화한다.
@@ -92,33 +87,6 @@ pnpm install
 
 테스트는 대상 코드와 가까운 `*.test.ts` 또는 `*.test.tsx`에 둔다.
 DOM 테스트는 파일 상단에 `// @vitest-environment jsdom`을 선언해 기본 Node 환경과 격리한다.
-
-## DB 스키마 변경
-
-1. `src/infra/db/schema/`를 수정한다.
-2. `pnpm db:generate`로 `drizzle/` 산출물을 만든다.
-3. 생성 SQL을 직접 편집하지 말고 파괴적 변경 여부를 검토한다.
-4. 스키마 변경과 생성된 마이그레이션을 같은 커밋에 포함한다.
-5. `pnpm db:migrate` 또는 `pnpm db:migrate:runtime`으로 적용을 검증한다.
-
-프로덕션에 `pnpm db:push`를 사용하지 않는다.
-`pnpm db:push`는 버려도 되는 로컬 실험에만 허용하며 커밋 전에 마이그레이션으로 바꾸거나 되돌린다.
-컨테이너는 시작할 때 `migrate.js`를 실행한 뒤 `server.js`를 실행한다.
-
-## 문서 작성
-
-문서 책임은 설치된 `planning` 스킬의 “필수 관리 문서” 계약을 따른다.
-구현 방법은 코드에 두고 문서에는 무엇을 결정했는지와 왜 결정했는지를 남긴다.
-
-- 설명 문장은 자연스러운 한국어로 작성하고 점검, 분류, 표, 기준선 같은 직관적인 표현을 사용한다.
-- 기술 식별자, 경로, 명령어, API 필드, 판정 토큰은 원문을 유지하고 백틱으로 감싼다.
-- 한 문장 또는 의미 단위마다 줄을 나눈다.
-- 한 문단이나 항목에 정보가 3개 이상이면 목록이나 표로 나눈다.
-- 같은 규칙을 여러 문서에 복사하지 않고 단일 소스를 링크한다.
-- 편집한 문서에서는 깨진 링크, 긴 문장, 중첩 괄호, 인라인 나열을 함께 정리한다.
-
-Dooray, GitHub, 블로그, 메일처럼 외부에 게시할 문안은 등록 전에 채팅에서 본문을 미리 보여준다.
-블로그 글은 가능하면 실제 스타일의 HTML 미리보기도 만든다.
 
 ## Git과 PR
 
