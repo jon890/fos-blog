@@ -492,13 +492,20 @@ export class PostRepository extends BaseRepository {
   }
 
   async getAllWithContent(): Promise<
-    Array<{ id: number; path: string; title: string; content: string | null }>
+    Array<{
+      id: number;
+      path: string;
+      title: string;
+      description: string | null;
+      content: string | null;
+    }>
   > {
     return this.db
       .select({
         id: posts.id,
         path: posts.path,
         title: posts.title,
+        description: posts.description,
         content: posts.content,
       })
       .from(posts);

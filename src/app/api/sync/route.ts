@@ -29,6 +29,7 @@ export async function POST(request: Request) {
         deleted: syncResult.deleted,
       },
       titles: syncResult.titles,
+      descriptions: syncResult.descriptions,
       glossary: syncResult.glossary,
     });
   } catch (error) {

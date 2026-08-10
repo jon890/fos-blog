@@ -69,6 +69,7 @@ describe("PostSyncService", () => {
       deleted: 0,
       changedPosts: [{ path: "AI/intro.md", operation: "upsert" }],
       titles: { total: 0, updated: 0, skipped: 0 },
+      descriptions: { total: 0, updated: 0, skipped: 0 },
     });
   });
 
@@ -114,7 +115,13 @@ describe("PostSyncService", () => {
     );
 
     expect(githubApi.getRepositoryFolderPaths).toHaveBeenCalledOnce();
-    expect(result).toMatchObject({ added: 1, updated: 0, deleted: 1 });
+    expect(result).toMatchObject({
+      added: 1,
+      updated: 0,
+      deleted: 1,
+      titles: { total: 0, updated: 0, skipped: 0 },
+      descriptions: { total: 0, updated: 0, skipped: 0 },
+    });
     expect(result.changedPosts).toEqual([
       { path: "AI/old.md", operation: "delete" },
       { path: "AI/new.md", operation: "upsert" },
@@ -256,19 +263,68 @@ describe("PostSyncService", () => {
     expect(postRepo.create).toHaveBeenCalledOnce();
   });
 
-  it("retitleAll은 content 제목이 다른 글만 보정한다", async () => {
+  it("refreshDerivedFields는 달라진 제목과 요약만 한 번에 보정한다", async () => {
     const { postRepo, githubApi } = makeMocks();
     vi.mocked(postRepo.getAllWithContent).mockResolvedValue([
-      { id: 1, path: "a.md", title: "같음", content: "# 같음" },
-      { id: 2, path: "b.md", title: "이전", content: "# 변경" },
-      { id: 3, path: "c.md", title: "없음", content: null },
+      {
+        id: 1,
+        path: "title.md",
+        title: "이전 제목",
+        description: "같은 요약",
+        content: "# 새 제목\n\n같은 요약",
+      },
+      {
+        id: 2,
+        path: "description.md",
+        title: "같은 제목",
+        description: "이전 요약",
+        content: "# 같은 제목\n\n새 요약",
+      },
+      {
+        id: 3,
+        path: "both.md",
+        title: "이전 제목",
+        description: "이전 요약",
+        content: "# 새 제목\n\n새 요약",
+      },
+      {
+        id: 4,
+        path: "same.md",
+        title: "같은 제목",
+        description: "같은 요약",
+        content: "# 같은 제목\n\n같은 요약",
+      },
+      {
+        id: 5,
+        path: "empty.md",
+        title: "제목",
+        description: "요약",
+        content: null,
+      },
     ]);
 
-    const result = await new PostSyncService(postRepo, githubApi).retitleAll();
+    const result = await new PostSyncService(
+      postRepo,
+      githubApi,
+    ).refreshDerivedFields();
 
-    expect(result).toEqual({ total: 3, updated: 1, skipped: 2 });
-    expect(postRepo.update).toHaveBeenCalledOnce();
-    expect(postRepo.update).toHaveBeenCalledWith(2, { title: "변경" });
+    expect(result).toEqual({
+      total: 5,
+      titles: { updated: 2, skipped: 3 },
+      descriptions: { updated: 2, skipped: 3 },
+    });
+    expect(postRepo.getAllWithContent).toHaveBeenCalledOnce();
+    expect(postRepo.update).toHaveBeenCalledTimes(3);
+    expect(postRepo.update).toHaveBeenNthCalledWith(1, 1, {
+      title: "새 제목",
+    });
+    expect(postRepo.update).toHaveBeenNthCalledWith(2, 2, {
+      description: "새 요약",
+    });
+    expect(postRepo.update).toHaveBeenNthCalledWith(3, 3, {
+      title: "새 제목",
+      description: "새 요약",
+    });
   });
 });
 

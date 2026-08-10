@@ -1,7 +1,7 @@
 # Phase 02 — 저장된 요약 값 보정과 전체 검증
 
 **Execution profile**: standard
-**Status**: pending
+**Status**: completed
 
 ---
 
@@ -82,6 +82,7 @@ phase 01이 바꾼 추출 규칙이 `posts.description`에 저장된 값에도 �
 | `src/infra/db/repositories/PostRepository.ts` | `getAllWithContent()`가 저장된 요약도 반환하도록 확장 |
 | `src/services/PostSyncService.ts` | `retitleAll` → `refreshDerivedFields` 확장 |
 | `src/services/SyncService.ts` | 호출 이름과 `SyncResult` 필드 조립 |
+| `src/app/api/sync/route.ts` | 동기화 응답에 `descriptions` 추가 |
 | `src/services/PostSyncService.test.ts` | 보정 동작 회귀 테스트 갱신 |
 | `src/services/SyncService.test.ts` | 모의 구현과 호출 검증 갱신 |
 
