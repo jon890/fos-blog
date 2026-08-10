@@ -29,7 +29,7 @@ canonical은 이미 있지만 `src/app/category/[...path]/page.tsx:93`이 요청
 
 ---
 
-## 작업 항목 (4)
+## 작업 항목 (5)
 
 ### 1. 정규화 함수 추가
 
@@ -64,7 +64,7 @@ canonical은 이미 있지만 `src/app/category/[...path]/page.tsx:93`이 요청
 요청 값 그대로 두어야 화면에 표시되는 폴더명이 저장소 원본 표기를 유지한다.
 정규화는 canonical URL 생성에만 적용한다.
 
-### 4. 회귀 테스트 추가
+### 4. 경로 유틸리티 회귀 테스트 추가
 
 `src/lib/path-utils.test.ts`를 새로 만든다. 이 파일은 아직 없다.
 
@@ -76,8 +76,19 @@ canonical은 이미 있지만 `src/app/category/[...path]/page.tsx:93`이 요청
 - 빈 배열을 넣으면 빈 배열이 나온다.
 - 기존 `computeFolderPaths` 동작이 바뀌지 않는다.
 
-sitemap 조립 결과를 검증하는 테스트는 DB 접근이 필요해 이 phase에서 만들지 않는다.
-대신 아래 검증 절차의 배포 후 확인으로 대신한다.
+### 5. sitemap 조립 결과 회귀 테스트 추가
+
+`src/app/sitemap.test.ts`를 새로 만든다.
+Repository는 기존 Route Handler 테스트와 같은 방식으로 `vi.mock`해 실제 DB에 연결하지 않는다.
+
+다음을 고정한다.
+
+- 카테고리와 폴더 경로가 같은 URL을 만들면 결과에 한 번만 나온다.
+- 대소문자만 다른 카테고리 경로는 소문자 URL 하나로 합쳐진다.
+- 정적 페이지와 글 페이지가 누락되지 않는다.
+- `lastModified`, `changeFrequency`, `priority` 값은 기존과 같다.
+- 카테고리와 글이 모두 없어도 정적 페이지만 반환한다.
+- Repository 조회가 실패하면 기존 catch 동작대로 정적 페이지만 반환한다.
 
 ---
 
@@ -88,13 +99,15 @@ sitemap 조립 결과를 검증하는 테스트는 DB 접근이 필요해 이 ph
 | `src/lib/path-utils.ts` | 카테고리 경로 정규화 함수 추가 |
 | `src/lib/path-utils.test.ts` | 신규. 정규화와 기존 함수 회귀 |
 | `src/app/sitemap.ts` | 정규화 적용과 URL 기준 중복 제거 |
+| `src/app/sitemap.test.ts` | 신규. sitemap 조립 결과와 실패 폴백 회귀 |
 | `src/app/category/[...path]/page.tsx` | canonical을 정규 형태로 |
 
 ## 검증
 
 ```bash
-# cwd: /Users/nhn/personal/fos-blog
+# cwd: /Users/nhn/personal/fos-blog/worktrees/fos-blog/plan059-sitemap-dedup-2
 pnpm test src/lib/path-utils.test.ts
+pnpm test src/app/sitemap.test.ts
 pnpm lint
 pnpm type-check
 pnpm test
@@ -105,7 +118,7 @@ git diff --check
 기대값: 위 명령이 모두 종료 코드 0이다.
 
 ```bash
-# cwd: /Users/nhn/personal/fos-blog
+# cwd: /Users/nhn/personal/fos-blog/worktrees/fos-blog/plan059-sitemap-dedup-2
 rg -n "pathSegments" "src/app/category/[...path]/page.tsx"
 ```
 
