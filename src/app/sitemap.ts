@@ -2,9 +2,12 @@ import type { MetadataRoute } from "next";
 import { getRepositories } from "@/infra/db/repositories";
 import { env } from "@/env";
 import logger from "@/lib/logger";
+import {
+  computeFolderPaths,
+  normalizeCategoryPathSegments,
+} from "@/lib/path-utils";
 
 const log = logger.child({ module: "app/sitemap" });
-import { computeFolderPaths } from "@/lib/path-utils";
 
 // ISR - 60초마다 재생성
 export const revalidate = 60;
@@ -66,14 +69,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const folderPaths = computeFolderPaths(postsData.map(({ path }) => path));
 
     categoryPages = categories.map((cat) => ({
-      url: `${baseUrl}/category/${encodeURIComponent(cat.slug)}`,
+      url: `${baseUrl}/category/${normalizeCategoryPathSegments([cat.slug])
+        .map(encodeURIComponent)
+        .join("/")}`,
       lastModified: new Date(),
       changeFrequency: "weekly" as const,
       priority: 0.6,
     }));
 
     folderPages = folderPaths.map((pathSegments) => ({
-      url: `${baseUrl}/category/${pathSegments
+      url: `${baseUrl}/category/${normalizeCategoryPathSegments(pathSegments)
         .map(encodeURIComponent)
         .join("/")}`,
       lastModified: new Date(),
@@ -94,5 +99,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     log.warn({ err: error instanceof Error ? error : new Error(String(error)) }, "Failed to fetch dynamic sitemap data");
   }
 
-  return [...staticPages, ...categoryPages, ...folderPages, ...postPages];
+  const pages = [...staticPages, ...categoryPages, ...folderPages, ...postPages];
+  const pagesByUrl = new Map<string, MetadataRoute.Sitemap[number]>();
+  for (const page of pages) {
+    if (!pagesByUrl.has(page.url)) {
+      pagesByUrl.set(page.url, page);
+    }
+  }
+
+  return Array.from(pagesByUrl.values());
 }
