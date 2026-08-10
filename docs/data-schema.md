@@ -13,7 +13,7 @@
 
 스키마 파일: `src/infra/db/schema/posts.ts`
 
-용도: GitHub fos-study 리포에서 sync 된 마크다운 글 메타데이터 + 본문.
+용도: GitHub fos-study 리포에서 sync 된 마크다운 글 메타데이터와 본문.
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
@@ -27,7 +27,7 @@
 | `folders` | json | DEFAULT '[]' | n-depth 폴더 경로 배열 |
 | `tags` | json | NOT NULL DEFAULT '[]' | frontmatter tags (plan026, ADR-023) |
 | `series` | varchar(255) | NULL | frontmatter series 이름 (plan033, ADR-025) |
-| `series_order` | int | NULL | frontmatter seriesOrder. series 있는데 seriesOrder 누락 시 둘 다 NULL + log.warn drop (plan033, ADR-025) |
+| `series_order` | int | NULL | frontmatter seriesOrder. series 있는데 seriesOrder 누락 시 둘 다 NULL 로 두고 log.warn 후 drop (plan033, ADR-025) |
 | `thumbnail_url` | varchar(2048) | NULL | frontmatter `thumbnail` 상대 경로를 동기화 시점에 변환한 GitHub raw 절대 URL. 누락·무효 값은 NULL (plan056, ADR-033) |
 | `content` | text | | 마크다운 원문 |
 | `description` | text | | 발췌 설명. frontmatter `description`이 있으면 그 값, 없으면 본문 산문 블록에서 추출한 평문 200자. 마크다운 마커는 제거하고 링크가 있는 첫머리 인용문은 제외한다 (plan058, ADR-034) |
@@ -45,7 +45,7 @@
 Notes:
 - `path` = unique key (slug 이 아닌 path 기준 업서트)
 - `is_active = false` = soft delete — 모든 조회에 `WHERE is_active = 1` 필수
-- 카테고리 페이지는 폴더 직속 글(경로 매칭)에 더해 cross-post 글을 `JSON_CONTAINS(categories, JSON_QUOTE(folderPath))` + 현재 폴더 경로 prefix 제외로 합쳐 노출한다 (plan051, plan053, ADR-030).
+- 카테고리 페이지는 폴더 직속 글(경로 매칭)에 더해 cross-post 글을 `JSON_CONTAINS(categories, JSON_QUOTE(folderPath))` 조건과 현재 폴더 경로 prefix 제외를 함께 적용해 노출한다 (plan051, plan053, ADR-030).
   `folderPath`는 `AI`뿐 아니라 `AI/RAG` 같은 하위 폴더 경로도 가능하다.
   폴더 브라우저(`path` prefix 매칭)는 그대로 유지한다.
   글 수가 적어 인덱스 없이 풀스캔을 허용한다.
@@ -67,7 +67,7 @@ Notes:
 
 인덱스:
 - `visit_stats_page_path_idx` on `(page_path)` UNIQUE
-- `visit_stats_count_path_idx` on `(visit_count DESC, page_path ASC)` — 인기글 offset 페이징 + 동점 안정화 (ADR-002)
+- `visit_stats_count_path_idx` on `(visit_count DESC, page_path ASC)` — 인기글 offset 페이징과 동점 안정화 (ADR-002)
 
 ---
 
@@ -138,7 +138,7 @@ Notes:
 
 스키마 파일: `src/infra/db/schema/comments.ts`
 
-용도: 글별 댓글. 닉네임 공개 + 비밀번호 bcrypt 해시 저장 (ADR-021).
+용도: 글별 댓글. 닉네임 공개와 비밀번호 bcrypt 해시 저장 (ADR-021).
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
@@ -219,7 +219,7 @@ Notes:
 
 스키마 파일: `src/infra/db/schema/syncLogs.ts`
 
-용도: `/api/sync` 실행 이력 기록. 성공/실패 + 처리 건수 + HEAD commit SHA.
+용도: `/api/sync` 실행 이력 기록. 성공/실패, 처리 건수, HEAD commit SHA.
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
@@ -239,7 +239,7 @@ Notes:
 
 ## 인덱스 결정 (plan014 ADR-002)
 
-`posts` cursor 페이징 + `visit_stats` offset 페이징을 위한 복합 인덱스 — 상단 각 테이블 섹션에 포함.
+`posts` cursor 페이징과 `visit_stats` offset 페이징을 위한 복합 인덱스 — 상단 각 테이블 섹션에 포함.
 
 Drizzle 0.45.1 에서 column-level `.desc()` index chain 의 SQL 방향 직렬화가 불안정 → `sql\`${col} DESC\`` 템플릿 채택 (실측 확인 필요시 migration SQL 참조).
 

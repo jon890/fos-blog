@@ -102,7 +102,7 @@
 진입점:
 
 - 전역 (모든 페이지): Header `navLinks` "03 / 시리즈"
-- 메인 페이지: "인기 글" 과 "최근 글" 사이 "시리즈" 섹션 (최근 업데이트 4개) + "시리즈 더 보기" CTA
+- 메인 페이지: "인기 글" 과 "최근 글" 사이 "시리즈" 섹션 (최근 업데이트 4개)와 "시리즈 더 보기" CTA
 - 글 상세 (기존, plan033): `ArticleHero` / `ArticleFooter` 의 series 링크 → `/series/<name>`
 
 ---
@@ -111,7 +111,7 @@
 
 | 상황                                     | 처리                                                                                                              |
 | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| DB 연결 실패 (SSR)                       | 빈 목록 + "글이 없습니다" (홈과 동일 폴백 패턴)                                                                   |
+| DB 연결 실패 (SSR)                       | 빈 목록과 "글이 없습니다" (홈과 동일 폴백 패턴)                                                                  |
 | 추가 fetch 네트워크 실패                 | 인라인 "재시도" 버튼, 같은 cursor/offset 재시도                                                                   |
 | JS 비활성화                              | SSR 10개는 보임, 추가 로드 불가 (graceful degradation)                                                            |
 | 키보드만 사용                            | 수동 "더 보기" 버튼으로 동일 동작 (focus ring 유지)                                                               |
@@ -181,11 +181,11 @@ PostCard 렌더
 
 ## 정적 / 보조 라우트
 
-AdSense 승인 요건(ADR-014) + 태그 탐색(ADR-023) 페이지.
+AdSense 승인 요건(ADR-014)과 태그 탐색(ADR-023) 페이지.
 
 | 라우트 | 진입 경로 | 설명 |
 |---|---|---|
-| `/contact` | Footer 링크 / 직접 접근 | 이메일 + GitHub Issues 채널 안내. 정적 렌더 |
+| `/contact` | Footer 링크 / 직접 접근 | 이메일과 GitHub Issues 채널 안내. 정적 렌더 |
 | `/privacy` | Footer 링크 / 직접 접근 | 개인정보처리방침 (방문 통계 SHA-256 해시 / 댓글 bcrypt / Google AdSense 쿠키). ISR 24h |
 | `/tag/[name]` | 글 상세 `ArticleFooter`의 태그 칩 | `decodeURIComponent(name)` → `getPostsByTag` limit=50. total=0 이면 `notFound()`. ISR 5분 (ADR-023) |
 | `/series` | Header "03 / 시리즈" / 메인 시리즈 섹션 CTA | `getAllSeries()` → SeriesCard grid. 0건이면 빈 상태 메시지. ISR 5분 (plan047) |
