@@ -177,6 +177,81 @@ description: 진행기간 2026-01 \\~ 2026-03
     expect(result).toContain("진행기간 2026-01");
     expect(result).toContain("강조");
   });
+
+  it("링크가 있는 첫머리 인용 블록을 제외한다", () => {
+    const content = `# 제목
+
+> [이전 글](https://example.com)을 먼저 읽는다.
+> 시리즈 탐색 안내다.
+마커 없이 이어지는 안내다.
+
+실제 글의 첫 문단이다.`;
+
+    expect(extractDescription(content)).toBe("실제 글의 첫 문단이다.");
+  });
+
+  it("링크가 없는 첫머리 인용 블록은 내용만 남긴다", () => {
+    const content = `> Remote Dictionary Server
+> 원격 인메모리 저장소다.
+
+다음 문단`;
+
+    expect(extractDescription(content)).toBe(
+      "Remote Dictionary Server 원격 인메모리 저장소다. 다음 문단",
+    );
+  });
+
+  it("본문 중간 인용은 마커만 제거하고 남긴다", () => {
+    const content = `첫 문단
+
+> [참고 링크](https://example.com)이지만 본문 인용이다.`;
+
+    expect(extractDescription(content)).toBe(
+      "첫 문단 참고 링크이지만 본문 인용이다.",
+    );
+  });
+
+  it("목록과 겹친 인용 마커를 반복해서 제거한다", () => {
+    const content = `- 첫 항목
+* 둘째 항목
+1. 셋째 항목
+- > 겹친 인용
+  - **강조 목록**`;
+
+    expect(extractDescription(content)).toBe(
+      "첫 항목 둘째 항목 셋째 항목 겹친 인용 강조 목록",
+    );
+  });
+
+  it("수평선, 표, 코드 펜스 블록을 제외한다", () => {
+    const content = `첫 문단
+
+---
+| 열 | 값 |
+\`\`\`ts
+const hidden = true;
+\`\`\`
+마지막 문단`;
+
+    expect(extractDescription(content)).toBe("첫 문단 마지막 문단");
+  });
+
+  it("닫히지 않은 코드 펜스는 문서 끝까지 제외한다", () => {
+    const content = `첫 문단
+
+~~~ts
+숨겨진 코드
+숨겨진 마지막 줄`;
+
+    expect(extractDescription(content)).toBe("첫 문단");
+  });
+
+  it("이미지는 대체 텍스트까지 제거하고 링크는 텍스트만 남긴다", () => {
+    const content =
+      "![대체 텍스트](https://example.com/image.png) [링크 텍스트](https://example.com) 본문";
+
+    expect(extractDescription(content)).toBe("링크 텍스트 본문");
+  });
 });
 
 // ===== getReadingTime =====

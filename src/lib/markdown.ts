@@ -102,6 +102,84 @@ function unescapeMarkdown(text: string): string {
   return text.replace(/\\([!-/:-@[-`{-~])/g, "$1");
 }
 
+function isHorizontalRule(line: string): boolean {
+  return /^ {0,3}([*_-])(?:[ \t]*\1){2,}[ \t]*$/.test(line);
+}
+
+function collectProseLines(markdown: string): string[] {
+  const proseLines: string[] = [];
+  let codeFence: { character: string; length: number } | null = null;
+
+  for (const line of markdown.split(/\r?\n/)) {
+    if (codeFence) {
+      const closingFence = line.match(/^ {0,3}(`+|~+)[ \t]*$/);
+      if (
+        closingFence &&
+        closingFence[1][0] === codeFence.character &&
+        closingFence[1].length >= codeFence.length
+      ) {
+        codeFence = null;
+      }
+      continue;
+    }
+
+    const openingFence = line.match(/^ {0,3}(`{3,}|~{3,})/);
+    if (openingFence) {
+      codeFence = {
+        character: openingFence[1][0],
+        length: openingFence[1].length,
+      };
+      continue;
+    }
+
+    if (
+      /^ {0,3}#{1,6}(?:[ \t]|$)/.test(line) ||
+      isHorizontalRule(line) ||
+      /^ {0,3}\|/.test(line)
+    ) {
+      proseLines.push("");
+      continue;
+    }
+
+    proseLines.push(line);
+  }
+
+  const firstBlockStart = proseLines.findIndex((line) => line.trim() !== "");
+  if (firstBlockStart === -1) return proseLines;
+
+  let firstBlockEnd = firstBlockStart;
+  while (
+    firstBlockEnd < proseLines.length &&
+    proseLines[firstBlockEnd].trim() !== ""
+  ) {
+    firstBlockEnd++;
+  }
+
+  const firstBlock = proseLines.slice(firstBlockStart, firstBlockEnd);
+  const isOpeningQuote = /^ {0,3}>/.test(firstBlock[0]);
+  const hasLink = /(^|[^!])\[[^\]\n]+\]\([^)]+\)/.test(
+    firstBlock.join("\n"),
+  );
+
+  if (isOpeningQuote && hasLink) {
+    proseLines.splice(firstBlockStart, firstBlock.length);
+  }
+
+  return proseLines;
+}
+
+function stripLeadingMarkers(line: string): string {
+  let stripped = line;
+
+  while (true) {
+    const next = stripped
+      .replace(/^ {0,3}(?:>[ \t]?)+/, "")
+      .replace(/^\s*(?:[-*+]|\d+[.)])[ \t]+/, "");
+    if (next === stripped) return stripped;
+    stripped = next;
+  }
+}
+
 // Extract description from markdown content
 export function extractDescription(
   content: string,
@@ -117,13 +195,15 @@ export function extractDescription(
     );
   }
 
-  // Remove markdown syntax and get first paragraph
-  const plainText = unescapeMarkdown(mainContent)
-    .replace(HTML_TAG_RE, " ") // Remove HTML tags (<br>, <details> 등)
-    .replace(/^#+\s+.+$/gm, "") // Remove headers
+  const proseLines = collectProseLines(
+    unescapeMarkdown(mainContent).replace(HTML_TAG_RE, " "),
+  );
+  const plainText = proseLines
+    .map(stripLeadingMarkers)
+    .join(" ")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, "") // Remove images before link conversion
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Replace links with text
     .replace(/[*_`~]/g, "") // Remove formatting
-    .replace(/\n+/g, " ") // Replace newlines with spaces
     .replace(/\s+/g, " ") // Collapse repeated whitespace from tag removal
     .trim();
 
