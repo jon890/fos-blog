@@ -25,11 +25,11 @@ GitHub 이슈 [#198](https://github.com/jon890/fos-blog/issues/198)을 해결한
 canonical은 이미 있지만 `src/app/category/[...path]/page.tsx:93`이 요청 경로를 그대로 반사한다.
 각 URL이 자기 자신을 대표로 선언해 중복을 하나로 모으는 기능이 없다.
 
-**범위 외**: 글 URL(`/posts/...`)의 표기 변경, 얇은 카테고리를 sitemap에서 빼는 정책(이슈 #199), `/tag`와 `/series`의 canonical, 리디렉션 도입, 문서 수정(이미 완료).
+**범위 외**: 글 URL(`/posts/...`)의 표기 변경, 얇은 카테고리를 sitemap에서 빼는 정책(이슈 #199), `/tag`와 `/series`의 canonical, 리디렉션 도입.
 
 ---
 
-## 작업 항목 (5)
+## 작업 항목 (6)
 
 ### 1. 정규화 함수 추가
 
@@ -60,8 +60,8 @@ canonical은 이미 있지만 `src/app/category/[...path]/page.tsx:93`이 요청
 `src/app/category/[...path]/page.tsx`의 `generateMetadata`를 고친다.
 
 `canonicalUrl`을 만들 때 요청에서 받은 `pathSegments`를 그대로 쓰지 말고 정규화 함수를 통과시킨다.
-페이지 조회와 화면 렌더에 쓰는 `folderPath`는 **바꾸지 않는다** — 조회는 대소문자를 구분하지 않으므로
-요청 값 그대로 두어야 화면에 표시되는 폴더명이 저장소 원본 표기를 유지한다.
+페이지 조회와 화면 렌더에 쓰는 `folderPath`와 `pathSegments`는 **바꾸지 않는다**.
+화면은 저장소에서 이름을 복원하지 않고 요청 경로의 표기를 그대로 사용한다.
 정규화는 canonical URL 생성에만 적용한다.
 
 ### 4. 경로 유틸리티 회귀 테스트 추가
@@ -90,6 +90,17 @@ Repository는 기존 Route Handler 테스트와 같은 방식으로 `vi.mock`해
 - 카테고리와 글이 모두 없어도 정적 페이지만 반환한다.
 - Repository 조회가 실패하면 기존 catch 동작대로 정적 페이지만 반환한다.
 
+### 6. 대표 URL의 폴더 조회 동등성 보장
+
+`FolderRepository.getFolderContents`가 글 경로 접두사를 대소문자 구분 없이 비교하게 한다.
+호출부의 `folderPath`와 `pathSegments`는 요청 값 그대로 유지한다.
+
+다음을 회귀 테스트로 고정한다.
+
+- 소문자 요청으로 대문자 저장 경로의 글을 조회한다.
+- 대문자 요청으로 소문자 저장 경로의 글을 조회한다.
+- `ai` 요청에 `aiops`처럼 접두사만 같은 다른 폴더의 글이 섞이지 않는다.
+
 ---
 
 ## Critical Files
@@ -101,6 +112,8 @@ Repository는 기존 Route Handler 테스트와 같은 방식으로 `vi.mock`해
 | `src/app/sitemap.ts` | 정규화 적용과 URL 기준 중복 제거 |
 | `src/app/sitemap.test.ts` | 신규. sitemap 조립 결과와 실패 폴백 회귀 |
 | `src/app/category/[...path]/page.tsx` | canonical을 정규 형태로 |
+| `src/infra/db/repositories/FolderRepository.ts` | 폴더 글 경로를 대소문자 구분 없이 비교 |
+| `src/infra/db/repositories/FolderRepository.test.ts` | 신규. 대표 URL의 조회 동등성 회귀 |
 
 ## 검증
 
@@ -108,6 +121,7 @@ Repository는 기존 Route Handler 테스트와 같은 방식으로 `vi.mock`해
 # cwd: /Users/nhn/personal/fos-blog/worktrees/fos-blog/plan059-sitemap-dedup-2
 pnpm test src/lib/path-utils.test.ts
 pnpm test src/app/sitemap.test.ts
+pnpm test src/infra/db/repositories/FolderRepository.test.ts
 pnpm lint
 pnpm type-check
 pnpm test
@@ -140,7 +154,7 @@ curl -sS https://blog.fosworld.co.kr/sitemap.xml \
 
 ## 의도 메모 (왜)
 
-- 한 phase로 묶은 이유는 세 파일의 변경이 하나의 결정에서 나오기 때문이다.
+- 한 phase로 묶은 이유는 정규화, sitemap, canonical, 조회 동등성이 하나의 결정에서 나오기 때문이다.
   정규화 함수만 추가하고 sitemap을 안 고치면 아무 효과가 없고,
   sitemap만 고치고 canonical을 두면 외부 링크로 유입된 다른 표기가 다시 색인된다.
   한 번에 검증해야 중복 0을 확인할 수 있다.
