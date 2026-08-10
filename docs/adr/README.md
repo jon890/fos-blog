@@ -59,6 +59,7 @@ AI 에이전트가 설계 철학을 빠르게 추론하기 위한 컨텍스트.
 - [ADR-026](./026-markdown-sanitize.md) — 원시 HTML을 HAST 단계에서 정제하고 필요한 속성만 허용
 - [ADR-027](./027-katex.md) — KaTeX 수식 렌더링 도입 (remark-math + rehype-katex output:"html", plan044)
 - [ADR-032](./032-glossary-sync-and-mentions.md) — 콘텐츠 용어집 동기화 + 언급 페이지 사전 계산 + sanitize 이후 요청별 HAST 변환 (plan054)
+- [ADR-034](./034-description-extraction.md) — 글 요약은 산문 블록만 모으고 링크가 있는 첫머리 인용문은 제외 (plan058)
 
 ## 컴포넌트 분리
 

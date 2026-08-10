@@ -30,7 +30,7 @@
 | `series_order` | int | NULL | frontmatter seriesOrder. series 있는데 seriesOrder 누락 시 둘 다 NULL + log.warn drop (plan033, ADR-025) |
 | `thumbnail_url` | varchar(2048) | NULL | frontmatter `thumbnail` 상대 경로를 동기화 시점에 변환한 GitHub raw 절대 URL. 누락·무효 값은 NULL (plan056, ADR-033) |
 | `content` | text | | 마크다운 원문 |
-| `description` | text | | 발췌 설명 |
+| `description` | text | | 발췌 설명. frontmatter `description`이 있으면 그 값, 없으면 본문 산문 블록에서 추출한 평문 200자. 마크다운 마커는 제거하고 링크가 있는 첫머리 인용문은 제외한다 (plan058, ADR-034) |
 | `sha` | varchar(64) | | GitHub file SHA (변경 감지용) |
 | `is_active` | boolean | NOT NULL DEFAULT true | soft delete 플래그 |
 | `created_at` | timestamp | NOT NULL DEFAULT NOW | |
