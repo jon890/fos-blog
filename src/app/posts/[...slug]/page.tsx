@@ -30,6 +30,15 @@ const siteUrl = env.NEXT_PUBLIC_SITE_URL;
 // ISR - 60초마다 페이지 재생성
 export const revalidate = 60;
 
+// 글이 없을 때의 메타데이터.
+// 빌드 시점에 정적 생성된 경로는 글이 삭제된 뒤에도 캐시가 200 으로 남아,
+// 상태 코드만으로는 검색 엔진에 "없는 글"임을 알릴 수 없다.
+// 그 상태로 두면 본문이 제목 한 줄뿐인 페이지가 색인 대상으로 남는다.
+const NOT_FOUND_METADATA: Metadata = {
+  title: "글을 찾을 수 없습니다",
+  robots: { index: false, follow: false },
+};
+
 interface PostPageProps {
   params: Promise<{
     slug: string[];
@@ -47,7 +56,7 @@ export async function generateMetadata({
     const data = await post.getPost(slug);
 
     if (!data) {
-      return { title: "글을 찾을 수 없습니다" };
+      return NOT_FOUND_METADATA;
     }
 
     const parsed = parseFrontMatter(data.content);
@@ -88,7 +97,7 @@ export async function generateMetadata({
       },
     };
   } catch {
-    return { title: "글을 찾을 수 없습니다" };
+    return NOT_FOUND_METADATA;
   }
 }
 
