@@ -16,11 +16,22 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { name } = await params;
   const tag = decodeURIComponent(name);
+
+  // 태그 이름은 임의 문자열이라 존재 여부를 확인하지 않으면
+  // 아무 값이나 넣은 URL 이 모두 색인 허용 페이지가 된다.
+  let total = 0;
+  try {
+    total = await getRepositories().post.countPostsByTag(tag);
+  } catch {
+    total = 0;
+  }
+
   return {
     title: `#${tag}`,
     description: `${tag} 태그가 달린 글 모음`,
     alternates: { canonical: `${siteUrl}/tag/${encodeURIComponent(tag)}` },
-    robots: { index: true, follow: true },
+    robots:
+      total > 0 ? { index: true, follow: true } : { index: false, follow: false },
   };
 }
 

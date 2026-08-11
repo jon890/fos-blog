@@ -17,6 +17,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { name } = await params;
   const series = decodeURIComponent(name);
   const url = `${siteUrl}/series/${encodeURIComponent(series)}`;
+
+  // 시리즈 이름은 임의 문자열이라 존재 여부를 확인하지 않으면
+  // 아무 값이나 넣은 URL 이 모두 색인 허용 페이지가 된다.
+  let exists = false;
+  try {
+    exists = (await getRepositories().post.getPostsBySeries(series)).length > 0;
+  } catch {
+    exists = false;
+  }
+
   return {
     title: `시리즈: ${series}`,
     description: `${series} 시리즈 글 모음`,
@@ -27,6 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url,
       type: "website",
     },
+    ...(exists ? {} : { robots: { index: false, follow: false } }),
   };
 }
 
