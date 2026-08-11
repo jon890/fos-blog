@@ -7,15 +7,9 @@ const mocks = vi.hoisted(() => ({
 // vitest node 환경에서 server-only 가드 우회
 vi.mock("server-only", () => ({}));
 
-vi.mock("react", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("react")>()),
-  cache: <T>(fn: T) => fn,
-}));
-
 vi.mock("@/infra/db/repositories", () => ({
   getRepositories: vi.fn(() => ({
     post: { getPost: mocks.getPost },
-    visit: {},
   })),
 }));
 
@@ -46,12 +40,40 @@ describe("글 상세 generateMetadata", () => {
     expect(metadata.robots).toEqual({ index: false, follow: false });
   });
 
-  it("조회가 실패해도 색인을 막는다", async () => {
+  // 조회 실패는 "없는 글"과 다르게 다뤄야 한다.
+  // 이 catch 는 파싱·추출까지 덮으므로, DB 가 잠깐 흔들리는 동안
+  // 살아 있는 글에 noindex 를 붙이면 프리렌더 캐시에 그대로 굳는다.
+  it("조회가 실패하면 색인 여부를 단언하지 않는다", async () => {
     mocks.getPost.mockRejectedValue(new Error("db down"));
 
     const { generateMetadata } = await import("./page");
     const metadata = await generateMetadata(params(["오류.md"]));
 
-    expect(metadata.robots).toEqual({ index: false, follow: false });
+    expect(metadata.robots).toBeUndefined();
+  });
+
+  it("정상 글에는 robots 를 붙이지 않는다", async () => {
+    mocks.getPost.mockResolvedValue({
+      content: "# 제목\n\n본문이다.",
+      post: { title: "제목", createdAt: null, updatedAt: null, thumbnailUrl: null },
+    });
+
+    const { generateMetadata } = await import("./page");
+    const metadata = await generateMetadata(params(["정상글.md"]));
+
+    expect(metadata.robots).toBeUndefined();
+  });
+
+  // frontmatter 로 색인을 끈 글은 follow 를 유지해야 한다 (ADR-005).
+  it("frontMatter.index === false 는 follow 를 유지한다", async () => {
+    mocks.getPost.mockResolvedValue({
+      content: "---\nindex: false\n---\n\n# 제목\n\n본문이다.",
+      post: { title: "제목", createdAt: null, updatedAt: null, thumbnailUrl: null },
+    });
+
+    const { generateMetadata } = await import("./page");
+    const metadata = await generateMetadata(params(["숨긴글.md"]));
+
+    expect(metadata.robots).toEqual({ index: false, follow: true });
   });
 });

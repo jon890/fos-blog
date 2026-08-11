@@ -4,7 +4,9 @@ import { env } from "@/env";
 import { getRepositories } from "@/infra/db/repositories";
 import { PostsListSubHero } from "@/components/PostsListSubHero";
 import { PostCard } from "@/components/PostCard";
+import logger from "@/lib/logger";
 
+const log = logger.child({ module: "app/series/[name]" });
 const siteUrl = env.NEXT_PUBLIC_SITE_URL;
 
 export const revalidate = 300;
@@ -20,11 +22,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   // 시리즈 이름은 임의 문자열이라 존재 여부를 확인하지 않으면
   // 아무 값이나 넣은 URL 이 모두 색인 허용 페이지가 된다.
-  let exists = false;
+  // 조회가 실패했을 때는 noindex 를 붙이지 않는다 —
+  // 글이 멀쩡히 있는 시리즈가 DB 장애로 색인에서 빠지는 편이 더 나쁘다.
+  let empty = false;
   try {
-    exists = (await getRepositories().post.getPostsBySeries(series)).length > 0;
-  } catch {
-    exists = false;
+    empty = (await getRepositories().post.getPostsBySeries(series)).length === 0;
+  } catch (error) {
+    log.warn(
+      { err: error instanceof Error ? error : new Error(String(error)), series },
+      "시리즈 메타데이터 생성 실패",
+    );
   }
 
   return {
@@ -37,7 +44,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url,
       type: "website",
     },
-    ...(exists ? {} : { robots: { index: false, follow: false } }),
+    ...(empty && { robots: { index: false, follow: false } }),
   };
 }
 

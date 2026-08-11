@@ -96,8 +96,17 @@ export async function generateMetadata({
         images: [socialImageUrl],
       },
     };
-  } catch {
-    return NOT_FOUND_METADATA;
+  } catch (error) {
+    // 여기서 robots 를 단언하지 않는다.
+    // 이 catch 는 조회뿐 아니라 파싱·추출까지 덮으므로,
+    // DB 가 잠깐 흔들리는 동안 살아 있는 글이 noindex 로 굳을 수 있다.
+    // 프리렌더 캐시의 stale-while-revalidate 가 1년이라 회복도 느리다.
+    // "없는 글"은 색인에서 빼야 하지만 "조회 실패"는 아무것도 단언하지 않는 편이 안전하다.
+    log.warn(
+      { err: error instanceof Error ? error : new Error(String(error)), slug },
+      "글 메타데이터 생성 실패",
+    );
+    return { title: "글을 찾을 수 없습니다" };
   }
 }
 

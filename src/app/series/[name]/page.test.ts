@@ -14,6 +14,10 @@ vi.mock("@/env", () => ({
   env: { NEXT_PUBLIC_SITE_URL: "https://example.com" },
 }));
 
+vi.mock("@/lib/logger", () => ({
+  default: { child: vi.fn().mockReturnValue({ warn: vi.fn() }) },
+}));
+
 const params = (name: string) => ({ params: Promise.resolve({ name }) });
 
 describe("시리즈 페이지 generateMetadata", () => {
@@ -41,12 +45,13 @@ describe("시리즈 페이지 generateMetadata", () => {
     expect(metadata.robots).toEqual({ index: false, follow: false });
   });
 
-  it("조회가 실패해도 색인을 막는다", async () => {
+  // 글이 있는 시리즈가 DB 장애로 색인에서 빠지는 편이 더 나쁘다.
+  it("조회가 실패하면 색인 여부를 단언하지 않는다", async () => {
     mocks.getPostsBySeries.mockRejectedValue(new Error("db down"));
 
     const { generateMetadata } = await import("./page");
     const metadata = await generateMetadata(params("오류"));
 
-    expect(metadata.robots).toEqual({ index: false, follow: false });
+    expect(metadata.robots).toBeUndefined();
   });
 });
