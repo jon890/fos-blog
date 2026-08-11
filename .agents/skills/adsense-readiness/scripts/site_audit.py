@@ -29,6 +29,18 @@ UA = "Mozilla/5.0 (compatible; adsense-readiness/1.0)"
 TIMEOUT = 20
 
 
+def normalize_host(value):
+    """도메인 인자에서 스킴과 경로를 벗겨 host 만 남긴다.
+
+    사용자가 `--domain https://example.com` 처럼 넣는 일이 잦다.
+    그대로 이어 붙이면 "https://https://example.com" 이 되어 모든 요청이 실패하고,
+    그 실패가 입력 오류가 아니라 사이트 결함으로 보고된다.
+    """
+    v = value.strip()
+    v = re.sub(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", "", v)
+    return v.split("/", 1)[0].strip("/")
+
+
 def fetch(url, method="GET", follow=False):
     """(status, final_url, body, error) 를 반환한다. 리디렉션은 기본적으로 따라가지 않는다."""
     class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -83,8 +95,10 @@ def redirect_chain(url, max_hops=5):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--domain", required=True, help="콘텐츠가 실제로 서빙되는 도메인")
-    ap.add_argument("--apply-domain", help="AdSense 에 신청한 도메인. 다르면 리디렉션을 점검한다")
+    ap.add_argument("--domain", required=True,
+                    help="콘텐츠가 실제로 서빙되는 도메인. https:// 는 붙여도 되고 안 붙여도 된다")
+    ap.add_argument("--apply-domain",
+                    help="AdSense 에 신청한 도메인. 다르면 리디렉션을 점검한다")
     ap.add_argument("--pages", default="/privacy,/about,/contact",
                     help="필수 페이지 경로. 쉼표 구분")
     ap.add_argument("--min-page-chars", type=int, default=300,
@@ -92,7 +106,14 @@ def main():
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
-    base = f"https://{args.domain.strip('/')}"
+    # 스킴을 붙여 넣어도 동작해야 한다.
+    # 그냥 이어 붙이면 "https://https://..." 가 되고, 이름 해석에 실패한 결과가
+    # 입력 오류가 아니라 사이트 결함(CRITICAL 7건)으로 보고된다.
+    args.domain = normalize_host(args.domain)
+    if args.apply_domain:
+        args.apply_domain = normalize_host(args.apply_domain)
+
+    base = f"https://{args.domain}"
     findings = []
     result = {"domain": args.domain, "checks": {}}
 
@@ -138,7 +159,8 @@ def main():
             findings.append((
                 "warning",
                 f"신청 도메인 {apply_base} 가 리디렉션만 반환한다. "
-                "심사 봇이 리디렉션을 따라가 콘텐츠를 평가한다는 보장이 없다",
+                "콘솔의 소유권 확인이 통과 상태라면 봇은 콘텐츠에 도달하고 있으므로 "
+                "이 항목을 거절 원인으로 단정하지 않는다",
             ))
 
         # www 변형이 응답하는가. AdSense 는 www 를 함께 확인하는 경우가 있다.
