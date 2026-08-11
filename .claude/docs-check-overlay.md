@@ -10,7 +10,7 @@
 - 상시 지침: `AGENTS.md`
 - 작업 종류별 규칙: `.claude/rules/*.md`
 - 저장소 오버레이: `.claude/*-overlay.md`
-- 저장소 스킬 자료: `.agents/skills/*/SKILL.md`, `.agents/skills/_shared/*.md`
+- 저장소 스킬 자료: `.agents/skills/*/SKILL.md`, `.agents/skills/*/references/*.md`, `.agents/skills/_shared/*.md`
 - 역할 지침: `.agents/roles/*.md` (`.claude/agents/*.md`와 `.codex/agents/*.toml`은 얇은 래퍼)
 
 `AGENTS.md`는 `CLAUDE.md`를 가리키는 심볼릭 링크다.
