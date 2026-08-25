@@ -9,6 +9,8 @@ const MAX_SCALE = 12;
 const MAX_INITIAL_SCALE = 6;
 const SCALE_STEP = 1.5;
 const WHEEL_SENSITIVITY = 0.0015;
+/** 이 거리 안에서 누르고 놓으면 이동이 아니라 탭으로 본다. */
+const TAP_SLOP = 6;
 const ICON_SIZE = 22;
 const ICON_SIZE_CLOSE = 26;
 
@@ -33,6 +35,11 @@ function zoomAt(t: Transform, nextScale: number, px: number, py: number): Transf
     x: px - ((px - t.x) * scale) / t.scale,
     y: py - ((py - t.y) * scale) / t.scale,
   };
+}
+
+/** 누른 지점이 다이어그램 위인지. 스테이지는 화면을 다 덮어서 좌표만으로는 배경과 구분되지 않는다. */
+function isDiagramTarget(target: EventTarget): boolean {
+  return target instanceof Element && target.closest("svg") !== null;
 }
 
 type MermaidZoomModalProps = {
@@ -88,12 +95,15 @@ export function MermaidZoomModal({ svg, label, onClose }: MermaidZoomModalProps)
   const baseScaleRef = useRef(1);
   const metricsRef = useRef<Metrics | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   // 진행 중인 pointer 위치. 1개면 이동, 2개면 손가락 확대.
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
   const pinchRef = useRef<{ distance: number; scale: number } | null>(null);
+  // 배경 탭 판정용 누름 지점
+  const pressRef = useRef<{ x: number; y: number; onDiagram: boolean } | null>(null);
   const transformRef = useRef<Transform>(IDENTITY);
   transformRef.current = transform;
 
@@ -139,6 +149,26 @@ export function MermaidZoomModal({ svg, label, onClose }: MermaidZoomModalProps)
     applyInitial();
   }, [applyInitial, svg]);
 
+  // 창 크기나 방향이 바뀌면 스테이지 크기가 달라져 배율과 위치가 어긋난다. 다시 재서 맞춘다.
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || typeof ResizeObserver === "undefined") return;
+
+    let first = true;
+    const observer = new ResizeObserver(() => {
+      // 관찰을 시작할 때 한 번 즉시 발화하므로 그 호출은 흘린다.
+      if (first) {
+        first = false;
+        return;
+      }
+      metricsRef.current = null;
+      applyInitial();
+    });
+
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, [applyInitial]);
+
   // 이전 포커스 보존 + 배경 스크롤 잠금
   useEffect(() => {
     previousFocusRef.current = document.activeElement as HTMLElement | null;
@@ -153,7 +183,25 @@ export function MermaidZoomModal({ svg, label, onClose }: MermaidZoomModalProps)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === "Tab") {
+        // aria-modal 은 스크린리더 인지만 바꾼다. 실제 포커스는 여기서 모달 안에 묶는다.
+        const focusables = dialogRef.current?.querySelectorAll<HTMLElement>(
+          "button:not([disabled])",
+        );
+        if (!focusables?.length) return;
+
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement;
+
+        if (e.shiftKey && (active === first || !dialogRef.current?.contains(active))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      } else if (e.key === "Escape") {
         onClose();
       } else if (e.key === "+" || e.key === "=") {
         zoomByStep(SCALE_STEP);
@@ -189,6 +237,10 @@ export function MermaidZoomModal({ svg, label, onClose }: MermaidZoomModalProps)
     e.currentTarget.setPointerCapture(e.pointerId);
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     pinchRef.current = null;
+    pressRef.current =
+      pointersRef.current.size === 1
+        ? { x: e.clientX, y: e.clientY, onDiagram: isDiagramTarget(e.target) }
+        : null;
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -215,21 +267,29 @@ export function MermaidZoomModal({ svg, label, onClose }: MermaidZoomModalProps)
         return;
       }
 
+      // updater 클로저는 나중에 실행되므로 ref 를 지역 변수로 붙잡아 둔다.
+      const pinch = pinchRef.current;
       const center = toStagePoint((a.x + b.x) / 2, (a.y + b.y) / 2);
-      const ratio = distance / pinchRef.current.distance;
-      setTransform((t) =>
-        zoomAt(t, pinchRef.current!.scale * ratio, center.x, center.y),
-      );
+      const ratio = distance / pinch.distance;
+      setTransform((t) => zoomAt(t, pinch.scale * ratio, center.x, center.y));
     }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     pointersRef.current.delete(e.pointerId);
     if (pointersRef.current.size < 2) pinchRef.current = null;
+
+    // 다이어그램 밖을 누르고 그 자리에서 놓았으면 배경 클릭으로 보고 닫는다.
+    const press = pressRef.current;
+    pressRef.current = null;
+    if (!press || press.onDiagram || pointersRef.current.size > 0) return;
+    if (Math.hypot(e.clientX - press.x, e.clientY - press.y) > TAP_SLOP) return;
+    onClose();
   };
 
   const modal = (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[100] bg-[var(--color-bg-base)]/95 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"

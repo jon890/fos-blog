@@ -63,6 +63,56 @@ describe("MermaidZoomModal", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("다이어그램 밖을 탭하면 닫는다", () => {
+    const onClose = renderModal();
+    const stage = document.querySelector(".mermaid-zoom-stage") as HTMLElement;
+    stage.setPointerCapture = () => {};
+
+    fireEvent.pointerDown(stage, { pointerId: 1, clientX: 10, clientY: 10 });
+    fireEvent.pointerUp(stage, { pointerId: 1, clientX: 11, clientY: 12 });
+
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("끌어서 이동한 뒤에는 닫지 않는다", () => {
+    const onClose = renderModal();
+    const stage = document.querySelector(".mermaid-zoom-stage") as HTMLElement;
+    stage.setPointerCapture = () => {};
+
+    fireEvent.pointerDown(stage, { pointerId: 1, clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(stage, { pointerId: 1, clientX: 90, clientY: 60 });
+    fireEvent.pointerUp(stage, { pointerId: 1, clientX: 90, clientY: 60 });
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("다이어그램을 탭하면 닫지 않는다", () => {
+    const onClose = renderModal();
+    const stage = document.querySelector(".mermaid-zoom-stage") as HTMLElement;
+    stage.setPointerCapture = () => {};
+    const svg = stage.querySelector("svg") as SVGSVGElement;
+
+    fireEvent.pointerDown(svg, { pointerId: 1, clientX: 10, clientY: 10 });
+    fireEvent.pointerUp(svg, { pointerId: 1, clientX: 10, clientY: 10 });
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("Tab 포커스를 모달 안에 묶는다", () => {
+    renderModal();
+    const buttons = screen.getAllByRole("button");
+    const first = buttons[0];
+    const last = buttons[buttons.length - 1];
+
+    last.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(first);
+
+    first.focus();
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(last);
+  });
+
   it("열려 있는 동안 배경 스크롤을 잠그고 닫을 때 되돌린다", () => {
     const { unmount } = render(
       <MermaidZoomModal svg={SVG} label="다이어그램 확대 보기" onClose={vi.fn()} />,
