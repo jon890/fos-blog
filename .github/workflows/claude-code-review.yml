@@ -49,7 +49,7 @@ jobs:
             --method POST \
             --field content=eyes || true
 
-      - name: 이전 Claude 봇 댓글 삭제
+      - name: 이전 Claude 리뷰와 댓글 정리
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -57,6 +57,7 @@ jobs:
           PR_NUMBER="${{ env.PR_NUMBER }}"
 
           # 이전 일반 PR 코멘트 삭제 (claude[bot] 작성)
+          # 요약은 이제 리뷰 body 로 올라가지만, 과거 방식으로 쌓인 일반 댓글이 남아 있어 이 경로를 유지한다.
           gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
             --jq '.[] | select(.user.login == "claude[bot]") | .id' \
             | while read -r comment_id; do
@@ -73,6 +74,39 @@ jobs:
               if [ -n "$comment_id" ]; then
                 echo "오래된 Claude 인라인 댓글 삭제 중: $comment_id"
                 gh api "repos/$REPO/pulls/comments/$comment_id" --method DELETE || true
+              fi
+            done
+
+          # 이전 리뷰 본문 접기 (claude[bot] 작성)
+          # submit 된 리뷰는 REST DELETE /pulls/{n}/reviews/{id} 로 지울 수 없다(pending 리뷰 전용).
+          # dismiss 도 APPROVED / CHANGES_REQUESTED 리뷰에만 되므로 COMMENT 리뷰에는 접기만 남는다.
+          # 요약이 리뷰 body 로 옮겨간 뒤로는 이 경로가 없으면 이전 요약이 계속 쌓이므로
+          # GraphQL minimizeComment 로 접어 최신 리뷰만 펼쳐진 상태로 남긴다.
+          # GraphQL 의 author.login 은 REST 의 user.login 과 달리 "[bot]" 접미사가 없어 둘 다 받는다.
+          gh api graphql -f query='
+            query($owner: String!, $name: String!, $pr: Int!) {
+              repository(owner: $owner, name: $name) {
+                pullRequest(number: $pr) {
+                  reviews(first: 100) {
+                    nodes { id isMinimized author { login } }
+                  }
+                }
+              }
+            }' \
+            -F owner="${REPO%%/*}" -F name="${REPO##*/}" -F pr="$PR_NUMBER" \
+            --jq '.data.repository.pullRequest.reviews.nodes[]
+                  | select(.isMinimized == false)
+                  | select(.author.login == "claude" or .author.login == "claude[bot]")
+                  | .id' \
+            | while read -r review_id; do
+              if [ -n "$review_id" ]; then
+                echo "오래된 Claude 리뷰 접기: $review_id"
+                gh api graphql -f query='
+                  mutation($id: ID!) {
+                    minimizeComment(input: { subjectId: $id, classifier: OUTDATED }) {
+                      minimizedComment { isMinimized }
+                    }
+                  }' -F id="$review_id" || true
               fi
             done
 
