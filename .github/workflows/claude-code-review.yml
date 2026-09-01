@@ -58,7 +58,9 @@ jobs:
 
           # 이전 일반 PR 코멘트 삭제 (claude[bot] 작성)
           # 요약은 이제 리뷰 body 로 올라가지만, 과거 방식으로 쌓인 일반 댓글이 남아 있어 이 경로를 유지한다.
-          gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+          # REST 기본 페이지 크기가 30 이라 --paginate 없이는 오래된 항목이 정리되지 않고 남는다.
+          # per_page=100 을 함께 붙여 호출 횟수를 줄인다.
+          gh api --paginate "repos/$REPO/issues/$PR_NUMBER/comments?per_page=100" \
             --jq '.[] | select(.user.login == "claude[bot]") | .id' \
             | while read -r comment_id; do
               if [ -n "$comment_id" ]; then
@@ -68,7 +70,7 @@ jobs:
             done
 
           # 이전 인라인 리뷰 코멘트 삭제 (claude[bot] 작성)
-          gh api "repos/$REPO/pulls/$PR_NUMBER/comments" \
+          gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/comments?per_page=100" \
             --jq '.[] | select(.user.login == "claude[bot]") | .id' \
             | while read -r comment_id; do
               if [ -n "$comment_id" ]; then
@@ -83,6 +85,8 @@ jobs:
           # 요약이 리뷰 body 로 옮겨간 뒤로는 이 경로가 없으면 이전 요약이 계속 쌓이므로
           # GraphQL minimizeComment 로 접어 최신 리뷰만 펼쳐진 상태로 남긴다.
           # GraphQL 의 author.login 은 REST 의 user.login 과 달리 "[bot]" 접미사가 없어 둘 다 받는다.
+          # reviews(first: 100) 은 cursor 페이지 처리를 하지 않으므로 리뷰가 100 건을 넘으면
+          # 그 뒤 리뷰는 접히지 않고 남는다. 실무 범위에서는 100 이 충분해 그대로 둔다.
           gh api graphql -f query='
             query($owner: String!, $name: String!, $pr: Int!) {
               repository(owner: $owner, name: $name) {
@@ -154,7 +158,8 @@ jobs:
           PR_NUMBER="${{ env.PR_NUMBER }}"
 
           # claude[bot] 가 작성한 인라인 댓글만 검사
-          gh api "repos/$REPO/pulls/$PR_NUMBER/comments" \
+          # 정리 스텝과 같은 목록이라 페이지 처리도 같이 맞춘다.
+          gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/comments?per_page=100" \
             --jq '.[] | select(.user.login == "claude[bot]") | "\(.id)\t\(.body)"' \
             | while IFS=$'\t' read -r comment_id body; do
               [ -z "$comment_id" ] && continue
