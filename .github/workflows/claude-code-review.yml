@@ -93,7 +93,7 @@ jobs:
             echo 'PROMPT_BODY_EOF'
           } >> "$GITHUB_OUTPUT"
 
-      - name: Claude 코드 리뷰 실행 (단일 opus 리뷰어 + 인라인 리뷰)
+      - name: Claude 코드 리뷰 실행 (단일 opus 리뷰어 — 요약과 인라인을 한 리뷰로)
         # v1 floating tag 가 install.sh 에서 silently 교체된 binary tarball 로 깨진 후
         # (issue anthropics/claude-code-action#1290, 2026-05-06 회귀) v1.0.111 로 pin.
         # upstream 픽스 후 다시 v1 으로 풀 것.
@@ -104,7 +104,8 @@ jobs:
           prompt: ${{ steps.prompt.outputs.text }}
           # 고정 태그(claude-opus-4-7) 대신 opus 별칭 — CLI 가 인식하는 최신 Opus 자동 추종(버전업 무수정).
           # 단일 리뷰어라 Agent 불필요. read-only(gh 호출만 허용, 파일 수정 도구 차단).
-          claude_args: '--model opus --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*)" --disallowedTools "Read,Write,Edit,Glob,Grep,LS"'
+          # gh pr comment 는 제외 — 요약은 리뷰 body 로 게시하므로 일반 댓글 경로가 필요 없다.
+          claude_args: '--model opus --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh api:*)" --disallowedTools "Read,Write,Edit,Glob,Grep,LS"'
 
       # 게시된 인라인 댓글 중 dummy / 길이 미달 / 마커 부재 entry 를 자동 정리
       # — Claude action 이 자연어 sanity check 를 무시하고 "test body" / "test2"
