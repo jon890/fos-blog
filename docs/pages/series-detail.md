@@ -1,4 +1,4 @@
-# /series/[name] — 시리즈 상세 페이지
+# /series/[name] 시리즈 상세 페이지
 
 ## 목적
 
@@ -33,7 +33,7 @@
 
 ## 관련 파일
 
-- `src/app/series/[name]/page.tsx`
+- `src/app/(blog)/series/[name]/page.tsx`
 - `src/infra/db/repositories/PostRepository.ts`
 - `src/components/PostsListSubHero.tsx`
 - `src/components/PostCard.tsx`

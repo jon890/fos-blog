@@ -1,7 +1,7 @@
-# 홈 — Page PRD
+# 홈 Page PRD
 
 **Route:** `/`  
-**File:** `src/app/page.tsx`  
+**File:** `src/app/(blog)/page.tsx`
 **Updated:** 2026-08-05
 
 ---
@@ -28,7 +28,7 @@
 **ISR:** `revalidate = 60`  
 **Static params:** 없음
 
-**에러 처리:** DB 에러 시 빈 배열로 폴백 — 빈 화면으로 렌더링됨 (notFound 없음)
+**에러 처리:** DB 에러 시 빈 배열로 폴백하고 빈 화면으로 렌더링한다 (notFound 없음).
 
 ---
 
@@ -55,7 +55,7 @@
 - **PostCard 클릭**: `/posts/<path>` 이동
 - **SeriesCard 클릭** (plan047): `/series/<name>` 이동
 
-※ 카테고리 섹션은 헤더 우측 "모두 보기 →" 링크, 글 섹션은 섹션 하단 큰 CTA 버튼 — [ADR-003](../adr/003-home-entry-ux.md)
+※ 카테고리 섹션은 헤더 우측 "모두 보기 →" 링크를 사용하고 글 섹션은 섹션 하단 큰 CTA 버튼을 사용한다. 근거는 [ADR-003](../adr/003-home-entry-ux.md)이다.
 
 ---
 
@@ -84,13 +84,13 @@ Categories Section (최대 9개, 3×3 grid → 헤더 우측 "모두 보기" 링
 
 > plan030: 인기/최신을 카테고리보다 위로 올려 신규 방문자가 콘텐츠를 먼저 만나도록 재배치. 카테고리는 6→9로 확장하여 3×3 grid 로 표시.
 
-> plan013 이전: 별도 Hero Section + Stats Section 으로 분리되어 있었음. 현재는 `<HomeHero>` 한 컴포넌트로 통합 — eyebrow, h1, lead, 4 stats `<dl>` (posts/categories/series/subscribers). `seriesCount` 는 `PostRepository.countSeries()` 실값 연결 (plan033). `subscriberCount` 는 여전히 null placeholder.
+> plan013 이전: 별도 Hero Section과 Stats Section 으로 분리되어 있었음. 현재는 `<HomeHero>` 한 컴포넌트로 통합: eyebrow, h1, lead, 4 stats `<dl>` (posts/categories/series/subscribers). `seriesCount` 는 `PostRepository.countSeries()` 실값 연결 (plan033). `subscriberCount` 는 여전히 null placeholder.
 
 ---
 
 ## Related Files
 
-- `src/app/page.tsx`
+- `src/app/(blog)/page.tsx`
 - `src/components/HomeHero.tsx` (plan013)
 - `src/components/HeroMesh.tsx` (plan013)
 - `src/components/CategoryList.tsx`

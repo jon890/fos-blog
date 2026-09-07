@@ -1,8 +1,8 @@
-# /privacy — 개인정보처리방침 페이지
+# /privacy 개인정보처리방침 페이지
 
 ## 목적
 
-AdSense 승인 요건 충족 (ADR-014). 수집 정보(방문 통계 SHA-256 해시 / 댓글 닉네임 · bcrypt 비밀번호 / 테마 설정) + Google AdSense 쿠키 안내.
+AdSense 승인 요건 충족 (ADR-014). 수집 정보(방문 통계 SHA-256 해시 / 댓글 닉네임 · bcrypt 비밀번호 / 테마 설정)와 Google AdSense 쿠키 안내.
 
 ## 컴포넌트 구성
 
@@ -19,5 +19,5 @@ AdSense 승인 요건 충족 (ADR-014). 수집 정보(방문 통계 SHA-256 해�
 ## Notes
 
 - `robots: { index: true }` — AdSense 심사 봇 접근 가능 필수 (ADR-014)
-- 개정 이력은 페이지 본문 "6. 개정 이력" 섹션에 직접 추가 (`src/app/privacy/page.tsx`)
+- 개정 이력은 페이지 본문 "6. 개정 이력" 섹션에 직접 추가 (`src/app/(blog)/privacy/page.tsx`)
 - Google Analytics 미사용 명시 (AdSense 쿠키는 Google이 관리)

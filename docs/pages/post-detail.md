@@ -1,14 +1,14 @@
-# 글 상세 — Page PRD
+# 글 상세 Page PRD
 
 **Route:** `/posts/[...slug]`  
-**File:** `src/app/posts/[...slug]/page.tsx`  
+**File:** `src/app/(blog)/posts/[...slug]/page.tsx`
 **Updated:** 2026-04-30
 
 ---
 
 ## Purpose
 
-마크다운 글의 상세 내용을 렌더링하는 페이지. Round 2 mockup (plan011) 기반의 ArticleHero (mesh + breadcrumb + 카테고리 art-tag + 제목 + 리드 + 메타) + 3-col body grid + sticky TOC (H2/H3 nesting) + Header 통합 reading progress + viewport 최상단 독립 `ReadingProgressBar` (plan019) + 모바일 floating TOC button (plan019) + mockup 톤 prose 로 구성.
+마크다운 글의 상세 내용을 렌더링하는 페이지. Round 2 mockup (plan011) 기반의 ArticleHero (mesh, breadcrumb, 카테고리 art-tag, 제목, 리드, 메타), 3-col body grid, sticky TOC (H2/H3 nesting), Header 통합 reading progress, viewport 최상단 독립 `ReadingProgressBar` (plan019), 모바일 floating TOC button (plan019), mockup 톤 prose 로 구성.
 
 ---
 
@@ -23,8 +23,8 @@
 `slug` = URL 세그먼트 배열을 `join("/")` (decodeURIComponent 처리)
 
 **ISR:** `revalidate = 60`  
-**Static params:** `generateStaticParams()` — `post.getAllPostPaths()` 로 생성  
-**Repositories accessor:** `getRepositories()` (React `cache(...)` wrapper) — 동일 요청 내 재사용
+**Static params:** `generateStaticParams()`에서 `post.getAllPostPaths()` 로 생성
+**Repositories accessor:** `getRepositories()` (React `cache(...)` wrapper)로 동일 요청 내 재사용
 
 **에러 처리:**
 - DB 에러 시 `notFound()`
@@ -78,7 +78,7 @@
 | `open` | `MobileTocButton` | bottom sheet 펼침 상태. open 인 동안에만 keydown(ESC) listener 등록 → cleanup 에서 해제 (plan019) |
 | `lightbox state` | `LightboxProvider` | open 시점에 article scope 의 `[data-lightbox-image]` 노드를 DOM 순서로 수집해 `{ images, index }` state 보관. close 시 null. body overflow lock 은 `Lightbox` 컴포넌트의 useEffect cleanup 으로 관리 (plan020 SearchDialog 패턴 재사용, plan039) |
 
-> TOC 의 collapse toggle (`isCollapsed`) 은 plan011 에서 제거됨 — sticky 사이드바에 항상 노출되어 collapse 가 불필요. plan019 에서 H3 nesting 추가 후에도 유지 (H3 들여쓰기 + 작은 글씨로 노이즈 최소화).
+> TOC 의 collapse toggle (`isCollapsed`) 은 plan011 에서 제거됨. sticky 사이드바에 항상 노출되어 collapse 가 불필요. plan019 에서 H3 nesting 추가 후에도 유지 (H3 들여쓰기와 작은 글씨로 노이즈 최소화).
 
 ---
 
@@ -119,7 +119,7 @@
 ```
 
 - 데스크톱 grid: `1fr | minmax(0, 820px) | 240px` (Q16 — 한글 가독성)
-- 모바일 (`md:` 미만): 단일 컬럼 + 사이드 TOC 숨김 + 우하단 `MobileTocButton` FAB (plan019) + Hero 단순화 (Q14)
+- 모바일 (`md:` 미만): 단일 컬럼, 사이드 TOC 숨김, 우하단 `MobileTocButton` FAB (plan019), Hero 단순화 (Q14)
 
 ---
 
@@ -132,31 +132,31 @@
 ## Server-side Processing
 
 `lib/markdown.ts` 함수들이 서버에서 실행됨:
-- `parseFrontMatter(content)` — frontmatter 제거 + `frontMatter.tags` 추출
-- `stripLeadingH1(mainContent)` — 본문 첫 H1 제거 (ADR-010, 제목 중복 방지)
-- `extractTitle(content)` — h1 헤딩 추출
-- `extractDescription(content)` — 산문 블록을 평문 요약으로 만들고 링크가 있는 첫머리 인용은 제외 → ArticleHero `lead` (ADR-034)
-- `getReadingTime(content)` — 읽기 시간 계산 → ArticleHero meta row
-- `generateTableOfContents(stripped)` — TOC 항목 생성. page.tsx 에서 `filter((i) => i.level === 2 || i.level === 3)` 로 H2 + H3 추림 (plan019)
+- `parseFrontMatter(content)`: frontmatter 제거와 `frontMatter.tags` 추출
+- `stripLeadingH1(mainContent)`: 본문 첫 H1 제거 (ADR-010, 제목 중복 방지)
+- `extractTitle(content)`: h1 헤딩 추출
+- `extractDescription(content)`: 산문 블록을 평문 요약으로 만들고 링크가 있는 첫머리 인용은 제외 → ArticleHero `lead` (ADR-034)
+- `getReadingTime(content)`: 읽기 시간 계산 → ArticleHero meta row
+- `generateTableOfContents(stripped)`: TOC 항목 생성. page.tsx 에서 `filter((i) => i.level === 2 || i.level === 3)` 로 H2와 H3를 추림 (plan019)
 
 ---
 
 ## Related Files
 
-- `src/app/posts/[...slug]/page.tsx`
+- `src/app/(blog)/posts/[...slug]/page.tsx`
 - `src/components/ArticleHero.tsx`
 - `src/components/ArticleFooter.tsx`
 - `src/components/RelatedPosts.tsx` — "이런 글도" 섹션 (plan034)
 - `src/components/MarkdownRenderer.tsx`
 - `src/components/CodeCard.tsx` — 코드 블록 frame wrapper (plan012)
-- `src/components/TableOfContents.tsx` — H2 numbered + H3 nested (plan019)
+- `src/components/TableOfContents.tsx` — H2 numbered와 H3 nested (plan019)
 - `src/components/ReadingProgressBar.tsx` — viewport 최상단 1px 진행 띠 (plan019)
-- `src/components/MobileTocButton.tsx` — 모바일 floating TOC button + bottom sheet (plan019)
+- `src/components/MobileTocButton.tsx` — 모바일 floating TOC button과 bottom sheet (plan019)
 - `src/components/Header.tsx` — `/posts/*` 한정 하단 라인 reading progress (별개 컴포넌트)
 - `src/components/Comments.tsx` — 댓글 컨테이너 (plan022)
-- `src/components/lightbox/LightboxProvider.tsx` — context + DOM scope + open state (plan039)
-- `src/components/lightbox/Lightbox.tsx` — 모달 본체 + 키보드 + 인접 ±1 prefetch (plan039)
-- `src/components/lightbox/LightboxImage.tsx` — next/image wrapper + 클릭 트리거 (plan039)
+- `src/components/lightbox/LightboxProvider.tsx` — context, DOM scope, open state (plan039)
+- `src/components/lightbox/Lightbox.tsx` — 모달 본체, 키보드, 인접 ±1 prefetch (plan039)
+- `src/components/lightbox/LightboxImage.tsx` — next/image wrapper와 클릭 트리거 (plan039)
 - `src/components/comments/CommentForm.tsx` — 작성/수정 통합 폼
 - `src/components/comments/CommentItem.tsx` — 댓글 카드
 - `src/components/comments/DeleteConfirmDialog.tsx` — 삭제 확인 다이얼로그
@@ -164,9 +164,9 @@
 - `src/components/JsonLd.tsx`
 - `src/infra/db/repositories/PostRepository.ts`
 - `src/infra/db/repositories/VisitRepository.ts` — `getVisitCount(pagePath)`
-- `src/lib/markdown.ts` — 본문 처리 + plan012 hast 헬퍼 (`extractRawText` / `findChildText` / `findCodeProp`)
+- `src/lib/markdown.ts` — 본문 처리와 plan012 hast 헬퍼 (`extractRawText` / `findChildText` / `findCodeProp`)
 - `src/lib/category-meta.ts` — `getCategoryColor` / `getCategoryHue` / `getCategoryLabel` (plan010, plan055)
-- `src/app/globals.css` — plan009 토큰 + plan011 prose 확장 (H2 counter / blockquote QUOTE / inline code / mermaid 격리) + plan012 코드 블록 frame (`.code-card` / shiki dual theme) + plan035 모바일 가독성 (inline code keep-all / code-card-body pre overflow-x)
+- `src/app/globals.css` — plan009 토큰, plan011 prose 확장 (H2 counter / blockquote QUOTE / inline code / mermaid 격리), plan012 코드 블록 frame (`.code-card` / shiki dual theme), plan035 모바일 가독성 (inline code keep-all / code-card-body pre overflow-x)
 
 ---
 
@@ -174,8 +174,8 @@
 
 - `TableOfContents` 는 `tocItems.length > 0` 일 때만 렌더 (`level === 2 || level === 3` filter 후 0이면 사이드바 빈 칸 회피). `MobileTocButton` 도 동일 정책으로 자체 미렌더
 - GitHub 원본 링크는 plan011 단계에서 글 페이지에서 제거 (Hero 가 메타 흡수). 후속 PR 에서 footer 또는 별도 메뉴로 복원 검토
-- 모바일 (`md:` 미만) 은 plan019 의 `MobileTocButton` (FAB + bottom sheet) 으로 TOC 접근. 사이드 sticky TOC 는 여전히 미노출
-- `ReadingProgressBar` 는 신규 토큰 추가 없이 plan009 토큰 (`--color-brand-400`) 만 사용. `<dialog>` element 가 아닌 `role="dialog"` div 채택 이유는 SSR hydration mismatch 회피 + bottom sheet 애니메이션/배경 처리 자유도 확보 (plan019 risks 표 참조)
+- 모바일 (`md:` 미만) 은 plan019 의 `MobileTocButton` (FAB와 bottom sheet) 으로 TOC 접근. 사이드 sticky TOC 는 여전히 미노출
+- `ReadingProgressBar` 는 신규 토큰 추가 없이 plan009 토큰 (`--color-brand-400`) 만 사용. `<dialog>` element 가 아닌 `role="dialog"` div 채택 이유는 SSR hydration mismatch 회피, bottom sheet 애니메이션과 배경 처리 자유도 확보 (plan019 risks 표 참조)
 - **조회수 증가**는 `src/proxy.ts` Node Runtime middleware (실 동작은 `src/middleware/visit.ts`) 에서 upsert. **표시**는 page.tsx 가 server-side `getVisitCount(post.path)` 로 fetch 하여 `<ArticleHero viewCount={…}/>` 에 전달 (plan011 이전의 client `<PostViewCount>` 패턴은 폐기)
 - prose 의 H2 CSS counter 는 `.prose` 단일 셀렉터에서 reset 되므로, 페이지 내 prose 컨테이너는 1개로 유지해야 번호가 어긋나지 않음
-- **모바일 (390px) 본문 가독성 정책 (plan035)** — (a) inline code 는 `word-break: keep-all` + `overflow-wrap: anywhere` 로 token 단위 wrap 보존 (식별자가 글자 단위로 깨지지 않게, 단일 token 이 viewport 보다 길면만 끊김). (b) GFM 테이블은 `components.table` override 가 `-mx-4 overflow-x-auto md:mx-0` wrapper + `min-w-[32rem]` 로 모바일 가로 스크롤 제공, 데스크톱은 `md:min-w-full` 로 기존 동작 유지. (c) 코드 블록은 `.prose .code-card-body pre` 가 자체 `overflow-x: auto` 를 가져 부모 `.code-card` 의 `overflow: hidden` 안에서도 가로 스크롤 동작 (issue #136 #137 #138)
+- **모바일 (390px) 본문 가독성 정책 (plan035)**: (a) inline code 는 `word-break: keep-all`과 `overflow-wrap: anywhere` 로 token 단위 wrap 보존 (식별자가 글자 단위로 깨지지 않게, 단일 token 이 viewport 보다 길면만 끊김). (b) GFM 테이블은 `components.table` override 가 `-mx-4 overflow-x-auto md:mx-0` wrapper와 `min-w-[32rem]` 로 모바일 가로 스크롤 제공, 데스크톱은 `md:min-w-full` 로 기존 동작 유지. (c) 코드 블록은 `.prose .code-card-body pre` 가 자체 `overflow-x: auto` 를 가져 부모 `.code-card` 의 `overflow: hidden` 안에서도 가로 스크롤 동작 (issue #136 #137 #138)

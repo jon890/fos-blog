@@ -1,7 +1,7 @@
-# 최신 글 목록 — Page PRD
+# 최신 글 목록 Page PRD
 
 **Route:** `/posts/latest`
-**File:** `src/app/posts/latest/page.tsx`
+**File:** `src/app/(blog)/posts/latest/page.tsx`
 **Updated:** 2026-08-05
 
 ---
@@ -19,12 +19,12 @@
 | PostRepository | `getRecentPostsCursor({ limit: 10 })` | 최신 10개 (SSR) |
 | VisitRepository | `getPostVisitCounts(paths)` | 조회수 맵 |
 
-**정렬**: `updated_at DESC, id DESC` (composite cursor — [ADR-002](../adr/002-pagination.md))
+**정렬**: `updated_at DESC, id DESC` (composite cursor, [ADR-002](../adr/002-pagination.md))
 
 **ISR:** `revalidate = 60`
 **Static params:** 없음
 
-**에러 처리:** DB 에러 시 빈 배열 폴백 — "글이 없습니다" 표시 + logger BLG2 패턴으로 에러 로깅
+**에러 처리:** DB 에러 시 빈 배열로 폴백하고 "글이 없습니다"를 표시한다. logger BLG2 패턴으로 에러를 로깅한다.
 
 ---
 
@@ -77,7 +77,7 @@
 
 ## Related Files
 
-- `src/app/posts/latest/page.tsx` (신규)
+- `src/app/(blog)/posts/latest/page.tsx` (신규)
 - `src/app/api/posts/latest/route.ts` (신규)
 - `src/components/PostsInfiniteList.tsx` (신규, 공용)
 - `src/components/PostCardSkeleton.tsx` (신규, 공용)

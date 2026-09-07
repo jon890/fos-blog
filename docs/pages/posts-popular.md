@@ -1,7 +1,7 @@
-# 인기 글 목록 — Page PRD
+# 인기 글 목록 Page PRD
 
 **Route:** `/posts/popular`
-**File:** `src/app/posts/popular/page.tsx`
+**File:** `src/app/(blog)/posts/popular/page.tsx`
 **Updated:** 2026-08-05
 
 ---
@@ -10,7 +10,7 @@
 
 전체 글을 **방문수 순**으로 연속 탐색할 수 있는 전용 페이지. SSR로 첫 10개를 렌더하고, 이후 무한 스크롤로 추가 로드한다.
 
-`visit_stats` 에 등록된 글만 노출한다 (미방문 글은 목록에 없음 — 의도적 동작).
+`visit_stats` 에 등록된 글만 노출한다 (미방문 글은 목록에 없으며 의도적 동작).
 
 ---
 
@@ -22,12 +22,12 @@
 | VisitRepository | `getPopularPostPathsTotal()` | `visit_stats` row 총수 (hasMore 계산) |
 | PostRepository | `getPostsByPaths(paths)` | 경로 대응 글 상세 |
 
-**정렬**: `visit_count DESC, page_path ASC` — 2차 정렬로 페이지 간 안정성 확보 ([ADR-002](../adr/002-pagination.md))
+**정렬**: `visit_count DESC, page_path ASC`로 2차 정렬해 페이지 간 안정성을 확보한다 ([ADR-002](../adr/002-pagination.md)).
 
-**ISR:** `revalidate = 600` (10분 — 방문수 변동 느림)
+**ISR:** `revalidate = 600` (10분, 방문수 변동 느림)
 **Static params:** 없음
 
-**에러 처리:** DB 에러 시 빈 배열 폴백 + BLG2 로깅
+**에러 처리:** DB 에러 시 빈 배열 폴백과 BLG2 로깅
 
 ---
 
@@ -91,7 +91,7 @@
 
 ## Related Files
 
-- `src/app/posts/popular/page.tsx` (신규)
+- `src/app/(blog)/posts/popular/page.tsx` (신규)
 - `src/app/api/posts/popular/route.ts` (신규)
 - `src/components/PostsInfiniteList.tsx` (공용, posts-latest 참조)
 - `src/components/PostCardSkeleton.tsx` (공용)

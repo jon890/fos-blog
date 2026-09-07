@@ -1,7 +1,7 @@
-# 카테고리/폴더 상세 — Page PRD
+# 카테고리/폴더 상세 Page PRD
 
 **Route:** `/category/[...path]`  
-**File:** `src/app/category/[...path]/page.tsx`  
+**File:** `src/app/(blog)/category/[...path]/page.tsx`
 **Updated:** 2026-08-11
 
 ---
@@ -29,7 +29,7 @@ frontmatter `categories` 는 `AI` 같은 최상위 폴더뿐 아니라 `AI/RAG` 
 색상과 아이콘은 slash path의 첫 세그먼트 기준으로 fallback한다.
 
 **ISR:** `revalidate = 60`  
-**Static params:** `generateStaticParams()` — `computeFolderPaths(post.getAllPostPaths())` 로 생성
+**Static params:** `generateStaticParams()`에서 `computeFolderPaths(post.getAllPostPaths())` 로 생성
 
 **에러 처리:**
 - DB 에러 시 빈 폴더 컨텐츠로 폴백
@@ -55,7 +55,7 @@ frontmatter `categories` 는 `AI` 같은 최상위 폴더뿐 아니라 `AI/RAG` 
 ## Interactions
 
 - **Breadcrumb 링크**: 경로 중간 세그먼트 / `/categories` / `/` 이동
-- **하위 폴더 카드 클릭**: `/category/<folder.path>` 이동 (`-translate-y-0.5` lift + cat-color border + ↗ translate)
+- **하위 폴더 카드 클릭**: `/category/<folder.path>` 이동 (`-translate-y-0.5` lift, cat-color border, ↗ translate)
 - **PostCard 클릭**: `/posts/<post.path>` 이동
 - **PostCard hover**: 카드 경계 강조, 이미지 확대, 미세한 위쪽 이동
 
@@ -92,7 +92,7 @@ README 섹션 (있을 때만, ReadmeFrame으로 감쌈)
 
 ## Related Files
 
-- `src/app/category/[...path]/page.tsx`
+- `src/app/(blog)/category/[...path]/page.tsx`
 - `src/components/Breadcrumb.tsx`
 - `src/components/CategoryDetailSubHero.tsx`
 - `src/components/CategoriesSection.tsx`

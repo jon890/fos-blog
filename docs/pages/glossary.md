@@ -1,8 +1,8 @@
-# 용어집 — Page PRD
+# 용어집 Page PRD
 
 **Route:** `/glossary`
 
-**File:** `src/app/glossary/page.tsx`
+**File:** `src/app/(blog)/glossary/page.tsx`
 
 **Status:** 구현 완료
 **Related:** plan054, ADR-032

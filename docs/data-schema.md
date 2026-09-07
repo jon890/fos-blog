@@ -2,7 +2,7 @@
 
 ## 학습자료 저장 계약
 
-**구현 전 확정 설계다.** 실제 study 테이블과 관리자 인증 테이블은 아직 없다.
+**구현 범위:** 관리자 인증 테이블 네 개는 구현됐다. study 테이블은 후속 plan061의 확정 설계다.
 HTTP 필드의 길이와 입력 검증은 [학습자료 API](./api/study-library.md)가 소유한다.
 기존 MySQL에 `study_` 테이블을 추가하고 `posts`, GitHub 동기화와 방문 통계는 연결하지 않는다.
 
@@ -84,7 +84,7 @@ DB를 사용할 수 없으면 빈 개인 목록이나 성공 영수증으로 대
 
 ## 관리자 인증 저장 계약
 
-**구현 전 확정 설계다.** `src/infra/db/schema/auth.ts`에 인증 테이블 네 개를 추가한다.
+`src/infra/db/schema/auth.ts`에 인증 테이블 네 개를 정의한다.
 Better Auth의 `user`, `session`, `account`, `verification` 모델을 adapter의 schema 객체에 명시적으로 연결한다.
 Drizzle 속성은 공식 camelCase 모델명을 유지하고 실제 SQL 컬럼은 snake_case로 매핑한다.
 아래 모델 구성은 [Better Auth 공식 DB 계약](https://better-auth.com/docs/concepts/database)을 따른다.
@@ -117,7 +117,7 @@ session 로그아웃은 해당 session 행 삭제로 철회한다. verification 
 
 ## 전체 스키마
 
-현재 9개 테이블이다.
+현재 인증 테이블 네 개를 포함해 13개 테이블이다.
 스키마 소스는 `src/infra/db/schema/*.ts`다.
 
 ### `posts`

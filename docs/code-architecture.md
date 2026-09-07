@@ -2,10 +2,11 @@
 
 ## 학습자료 모듈
 
-**구현 전 확정 배치다.** 인증, 저장·수집, 추천·가져오기, 공부 UI 순으로 구현한다.
+**구현 범위:** 공통 관리자 인증은 plan063이며 study 관련 모듈은 후속 계획이다.
+인증, 저장·수집, 추천·가져오기, 공부 UI 순으로 구현한다.
 서비스 책임과 DTO는 [학습자료 API](./api/study-library.md), 테이블은
 [학습자료 저장 계약](./data-schema.md#학습자료-저장-계약)을 따른다.
-다음 경로는 기존 코드 위치를 확인한 뒤 정한 생성 예정 경로다.
+다음 표는 공통 관리자 구현 경로와 study 관련 생성 예정 경로를 함께 표시한다.
 
 | 경로 | 책임 |
 | --- | --- |
@@ -27,8 +28,9 @@
 | `src/services/study/imports.ts` | dry-run과 commit 재검증, 과거 이력 보존 |
 | `src/app/api/study/v1/` | API 문서의 경로별 Route Handler. 인증·검증 후 서비스 호출 |
 | `src/app/admin/login/page.tsx` | 로그인 시작과 실패 안내. 세션 필수 layout 밖에 배치 |
+| `src/app/admin/error.tsx` | 보호 layout·page의 장애 안내와 재시도. 오류 원문은 표시하지 않음 |
 | `src/app/admin/(protected)/layout.tsx` | 관리자 세션 확인, 본인 계정 표시, 공부 메뉴와 로그아웃 |
-| `src/app/admin/(protected)/page.tsx` | 관리자 홈. 최초에는 공부 화면 링크만 제공 |
+| `src/app/admin/(protected)/page.tsx` | 관리자 홈. 공부 화면 구현 전에는 비활성 메뉴와 준비 중 안내 |
 | `src/app/admin/(protected)/study/` | 자료와 추천·가져오기 페이지 조합, loading/error 상태 |
 | `src/components/study/` | `StudyFilters`, `MaterialList`, `MaterialCard`, `MaterialStateEditor`, `RecommendationDetail`, `ImportPanel` |
 | `src/components/admin/` | `AdminLoginButton`, `AdminNavigation`, `AdminSignOutButton` |
@@ -52,9 +54,8 @@ DB 공용 연결의 개발 SQL parameter 로그는 개인 값 노출을 막도�
 
 ### 공개 레이아웃 분리
 
-현재 루트 레이아웃은 광고 스크립트와 공개 Header·Sidebar·Footer를 렌더링한다.
-개인 화면에서 이 부수 효과를 제거하려면 plan063에서 공개 화면을 `(blog)` route group으로 옮긴다.
-루트에는 html/body, 공통 글꼴·테마·Toaster만 남기고 공개 장식과 광고는 `(blog)/layout.tsx`로 이동한다.
+공개 화면은 `(blog)` route group에서 광고 스크립트와 공개 Header·Sidebar·Footer를 렌더링한다.
+루트에는 html/body, 공통 글꼴·테마·Toaster를 두고 공개 장식과 광고는 `(blog)/layout.tsx`에서 제공한다.
 관리자 페이지는 `admin/(protected)/layout.tsx`에서 공통 인증과 내비게이션을 조합한다.
 각 페이지와 API도 서버에서 권한을 확인하며 layout의 이전 렌더 결과를 인증 근거로 재사용하지 않는다.
 로그인 페이지는 `(protected)` 밖에 두어 리디렉션 반복을 막는다.
@@ -85,7 +86,7 @@ categories OG 특수파일을 route group 안으로 옮기면 Next.js가 공개 
 | --- | --- |
 | `better-auth` | latest `1.7.3`. 이 버전을 직접 의존성으로 추가 |
 | `@better-auth/core`, `@better-auth/drizzle-adapter` | Better Auth가 `1.7.3`을 의존. 별도 직접 의존성 추가 불필요 |
-| `drizzle-orm` | 현재 선언 `^0.45.1`, 인증 peer는 `^0.45.2`. 승인된 patch `0.45.2`로 최소 버전 상향 |
+| `drizzle-orm` | 선언 `^0.45.2`, lockfile `0.45.2`. 인증 peer `^0.45.2`를 충족하도록 상향 |
 | `drizzle-kit` | 현재 `^0.31.8`, 인증 peer `>=0.31.4` 충족. 변경 불필요 |
 | Next.js, React, mysql2 | 현재 16·19·3 버전 계열이 인증 peer 범위를 충족 |
 | 전이 의존성 | Better Auth의 jose 등은 허용된 패키지 설치에 수반된다. 별도 Cloudflare Access나 직접 jose 인증 구현은 하지 않음 |
@@ -96,7 +97,7 @@ adapter의 `transaction: true`를 명시하고 동일 연결의 MySQL 트랜잭�
 `@better-auth/drizzle-adapter@1.7.3`의 `dist/index.d.mts`에서 이 옵션의 기본값이 false임을 확인했다.
 직접 OAuth·세션을 구현하는 대안은 state·쿠키·철회를 직접 유지해야 하므로 기각했다.
 Auth.js는 가능하지만 승인된 Better Auth와 중복 도입하지 않는다.
-실제 의존성 변경은 후속 구현에서 `package.json`과 `pnpm-lock.yaml`을 함께 커밋한다.
+의존성 변경은 `package.json`과 `pnpm-lock.yaml`에 함께 반영했다.
 
 타입 확인은 `@better-auth/core@1.7.3`의 `dist/types/init-options.d.mts`를 사용했다.
 실행 경로는 `better-auth@1.7.3`의 다음 파일에서 확인했다.
@@ -153,6 +154,8 @@ DB 장애는 세션 없음으로 처리하지 않고 page 오류 또는 API `503
 허용 계정 설정이 바뀌거나 account 행이 사라지면 기존 세션도 다음 요청에서 `403`으로 거절한다.
 
 로그아웃은 현재 session을 서버에서 철회하고 쿠키를 삭제한다.
+Better Auth 1.7.3의 signOut은 DB 삭제 오류를 삼키므로 Route에서 세션 삭제를 먼저 확정한 뒤 라이브러리로 쿠키를 정리한다.
+이 순서는 DB 장애를 성공으로 표시하지 않기 위한 것이며 실제 MySQL의 삭제 실패 테스트로 검증한다.
 다른 기기의 세션을 끊으려면 후속 운영 작업에서 해당 세션을 철회한다. 이번 UI에는 세션 관리 화면을 추가하지 않는다.
 설정 변경의 적용 시점은 새 환경으로 재시작한 인스턴스다. 변경 전 프로세스에 새 env가 자동 전파된다고 가정하지 않는다.
 브라우저 쿠키는 HttpOnly, SameSite=Lax, Path=/이며 운영 HTTPS에서 Secure를 강제하고 Domain 공유를 켜지 않는다.

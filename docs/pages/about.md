@@ -1,4 +1,4 @@
-# /about — About 페이지
+# /about About 페이지
 
 ## 컴포넌트 구성
 
@@ -11,7 +11,7 @@
 
 ## 레이아웃
 
-container max-width 1180px, plan009 CSS 변수 (`--color-*`), numbered 섹션 헤더 (`01`–`04`). CSS: `src/app/about/about.css` (co-located) — `::before`/`::after` hairline, `@keyframes ab-pulse`, `oklch(... ${hue})` 동적 chip 색을 처리.
+container max-width 1180px, plan009 CSS 변수 (`--color-*`), numbered 섹션 헤더 (`01`–`04`). CSS `src/app/(blog)/about/about.css` (co-located)에서 `::before`/`::after` hairline, `@keyframes ab-pulse`, `oklch(... ${hue})` 동적 chip 색을 처리.
 
 ## 데이터
 
