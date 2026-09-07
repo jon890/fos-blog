@@ -29,8 +29,8 @@
 | `src/app/api/study/v1/` | API 문서의 경로별 Route Handler. 인증·검증 후 서비스 호출 |
 | `src/app/admin/login/page.tsx` | 로그인 시작과 실패 안내. 세션 필수 layout 밖에 배치 |
 | `src/app/admin/error.tsx` | 보호 layout·page의 장애 안내와 재시도. 오류 원문은 표시하지 않음 |
-| `src/app/admin/(protected)/layout.tsx` | 관리자 세션 확인, 본인 계정 표시, 공부 메뉴와 로그아웃 |
-| `src/app/admin/(protected)/page.tsx` | 관리자 홈. 공부 화면 구현 전에는 비활성 메뉴와 준비 중 안내 |
+| `src/app/admin/(protected)/layout.tsx` | 관리자 세션 확인, 제목과 로그아웃 |
+| `src/app/admin/(protected)/page.tsx` | 관리자 홈. 본인 계정 표시, 공부 화면 구현 전에는 비활성 메뉴와 준비 중 안내 |
 | `src/app/admin/(protected)/study/` | 자료와 추천·가져오기 페이지 조합, loading/error 상태 |
 | `src/components/study/` | `StudyFilters`, `MaterialList`, `MaterialCard`, `MaterialStateEditor`, `RecommendationDetail`, `ImportPanel` |
 | `src/components/admin/` | `AdminLoginButton`, `AdminNavigation`, `AdminSignOutButton` |
@@ -56,13 +56,14 @@ DB 공용 연결의 개발 SQL parameter 로그는 개인 값 노출을 막도�
 
 공개 화면은 `(blog)` route group에서 광고 스크립트와 공개 Header·Sidebar·Footer를 렌더링한다.
 루트에는 html/body, 공통 글꼴·테마·Toaster를 두고 공개 장식과 광고는 `(blog)/layout.tsx`에서 제공한다.
-관리자 페이지는 `admin/(protected)/layout.tsx`에서 공통 인증과 내비게이션을 조합한다.
+관리자 페이지는 `admin/(protected)/layout.tsx`에서 공통 인증과 제목·로그아웃을 조합한다.
+본인 계정과 공부 메뉴는 관리자 홈 page에서 표시한다.
 각 페이지와 API도 서버에서 권한을 확인하며 layout의 이전 렌더 결과를 인증 근거로 재사용하지 않는다.
 로그인 페이지는 `(protected)` 밖에 두어 리디렉션 반복을 막는다.
 이 이동은 URL을 바꾸지 않으며 공개 페이지별 metadata와 상대 import를 회귀 검증한다.
 이동 대상은 아래 표로 고정하며 폴더 내부의 테스트와 CSS도 같이 옮긴다.
 
-| 현재 `src/app/` 아래 경로 | 이동 대상 |
+| 이동 전 `src/app/` 아래 경로 | 현재 경로 |
 | --- | --- |
 | `page.tsx`, `loading.tsx` | `(blog)/page.tsx`, `(blog)/loading.tsx` |
 | `about/`, `contact/`, `privacy/`, `glossary/` | `(blog)/` 아래 같은 폴더 |
@@ -170,11 +171,12 @@ Better Auth 1.7.3의 signOut은 DB 삭제 오류를 삼키므로 Route에서 세
 | `GITHUB_CLIENT_ID` | 관리자 OAuth App client ID |
 | `GITHUB_CLIENT_SECRET` | 관리자 OAuth App secret |
 | `ADMIN_GITHUB_USER_ID` | 허용할 GitHub numeric ID 문자열 하나 |
-| `STUDY_SERVICE_TOKEN` | career-os 전용 Bearer. 관리자 로그인에서 사용 금지 |
+| `STUDY_SERVICE_TOKEN` | plan061에서 추가할 career-os 전용 Bearer. 관리자 로그인에서 사용 금지 |
 
 관리자 env는 서버 스키마에 선택 문자열로 선언하되 형식·완전성과 DB 설정은 인증 초기화 때 검증한다.
-아무 값도 없으면 공개 블로그는 계속 동작하고 관리자 기능은 설정 필요 안내, 인증·study 관리자 요청은 `503`이다.
-부분 설정이나 잘못된 값은 관리자 인증을 허용하지 않는다. 서비스 토큰 부재는 서비스 인증 `401`이다.
+아무 값도 없으면 공개 블로그는 계속 동작하고 관리자 기능은 설정 필요 안내, 인증 요청은 `503`이다.
+부분 설정이나 잘못된 값은 관리자 인증을 허용하지 않는다.
+study API는 plan061에서 구현하며 관리자 인증 설정 부재는 `503`, 서비스 토큰 부재는 `401`로 처리한다.
 빌드가 인증 모듈 import만으로 운영 DB에 접속하지 않도록 초기화를 지연한다.
 `.env.example`에는 설명과 빈 자리만 두고 실제 계정·호스트·secret은 기록하지 않는다.
 
@@ -185,10 +187,10 @@ Better Auth 1.7.3의 signOut은 DB 삭제 오류를 삼키므로 Route에서 세
 
 | 확인한 코드 | 재사용 범위 | 부수 효과와 대응 |
 | --- | --- | --- |
-| [DB 연결](../src/infra/db/index.ts) | MySQL 연결과 Drizzle | 개발 모드 SQL 로그에 개인 정보가 남지 않도록 조정 필요 |
+| [DB 연결](../src/infra/db/index.ts) | MySQL 연결과 Drizzle | SQL parameter 로그를 비활성화해 개인 정보 기록 방지 |
 | [Repository 팩터리](../src/infra/db/repositories/index.ts) | 요청 범위 인스턴스 재사용 | 개인 응답을 공유 캐시에 넣지 않음 |
 | [글 스키마](../src/infra/db/schema/posts.ts) | 재사용하지 않음 | 경로 기반 글 식별과 동기화 비활성화 정책을 자료와 분리 |
-| [루트 레이아웃](../src/app/layout.tsx) | 테마, 글꼴과 알림 | 개인 화면에서 광고 스크립트와 공개 탐색 UI 분리 필요 |
+| [루트 레이아웃](../src/app/layout.tsx) | 테마, 글꼴과 알림 | 공개 장식과 광고는 `(blog)/layout.tsx`에서만 제공 |
 | [Proxy](../src/proxy.ts) | 정상 Next.js 16 진입점 유지 | API는 현재 matcher 제외이므로 Handler 자체 인증 필요 |
 | [방문 기록](../src/middleware/visit.ts) | 공개 글 동작 유지 | 학습자료 경로를 방문 집계에 추가하지 않음 |
 | [검색 API](../src/app/api/search/route.ts) | 공개 글 검색 유지 | 개인 자료는 별도 API에서 조회 |

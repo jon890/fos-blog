@@ -28,6 +28,7 @@ export function tryGetDb(): MySql2Database<typeof schema> | null {
 
   const pool = mysql.createPool({
     uri: connectionString,
+    timezone: "Z",
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,

@@ -62,7 +62,8 @@
 ## SEO
 
 - `WebsiteJsonLd`: name="FOS Study", description, url
-- 별도 `generateMetadata` / `export const metadata` 없음 (루트 layout.tsx의 default metadata 사용)
+- 공개 기본 metadata는 `(blog)/layout.tsx`에서 제공한다.
+- 홈의 `metadata`는 기존 `/opengraph-image` 경로를 유지하도록 OG 이미지를 명시한다.
 
 ---
 
