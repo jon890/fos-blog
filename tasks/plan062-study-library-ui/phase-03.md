@@ -25,7 +25,7 @@ plan063 → plan061 → plan064 완료 코드가 현재 브랜치에 있어야 �
 ## Blocked 조건
 
 선행 코드가 없으면 `PHASE_BLOCKED: 선행 plan 또는 phase 코드 없음`으로 보고한다.
-실DB 검증에 격리된 TEST_DATABASE_URL이 없으면 `PHASE_BLOCKED: 격리 MySQL 검증 환경 없음`으로 보고한다.
+이 phase의 단위·DOM·레이아웃 검증에는 TEST_DATABASE_URL을 필수로 요구하지 않는다.
 운영 DB와 배포를 대신 실행하거나 테스트 성공을 추정하지 않는다.
 
 ## 작업 항목
