@@ -1,22 +1,39 @@
-## ADR-021. 댓글 디자인 라이브러리 + 보안 정책 (plan022)
+# ADR-021. 댓글 폼과 오류 표시 및 저장 정책
 
-**Context**: 댓글 영역 354줄 자체 구현 (`Comments.tsx`) 을 plan022 에서 shadcn + react-hook-form + zod + sonner 로 전면 리디자인. UI 라이브러리 선택과 함께 client 번들 격리 / XSS 가드 / 사용자 노출 메시지 정책 동시 결정.
+## 맥락
 
-**Decision**:
+직접 관리하던 댓글 폼을 정리하면서 입력 검증, 알림과 서버 코드의 클라이언트 번들 유입을 함께 해결했다.
+댓글은 마크다운을 지원하지 않는 일반 텍스트로 제공한다.
 
-1. **Form**: `react-hook-form` + `@hookform/resolvers` + `zod`. shadcn `Form` (Controller wrapper) 사용. 모드 별 schema 분리 (`createSchema` / `editSchema = createSchema.pick({password, content})`) + props discriminated union.
-2. **Toast**: `sonner` 2.x (~6KB). `<Toaster />` 는 `<ThemeProvider>` 바깥에 mount (shadcn 권장).
-3. **Avatar 팔레트**: `og-palette.ts` 신규 — `OG_CATEGORY_HEX` (7색) + `getCategoryHex` 의 단일 소스. `og.ts` 는 re-export 만. **이유**: `og.ts` 가 `node:fs` import 하므로 client component (Avatar.tsx) 에서 직접 import 시 Turbopack 이 fs 를 클라이언트 번들에 포함하려다 실패. palette 데이터를 pure module 로 떼면서 단일 소스 유지.
-4. **Comment 타입**: `src/components/comments/types.ts` 신규 (`CommentData`). client component 가 `@/infra/db/schema/comments` (Drizzle) 직접 import 시 같은 번들 오염 발생 → 분리.
-5. **XSS 가드 (단방향 저장 시점 escape)**: `src/lib/escape-html.ts` 의 `escapeHtml` (5문자: `& < > " '`) 을 `CommentRepository.createComment` / `updateComment` 의 `content` 인자에 적용. **read 시 unescape 없음** — React JSX text node 가 자동 escape 하므로 이중 escape 회피 (1회만 적용). `dangerouslySetInnerHTML` 사용 금지.
-6. **에러 메시지 정책 (`USER_FRIENDLY_ERRORS` 화이트리스트)**: API 에러 응답에 `code` 필드 (`PASSWORD_MISMATCH` / `NOT_FOUND` 등) 포함, 클라이언트는 `USER_FRIENDLY_ERRORS[code] ?? "요청을 처리할 수 없습니다"` 로 매핑하여 toast. **`error.message` / `data.message` 직접 toast 금지** — SQL 구문 / 스택 / 내부 식별자 누출 위험.
+## 결정
 
-**Why**:
+1. react-hook-form과 zod를 사용하고 작성·수정 모드의 입력 스키마를 구분한다.
+   shadcn Form을 폼 컨트롤 연결에 사용한다.
+2. 알림은 sonner로 표시하고 공용 Toaster에서 테마를 적용한다.
+3. 아바타 색상은 OG와 같은 팔레트를 사용하되 파일 시스템 의존성이 없는 모듈로 분리한다.
+4. 클라이언트용 댓글 타입을 DB 스키마와 분리해 서버 의존성이 번들에 들어오지 않게 한다.
+5. 댓글 내용은 저장할 때 `escapeHtml`을 적용하고, 읽을 때 복원하지 않은 문자열을 JSX 텍스트로 출력한다.
+   `dangerouslySetInnerHTML`로 표시하지 않는다.
+6. 사용자 알림은 API의 오류 code를 `USER_FRIENDLY_ERRORS`에 매핑한다.
+   서버의 원문 오류 메시지를 그대로 보여주지 않는다.
 
-- **react-hook-form 채택**: uncontrolled form → 리렌더 최소화 + zod 통합. 자체 useState 폼 대비 valida tion 로직 통일 + 타입 안전. shadcn `Form` 가 thin wrapper 라 lock-in 없음
-- **sonner 채택**: 자체 toast 구현 회피 (~6KB), shadcn 공식 권장. dark/light 자동 (theme="system")
-- **단일 소스 og-palette**: plan021 의 `OG_CATEGORY_HEX` 와 댓글 Avatar 팔레트가 같은 색이어야 — 색 변경 시 한 파일만 수정. 단 server-only deps 격리 위해 pure module 로 분리
-- **단방향 escape**: React 가 이미 한 번 escape 하므로 read 시점 unescape = 이중 escape → `&amp;lt;` 같은 잘못된 표시. 저장 시 1회만 적용이 정답. dompurify 같은 풀 라이브러리 회피 — 댓글은 markdown 미지원 plain text 라 5문자 escape 면 충분
-- **USER_FRIENDLY_ERRORS 화이트리스트**: 서버 raw error 노출은 SQL injection probe / 정보 노출 공격면 확장. code 필드 명시적 매핑이 모든 메시지의 단일 진입점
+## 현재 출력의 한계
 
-**Scope 명시**: 이 ADR 의 정책은 댓글 영역 한정. 다른 client form (검색 dialog, 향후 로그인) 도입 시 이 결정을 ADR-021 의 패턴으로 따른다 (rhf + zod + sonner + USER_FRIENDLY_ERRORS).
+저장 단계와 JSX 출력 단계가 모두 이스케이프하므로 이 방식은 이중 변환을 피하지 않는다.
+예를 들어 `<b>`를 입력하면 DB에는 `&lt;b&gt;`가 저장되고 화면에도 `&lt;b&gt;`라는 문자열이 보인다.
+저장 구조는 [댓글 스키마](../data-schema.md#comments),
+출력은 [CommentItem](../../src/components/comments/CommentItem.tsx)에서 확인할 수 있다.
+
+현재 정책의 표시 영향을 기록한 것이며, 저장 형식이나 기존 댓글 데이터의 변환을 결정한 것은 아니다.
+이를 바꾸려면 기존 데이터와 새 입력의 호환성을 포함해 별도 구현 범위를 정한다.
+
+## 이유와 기각한 대안
+
+- 폼 상태를 직접 관리하는 대신 입력 검증과 타입을 연결해 작성·수정 간 차이를 명확히 한다.
+- 알림을 직접 구현하는 대신 기존 UI 체계와 연결되는 sonner를 사용한다.
+- OG 유틸리티를 클라이언트에서 직접 가져오면 파일 시스템 의존성이 섞이므로 팔레트만 분리한다.
+- SQL 구문, 스택과 내부 식별자가 사용자에게 전달되지 않도록 오류 code를 명시적으로 매핑한다.
+- 댓글을 HTML로 해석하는 대신 일반 텍스트로 제공한다.
+
+이 결정은 댓글 영역에 적용한다.
+다른 클라이언트 입력 폼에서도 react-hook-form, zod, sonner와 오류 code 매핑 패턴을 따른다.

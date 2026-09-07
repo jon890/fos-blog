@@ -1,27 +1,23 @@
-# /tag/[name] — 태그 글 목록 페이지
+# 태그 글 목록 페이지
 
-## 목적
+**Route:** `/tag/[name]`
+**진입점:** [태그 페이지](../../src/app/tag/[name]/page.tsx)
 
-특정 태그가 달린 글 목록 표시. tag 별 진입 경로 제공 (ADR-023). 존재하지 않는 tag 는 `notFound()` 반환.
+## 목적과 조회
 
-## 컴포넌트 구성
+선택한 태그가 달린 활성 글을 최대 50개 표시한다.
+URL의 태그 이름을 복원해 목록과 전체 개수를 조회하며, 전체 개수가 0이면 본문은 404로 처리한다.
+일반 조회 실패를 빈 태그로 바꾸지는 않는다.
 
-| 컴포넌트 | 역할 |
-|---|---|
-| `PostsListSubHero` | eyebrow="TAG", title=`#${tag}`, meta=`${total} POSTS` 헤더 |
-| `PostCard` | `variant="grid"` 썸네일 중심 카드. 소개글 없이 분류·날짜·최대 두 줄 제목 표시 |
+카드는 썸네일 중심 grid로 표시하고 소개글 없이 분류, 날짜와 최대 두 줄 제목을 제공한다.
+카드를 선택하면 글 상세로 이동한다.
+페이지네이션과 전체 태그 인덱스 `/tags`는 제공하지 않는다.
+범위의 이유는 [ADR-023](../adr/023-tag-system.md)을 따른다.
 
-## 데이터 흐름
+## 메타데이터와 갱신
 
-`params.name` → `decodeURIComponent(name)` → `post.getPostsByTag(tag, { limit: 50 })` + `post.countPostsByTag(tag)` 병렬 호출. total=0 이면 `notFound()`.
+canonical에는 태그 이름을 인코딩해 넣는다.
+메타데이터용 개수 조회가 성공해 0으로 확인된 경우에만 `index: false, follow: false`를 지정한다.
+조회가 실패하면 robots를 명시하지 않아 일시 장애를 태그 부재로 단정하지 않는다.
 
-## revalidate
-
-`export const revalidate = 300` (ISR 5분). ADR-023 결정 — 새 글 sync 후 tag 목록 반영 지연 최소화.
-
-## Notes
-
-- `limit=50` 고정 (ADR-023) — pagination 미구현 의도적 OOS
-- URL 인코딩: `params.name` 은 인코딩 상태로 수신 → `decodeURIComponent` 필수
-- `/tags` 전체 tag cloud 인덱스 페이지는 OOS (ADR-023)
-- `generateStaticParams` 없음 — 동적 렌더 (tag 목록 변동성)
+`revalidate = 300`을 사용하고 별도 정적 경로 목록은 생성하지 않는다.

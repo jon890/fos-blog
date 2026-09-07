@@ -1,4 +1,7 @@
-# /series/[name] — 시리즈 상세 페이지
+# 시리즈 상세 페이지
+
+**Route:** `/series/[name]`
+**진입점:** [시리즈 페이지](../../src/app/series/[name]/page.tsx)
 
 ## 목적
 
@@ -28,12 +31,7 @@
 
 - canonical URL은 인코딩된 시리즈명을 포함한다.
 - Open Graph 제목과 설명에 시리즈명을 사용한다.
+- 메타데이터 조회에 성공해 활성 글이 없음을 확인하면 `index: false, follow: false`를 지정한다.
+- 메타데이터 조회가 실패하면 robots를 명시하지 않는다. 일시 장애를 시리즈 부재로 단정하지 않는다.
 - `revalidate = 300`으로 최대 5분 간격으로 갱신한다.
 - `generateStaticParams` 없이 요청 시 렌더링한다.
-
-## 관련 파일
-
-- `src/app/series/[name]/page.tsx`
-- `src/infra/db/repositories/PostRepository.ts`
-- `src/components/PostsListSubHero.tsx`
-- `src/components/PostCard.tsx`

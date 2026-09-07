@@ -1,0 +1,25 @@
+{
+  "name": "plan064-study-library-recommendations",
+  "description": "추천·게시 이력과 기존 이력 가져오기의 서비스 및 HTTP 계약",
+  "status": "pending",
+  "created_at": "2026-09-07",
+  "total_phases": 3,
+  "current_phase": 1,
+  "phases": [
+    {
+      "number": 1,
+      "file": "phase-01.md",
+      "execution_profile": "deep"
+    },
+    {
+      "number": 2,
+      "file": "phase-02.md",
+      "execution_profile": "deep"
+    },
+    {
+      "number": 3,
+      "file": "phase-03.md",
+      "execution_profile": "standard"
+    }
+  ]
+}
