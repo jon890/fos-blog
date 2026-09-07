@@ -4,7 +4,10 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "페이지를 찾을 수 없습니다",
-  robots: { index: false },
+  robots: { index: false, follow: false },
+  alternates: null,
+  openGraph: { images: [] },
+  twitter: { images: [] },
 };
 
 export default function NotFound() {

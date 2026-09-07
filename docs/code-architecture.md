@@ -65,10 +65,12 @@ DB 공용 연결의 개발 SQL parameter 로그는 개인 값 노출을 막도�
 | --- | --- |
 | `page.tsx`, `loading.tsx` | `(blog)/page.tsx`, `(blog)/loading.tsx` |
 | `about/`, `contact/`, `privacy/`, `glossary/` | `(blog)/` 아래 같은 폴더 |
-| `categories/`, `category/`, `posts/`, `series/`, `tag/` | `(blog)/` 아래 같은 폴더. categories의 OG 파일 포함 |
+| `categories/`, `category/`, `posts/`, `series/`, `tag/` | `(blog)/` 아래 같은 폴더. categories OG 파일은 원래 경로 유지 |
 
 `api`, sitemap, robots, RSS, 아이콘 등 Route Handler와 metadata 파일은 임의로 이동하지 않는다.
 루트 `not-found.tsx`, `opengraph-image.tsx`, `components/FolderSidebarWrapper.tsx`는 원래 경로에 둔다.
+categories OG 특수파일을 route group 안으로 옮기면 Next.js가 공개 URL에 해시를 붙이므로 원래 경로를 유지한다.
+루트 404의 metadata에는 noindex/nofollow와 빈 OG·Twitter images를 명시해 관리자 오류 응답의 공개 이미지 상속을 막는다.
 관리자 metadata는 noindex를 명시하고 공개 canonical·OG 이미지 상속을 제거한다.
 공개 글 이동 전 각 URL, canonical, robots와 광고 요소를 기록하고 이동 뒤 같은 값인지 검사한다.
 `src/app/globals.css`의 기존 `@source`가 study 컴포넌트를 포함하는지 검증한다.

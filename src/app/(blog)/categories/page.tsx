@@ -8,6 +8,7 @@ import { CategoriesSection } from "@/components/CategoriesSection";
 import { formatYYYYMMDD } from "@/lib/time";
 import { Metadata } from "next";
 import { env } from "@/env";
+import { OG_WIDTH, OG_HEIGHT } from "@/lib/og";
 import logger from "@/lib/logger";
 
 const log = logger.child({ module: "app/categories" });
@@ -28,6 +29,14 @@ export const metadata: Metadata = {
     description: "모든 카테고리 목록을 확인하세요.",
     url: `${siteUrl}/categories`,
     type: "website",
+    // 특수 metadata 파일은 루트 categories에 두어 기존 공개 이미지 URL을 유지한다.
+    images: [{
+      url: `${siteUrl}/categories/opengraph-image`,
+      width: OG_WIDTH,
+      height: OG_HEIGHT,
+      type: "image/png",
+      alt: "카테고리 | FOS Study",
+    }],
   },
 };
 

@@ -14,7 +14,7 @@ import {
 afterEach(cleanup);
 
 const pageSource = readFileSync(
-  join(__dirname, "../../app/glossary/page.tsx"),
+  join(__dirname, "../../app/(blog)/glossary/page.tsx"),
   "utf-8",
 );
 

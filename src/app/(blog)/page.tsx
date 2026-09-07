@@ -12,11 +12,27 @@ import { WebsiteJsonLd } from "@/components/JsonLd";
 import { HomeHero } from "@/components/HomeHero";
 import { ArrowRight, Flame, Layers } from "lucide-react";
 import Link from "next/link";
+import type { Metadata } from "next";
+import { OG_WIDTH, OG_HEIGHT } from "@/lib/og";
+import { metadata as blogMetadata } from "./layout";
 
 const siteUrl = env.NEXT_PUBLIC_SITE_URL;
 
 // ISR - 60초마다 페이지 재생성
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  openGraph: {
+    ...blogMetadata.openGraph,
+    images: [{
+      url: `${siteUrl}/opengraph-image`,
+      width: OG_WIDTH,
+      height: OG_HEIGHT,
+      type: "image/png",
+      alt: "FOS Study — 개발 학습 블로그",
+    }],
+  },
+};
 
 async function getPopularPosts(
   limit: number
