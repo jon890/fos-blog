@@ -36,7 +36,7 @@ importers:
         specifier: ^17.2.3
         version: 17.2.3
       drizzle-orm:
-        specifier: 0.45.2
+        specifier: ^0.45.2
         version: 0.45.2(kysely@0.29.5)(mysql2@3.16.2)
       geist:
         specifier: ^1.7.0
