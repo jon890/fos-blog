@@ -1,4 +1,4 @@
-# ADR Index — 기술 결정 기록
+# ADR Index: 기술 결정 기록
 
 이 문서는 **코드/설정/git log로 자명하지 않은 기술 결정**만 기록한다.
 자명한 사항(파일 위치, 함수명, 단순 구현 선택)은 제외.
@@ -70,3 +70,8 @@ AI 에이전트가 설계 철학을 빠르게 추론하기 위한 컨텍스트.
 ## 메타 / 문서 구조
 
 - [ADR-031](./031-adr-file-split.md) — ADR 파일 분리 (단일 adr.md → docs/adr/NNN-slug.md, plan052)
+
+## 개인 학습자료
+
+- [ADR-037](./037-private-study-domain.md): 공개 글과 개인 자료를 분리하고 관리자와 수집기 권한을 구분한다.
+- [ADR-038](./038-study-atomic-ingestion.md): 수집 cursor와 자료, 재시도 영수증을 원자적으로 저장한다.
