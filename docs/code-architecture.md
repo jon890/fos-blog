@@ -198,7 +198,7 @@ DB 장애는 세션 없음으로 처리하지 않고 page 오류 또는 API `503
 일반 `DATABASE_URL`을 테스트 쓰기에 대신 사용하지 않는다.
 실DB 검증을 실행할 때 설정이 없으면 성공으로 건너뛰지 않고 검증 불가로 보고한다.
 기본 `pnpm test`에서 실DB 테스트를 선택 실행하도록 하되 해당 phase 검증에서는 `RUN_DB_TESTS=1`로 명시적으로 실행한다.
-테스트는 소스 옆 `*.test.ts` 또는 `*.test.tsx`에 두고 DOM 테스트만 jsdom 환경을 지정한다.
+테스트 배치와 환경은 [코드 작성과 테스트](#코드-작성과-테스트)를 따른다.
 브라우저 검증은 격리 DB에 발급한 정상 테스트 세션을 사용하고 실제 운영 계정·secret을 fixture에 기록하지 않는다.
 
 **갱신일:** 2026-07-30
@@ -220,19 +220,20 @@ lib
 ```
 
 - `app`은 라우팅, 메타데이터, 화면 조합을 담당한다.
-- `app`은 목표 구조에서 `infra`를 직접 가져오지 않고 `services`를 거친다.
+- `app`의 단순 조회 페이지와 Route Handler는 `getRepositories()`를 직접 사용할 수 있다.
 - `services`는 조회와 여러 Repository 조합, 외부 부수 효과가 있는 흐름을 담당한다.
 - `infra`는 MySQL과 GitHub API를 캡슐화한다.
 - `lib`는 마크다운 전처리, 경로, 로깅과 범용 계산을 제공한다.
 - `components`는 Repository를 생성하거나 DB에 직접 접근하지 않는다.
 
-### 현재 코드의 레이어 이탈
+### 직접 조회와 서비스 위임
 
 현재 여러 페이지와 Route Handler가 `getRepositories()`를 직접 가져온다.
 홈, 카테고리, 글·태그·시리즈 목록과 댓글·검색·방문 API가 대표적이다.
 
-이는 실제 구현을 숨기지 않기 위해 기록한 코드 부채이며 새 코드의 허용 규칙이 아니다.
-새 흐름은 서비스 경계를 사용하고, 기존 직접 접근은 동작을 고정하는 테스트와 함께 별도 리팩터링으로 옮긴다.
+단순 조회의 직접 접근은 허용한다.
+여러 Repository를 조합하거나 외부 부수 효과를 다루는 도메인 흐름은 서비스에 둔다.
+판정 기준은 [프로젝트 지침](../CLAUDE.md#아키텍처-경계)을 따른다.
 
 ## 주요 디렉터리
 
@@ -252,7 +253,7 @@ lib
 ## Repository 경계
 
 `getRepositories()`는 React `cache()`로 요청 안에서 Repository 인스턴스를 재사용한다.
-서비스가 Repository를 구성할 때 사용하며, 현재는 위에 기록한 레이어 이탈 코드에서도 직접 호출한다.
+서비스와 단순 조회 진입점에서 Repository를 구성할 때 사용한다.
 
 | Repository | 주요 책임 |
 | --- | --- |
@@ -291,7 +292,7 @@ DB 구조와 제약의 단일 소스는 `src/infra/db/schema/`다.
 ## 페이지 조회
 
 현재 페이지는 Repository 직접 호출과 서비스 위임이 혼재한다.
-목표 구조와 현재 이탈은 “시스템 경계”에 기록한다.
+직접 조회와 서비스 위임의 기준은 [시스템 경계](#시스템-경계)에 기록한다.
 페이지별 화면과 상태는 `docs/pages/` 문서가 담당한다.
 
 | 라우트 | 책임 문서 |
@@ -365,16 +366,40 @@ fos-study Markdown thumbnail
 
 - `src/components/markdown/`에서 서버 런타임에 의존하는 모듈은 `import "server-only"`를 선언한다.
   타입만 내보내는 모듈은 선언하지 않는다.
+  이 모듈의 Node 테스트는 `server-only`를 mock해 서버 런타임 검사와 분리한다.
 - sanitize는 스크립트, 이벤트 속성과 위험한 URL을 제거한다.
 - `CodeCard`, Mermaid, 용어 도움말과 이미지 확대는 컴포넌트 매핑으로 연결한다.
+  [MarkdownRenderer](../src/components/MarkdownRenderer.tsx)의 `passNode: true`가 HAST node를 전달한다.
+  코드블록과 Mermaid 분기는 이 node의 속성을 사용하므로 JSX 변환 변경 시 함께 검증한다.
 - 클라이언트 상태가 필요한 기능만 client island로 분리한다.
+
+## 코드 작성과 테스트
+
+TypeScript strict와 `@/*` 경로 별칭을 유지한다.
+컴파일 설정은 [tsconfig.json](../tsconfig.json), lint 규칙과 적용 파일은 [eslint.config.mjs](../eslint.config.mjs)를 따른다.
+설정 변경도 리뷰 대상으로 삼으며, 현재 검사가 통과했다는 이유만으로 규칙 유지가 보장되지는 않는다.
+의존성을 변경할 때 `package.json`과 `pnpm-lock.yaml`은 같은 커밋에 둔다.
+스키마 변경은 [마이그레이션 절차](./data-schema.md#스키마-변경과-마이그레이션)를 따른다.
+
+컴포넌트는 PascalCase와 이름 있는 export를 기본으로 한다.
+Next.js가 default export를 요구하는 페이지와 레이아웃 등은 프레임워크 계약을 따른다.
+
+Tailwind 탐색 범위는 [globals.css](../src/app/globals.css)의 `@source`가 정한다.
+이미 등록된 패턴 밖에 Tailwind class를 추가할 때 탐색 경로를 등록한다.
+
+테스트는 대상 코드와 가까운 `*.test.ts` 또는 `*.test.tsx`에 둔다.
+실행 설정은 [vitest.config.ts](../vitest.config.ts)를 따른다.
+DOM 테스트는 파일 상단에 `// @vitest-environment jsdom`을 선언해 기본 Node 환경과 격리한다.
 
 ## 횡단 관심사
 
 ### 로깅과 오류
 
-- 서버 코드는 `@/lib/logger`의 구조화 로거를 사용한다.
-- 알 수 없는 오류는 `Error`로 정규화해 기록한다.
+- 서버 코드는 `@/lib/logger`의 자식 로거를 사용한다.
+  오류 로그에는 `component`, `operation`, 관련 도메인 값과 `err`를 남긴다.
+- 알 수 없는 오류는 `error instanceof Error ? error : new Error(String(error))`로 정규화해 기록한다.
+- 클라이언트 컴포넌트는 서버 전용 pino와 `@/lib/logger`를 import하지 않는다.
+  실패는 UI로 알리고 catch 블록의 개발 진단에는 `console.error`만 사용한다.
 - 본문 조회 실패와 관련 글 같은 보조 기능 실패를 구분한다.
 
 ### 요청 보호
@@ -392,7 +417,7 @@ fos-study Markdown thumbnail
 ## 변경 규칙
 
 - 새 페이지를 추가하면 대응하는 `docs/pages/*.md`를 함께 만든다.
-- 새 페이지와 Route Handler는 Repository를 직접 가져오지 않고 서비스 경계를 사용한다.
+- 새 페이지와 Route Handler도 [직접 조회와 서비스 위임](#직접-조회와-서비스-위임)의 기준을 따른다.
 - 스키마 변경은 Drizzle 마이그레이션과 `docs/data-schema.md`를 함께 갱신한다.
 - 코드만 보고 알 수 없는 장기 결정은 ADR에 이유와 기각한 대안을 남긴다.
 - 구현 함수와 응답 필드의 상세 목록을 이 문서에 복사하지 않는다.

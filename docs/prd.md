@@ -45,6 +45,7 @@ career-os가 수집·추천을 수행하고 fos-blog의 기존 MySQL에 별도 �
 | 세션 만료·DB 장애·OAuth 취소 | 각각 재로그인, 장애 안내, 재시도 가능한 로그인 화면 |
 | 외부 Origin·복귀 URL·변조 state | 거절, 외부 리디렉션 없음 |
 | 서비스 Bearer만 있는 관리자 요청 | 거절. 개인 상태 쓰기·import commit은 `403` |
+
 화면과 API는 [사용자 흐름](./flow.md#학습자료-관리-흐름)과 [HTTP 계약](./api/study-library.md)을 따른다.
 
 ## 기존 공개 글 목록 요구

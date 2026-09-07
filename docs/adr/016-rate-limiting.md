@@ -1,16 +1,33 @@
-## ADR-016. Rate Limiting — Next.js middleware in-memory fixed window
+# ADR-016. 단일 홈서버에서 메모리 기반 요청 제한을 사용한다
 
-**Context**: 외부 다량 요청으로 홈서버 자원 고갈 사고. NPM `limit_req` 미설정 + 앱 레벨 보호 부재.
+## 맥락
 
-**Decision**:
-- Fixed window 60초/IP, 분당 **1000 요청** (PR #76 hotfix 완화 + plan007-2 본질 fix)
-- **우회 대상**:
-  - localhost: `127.x.x.x`, `::1`, `::ffff:127.x.x.x`, `"localhost"`
-  - RFC1918 사설 대역: `10.0.0.0/8`, `172.16-31.x.x`, `192.168.0.0/16` (+ IPv4-mapped IPv6 형태)
-  - IPv6 ULA: `fc00::/7`
-  - 정상 봇 UA: `Googlebot|Bingbot|NaverBot|Yeti` (Google + Microsoft + Naver SEO)
-- proxy.ts matcher 는 HTML navigation 만 카운트 — `/_next/data` (RSC payload), `/api/*`, root 정적 파일(`*.png|css|js|...`), `sitemap.xml|robots.txt|ads.txt|manifest.json` 모두 제외
-- **위치**: `src/middleware/rateLimit.ts` — 홈서버 1 인스턴스, in-memory `Map`. NJS16 proxy 는 Node 고정이라 별도 runtime 명시 불필요
-- **메모리 가드**: `buckets.size >= 10_000` 시 만료 windowKey 엔트리 일괄 sweep
+외부의 다량 요청으로 홈서버 자원이 고갈된 사례가 있었다.
+앱에서 요청을 제한하되 정상 탐색과 운영자의 내부망 접근을 과도하게 차단하지 않아야 했다.
 
-**Why**: 외부 의존 0 + 1 인스턴스 충분. Redis/Sliding window 기각(over-engineering). matcher 를 HTML 요청 한정으로 좁혀 한 페이지 navigation = 1 카운트로 축소. LAN 내 접속(운영자/가족) 자연 우회 의도. 한국 SEO 핵심 봇(Yeti) 인덱싱 보장 의도. 메모리 가드는 장기 IP 다양성 누적 OOM 방지 — sweep 기준이 windowKey 만료라 활성 IP 카운트는 보존.
+## 결정
+
+단일 인스턴스의 메모리에 IP별 fixed window 카운터를 둔다.
+요청 범위는 HTML navigation으로 좁힌다.
+시간 창과 요청 한도, 내부망 대역, 봇 UA 패턴과 메모리 정리 조건은
+[요청 제한 구현](../../src/middleware/rateLimit.ts), 경로 제외 조건은 [proxy 설정](../../src/proxy.ts)을 따른다.
+
+## 우회 조건과 운영 전제
+
+- localhost와 사설 대역은 운영자와 내부망 사용자의 접근을 위해 제한을 우회한다.
+- IP가 비어 있거나 `unknown`이면 통과시킨다.
+  개발 환경에서 IP 헤더가 없을 수 있기 때문이며, 운영에서 IP를 얻지 못하는 요청도 제한되지 않는다.
+- 검색 봇 예외는 UA 문자열 일치로 판정한다.
+  봇의 신원을 검증하는 방식이 아니므로 해당 문자열을 사용하는 다른 요청도 우회할 수 있다.
+- 클라이언트 IP를 얻는 헤더는 운영 프록시가 올바르게 전달하고 관리한다는 전제가 있다.
+  프록시 구성이 바뀌면 실제 IP 판정과 우회 범위를 다시 확인한다.
+
+## 이유와 기각한 대안
+
+홈서버 한 인스턴스에서는 외부 저장소 없이 카운터를 관리할 수 있어 Redis를 도입하지 않았다.
+정교한 sliding window보다 단순한 fixed window를 선택했다.
+HTML navigation만 세어 한 화면의 정적 자산 요청이 카운터를 불필요하게 늘리지 않도록 했다.
+
+IP 종류가 계속 늘어날 때 메모리가 누적되지 않도록 만료된 카운터를 정리한다.
+프로세스를 재시작하면 카운터가 초기화되고, 인스턴스를 늘리면 카운터가 공유되지 않는다.
+현재 조합 구조는 [요청 보호](../code-architecture.md#요청-보호)를 따른다.
