@@ -1,23 +1,15 @@
-# docs-check 오버레이 — fos-blog
+# fos-blog docs-check 오버레이
 
 공용 `docs-check`에 fos-blog의 문서 범위와 코드 대조 기준을 주입한다.
-문서 책임은 설치된 `planning` 스킬의 “필수 관리 문서” 계약을 따른다.
+문서별 책임은 설치된 `planning` 스킬을 따른다.
 이 파일은 fos-blog의 검사 범위와 코드 대조 기준만 추가한다.
 
 ## 검사 범위
 
 - 제품 문서: `README.md`, `docs/**/*.md`
-- 상시 지침: `AGENTS.md`
-- 작업 종류별 규칙: `.claude/rules/*.md`
-- 저장소 오버레이: `.claude/*-overlay.md`
-- 저장소 스킬 자료: `.agents/skills/*/SKILL.md`, `.agents/skills/*/references/*.md`, `.agents/skills/_shared/*.md`
-- 역할 지침: `.agents/roles/*.md` (`.claude/agents/*.md`와 `.codex/agents/*.toml`은 얇은 래퍼)
 
-`AGENTS.md`는 `CLAUDE.md`를 가리키는 심볼릭 링크다.
-같은 내용으로 두 번 집계하지 않고 실제 파일인 `CLAUDE.md`를 검사한다.
-
-`.claude/skills/*`는 `.agents/skills/*` 호환 심볼릭 링크다.
-링크가 끊어졌는지만 확인하고 내용을 중복 검사하지 않는다.
+`AGENTS.md`, rules, roles, overlays와 skills는 `harness-cleanup`의 감사 대상이다.
+제품 문서와 연결된 지침은 판단 근거로 읽되 이 감사에서 수정하지 않는다.
 
 `tasks/`는 검사 대상이 아니다.
 완결된 plan의 phase 파일은 실행 당시의 사실을 기록한 것이라,
@@ -29,30 +21,26 @@ ADR 본문은 `docs/adr/[0-9]*.md`, 인덱스는 `docs/adr/README.md`다.
 
 ## 정적 검사 실행
 
-공용 `~/.claude/skills/docs-check/scripts/static-check.sh`는 추적된 모든 마크다운을 검사하며 제외 경로를 인자로 받지 못한다.
-fos-blog는 `tasks/**`가 추적 대상이라 출력이 1000줄을 넘고 대부분이 판정과 무관한 계획 문서다.
-전체 실행 대신 아래 저장소 전용 대조를 사용한다.
+설치된 `docs-check/scripts/static_check.py`에 ADR 디렉터리 `docs/adr`와 검사 범위를 넘긴다.
+전체 제품 문서 감사는 `docs`와 `README.md`를 각각 범위로 실행한다.
+변경 범위 감사는 해당 파일이나 디렉터리를 전달하고, 검사 파일 수가 0이면 통과로 보지 않는다.
 
-ADR 인덱스 검사도 이 스크립트에 맡기지 않는다.
-스크립트는 인덱스 파일명을 `INDEX.md`로 고정하는데 fos-blog는 `README.md`를 쓴다.
-
-편집한 파일은 `git diff --check`와 한국어 검사기로 별도 확인한다.
-기존 위반이 많은 파일은 현재 diff에서 새 위반이 늘지 않았는지 비교하고 기존 부채를 별도 보고한다.
-공용 검사기가 인덱스 경로와 파일 목록 인자를 지원하게 되면 이 예외를 제거한다.
+공용 검사기는 `INDEX.md`가 없으면 ADR 인덱스 대조를 건너뛴다.
+따라서 아래 `README.md` 번호 대조도 실행한다.
+편집한 파일은 `git diff --check`와 사용자 전역 지침의 한국어·가독성 검사기로 확인한다.
 
 ## 검증 위임
 
 의미 검증은 읽기 전용 `fos-blog-docs-verifier`에 맡긴다.
-역할 계약은 `.agents/roles/fos-blog-docs-verifier.md`에 있다.
-
-검증기는 발견을 미리 걸러내지 않고 모두 보고한다.
-심각도는 메인 에이전트가 근거를 검토한 뒤 정한다.
+판정과 보고 방식은 [역할 계약](../.agents/roles/fos-blog-docs-verifier.md)을 따른다.
 
 ## fos-blog 전용 대조
 
 ### ADR 인덱스
 
 ```bash
+set -eu
+set -o pipefail
 BODY=$(find docs/adr -maxdepth 1 -type f -name '[0-9][0-9][0-9]-*.md' -exec basename {} \; | cut -c1-3 | sort -u)
 INDEX=$(grep -oE '\[ADR-[0-9]{3}\]' docs/adr/README.md | grep -oE '[0-9]{3}' | sort -u)
 diff <(printf '%s\n' "$BODY") <(printf '%s\n' "$INDEX")
@@ -67,6 +55,8 @@ diff <(printf '%s\n' "$BODY") <(printf '%s\n' "$INDEX")
 여러 줄로 작성된 `mysqlTable()` 선언도 잡도록 다중 행 검색을 사용한다.
 
 ```bash
+set -eu
+set -o pipefail
 SCHEMA_TABLES=$(rg -U --no-filename -o 'mysqlTable\(\s*"[a-z_]+"' src/infra/db/schema/*.ts | rg -o '"[a-z_]+"' | sort -u)
 DOC_TABLES=$(rg -o '^### `[a-z_]+`' docs/data-schema.md | rg -o '`[a-z_]+`' | tr -d '`' | sort -u)
 diff <(printf '%s\n' "$SCHEMA_TABLES" | tr -d '"') <(printf '%s\n' "$DOC_TABLES")
@@ -104,6 +94,8 @@ catch-all 라우트는 `-detail` 접미사를 쓴다.
 개수 비교로는 라우트 추가와 문서 삭제가 상쇄돼 통과하므로 집합을 대조한다.
 
 ```bash
+set -eu
+set -o pipefail
 ROUTES=$(find src/app -name 'page.tsx' -type f | sort)
 TABLE=$(grep -E '^\| `src/app/' .claude/docs-check-overlay.md | cut -d'`' -f2 | sort -u)
 diff <(printf '%s\n' "$ROUTES") <(printf '%s\n' "$TABLE")

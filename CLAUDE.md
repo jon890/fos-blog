@@ -1,6 +1,6 @@
 # fos-blog 에이전트 작업 지침
 
-**갱신일:** 2026-08-10 · **저장소:** `github.com/jon890/fos-blog` · **운영 주소:** `https://blog.fosworld.co.kr`
+**갱신일:** 2026-09-07 · **저장소:** `github.com/jon890/fos-blog` · **운영 주소:** `https://blog.fosworld.co.kr`
 
 ## 이 문서의 역할
 
@@ -15,7 +15,8 @@
 `.claude/agents/*.md`와 `.codex/agents/*.toml`은 그 파일을 가리키는 얇은 래퍼이므로
 역할을 고칠 때는 `.agents/roles/`를 고치고 래퍼는 건드리지 않는다.
 
-반복되는 계획·검토 함정은 `.agents/skills/_shared/common-pitfalls.md`에 누적한다.
+작업에서 발견한 재발 사례는 [회고 목록](docs/retrospectives/INDEX.md)에서 찾아 해당 개별 문서에 기록한다.
+현재 제품 계약은 기존 `docs/` 책임 문서에 반영하고, 회고는 그 문서를 링크한다.
 
 코드와 문서가 충돌하면 현재 동작은 코드와 설정으로 확인하고, 의사결정 이유는 문서에서 확인한다.
 충돌을 발견하면 근거 없이 한쪽을 선택하지 말고 작업 범위 안에서 함께 정리한다.
@@ -74,31 +75,14 @@ pnpm install
 
 ## 구현 규칙
 
-- TypeScript strict와 `@/*` 경로 별칭을 유지한다.
-- 컴포넌트는 PascalCase와 이름 있는 export를 기본으로 한다.
-- 서버 코드는 `@/lib/logger`의 자식 로거를 사용한다.
-- `src/`는 `no-console` lint 규칙이 막고 `console.error`만 허용한다. 테스트 파일은 제외한다.
-- `scripts/*.ts`는 독립 실행 제약 때문에 규칙 대상에서 제외한다.
-- 클라이언트 컴포넌트는 서버 전용 pino를 import하지 않는다.
-  실패는 UI로 알리고 catch 블록의 개발 진단에는 `console.error`만 사용한다.
-- 알 수 없는 오류는 `error instanceof Error ? error : new Error(String(error))`로 정규화한다.
-- `src/app/globals.css`는 Tailwind 자동 탐색을 끈다.
-  Tailwind class가 있는 새 디렉터리를 만들면 `@source`를 추가한다.
-- 명시적 승인 없이 새 의존성, `eslint-disable`, `@ts-ignore`, `@ts-nocheck`, `@ts-expect-error`를 추가하지 않는다.
-
-테스트는 대상 코드와 가까운 `*.test.ts` 또는 `*.test.tsx`에 둔다.
-DOM 테스트는 파일 상단에 `// @vitest-environment jsdom`을 선언해 기본 Node 환경과 격리한다.
+구현과 리뷰는 [코드 작성과 테스트](docs/code-architecture.md#코드-작성과-테스트),
+[로깅과 오류](docs/code-architecture.md#로깅과-오류)를 기준으로 한다.
+명시적 승인 없이 새 의존성, `eslint-disable`, `@ts-ignore`, `@ts-nocheck`, `@ts-expect-error`를 추가하지 않는다.
 
 ## Git과 PR
 
-브랜치와 커밋·PR 제목 형식은 기존 히스토리를 따른다.
-
-PR 제목과 본문은 기본적으로 한국어로 작성한다.
-본문에는 변경 이유와 내용을 요약하고 검증 항목을 체크리스트로 적는다.
+PR 작성은 설치된 `create-pr` 스킬을 따른다.
 PR은 검증이 끝났다면 검토 가능한 상태로 생성하고, 사용자가 요청했거나 검증이 끝나지 않았을 때만 초안으로 만든다.
-
-관심사별 커밋 분리의 예외는 두 가지다.
-강하게 결합된 `package.json`과 `pnpm-lock.yaml`, 스키마와 생성 마이그레이션은 같은 커밋에 둔다.
 
 ## 검증과 완료 보고
 
