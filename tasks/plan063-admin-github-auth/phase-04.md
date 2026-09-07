@@ -41,6 +41,7 @@
 ### 2. 관리자 홈과 보호 layout
 
 `src/app/admin/(protected)/layout.tsx`와 `page.tsx`에서 각각 서버 검사를 호출한다.
+`src/app/admin/error.tsx`에서 보호 layout·page의 장애를 일반화한 안내와 재시도로 처리한다.
 홈에는 읽기 전용 본인 계정과 공부 메뉴를 표시한다. 공부 페이지 구현 전에는 준비 중으로 알려 깨진 링크를 노출하지 않는다.
 미구현 메뉴는 `disabled` 버튼과 `준비 중` 텍스트로 표시하고 활성 링크를 만들지 않는다.
 메뉴 경로는 흐름 문서대로 고정하고 plan062에서 활성화한다.
@@ -101,3 +102,4 @@ git diff --check
 | `src/app/admin/(protected)/layout.tsx` | 신규 또는 기존 내용 확장 |
 | `src/app/admin/(protected)/page.tsx` | 신규 또는 기존 내용 확장 |
 | `src/app/admin/admin-pages.test.tsx` | 신규 또는 기존 내용 확장 |
+| `src/app/admin/error.tsx` | 보호 layout과 페이지의 장애 안내·재시도 |
