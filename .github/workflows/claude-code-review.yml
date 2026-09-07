@@ -141,7 +141,7 @@ jobs:
           allowed_bots: "*"
           prompt: ${{ steps.prompt.outputs.text }}
           # 고정 태그(claude-opus-4-7) 대신 opus 별칭 — CLI 가 인식하는 최신 Opus 자동 추종(버전업 무수정).
-          # 단일 리뷰어라 Agent 불필요. read-only(gh 호출만 허용, 파일 수정 도구 차단).
+          # 단일 리뷰어가 gh로 코드와 기준 문서를 조회하고 리뷰를 게시한다. 파일 수정 도구는 차단한다.
           # gh pr comment 는 제외 — 요약은 리뷰 body 로 게시하므로 일반 댓글 경로가 필요 없다.
           claude_args: '--model opus --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh api:*)" --disallowedTools "Read,Write,Edit,Glob,Grep,LS"'
 
