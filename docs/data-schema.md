@@ -1,5 +1,22 @@
 # Data Schema: 스키마 레퍼런스
 
+## 스키마 변경과 마이그레이션
+
+스키마 단일 소스는 `src/infra/db/schema/`다.
+DB 스키마를 바꿀 때는 다음 순서를 따른다.
+
+1. 스키마 소스를 수정하고 `pnpm db:generate`로 `drizzle/` 산출물을 생성한다.
+2. 생성 SQL과 metadata를 직접 편집하지 않고, 데이터 삭제와 파괴적 변경 여부를 검토한다.
+3. 스키마와 생성된 마이그레이션을 같은 커밋에 포함한다.
+4. 격리된 로컬 MySQL에서 `pnpm db:migrate` 또는 `pnpm db:migrate:runtime`으로 적용을 검증한다.
+
+운영 DB에 `pnpm db:push`를 사용하지 않는다.
+이 명령은 버려도 되는 로컬 실험에만 허용하며, 커밋 전에 마이그레이션으로 바꾸거나 실험 변경을 되돌린다.
+[Dockerfile](../Dockerfile)은 컨테이너 시작 시 `migrate.js`가 성공한 뒤 `server.js`를 실행한다.
+문서 승인이나 로컬 검증은 운영 DB 적용과 배포 승인을 대신하지 않는다.
+[마이그레이션 실행기](../scripts/migrate.ts)는 DB 연결 재시도와 최종 연결 실패 로그의 DB URL 비밀번호를 가린다.
+이를 모든 애플리케이션 로그에 적용되는 자동 마스킹으로 가정하지 않는다.
+
 ## 학습자료 저장 계약
 
 **구현 범위:** 관리자 인증 테이블 네 개는 구현됐다. study 테이블은 후속 plan061의 확정 설계다.
@@ -73,10 +90,8 @@ DB를 사용할 수 없으면 빈 개인 목록이나 성공 영수증으로 대
 운영자가 삭제할 필요가 생기면 별도 승인과 삭제 순서 설계가 필요하다.
 
 구현 시 스키마 단일 소스 `src/infra/db/schema/study.ts`와 export를 먼저 작성한다.
-`pnpm db:generate`가 만든 SQL과 metadata를 같은 커밋에 포함하고 생성 SQL을 손으로 고치지 않는다.
-버려도 되는 로컬 MySQL에서 migrate 후 FK, 대소문자 UNIQUE, 재실행과 rollback을 검증한다.
+[공통 마이그레이션 절차](#스키마-변경과-마이그레이션)에 따라 FK, 대소문자 UNIQUE, 재실행과 rollback을 검증한다.
 기존 테이블의 데이터·인덱스 변경과 운영 DB 적용은 이 설계 작업에 포함하지 않는다.
-배포 컨테이너는 시작 시 migrate를 실행하므로 문서 승인만으로 컨테이너를 배포하지 않는다.
 
 **관련:** [prd.md](./prd.md) · [adr/README.md](./adr/README.md)
 
@@ -112,7 +127,7 @@ session 로그아웃은 해당 session 행 삭제로 철회한다. verification 
 이 네 테이블에는 앞선 study 테이블의 `INT` ID와 FK `RESTRICT` 규칙을 적용하지 않는다.
 
 기존 Drizzle 마이그레이션 체계로 생성·적용하며 Better Auth의 직접 DB migrate는 사용하지 않는다.
-스키마와 생성 SQL을 같은 커밋에 두고 격리 MySQL에서 적용·재실행·FK·세션 철회를 검증한다.
+[공통 마이그레이션 절차](#스키마-변경과-마이그레이션)에 따라 재실행, FK와 세션 철회를 검증한다.
 운영 DB 적용과 데이터 정리는 별도 승인 작업이다.
 
 ## 전체 스키마
@@ -155,12 +170,18 @@ session 로그아웃은 해당 session 행 삭제로 철회한다. verification 
 
 Notes:
 - `path` = unique key (slug 이 아닌 path 기준 업서트)
-- `is_active = false` = soft delete — 모든 조회에 `WHERE is_active = 1` 필수
+- 사용자에게 노출하는 글 조회는 `is_active = true`로 제한한다.
+  동기화와 내부 존재 확인은 비활성 글도 조회한다.
 - 카테고리 페이지는 폴더 직속 글(경로 매칭)에 더해 교차 게시 글을 노출한다.
   교차 게시 글은 `categories`와 `folderPath`를 소문자로 맞춘 `JSON_CONTAINS` 조건과 현재 폴더 경로 접두사 제외를 함께 적용해 찾는다 (plan051, plan053, plan059, ADR-030, ADR-035).
   `folderPath`는 `AI`뿐 아니라 `AI/RAG` 같은 하위 폴더 경로도 가능하다.
   폴더 브라우저(`path` 접두사 매칭)도 대소문자를 구분하지 않는다.
   글 수가 적어 인덱스 없이 풀스캔을 허용한다.
+
+신규 글의 `created_at`은 [동기화 서비스](../src/services/PostSyncService.ts)가 조회한 GitHub 커밋 날짜를 우선한다.
+[GitHub 조회](../src/infra/github/api.ts)는 최대 100개 커밋 중 가장 오래된 날짜를 사용하므로 전체 이력의 최초 날짜를 보장하지 않는다.
+커밋 날짜를 얻지 못하면 DB 기본값으로 생성 시각을 저장한다.
+기존 글 갱신은 `created_at`을 유지하며 `updated_at`을 갱신한다.
 
 ---
 

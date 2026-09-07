@@ -1,86 +1,32 @@
-# 최신 글 목록 Page PRD
+# 최신 글 목록 페이지
 
 **Route:** `/posts/latest`
-**File:** `src/app/(blog)/posts/latest/page.tsx`
-**Updated:** 2026-08-05
+**진입점:** [최신 글 페이지](../../src/app/(blog)/posts/latest/page.tsx)
+**갱신일:** 2026-09-07
 
----
+## 목적과 조회
 
-## Purpose
+활성 글을 업데이트 순으로 계속 탐색한다.
+홈의 최근 글 영역에서 진입하고 카드를 선택하면 글 상세로 이동한다.
 
-전체 글을 **최신 업데이트순**으로 연속 탐색할 수 있는 전용 페이지. SSR로 첫 10개를 렌더하고, 이후 무한 스크롤로 추가 로드한다.
+- 첫 10개는 서버에서 렌더링하고 이후 10개씩 추가 조회한다.
+- 정렬은 `updated_at DESC, id DESC`이며 복합 cursor를 사용한다.
+- 추가 조회는 `/api/posts/latest`에서 수행한다.
+- 카드에는 조회수를 함께 표시하고 썸네일 중심의 grid 변형을 사용한다.
 
----
+정렬 방식을 선택한 이유는 [ADR-002](../adr/002-pagination.md)에 있다.
 
-## Data
+## 공통 목록 동작
 
-| Source | Method | Returns |
-|---|---|---|
-| PostRepository | `getRecentPostsCursor({ limit: 10 })` | 최신 10개 (SSR) |
-| VisitRepository | `getPostVisitCounts(paths)` | 조회수 맵 |
+로딩, 재시도, 종료 안내와 접근성은 [공통 글 목록 동작](../flow.md#글-목록의-공통-동작)을 따른다.
+최초 조회 실패도 빈 목록과 종료 상태로 전달된다.
+별도의 최초 조회 재시도 UI는 없으며 서버에 오류를 기록한다.
 
-**정렬**: `updated_at DESC, id DESC` (composite cursor, [ADR-002](../adr/002-pagination.md))
+카드·대표 이미지 규칙은 [코드 아키텍처](../code-architecture.md#글-대표-이미지),
+목록 상태 처리는 [PostsInfiniteList](../../src/components/PostsInfiniteList.tsx)가 담당한다.
 
-**ISR:** `revalidate = 60`
-**Static params:** 없음
+## 색인과 갱신
 
-**에러 처리:** DB 에러 시 빈 배열로 폴백하고 "글이 없습니다"를 표시한다. logger BLG2 패턴으로 에러를 로깅한다.
-
----
-
-## Components
-
-| Component | Role |
-|---|---|
-| `PostsListSubHero` | 페이지 eyebrow + h1 + meta + divider (server, plan016) |
-| `PostsInfiniteList` (mode=`"latest"`) | 클라이언트 — IntersectionObserver + 수동 버튼 + 썸네일 카드 배열 + 끝 도달 UX |
-| `PostCard` | `variant="grid"`로 16:9 이미지, 분류·날짜, 최대 두 줄 제목, 조회수 표시 |
-| `PostCardSkeleton` | 카드형 로딩 스켈레톤 3개 |
-| `BackToTopButton` | 플로팅(스크롤>300px) + 끝 도달 시 인라인 공용 |
-
----
-
-## Interactions
-
-| Trigger | Action |
-|---|---|
-| 바닥 sentinel 가시화 | `fetch('/api/posts/latest?limit=10&cursor=<iso>:<id>')` |
-| "더 보기" 버튼 클릭 | 동일 fetch (키보드 사용자용) |
-| 추가 fetch 성공 | items append, nextCursor 갱신 |
-| 추가 fetch 실패 | 인라인 "재시도" 버튼 노출 (동일 cursor 재요청) |
-| `nextCursor === null` | 상태 `done` — "더 이상 글이 없습니다." + "맨 위로" 버튼 |
-| 스크롤 > 300px | 플로팅 "맨 위로" 버튼 노출 |
-| PostCard 클릭 | `/posts/<path>` 이동 |
-
----
-
-## SEO
-
-- `export const metadata = { robots: { index: false, follow: true } }` ([ADR-005](../adr/005-list-page-noindex.md))
-- 제목: "최신 글 — FOS Study"
-- 설명: "개발 공부 기록 블로그의 최신 글 목록입니다."
-
----
-
-## Layout
-
-```
-[Container max-w-[1180px]]
-  [PostsListSubHero eyebrow="INDEX · LATEST" title="최신 글" meta="업데이트 순"]
-[PostsInfiniteList mode="latest"]
-  ├ grid PostCard × N (모바일 1열 → 태블릿 2열 → 넓은 화면 3열, 누적)
-  ├ [스켈레톤 × 3 | 인라인 "더 보기" 버튼 | "재시도" 버튼 | 끝 문구 + 인라인 "맨 위로"]
-[플로팅 BackToTop 버튼 (스크롤 > 300px)]
-```
-
----
-
-## Related Files
-
-- `src/app/(blog)/posts/latest/page.tsx` (신규)
-- `src/app/api/posts/latest/route.ts` (신규)
-- `src/components/PostsInfiniteList.tsx` (신규, 공용)
-- `src/components/PostCardSkeleton.tsx` (신규, 공용)
-- `src/components/BackToTopButton.tsx` (신규, 공용)
-- `src/infra/db/repositories/PostRepository.ts` (메서드 추가)
-- `src/infra/db/repositories/VisitRepository.ts` (기존 `getPostVisitCounts` 재사용)
+`robots: { index: false, follow: true }`로 목록 자체의 색인을 제외한다.
+`revalidate = 60`을 사용하고 별도 정적 경로 목록은 생성하지 않는다.
+색인 정책의 이유는 [ADR-005](../adr/005-list-page-noindex.md)에 있다.

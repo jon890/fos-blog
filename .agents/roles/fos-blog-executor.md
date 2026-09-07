@@ -1,4 +1,4 @@
-# fos-blog-executor — 역할 계약
+# fos-blog-executor 역할 계약
 
 이 파일이 executor 역할의 단일 소스다.
 `.claude/agents/fos-blog-executor.md`와 `.codex/agents/fos-blog-executor.toml`은
@@ -12,16 +12,10 @@ team-lead가 전달한 phase 파일의 작업 항목을 순서대로 실행하�
 
 ## 도메인 규칙
 
-레이어 경계, 로깅, `posts.isActive` 필터, DB 스키마 변경 절차, TypeScript 규칙은
-`CLAUDE.md`의 "아키텍처 경계", "구현 규칙", "DB 스키마 변경"을 단일 소스로 삼는다.
-구현 전에 그 세 절을 읽는다.
-
-아래는 `CLAUDE.md`에서 유추되지 않는 executor 전용 판단 기준이다.
-
-- `eq(posts.isActive, true)` 예외를 적용했다면 phase 근거와 검증 결과에 그 이유를 남긴다.
-- `console.log`는 lint로 잡히지 않는다. `src/` 잔재는 아래 자체 점검으로 직접 확인한다.
-- 배포 대상은 홈서버의 Docker 컨테이너에 올리는 standalone Next.js다.
-  Vercel 전용 기능은 로컬에서 통과해도 배포에서 동작하지 않으므로 제안하지 않는다.
+구현 전에 [프로젝트 지침](../../CLAUDE.md)의 “아키텍처 경계”와 “구현 규칙”을 읽는다.
+DB 변경은 [마이그레이션 절차](../../docs/data-schema.md#스키마-변경과-마이그레이션)를 따른다.
+모듈 배치와 배포 제약은 [코드 아키텍처](../../docs/code-architecture.md)를 확인한다.
+`eq(posts.isActive, true)` 예외를 적용했다면 phase 근거와 검증 결과에 그 이유를 남긴다.
 
 ## 읽을 순서
 
@@ -31,25 +25,23 @@ team-lead가 전달한 phase 파일의 작업 항목을 순서대로 실행하�
 
 ## 자체 점검
 
-완료 직전 아래를 실행한다.
+완료 직전 worktree 루트에서 아래를 각각 실행하고 실패한 명령은 검사 실패로 보고한다.
 
 ```bash
-# cwd: <worktree root>
-# console.log 잔재 (src/ 만 검사 — scripts/ 는 허용 대상이라 범위 밖)
-grep -rn "console\.log" src/ --include="*.ts" --include="*.tsx" | grep -v "\.test\." || echo "console.log 없음 ✓"
-
-# eslint-disable / ts-ignore 자체 추가 여부 (변경 파일만)
-git diff --name-only | xargs grep -lE "eslint-disable|@ts-ignore|@ts-nocheck|@ts-expect-error" 2>/dev/null || echo "disable 주석 없음 ✓"
-
-# 범위 외 파일 수정 여부
-git diff --name-only
+git status --short --untracked-files=all
+git diff HEAD --check
+git diff HEAD --
 ```
+
+status의 신규 파일도 직접 읽고, 할당 범위와 승인받지 않은 의존성·검사 억제 주석 추가 여부를 대조한다.
+다른 작업자의 기존 변경은 수정하거나 되돌리지 않고 이번 변경과 구분해 보고한다.
+로깅 규칙과 검사 명령은 [프로젝트 지침](../../CLAUDE.md)의 해당 절을 따른다.
 
 ## 검증 절차
 
 1. phase 파일의 "## 검증" 명령을 실제 실행해 통과를 확인한다.
-2. 실패하면 멈추고 team-lead에 보고한다. 실패한 명령, 출력, 원인을 함께 적는다.
-3. 변경 파일을 직접 커버하는 lint, type-check, test, build를 실행한다.
+2. 할당 범위 안의 실패는 원인을 고치고 재검증한다. 범위 확대나 권한이 필요하면 team-lead에 보고한다.
+3. 추가 검증의 범위와 순서는 [검증과 완료 보고](../../CLAUDE.md#검증과-완료-보고)를 따른다.
 
 ## 자기 규율
 

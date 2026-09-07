@@ -1,104 +1,38 @@
-# 홈 Page PRD
+# 홈 페이지
 
-**Route:** `/`  
-**File:** `src/app/(blog)/page.tsx`
-**Updated:** 2026-08-05
+**Route:** `/`
+**진입점:** [홈 페이지](../../src/app/(blog)/page.tsx)
+**갱신일:** 2026-09-07
 
----
+## 목적과 배치
 
-## Purpose
+방문자가 콘텐츠를 먼저 발견하고 카테고리와 시리즈로 탐색을 이어가도록 한다.
+배치는 Hero, 인기 글, 시리즈, 최근 글, 카테고리 순서다.
+글 섹션의 하단 CTA와 카테고리 헤더의 “모두 보기” 링크를 구분하는 이유는 [ADR-003](../adr/003-home-entry-ux.md)에 있다.
 
-블로그의 메인 랜딩 페이지. 카테고리 목록, 인기 글, 최근 글, 통계를 보여주며 방문자가 원하는 콘텐츠로 빠르게 이동하도록 돕는다.
+| 영역 | 표시와 이동 |
+| --- | --- |
+| Hero | 글·카테고리·시리즈 통계와 소개. 구독자 수는 아직 연결하지 않음 |
+| 인기 글 | 최대 6개를 조회수 비교에 적합한 행 목록으로 표시. 더 보기로 `/posts/popular` 이동 |
+| 시리즈 | 최근 업데이트된 시리즈 최대 4개. 카드로 상세, 더 보기로 `/series` 이동 |
+| 최근 글 | 6개 중 첫 글은 대표 카드, 나머지는 썸네일 카드 배열. 더 보기로 `/posts/latest` 이동 |
+| 카테고리 | 글 수 기준 상위 9개. 카드로 카테고리 상세, 모두 보기로 `/categories` 이동 |
 
----
+인기 글·시리즈·카테고리 데이터가 없으면 해당 영역을 생략한다.
+글 카드는 글 상세로 이동하며 대표 이미지 규칙은 [코드 아키텍처](../code-architecture.md#글-대표-이미지)를 따른다.
 
-## Data
+## 오류와 빈 상태
 
-| Source | Method | Returns |
-|--------|--------|---------|
-| PostRepository | `getRecentPosts(6)` | 최근 글 6개 |
-| CategoryRepository | `getCategories()` | postCount desc 정렬 — 홈에서 상위 9개 표시 (plan030) |
-| PostRepository | `getActivePostCount()` | HomeHero 통계용 활성 글 총 개수 (plan013) |
-| PostRepository | `countSeries()` | HomeHero 통계용 시리즈 수 |
-| VisitRepository | `getPopularPostPaths(limit*3)` | 인기 글 경로 + 조회수 |
-| PostRepository | `getPostsByPaths(paths)` | 인기 글 상세 데이터 |
-| VisitRepository | `getPostVisitCounts(postPaths)` | 최근 글 조회수 맵 |
-| PostRepository | `getAllSeries(4)` | 시리즈 섹션 — 최근 업데이트 4개 (plan047) |
+기본 DB 조회가 실패해도 Hero와 최근 글 영역을 렌더링한다.
+최근 글이 없으면 “아직 등록된 글이 없습니다.”를 표시한다.
+화면을 404나 빈 페이지로 대체하지 않는다.
+서버에는 오류를 기록하고 확보하지 못한 목록과 통계는 초기값을 사용한다.
 
-**ISR:** `revalidate = 60`  
-**Static params:** 없음
+조회가 일부 성공한 뒤 후속 조회만 실패하면 이미 얻은 데이터는 유지될 수 있다.
+정확한 조회 순서와 대체값은 페이지 진입점에서 확인한다.
 
-**에러 처리:** DB 에러 시 빈 배열로 폴백하고 빈 화면으로 렌더링한다 (notFound 없음).
+## 메타데이터와 갱신
 
----
-
-## Components
-
-| Component | Role |
-|-----------|------|
-| `HomeHero` (plan013) | eyebrow + h1 + lead + `<dl>` 4 stats 한 컴포넌트 — 기존 별도 Hero/Stats 섹션 통합 |
-| `HeroMesh` (plan013) | SVG `<radialGradient>` + CSS slow rotate 배경 mesh (server, prefers-reduced-motion 자동 처리) |
-| `CategoryList` | 카테고리 그리드 (최대 9개 표시, lg 3×3) |
-| `PostCard` | 인기 글은 행 변형, 최근 첫 글은 대표 변형, 나머지 최근 글은 격자 변형으로 표시 |
-| `SeriesCard` (plan047) | 시리즈 섹션 카드 |
-| `WebsiteJsonLd` | JSON-LD 구조화 데이터 |
-
----
-
-## Interactions
-
-- **카테고리 카드 클릭**: `/category/<slug>` 이동
-- **카테고리 섹션 "모두 보기" 링크**: `/categories` 이동
-- **"인기 글 더 보기" CTA 버튼** (섹션 하단): `/posts/popular` 이동
-- **"최신 글 더 보기" CTA 버튼** (섹션 하단): `/posts/latest` 이동
-- **"시리즈 더 보기" CTA 버튼** (섹션 하단, plan047): `/series` 이동
-- **PostCard 클릭**: `/posts/<path>` 이동
-- **SeriesCard 클릭** (plan047): `/series/<name>` 이동
-
-※ 카테고리 섹션은 헤더 우측 "모두 보기 →" 링크를 사용하고 글 섹션은 섹션 하단 큰 CTA 버튼을 사용한다. 근거는 [ADR-003](../adr/003-home-entry-ux.md)이다.
-
----
-
-## SEO
-
-- `WebsiteJsonLd`: name="FOS Study", description, url
-- 공개 기본 metadata는 `(blog)/layout.tsx`에서 제공한다.
-- 홈의 `metadata`는 기존 `/opengraph-image` 경로를 유지하도록 OG 이미지를 명시한다.
-
----
-
-## Layout
-
-```
-HomeHero (eyebrow + h1<em> + caret + lead + <dl> 4 stats)  ← plan013, HeroMesh 배경 포함
-Popular Posts Section (인기 글, 조회수 있을 때만 표시)
-  └ 조회수 비교에 적합한 행 목록 유지
-  └ 섹션 하단 CTA 버튼 "인기 글 더 보기 →"
-Series Section (시리즈 4개, 시리즈 0건 시 hide)  ← plan047
-  └ 섹션 하단 CTA 버튼 "시리즈 더 보기 →"
-Recent Posts Section (최근 6개)
-  ├ 첫 글: 전체 폭 대표 카드 (이미지 위 제목)
-  ├ 나머지 5개: 1→2→3열 썸네일 중심 카드 (이미지 아래 제목)
-  └ 섹션 하단 CTA 버튼 "최신 글 더 보기 →"
-Categories Section (최대 9개, 3×3 grid → 헤더 우측 "모두 보기" 링크)  ← plan030
-```
-
-> plan030: 인기/최신을 카테고리보다 위로 올려 신규 방문자가 콘텐츠를 먼저 만나도록 재배치. 카테고리는 6→9로 확장하여 3×3 grid 로 표시.
-
-> plan013 이전: 별도 Hero Section과 Stats Section 으로 분리되어 있었음. 현재는 `<HomeHero>` 한 컴포넌트로 통합: eyebrow, h1, lead, 4 stats `<dl>` (posts/categories/series/subscribers). `seriesCount` 는 `PostRepository.countSeries()` 실값 연결 (plan033). `subscriberCount` 는 여전히 null placeholder.
-
----
-
-## Related Files
-
-- `src/app/(blog)/page.tsx`
-- `src/components/HomeHero.tsx` (plan013)
-- `src/components/HeroMesh.tsx` (plan013)
-- `src/components/CategoryList.tsx`
-- `src/components/PostCard.tsx`
-- `src/components/SeriesCard.tsx` (plan047)
-- `src/components/SectionCTAButton.tsx`
-- `src/components/JsonLd.tsx`
-- `src/infra/db/repositories/CategoryRepository.ts`
-- `src/infra/db/repositories/PostRepository.ts`
-- `src/infra/db/repositories/VisitRepository.ts`
+`revalidate = 60`을 사용하고 별도 정적 경로 목록은 생성하지 않는다.
+공개 기본 metadata는 `(blog)/layout.tsx`에서 제공하며 Website 구조화 데이터를 사용한다.
+홈의 `metadata`는 기존 `/opengraph-image` 경로를 유지하도록 OG 이미지를 명시한다.

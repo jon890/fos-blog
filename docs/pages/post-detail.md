@@ -1,181 +1,79 @@
-# 글 상세 Page PRD
+# 글 상세 페이지
 
-**Route:** `/posts/[...slug]`  
-**File:** `src/app/(blog)/posts/[...slug]/page.tsx`
-**Updated:** 2026-04-30
+**Route:** `/posts/[...slug]`
+**진입점:** [글 페이지](../../src/app/(blog)/posts/[...slug]/page.tsx)
+**갱신일:** 2026-09-07
 
----
+## 목적과 데이터
 
-## Purpose
+활성 글의 마크다운 본문을 읽고 카테고리, 태그와 시리즈의 다른 글로 이동하는 페이지다.
+URL 세그먼트를 복원해 글을 조회하며 `revalidate = 60`을 사용한다.
+정적 생성 경로는 저장된 글 경로에서 얻는다.
 
-마크다운 글의 상세 내용을 렌더링하는 페이지. Round 2 mockup (plan011) 기반의 ArticleHero (mesh, breadcrumb, 카테고리 art-tag, 제목, 리드, 메타), 3-col body grid, sticky TOC (H2/H3 nesting), Header 통합 reading progress, viewport 최상단 독립 `ReadingProgressBar` (plan019), 모바일 floating TOC button (plan019), mockup 톤 prose 로 구성.
+본문에는 제목과 요약, 작성 시각, 읽기 시간, 조회수와 시리즈 정보를 표시한다.
+마크다운 변환과 글 요약 규칙은 [코드 아키텍처](../code-architecture.md#마크다운-렌더링)와
+[요약 결정](../adr/034-description-extraction.md)을 따른다.
+화면에 제목이 중복되지 않도록 본문의 선두 H1을 제거한다.
 
----
+## 읽기와 탐색
 
-## Data
+| 동작 | 결과 |
+| --- | --- |
+| breadcrumb·카테고리 칩 선택 | 홈 또는 해당 카테고리로 이동 |
+| 목차 항목 선택 | 본문의 H2·H3로 이동하며 모바일 목차는 닫힘 |
+| 태그·시리즈 선택 | 해당 목록으로 이동 |
+| 시리즈 이전·다음 글 선택 | 같은 시리즈의 인접 글로 이동 |
+| 코드 복사 | 클립보드에 복사하고 성공 상태를 잠시 표시 |
+| 스크롤 | Header 하단과 화면 최상단의 읽기 진행률 표시 |
+| 본문 이미지 선택 | 일반 이미지 lightbox를 열고 여러 이미지를 좌우 키·버튼으로 순회 |
+| Mermaid 확대 버튼 선택 | 별도의 다이어그램 모달에서 휠·두 손가락 확대와 드래그 이동 |
 
-| Source | Method | Returns |
-|--------|--------|---------|
-| PostRepository | `getPost(slug)` | `{ content: string, post: PostData }` |
-| PostRepository | `getRelatedPosts(path, 4)` | `PostData[]` — 같은 카테고리 + tag 교집합 desc, fallback: 카테고리 최근 글 |
-| VisitRepository | `getVisitCount(post.path)` | `number` (조회수 — server-side) |
+일반 이미지 lightbox는 ESC, 배경 또는 닫기 버튼으로 종료하며 이미지 순회는 처음과 끝을 연결한다.
+일반 이미지의 두 손가락 확대는 제공하지 않는다.
+Mermaid 모달의 조작은 [MermaidZoomModal](../../src/components/mermaid/MermaidZoomModal.tsx)이 담당한다.
 
-`slug` = URL 세그먼트 배열을 `join("/")` (decodeURIComponent 처리)
+용어 도움말은 제목, 링크, 코드, 수식과 Mermaid를 제외한 본문에서 개념별 첫 등장에 표시한다.
+마우스 hover·키보드 focus·모바일 tap으로 열고 ESC, 바깥 클릭 또는 다른 용어 선택으로 닫는다.
+“용어집에서 보기”는 해당 용어 앵커로 이동한다.
 
-**ISR:** `revalidate = 60`  
-**Static params:** `generateStaticParams()`에서 `post.getAllPostPaths()` 로 생성
-**Repositories accessor:** `getRepositories()` (React `cache(...)` wrapper)로 동일 요청 내 재사용
+## 배치와 보조 기능
 
-**에러 처리:**
-- DB 에러 시 `notFound()`
-- `data === null` 시 `notFound()`
-- `getVisitCount` 는 `VisitRepository` 내부 try/catch 로 0 fallback (page 레이어 오염 없음)
+본문 가독성을 위해 데스크톱은 여백, 본문, 목차의 열을 나눈다.
+목차는 H2와 H3를 표시하며, 항상 보이는 사이드바에는 별도의 접기 기능을 두지 않는다.
+목차가 없으면 목차 내용과 모바일 버튼을 숨기지만 데스크톱 grid와 aside 열은 유지한다.
+모바일은 단일 본문과 떠 있는 목차 버튼을 사용한다.
 
----
+모바일 목차는 SSR hydration 문제를 피하고 배경·애니메이션을 제어하기 위해
+`role="dialog"`를 가진 요소로 구현한다.
+모바일에서는 긴 코드와 표를 각각 가로 스크롤할 수 있게 하고, 긴 식별자는 화면을 넘을 때 줄을 바꾼다.
+본문 H2 번호가 어긋나지 않도록 prose 컨테이너는 하나로 유지한다.
 
-## Components
+관련 글은 있을 때만 최대 네 개의 썸네일 카드로 표시한다.
+태그·시리즈·인접 글이 없으면 해당 하단 탐색을 생략한다.
+댓글은 [댓글 정책](../adr/021-comment-design.md)을 따르며 답글 계층을 제공하지 않는다.
+GitHub 원본 링크는 현재 글 화면에 표시하지 않는다.
 
-| Component | Role |
-|-----------|------|
-| `ArticleHero` | Hero 영역 — mesh 그라디언트 (카테고리 hue 변형 + plan009 토큰) + breadcrumb + 카테고리 art-tag + 제목 + 리드 + meta row (date · readtime · views · series 링크). series prop 있을 때 `SERIES · {name} · {order}/{total}` 형태로 meta row 에 추가 표시 (plan033) |
-| `MarkdownRenderer` | 마크다운 본문 렌더링 (GFM, mermaid, KaTeX 수식, syntax highlight via rehype-pretty-code + shiki dual theme). 외부 wrapper 는 `<div>` (글 페이지에서 article 중첩 회피). `components.figure` 핸들러가 pretty-code 의 figure 를 받아 `<CodeCard>` 로 교체. mermaid 는 `data-language === "mermaid"` 검사로 우회 (`<Mermaid>` 직접 반환). 본문 `img` 는 `<LightboxImage>` 로 감싸 클릭 시 lightbox 확대 (plan039). 수식: 인라인 `$x^2$` + 블록 `$$...$$`, KaTeX `output: "html"` + `throwOnError: false` (invalid LaTeX 은 빨간 텍스트 fallback). 다크모드는 `.prose .katex { color: inherit }` 으로 본문 색 따라감 (plan044) |
-| `LightboxProvider` / `LightboxImage` / `Lightbox` | 본문 이미지 클릭 시 viewport 풀스크린 확대 모달 (plan039). Provider 가 `<article>` 안 `<MarkdownRenderer>` 를 감싸 scope 정의. MarkdownRenderer 의 `img` 컴포넌트가 자동으로 `<LightboxImage>` 래퍼 사용. ESC / 배경 클릭 / 우상단 X 로 닫기, 화살표 키 + 좌우 버튼으로 글 안 이미지 prev/next 순회 (modulo wrap-around). 인접 ±1 이미지는 open 직후 hidden `<img>` mount 로 prefetch. backdrop `bg-black/85 backdrop-blur-sm` 다크/라이트 공통. mermaid SVG 확대는 OOS — 후속 plan |
-| `CodeCard` | rehype-pretty-code 가 생성한 figure 코드 블록을 받아 frame (filename header / 언어 배지 / copy 버튼) 으로 wrap 하는 client component. shadcn Button (variant=ghost size=xs) + clipboard API + 2초 idle 복귀 + `aria-live="polite"` 스크린리더 통지 (plan012) |
-| `TableOfContents` | 사이드바 목차. mono 톤 + 번호 prefix (`01`/`02`, H2 카운터) + brand 좌측 라인 + active highlight + sticky top-20. **H2 + H3 표시** (page.tsx 에서 `level === 2 \|\| level === 3` filter, plan019). H3 는 `pl-6` 들여쓰기 + `text-[11px]` + 번호 미표시 nested 표현 |
-| `ReadingProgressBar` | viewport 최상단 fixed 1px 진행 띠 (`z-50`, plan019). passive scroll/resize listener → 0~100 % width. brand-400 토큰 색상. `role="progressbar"` + `aria-valuenow` 접근성 메타. Header 의 하단 라인 reading progress 와 별개로 viewport 절대 최상단에서 동작 |
-| `MobileTocButton` | 모바일 전용 floating TOC FAB + bottom sheet (plan019, `md:hidden`). 우하단 원형 brand 버튼 (lucide `List`) → 클릭 시 fixed bottom sheet (`role="dialog" aria-modal="true"`) 펼침. ESC keydown / backdrop click 으로 닫기 (둘 다 useEffect cleanup 에서 listener 해제). 단순 fixed div + state — `<dialog>` element 미사용 (SSR hydration mismatch 회피 의도). H2/H3 nesting 동일 적용. `toc.length === 0` 시 자체 미렌더 |
-| `ArticleFooter` | tags 칩 + series chip (`/series/[name]` 링크) + prev/next 시리즈 카드 nav. tags/series/prev/next 모두 없으면 미렌더 (graceful fallback). prev/next 카드는 시리즈 글이 2개 이상일 때 표시 (plan033) |
-| `RelatedPosts` | "이런 글도" 섹션. `posts.length > 0`일 때만 렌더한다. 같은 카테고리 관련 글 최대 4개를 소개글 없는 썸네일 중심 카드로 표시한다. |
-| `Comments` | 댓글 컨테이너 (plan022). 자식: `CommentForm` (작성/수정, react-hook-form + zod) / `CommentItem` (카드, nickname hash avatar + 상대 시간) / `DeleteConfirmDialog` (shadcn AlertDialog + password). 알림: sonner toast. 아바타 색상: `OG_CATEGORY_HEX` 7색 팔레트 hash — plan021 단일 소스. threading 미포함(의도적) |
-| `ArticleJsonLd` | JSON-LD 아티클 구조화 데이터 |
-| `BreadcrumbJsonLd` | JSON-LD 브레드크럼 |
+## 오류와 빈 상태
 
-> Header (`src/components/Header.tsx`) 는 글 페이지 컴포넌트는 아니지만, `/posts/*` pathname 한정으로 하단 1px 라인을 reading progress fill 로 변환 (plan011).
+- 본문 조회 결과가 없거나 해당 조회가 실패하면 `notFound()`로 처리한다.
+  Repository 생성 등 그 조회의 catch 밖에서 난 오류까지 404로 바꾸는 것은 아니다.
+- 조회수 조회 실패는 Repository에서 0으로 대체한다.
+- 관련 글이 없으면 관련 글 영역을 생략한다.
+- 용어집 조회 실패는 로그를 남기고 도움말 없이 본문을 렌더링한다.
 
----
+방문 기록은 proxy의 방문 처리에서 갱신하고, 화면에는 서버 조회값을 표시한다.
 
-## Interactions
+## 메타데이터
 
-- **breadcrumb 항목 클릭**: `/` (홈), `/category/<category>` (카테고리)
-- **카테고리 art-tag 자체는 표시용** (현재 링크 아님 — 후속 PR 에서 결정)
-- **목차 항목 클릭**: 해당 헤딩으로 스크롤 (`#slug` 앵커). 모바일에서는 `MobileTocButton` bottom sheet 가 함께 닫힘
-- **태그 칩**: `/tag/<encodeURIComponent(name)>`으로 이동
-- **스크롤 진행률**
-  - Header 하단 표시기는 `/posts/*`에서만 동작한다.
-  - 화면 최상단 `ReadingProgressBar`는 모든 디바이스에서 0~100% 너비로 진행률을 표시한다.
-- **모바일 TOC**: 우하단 FAB 클릭 → bottom sheet (max-h 70vh, scroll). ESC / 백드롭 클릭으로 닫힘 (plan019)
-- **본문 이미지 클릭**: viewport 풀스크린 lightbox (plan039). 여러 장이면 ←/→ 키 또는 좌우 버튼으로 순회 (wrap-around). ESC / 배경 / 우상단 X 로 종료. 모바일에서도 동일 동작 — pinch zoom 은 OOS
+제목과 요약, 작성·수정 시각, Article·Breadcrumb 구조화 데이터를 제공한다.
+canonical은 글 경로의 각 세그먼트를 인코딩한 URL이다.
+공유 이미지는 [대표 이미지 선택](../code-architecture.md#글-대표-이미지)을 따른다.
 
----
+| 조건 | robots 처리 |
+| --- | --- |
+| 조회에 성공했지만 글이 없음 | `index: false, follow: false` |
+| 글의 frontmatter가 `index: false` | `index: false, follow: true` |
+| 메타데이터 조회·파싱 실패 | robots를 명시하지 않음 |
+| 그 외 정상 글 | 페이지에서 별도 robots를 명시하지 않음 |
 
-## Client State
-
-| State | Component | Description |
-|-------|-----------|-------------|
-| `activeSlug` | `TableOfContents` | IntersectionObserver로 현재 뷰포트의 H2/H3 헤딩 추적 |
-| `progress` (Header) | `Header` | `/posts/*` 한정 scroll position → 0~1 ratio. passive listener, `isArticle === false` 일 때 등록 안 함 |
-| `progress` (Bar) | `ReadingProgressBar` | viewport 절대 최상단 1px 띠. scroll/resize passive listener 양쪽 cleanup, 0~100 % width (plan019). Header progress 와 독립 |
-| `open` | `MobileTocButton` | bottom sheet 펼침 상태. open 인 동안에만 keydown(ESC) listener 등록 → cleanup 에서 해제 (plan019) |
-| `lightbox state` | `LightboxProvider` | open 시점에 article scope 의 `[data-lightbox-image]` 노드를 DOM 순서로 수집해 `{ images, index }` state 보관. close 시 null. body overflow lock 은 `Lightbox` 컴포넌트의 useEffect cleanup 으로 관리 (plan020 SearchDialog 패턴 재사용, plan039) |
-
-> TOC 의 collapse toggle (`isCollapsed`) 은 plan011 에서 제거됨. sticky 사이드바에 항상 노출되어 collapse 가 불필요. plan019 에서 H3 nesting 추가 후에도 유지 (H3 들여쓰기와 작은 글씨로 노이즈 최소화).
-
----
-
-## SEO
-
-- `generateMetadata()`: title, description, canonical, og(article), twitter(summary_large_image), publishedTime, modifiedTime
-- `ArticleJsonLd`: url, title, description, datePublished, dateModified, authorName/Url
-- `BreadcrumbJsonLd`: 홈 → 카테고리 → (서브카테고리) → 글 제목
-- Canonical: `${siteUrl}/posts/${slug}`
-
----
-
-## Layout
-
-```
-══════════════════════════════════════════════════════════  ← <ReadingProgressBar/> (fixed top, z-50, 1px, plan019)
-┌────────────────────────────────────────────────────────┐
-│ <ArticleHero> (full-width, header semantic)            │
-│   mesh + breadcrumb + art-tag + title + lead + meta    │
-└────────────────────────────────────────────────────────┘
-┌──────────┬────────────────────────────┬───────────────┐
-│ (gutter) │ <div class="prose">        │ <aside>       │
-│  1fr     │   MarkdownRenderer (div)   │ TableOfContents│
-│          │   minmax(0, 820px)         │ 240px sticky  │
-└──────────┴────────────────────────────┴───────────────┘
-                                            ┌──┐  ← <MobileTocButton/> (md:hidden, bottom-6 right-6, plan019)
-                                            │ ≣│
-                                            └──┘
-┌────────────────────────────────────────────────────────┐
-│ <ArticleFooter> (tag·series·이전/다음 글이 있을 때)     │
-└────────────────────────────────────────────────────────┘
-┌────────────────────────────────────────────────────────┐
-│ <RelatedPosts /> (관련 글 1개 이상일 때만, plan034)      │
-└────────────────────────────────────────────────────────┘
-┌────────────────────────────────────────────────────────┐
-│ <Comments>                                              │
-└────────────────────────────────────────────────────────┘
-```
-
-- 데스크톱 grid: `1fr | minmax(0, 820px) | 240px` (Q16 — 한글 가독성)
-- 모바일 (`md:` 미만): 단일 컬럼, 사이드 TOC 숨김, 우하단 `MobileTocButton` FAB (plan019), Hero 단순화 (Q14)
-
----
-
-## plan054 용어 툴팁 상호작용
-
-- 제목, 링크, 코드, 수식, Mermaid를 제외한 본문에서 개념별 첫 등장 용어를 `<GlossaryTooltip>`로 표시한다.
-- desktop hover·focus 또는 mobile tap으로 열고 ESC·바깥 클릭·다른 용어 열기로 닫는다.
-- "용어집에서 보기"는 `/glossary#<id>`로 이동한다.
-
-## Server-side Processing
-
-`lib/markdown.ts` 함수들이 서버에서 실행됨:
-- `parseFrontMatter(content)`: frontmatter 제거와 `frontMatter.tags` 추출
-- `stripLeadingH1(mainContent)`: 본문 첫 H1 제거 (ADR-010, 제목 중복 방지)
-- `extractTitle(content)`: h1 헤딩 추출
-- `extractDescription(content)`: 산문 블록을 평문 요약으로 만들고 링크가 있는 첫머리 인용은 제외 → ArticleHero `lead` (ADR-034)
-- `getReadingTime(content)`: 읽기 시간 계산 → ArticleHero meta row
-- `generateTableOfContents(stripped)`: TOC 항목 생성. page.tsx 에서 `filter((i) => i.level === 2 || i.level === 3)` 로 H2와 H3를 추림 (plan019)
-
----
-
-## Related Files
-
-- `src/app/(blog)/posts/[...slug]/page.tsx`
-- `src/components/ArticleHero.tsx`
-- `src/components/ArticleFooter.tsx`
-- `src/components/RelatedPosts.tsx` — "이런 글도" 섹션 (plan034)
-- `src/components/MarkdownRenderer.tsx`
-- `src/components/CodeCard.tsx` — 코드 블록 frame wrapper (plan012)
-- `src/components/TableOfContents.tsx` — H2 numbered와 H3 nested (plan019)
-- `src/components/ReadingProgressBar.tsx` — viewport 최상단 1px 진행 띠 (plan019)
-- `src/components/MobileTocButton.tsx` — 모바일 floating TOC button과 bottom sheet (plan019)
-- `src/components/Header.tsx` — `/posts/*` 한정 하단 라인 reading progress (별개 컴포넌트)
-- `src/components/Comments.tsx` — 댓글 컨테이너 (plan022)
-- `src/components/lightbox/LightboxProvider.tsx` — context, DOM scope, open state (plan039)
-- `src/components/lightbox/Lightbox.tsx` — 모달 본체, 키보드, 인접 ±1 prefetch (plan039)
-- `src/components/lightbox/LightboxImage.tsx` — next/image wrapper와 클릭 트리거 (plan039)
-- `src/components/comments/CommentForm.tsx` — 작성/수정 통합 폼
-- `src/components/comments/CommentItem.tsx` — 댓글 카드
-- `src/components/comments/DeleteConfirmDialog.tsx` — 삭제 확인 다이얼로그
-- `src/components/comments/Avatar.tsx` — nickname hash 색상 아바타
-- `src/components/JsonLd.tsx`
-- `src/infra/db/repositories/PostRepository.ts`
-- `src/infra/db/repositories/VisitRepository.ts` — `getVisitCount(pagePath)`
-- `src/lib/markdown.ts` — 본문 처리와 plan012 hast 헬퍼 (`extractRawText` / `findChildText` / `findCodeProp`)
-- `src/lib/category-meta.ts` — `getCategoryColor` / `getCategoryHue` / `getCategoryLabel` (plan010, plan055)
-- `src/app/globals.css` — plan009 토큰, plan011 prose 확장 (H2 counter / blockquote QUOTE / inline code / mermaid 격리), plan012 코드 블록 frame (`.code-card` / shiki dual theme), plan035 모바일 가독성 (inline code keep-all / code-card-body pre overflow-x)
-
----
-
-## Constraints
-
-- `TableOfContents` 는 `tocItems.length > 0` 일 때만 렌더 (`level === 2 || level === 3` filter 후 0이면 사이드바 빈 칸 회피). `MobileTocButton` 도 동일 정책으로 자체 미렌더
-- GitHub 원본 링크는 plan011 단계에서 글 페이지에서 제거 (Hero 가 메타 흡수). 후속 PR 에서 footer 또는 별도 메뉴로 복원 검토
-- 모바일 (`md:` 미만) 은 plan019 의 `MobileTocButton` (FAB와 bottom sheet) 으로 TOC 접근. 사이드 sticky TOC 는 여전히 미노출
-- `ReadingProgressBar` 는 신규 토큰 추가 없이 plan009 토큰 (`--color-brand-400`) 만 사용. `<dialog>` element 가 아닌 `role="dialog"` div 채택 이유는 SSR hydration mismatch 회피, bottom sheet 애니메이션과 배경 처리 자유도 확보 (plan019 risks 표 참조)
-- **조회수 증가**는 `src/proxy.ts` Node Runtime middleware (실 동작은 `src/middleware/visit.ts`) 에서 upsert. **표시**는 page.tsx 가 server-side `getVisitCount(post.path)` 로 fetch 하여 `<ArticleHero viewCount={…}/>` 에 전달 (plan011 이전의 client `<PostViewCount>` 패턴은 폐기)
-- prose 의 H2 CSS counter 는 `.prose` 단일 셀렉터에서 reset 되므로, 페이지 내 prose 컨테이너는 1개로 유지해야 번호가 어긋나지 않음
-- **모바일 (390px) 본문 가독성 정책 (plan035)**: (a) inline code 는 `word-break: keep-all`과 `overflow-wrap: anywhere` 로 token 단위 wrap 보존 (식별자가 글자 단위로 깨지지 않게, 단일 token 이 viewport 보다 길면만 끊김). (b) GFM 테이블은 `components.table` override 가 `-mx-4 overflow-x-auto md:mx-0` wrapper와 `min-w-[32rem]` 로 모바일 가로 스크롤 제공, 데스크톱은 `md:min-w-full` 로 기존 동작 유지. (c) 코드 블록은 `.prose .code-card-body pre` 가 자체 `overflow-x: auto` 를 가져 부모 `.code-card` 의 `overflow: hidden` 안에서도 가로 스크롤 동작 (issue #136 #137 #138)
+일시적인 메타데이터 생성 실패를 글 부재로 판단해 색인에서 제외하지 않는다.
