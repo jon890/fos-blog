@@ -19,6 +19,12 @@ export const env = createEnv({
     // 선택
     USE_FULLTEXT_SEARCH: z.string().optional(),
     LOG_LEVEL: z.string().optional(),
+    BETTER_AUTH_URL: z.string().optional(),
+    BETTER_AUTH_SECRET: z.string().optional(),
+    GITHUB_CLIENT_ID: z.string().optional(),
+    GITHUB_CLIENT_SECRET: z.string().optional(),
+    ADMIN_GITHUB_USER_ID: z.string().optional(),
+    STUDY_SERVICE_TOKEN: z.string().optional(),
   },
   client: {
     // 선택 (기본값 있음)
@@ -38,6 +44,12 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     USE_FULLTEXT_SEARCH: process.env.USE_FULLTEXT_SEARCH,
     LOG_LEVEL: process.env.LOG_LEVEL,
+    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+    BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
+    GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
+    GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
+    ADMIN_GITHUB_USER_ID: process.env.ADMIN_GITHUB_USER_ID,
+    STUDY_SERVICE_TOKEN: process.env.STUDY_SERVICE_TOKEN,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NEXT_PUBLIC_GOOGLE_ADSENSE_ID: process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID,
     NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION:
