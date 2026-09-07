@@ -1,7 +1,7 @@
 {
   "name": "plan063-admin-github-auth",
   "description": "GitHub 본인만 허용하는 공통 관리자 로그인과 공개 화면 분리",
-  "status": "in_progress",
+  "status": "completed",
   "created_at": "2026-09-07",
   "total_phases": 4,
   "current_phase": 4,
