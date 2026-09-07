@@ -1,14 +1,14 @@
 # 소개 페이지
 
 **Route:** `/about`
-**진입점:** [About 페이지](../../src/app/about/page.tsx)
+**진입점:** [About 페이지](../../src/app/(blog)/about/page.tsx)
 
 ## 목적과 구성
 
 작성자 프로필, 사이트 통계, 기술 스택과 외부 링크를 제공한다.
 프로필 이미지를 표시하지 못해도 이니셜을 읽을 수 있게 두 층으로 구성한다.
 이 배치의 이유는 [ADR-022](../adr/022-about-page.md), 스타일은
-[About CSS](../../src/app/about/about.css)가 소유한다.
+[About CSS](../../src/app/(blog)/about/about.css)가 소유한다.
 
 ## 데이터와 실패 처리
 

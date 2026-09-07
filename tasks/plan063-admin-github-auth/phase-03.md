@@ -34,7 +34,8 @@
 
 코드 아키텍처의 공개 레이아웃 이동 표에 있는 경로만 `src/app/(blog)/` 아래로 옮긴다.
 대상은 page.tsx·loading.tsx와 about·contact·privacy·glossary·categories·category·posts·series·tag 폴더다.
-폴더 내부 CSS·테스트·categories OG 파일도 함께 옮기고 상대 import를 보정한다.
+폴더 내부 CSS·테스트도 함께 옮기고 상대 import를 보정한다.
+categories OG 파일은 기존 공개 URL을 유지하도록 원래 경로에 둔다.
 루트 not-found·opengraph-image·components와 api·sitemap·robots·RSS·아이콘 경로는 유지한다.
 루트 layout에는 html/body·글꼴·테마·Toaster를 남기고 공개 Header·SidebarProvider·Sidebar·Footer와 광고를 `(blog)/layout.tsx`로 옮긴다.
 
@@ -43,6 +44,7 @@
 `src/app/admin/layout.tsx`에 관리자 metadata와 단순 화면 틀을 둔다. 이 layout은 로그인도 포함하므로 세션을 필수로 요구하지 않는다.
 개인 HTML·RSC·오류의 private no-store와 X-Robots-Tag를 `next.config.ts`의 경로별 headers와 Handler 응답에서 보장한다.
 관리자 robots는 noindex/nofollow이고 공개 canonical과 OG 이미지 상속을 제거한다.
+루트 not-found의 경로와 UI는 유지하되 metadata는 noindex/nofollow와 빈 OG·Twitter images로 보정한다.
 Next.js가 최종 캐시 헤더를 바꿀 수 있으므로 build/start HTTP 응답을 실제로 확인한다.
 관리자 화면을 sitemap·공개 검색·방문 통계에 넣지 않고 기존 Proxy 인증 책임을 확대하지 않는다.
 
@@ -67,10 +69,24 @@ pnpm lint
 pnpm type-check
 pnpm test
 pnpm build
+pnpm start --port 3063
+# 별도 터미널에서 실행하며 검증 뒤 위 서버를 종료한다.
+curl -sS -D - http://127.0.0.1:3063/admin/login -o /dev/null
+curl -sS -D - -H 'RSC: 1' http://127.0.0.1:3063/admin/login -o /dev/null
+curl -sS -D - http://127.0.0.1:3063/admin/not-found-fixture -o /dev/null
+ORCA_WORKTREE="path:$PWD" ~/.claude/scripts/browser-driver open http://127.0.0.1:3063/admin/login
+# open이 반환한 핸들을 아래 <handle>에 대입한다.
+~/.claude/scripts/browser-driver worktree <handle>
+~/.claude/scripts/browser-driver js <handle> '({robots:document.querySelector("meta[name=robots]")?.content,canonical:document.querySelector("link[rel=canonical]")?.href,ads:document.querySelectorAll("script[src*=googlesyndication],meta[name=google-adsense-account],ins.adsbygoogle").length})'
 git diff --check
 ```
 
 통과하면 현재 phase의 검증 결과를 기록하고 다음 phase로 진행한다.
+
+HTTP 세 응답은 `Cache-Control`에 `private`와 `no-store`, `X-Robots-Tag`에 `noindex`와 `nofollow`가 있어야 한다.
+관리자 DOM은 robots가 `noindex, nofollow`, canonical이 없고 광고 요소 수가 0이어야 한다.
+같은 브라우저의 `nav <handle> <url>`과 `js`로 공개 홈·fixture 글·about의 기존 canonical·robots·광고 설정이 유지됨을 확인한다.
+실행 서버에는 fixture 환경과 격리 DB만 주입한다. phase04 구현 전 로그인 페이지의 404도 동일한 응답 헤더를 확인한다.
 
 ## Critical Files
 
@@ -78,6 +94,8 @@ git diff --check
 | --- | --- |
 | `src/app/layout.tsx` | 신규 또는 기존 내용 확장 |
 | `src/app/layout.test.tsx` | 신규 또는 기존 내용 확장 |
+| `src/app/not-found.tsx` | 관리자 404의 metadata 상속 차단 |
+| `src/components/glossary/GlossaryIndex.test.tsx` | 이동한 페이지 참조 경로 보정 |
 | `src/app/(blog)/` | 명시한 하위 파일 생성 또는 이동 |
 | `src/app/admin/layout.tsx` | 신규 또는 기존 내용 확장 |
 | `src/app/admin/layout.test.tsx` | 신규 또는 기존 내용 확장 |

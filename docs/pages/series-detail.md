@@ -1,7 +1,7 @@
 # 시리즈 상세 페이지
 
 **Route:** `/series/[name]`
-**진입점:** [시리즈 페이지](../../src/app/series/[name]/page.tsx)
+**진입점:** [시리즈 페이지](../../src/app/(blog)/series/[name]/page.tsx)
 
 ## 목적
 

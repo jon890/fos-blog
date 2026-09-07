@@ -42,6 +42,7 @@ plan063-admin-github-auth가 완료되고 그 코드가 현재 브랜치에 포�
 
 자료 id DESC, 최초 최대 ID와 필터 해시가 포함된 cursor를 구현한다.
 q의 SQL LIKE 이스케이프, publishedAt null 구분과 반열린 UTC 범위, boolean 필터를 계약대로 적용한다.
+누적 recommended-set의 존재 여부를 `EXISTS`로 읽어 `Material.previouslyRecommended`와 `recommended` 필터를 이 phase에서 구현한다.
 새 수집이 진행 중 목록에 끼어들지 않도록 하고 출처 조합은 N+1 쿼리로 읽지 않는다.
 Date는 ISO로 직렬화하고 미생성 state는 false/false/빈 note/version 0/updatedAt null로 반환한다.
 존재하지 않는 ID는 404, DB 장애는 503이며 빈 목록으로 대체하지 않는다.
@@ -51,6 +52,7 @@ Date는 ISO로 직렬화하고 미생성 state는 false/false/빈 note/version 0
 `StudyRepository.test.ts`, `sources.test.ts`, `materials.test.ts`에서 실제 MySQL을 사용한다.
 소스 최초 생성 경합과 오래된 버전, 개인 상태 첫 INSERT 및 UPDATE 동시 수정에서 한 번만 성공함을 확인한다.
 검색 특수문자, 소스 다중 연결, 날짜 null, keyset 첫 최대 ID와 필터 mismatch, 단건 404를 검증한다.
+누적 추천 fixture가 있는 자료와 없는 자료로 `previouslyRecommended` 및 `recommended=true/false` 필터를 실DB에서 검증한다.
 기존 메모가 다른 기기 입력으로 자동 병합·덮어쓰기되지 않는지 확인한다.
 
 ## 검증

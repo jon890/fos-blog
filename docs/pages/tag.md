@@ -1,7 +1,7 @@
 # 태그 글 목록 페이지
 
 **Route:** `/tag/[name]`
-**진입점:** [태그 페이지](../../src/app/tag/[name]/page.tsx)
+**진입점:** [태그 페이지](../../src/app/(blog)/tag/[name]/page.tsx)
 
 ## 목적과 조회
 

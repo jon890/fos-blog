@@ -1,6 +1,7 @@
 # 학습자료 HTTP 계약
 
-**상태: 구현 전 확정 계약.** 자료 API 경로와 저장 흐름은 유지하며, 인증은 공통 관리자 세션으로 변경한다.
+**구현 범위:** 공통 관리자 인증 API는 plan063에서 제공한다. 자료 API는 후속 plan061·064의 확정 계약이다.
+자료 API 경로와 저장 흐름은 유지하며 인증은 공통 관리자 세션을 사용한다.
 GitHub 본인 계정과 Better Auth 도입이 승인되었고 서비스 Bearer 계약은 코디네이터가 확인했다.
 이 문서는 career-os와 fos-blog가 공유하는 HTTP 계약의 단일 소스다.
 저장 제약은 [데이터 스키마](../data-schema.md#학습자료-저장-계약)에 둔다.
@@ -101,6 +102,10 @@ API 인증 실패는 JSON `401`로 반환하고 로그인 HTML로 리디렉션�
 | `/api/auth/callback/github` | GET. OAuth state·code 검증 후 계정 검사와 세션 생성 |
 | `/api/auth/get-session` | GET. DB 세션과 현재 허용 계정을 확인하고 민감한 account 필드 제외 |
 | `/api/auth/sign-out` | POST. 현재 세션 철회 |
+
+`get-session`은 익명일 때 `null`, 인증됐을 때 `user: { id, name }`과 `session: { id, expiresAt }`만 반환한다.
+현재 허용 계정과 다르면 `403`, 인증 설정 부재나 DB 장애는 `503`이다.
+로그아웃의 DB 삭제가 실패하면 `503`을 반환하고 쿠키를 유지해 재시도할 수 있게 한다.
 
 GitHub OAuth App callback은 `{BETTER_AUTH_URL}/api/auth/callback/github`로 등록한다.
 설정 절차는 [공식 GitHub provider](https://better-auth.com/docs/authentication/github)를 따른다.

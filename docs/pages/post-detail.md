@@ -1,7 +1,7 @@
 # 글 상세 페이지
 
 **Route:** `/posts/[...slug]`
-**진입점:** [글 페이지](../../src/app/posts/[...slug]/page.tsx)
+**진입점:** [글 페이지](../../src/app/(blog)/posts/[...slug]/page.tsx)
 **갱신일:** 2026-09-07
 
 ## 목적과 데이터

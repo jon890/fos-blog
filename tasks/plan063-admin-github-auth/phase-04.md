@@ -41,7 +41,9 @@
 ### 2. 관리자 홈과 보호 layout
 
 `src/app/admin/(protected)/layout.tsx`와 `page.tsx`에서 각각 서버 검사를 호출한다.
+`src/app/admin/error.tsx`에서 보호 layout·page의 장애를 일반화한 안내와 재시도로 처리한다.
 홈에는 읽기 전용 본인 계정과 공부 메뉴를 표시한다. 공부 페이지 구현 전에는 준비 중으로 알려 깨진 링크를 노출하지 않는다.
+미구현 메뉴는 `disabled` 버튼과 `준비 중` 텍스트로 표시하고 활성 링크를 만들지 않는다.
 메뉴 경로는 흐름 문서대로 고정하고 plan062에서 활성화한다.
 로그아웃 실패를 성공으로 표시하지 않고 서버 session 철회 성공 후 /admin/login으로 이동한다.
 외부 avatar 자동 요청을 만들지 않고 키보드 초점과 aria-live로 동작 상태를 알린다.
@@ -63,15 +65,32 @@ DOM 테스트 파일은 `// @vitest-environment jsdom`을 선언한다.
 ```bash
 # cwd: 현재 구현 worktree의 저장소 root
 pnpm exec vitest run 'src/components/admin/AdminLoginButton.test.tsx' 'src/components/admin/AdminSignOutButton.test.tsx' 'src/app/admin/admin-pages.test.tsx'
+RUN_DB_TESTS=1 pnpm exec vitest run 'src/lib/admin/auth.test.ts' 'src/lib/admin/session.test.ts' 'src/app/api/auth/[...all]/route.test.ts'
 pnpm lint
 pnpm type-check
 pnpm test
 pnpm build
+pnpm start --port 3063
+# 별도 터미널에서 각기 다른 브라우저 프로필을 사용한다.
+BROWSER_DRIVER=agent-browser AGENT_BROWSER_SESSION=plan063-a ~/.claude/scripts/browser-driver open http://127.0.0.1:3063/admin/login
+BROWSER_DRIVER=agent-browser AGENT_BROWSER_SESSION=plan063-b ~/.claude/scripts/browser-driver open http://127.0.0.1:3063/admin/login
 git diff --check
 ```
 
 이 plan의 모든 phase 검증이 통과한 뒤에만 `index.json`의 status를 `completed`로 바꾼다.
 실패 또는 검증 불가는 완료로 표시하지 않는다.
+
+두 브라우저의 쿠키는 테스트가 만든 서로 다른 정상 DB 세션과 라이브러리 서명을 사용한다.
+설치된 브라우저 도구의 세션별 쿠키 주입 기능을 확인해 사용하며 제품에 fixture endpoint를 추가하지 않는다.
+각 `AGENT_BROWSER_SESSION`을 유지한 browser-driver의 `nav`, `js`, `waitjs` 명령으로 아래 결과를 확인한다.
+
+1. 두 컨텍스트의 `/admin`은 본인 계정과 비활성 메뉴를 보여준다.
+2. A의 로그아웃 버튼을 실행하면 `/admin/login`으로 이동하고 DB에서 A 세션이 삭제된다.
+3. A의 기존 쿠키를 다시 주입해도 `/admin`은 로그인으로 이동하며 B는 계속 인증된다.
+4. B 세션을 격리 DB에서 삭제한 뒤 B의 다음 `/admin` 요청도 로그인으로 이동한다.
+
+실행한 쿠키 주입 명령과 browser-driver 종료 코드, 각 DOM·URL 결과를 실행 보고에 남긴다.
+사용한 테스트 프로필과 서버는 검증 뒤 종료한다.
 
 ## Critical Files
 
@@ -83,3 +102,4 @@ git diff --check
 | `src/app/admin/(protected)/layout.tsx` | 신규 또는 기존 내용 확장 |
 | `src/app/admin/(protected)/page.tsx` | 신규 또는 기존 내용 확장 |
 | `src/app/admin/admin-pages.test.tsx` | 신규 또는 기존 내용 확장 |
+| `src/app/admin/error.tsx` | 보호 layout과 페이지의 장애 안내·재시도 |

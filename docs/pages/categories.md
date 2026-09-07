@@ -1,14 +1,14 @@
-# 카테고리 목록 — Page PRD
+# 카테고리 목록 Page PRD
 
 **Route:** `/categories`  
-**File:** `src/app/categories/page.tsx`  
+**File:** `src/app/(blog)/categories/page.tsx`
 **Updated:** 2026-04-29
 
 ---
 
 ## Purpose
 
-블로그의 모든 카테고리를 두 섹션 (Most active top-3 featured + All categories grid) 으로 보여주는 인덱스 페이지. plan015 (Claude Design 핸드오프) 기반 리디자인.
+블로그의 모든 카테고리를 두 섹션 (Most active top-3 featured와 All categories grid) 으로 보여주는 인덱스 페이지. plan015 (Claude Design 핸드오프) 기반 리디자인.
 
 ---
 
@@ -23,7 +23,7 @@
 **ISR:** `revalidate = 60`  
 **Static params:** 없음
 
-**에러 처리:** DB 에러 시 빈 배열로 폴백 — 빈 카테고리 목록 렌더링
+**에러 처리:** DB 에러 시 빈 배열로 폴백하고 빈 카테고리 목록을 렌더링한다.
 
 ---
 
@@ -42,7 +42,7 @@
 ## Interactions
 
 - **카테고리 카드 클릭**: `/category/<slug>` 이동 (각 카드 외곽 `<Link>`)
-- **hover**: `-translate-y-0.5` lift + cat-color border + (CategoryCard) `::after` radial blob
+- **hover**: `-translate-y-0.5` lift, cat-color border, (CategoryCard) `::after` radial blob
 
 ---
 
@@ -55,7 +55,7 @@
 
 ## Related Files
 
-- `src/app/categories/page.tsx`
+- `src/app/(blog)/categories/page.tsx`
 - `src/components/Breadcrumb.tsx`
 - `src/components/CategoriesSubHero.tsx`
 - `src/components/CategoriesSection.tsx`

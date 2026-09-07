@@ -1,7 +1,7 @@
 # 홈 페이지
 
 **Route:** `/`
-**진입점:** [홈 페이지](../../src/app/page.tsx)
+**진입점:** [홈 페이지](../../src/app/(blog)/page.tsx)
 **갱신일:** 2026-09-07
 
 ## 목적과 배치
@@ -34,4 +34,5 @@
 ## 메타데이터와 갱신
 
 `revalidate = 60`을 사용하고 별도 정적 경로 목록은 생성하지 않는다.
-루트 layout의 기본 metadata와 Website 구조화 데이터를 사용한다.
+공개 기본 metadata는 `(blog)/layout.tsx`에서 제공하며 Website 구조화 데이터를 사용한다.
+홈의 `metadata`는 기존 `/opengraph-image` 경로를 유지하도록 OG 이미지를 명시한다.

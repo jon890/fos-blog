@@ -7,6 +7,21 @@ export { comments, type Comment, type NewComment } from "./comments";
 export { visitLogs, type VisitLog, type NewVisitLog } from "./visitLogs";
 export { visitStats, type VisitStat, type NewVisitStat } from "./visitStats";
 export {
+  authUser,
+  authSession,
+  authAccount,
+  authVerification,
+  authSchema,
+  type AuthUser,
+  type NewAuthUser,
+  type AuthSession,
+  type NewAuthSession,
+  type AuthAccount,
+  type NewAuthAccount,
+  type AuthVerification,
+  type NewAuthVerification,
+} from "./auth";
+export {
   glossaryTerms,
   type GlossaryReference,
   type GlossaryTerm,

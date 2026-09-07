@@ -1,7 +1,7 @@
 # 인기 글 목록 페이지
 
 **Route:** `/posts/popular`
-**진입점:** [인기 글 페이지](../../src/app/posts/popular/page.tsx)
+**진입점:** [인기 글 페이지](../../src/app/(blog)/posts/popular/page.tsx)
 **갱신일:** 2026-09-07
 
 ## 목적과 조회

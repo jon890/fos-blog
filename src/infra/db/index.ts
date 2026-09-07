@@ -26,11 +26,9 @@ export function tryGetDb(): MySql2Database<typeof schema> | null {
     return null;
   }
 
-  // 개발 환경에서 쿼리 로깅 활성화
-  const enableLogging = env.NODE_ENV === "development";
-
   const pool = mysql.createPool({
     uri: connectionString,
+    timezone: "Z",
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
@@ -39,7 +37,8 @@ export function tryGetDb(): MySql2Database<typeof schema> | null {
   cachedDb = drizzle(pool, {
     schema,
     mode: "default",
-    logger: enableLogging,
+    // 인증 SQL parameter에는 개인 정보와 세션 토큰이 포함된다.
+    logger: false,
   });
 
   log.info("Database connected successfully");
