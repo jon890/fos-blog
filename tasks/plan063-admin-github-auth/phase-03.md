@@ -67,10 +67,24 @@ pnpm lint
 pnpm type-check
 pnpm test
 pnpm build
+pnpm start --port 3063
+# 별도 터미널에서 실행하며 검증 뒤 위 서버를 종료한다.
+curl -sS -D - http://127.0.0.1:3063/admin/login -o /dev/null
+curl -sS -D - -H 'RSC: 1' http://127.0.0.1:3063/admin/login -o /dev/null
+curl -sS -D - http://127.0.0.1:3063/admin/not-found-fixture -o /dev/null
+ORCA_WORKTREE="path:$PWD" ~/.claude/scripts/browser-driver open http://127.0.0.1:3063/admin/login
+# open이 반환한 핸들을 아래 <handle>에 대입한다.
+~/.claude/scripts/browser-driver worktree <handle>
+~/.claude/scripts/browser-driver js <handle> '({robots:document.querySelector("meta[name=robots]")?.content,canonical:document.querySelector("link[rel=canonical]")?.href,ads:document.querySelectorAll("script[src*=googlesyndication],meta[name=google-adsense-account],ins.adsbygoogle").length})'
 git diff --check
 ```
 
 통과하면 현재 phase의 검증 결과를 기록하고 다음 phase로 진행한다.
+
+HTTP 세 응답은 `Cache-Control`에 `private`와 `no-store`, `X-Robots-Tag`에 `noindex`와 `nofollow`가 있어야 한다.
+관리자 DOM은 robots가 `noindex, nofollow`, canonical이 없고 광고 요소 수가 0이어야 한다.
+같은 브라우저의 `nav <handle> <url>`과 `js`로 공개 홈·fixture 글·about의 기존 canonical·robots·광고 설정이 유지됨을 확인한다.
+실행 서버에는 fixture 환경과 격리 DB만 주입한다. phase04 구현 전 로그인 페이지의 404도 동일한 응답 헤더를 확인한다.
 
 ## Critical Files
 
