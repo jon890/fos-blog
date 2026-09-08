@@ -51,6 +51,9 @@ PC 저장 후 모바일 반영, 두 기기 동시 수정 409와 초안 유지, �
 세션 철회·만료와 env ID 변경 후 다음 HTML/RSC/API가 거절되는지 확인한다.
 관리자 응답의 광고·외부 이미지·개인 캐시 부재와 공개 홈·글·metadata·광고 유지도 확인한다.
 browser-driver의 현재 README를 읽고 해당 명령의 종료 코드·DOM·HTTP 근거를 기록한다.
+브라우저 검증 전 테스트 전용 관리자 세션과 fixture 자료를 격리 DB에 만들고, 검증 후 세션·자료와 테스트 DB를 제거한다.
+PC 탭은 1024px 이상, 모바일 탭은 390px로 맞춘 뒤 `window.innerWidth`, 가로 overflow, 접힌 필터와 카드 열 수를 `js` 결과로 남긴다.
+각 저장·충돌·가져오기 동작은 화면 안내와 API status를 함께 기록하며, 세션 철회·만료·허용 ID 변경은 HTML, RSC, API 요청이 모두 거절되는지 확인한다.
 
 ## 검증
 
@@ -62,12 +65,22 @@ DOM 테스트 파일은 `// @vitest-environment jsdom`을 선언한다.
 ```bash
 # cwd: 현재 구현 worktree의 저장소 root
 pnpm exec vitest run 'src/app/admin/study-workflow.test.tsx'
+test -n "$TEST_DATABASE_URL"
+RUN_DB_TESTS=1 pnpm exec vitest run 'src/infra/db/schema/auth.test.ts' 'src/infra/db/schema/study.test.ts' 'src/lib/admin/session.test.ts' 'src/app/api/auth/[...all]/route.test.ts' 'src/app/api/study/v1/storage-routes.test.ts' 'src/app/api/study/v1/recommendation-routes.test.ts' 'src/services/study/materials.test.ts' 'src/services/study/recommendations.test.ts' 'src/services/study/imports.test.ts'
 pnpm lint
 pnpm type-check
 pnpm test
 pnpm build
 git diff --check
 ```
+
+build/start는 격리 DB와 테스트 전용 인증 환경을 주입한 별도 프로세스로 실행한다.
+`~/.claude/scripts/browser-driver doctor`가 `orca` 백엔드를 보고하는지 확인한다.
+PC 탭은 기본 viewport에서 browser-driver의 `js`로 `window.innerWidth`를 기록한다.
+모바일 탭은 Orca CLI의 공식 Browser Automation 명령 `orca set device --page <mobile page id> --name "iPhone 12" --worktree <현재 worktree selector> --json`을 실행하고 `ok: true`를 확인한 뒤 같은 항목을 기록한다.
+`ORCA_WORKTREE`를 현재 worktree로 고정하고 이동·DOM·HTTP 조작과 대기는 browser-driver의 `nav`, `js`, `waitjs`로 수행한다.
+두 탭의 화면 상태, 요청 status, cache·robots header를 JSON으로 출력하고 드라이버 종료 코드가 모두 0인지 기록한다.
+세션과 환경 변경 뒤에는 고정 대기 대신 `waitjs`로 로그인 이동 또는 거절 응답을 기다린다.
 
 이 plan의 모든 phase 검증이 통과한 뒤에만 `index.json`의 status를 `completed`로 바꾼다.
 실패 또는 검증 불가는 완료로 표시하지 않는다.
@@ -82,5 +95,6 @@ git diff --check
 | `src/components/admin/AdminNavigation.tsx` | 신규 또는 기존 내용 확장 |
 | `docs/prd.md` | 신규 또는 기존 내용 확장 |
 | `docs/flow.md` | 신규 또는 기존 내용 확장 |
+| `docs/api/study-library.md` | 신규 또는 기존 내용 확장 |
 | `docs/code-architecture.md` | 신규 또는 기존 내용 확장 |
 | `docs/data-schema.md` | 신규 또는 기존 내용 확장 |

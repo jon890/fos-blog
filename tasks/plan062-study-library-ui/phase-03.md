@@ -48,7 +48,7 @@ IMPORT_CHANGED면 새 dry-run을 요구하고 서버의 과거 반복 자료 경
 
 ### 3. 컴포넌트 테스트
 
-`RecommendationDetail.test.tsx`, `ImportPanel.test.tsx`에서 과거 null·빈 추천·현재 state와 snapshot 구분을 검증한다.
+`RecommendationList.test.tsx`, `RecommendationDetail.test.tsx`, `ImportPanel.test.tsx`에서 추천 생성일·주제 수·빈 실행·더 보기와 과거 null·현재 state·snapshot 구분을 검증한다.
 잘못된 JSON·초과 파일·파일 변경 후 stale preview·IMPORT_CHANGED·401·commit 중복 클릭을 검증한다.
 오류가 성공 안내로 바뀌지 않고 키보드로 선택·미리보기·확정이 가능해야 한다.
 
@@ -61,7 +61,7 @@ DOM 테스트 파일은 `// @vitest-environment jsdom`을 선언한다.
 
 ```bash
 # cwd: 현재 구현 worktree의 저장소 root
-pnpm exec vitest run 'src/components/study/RecommendationDetail.test.tsx' 'src/components/study/ImportPanel.test.tsx'
+pnpm exec vitest run 'src/components/study/RecommendationList.test.tsx' 'src/components/study/RecommendationDetail.test.tsx' 'src/components/study/ImportPanel.test.tsx'
 pnpm lint
 pnpm type-check
 pnpm test
@@ -76,6 +76,7 @@ git diff --check
 | 파일 | 변경 |
 | --- | --- |
 | `src/components/study/RecommendationList.tsx` | 신규 또는 기존 내용 확장 |
+| `src/components/study/RecommendationList.test.tsx` | 신규 또는 기존 내용 확장 |
 | `src/components/study/RecommendationDetail.tsx` | 신규 또는 기존 내용 확장 |
 | `src/components/study/RecommendationDetail.test.tsx` | 신규 또는 기존 내용 확장 |
 | `src/components/study/ImportPanel.tsx` | 신규 또는 기존 내용 확장 |
