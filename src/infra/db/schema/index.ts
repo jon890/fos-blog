@@ -32,3 +32,4 @@ export {
   type GlossaryMention,
   type NewGlossaryMention,
 } from "./glossaryMentions";
+export * from "./study";
