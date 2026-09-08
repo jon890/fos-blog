@@ -26,6 +26,13 @@ export {
   type StudyMaterialPageRequest,
   type StudyMaterialRecord,
   type IngestStudyBatchResult,
+  type RecordStudyPublicationResult,
+  type SaveStudyRecommendationRunResult,
+  type StudyCandidatePage,
+  type StudyCandidatePageRequest,
+  type StudyCandidateRecord,
+  type StudyRecommendationRunPage,
+  type StudyRecommendationRunRecord,
 } from "./StudyRepository";
 export {
   GlossaryRepository,
