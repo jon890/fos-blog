@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 export type MaterialStateSaveResult =
   | { status: "saved"; state: MaterialState }
-  | { status: "conflict"; latestState: MaterialState };
+  | { status: "conflict"; latestState: MaterialState }
+  | { status: "unauthenticated" };
 
 export type DesiredMaterialState = {
   expectedVersion: number;
@@ -45,7 +46,7 @@ export function MaterialStateEditor({ state, onSave }: Props) {
     setMessage("저장하고 있습니다.");
     setLatestState(null);
     const input: DesiredMaterialState = {
-      expectedVersion: state.version,
+      expectedVersion: draft.version,
       starred: draft.starred,
       read: draft.read,
       note: draft.note,
@@ -54,7 +55,12 @@ export function MaterialStateEditor({ state, onSave }: Props) {
       const result = await onSave(input);
       if (result.status === "conflict") {
         setLatestState(result.latestState);
+        setDraft((current) => ({ ...current, version: result.latestState.version }));
         setMessage("다른 곳에서 상태가 변경되었습니다. 최신 상태와 작성 중인 초안을 비교한 뒤 다시 저장해 주세요.");
+        return;
+      }
+      if (result.status === "unauthenticated") {
+        setMessage("로그인이 만료되었습니다. 다시 로그인한 뒤 저장해 주세요.");
         return;
       }
       setDraft(result.state);
