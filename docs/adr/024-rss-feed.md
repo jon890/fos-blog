@@ -1,18 +1,25 @@
-## ADR-024. RSS feed — RSS 2.0 + `pubDate=createdAt` + 50 limit (plan027)
+# ADR-024. RSS 2.0과 생성일 기준의 제한된 피드를 제공한다
 
-**Context**: issue #88 — `/rss.xml` 라우트 신설. RSS reader 가 글 발행을 추적할 수 있게. 형식 / 정렬 / 한도 세 결정이 코드/git log 로 자명하지 않음.
+## 맥락과 결정
 
-**Decision**:
+RSS reader에서 글 발행을 추적할 수 있도록 RSS 2.0 피드를 제공한다.
+`pubDate`에는 `createdAt`을 사용하고 최근 50개 글과 요약을 포함한다.
+실제 피드 생성은 [RSS Route Handler](../../src/app/rss.xml/route.ts)가 담당한다.
 
-1. **RSS 2.0** (Atom 1.0 기각) — channel/item 구조 + `<atom:link rel="self">` 만 추가해 reader 호환성 최대화.
-2. **`<pubDate>` = `createdAt` (`updatedAt` 아님)** — sync 가 동일 글을 재처리하면 `updatedAt` 이 갱신됨. `pubDate` 가 그걸 따라가면 RSS reader 가 기존 글을 "새 글" 로 오인해 unread 표시 → 사용자 노이즈. `createdAt` 은 첫 sync 시점 고정이라 안전.
-3. **`limit = 50`** — RSS reader 의 일반적 캐시 윈도우 (수 일~수 주 누락) 대비 충분. 글 발행 주기 평균 1일 1건 가정 시 50일 보장. 100+ 로 늘리면 채널 XML 크기 증가 + reader fetch 비용 증가. 향후 발행 빈도 변화 시 재검토.
+## 날짜 선택 이유
 
-**Why (대안 기각)**:
+글을 다시 동기화할 때 바뀌는 `updatedAt`을 발행일로 사용하면 기존 글이 새 글처럼 보일 수 있다.
+따라서 기존 글 갱신에서 유지되는 `createdAt`을 발행일로 사용한다.
 
-- **Atom 1.0** 기각: feature 차이는 거의 없고 RSS 2.0 reader 호환성이 더 넓음. atom:link self 만 채택해 양쪽 spec 의 강점 흡수.
-- **`<content:encoded>` full HTML 본문 포함** 기각: feed 크기 증가 + 광고 없는 본문 노출이 트래픽 손실 우려. `<description>` 에 300자 summary (extractDescription) 만 노출.
-- **`pubDate=updatedAt`** 기각: 위 #2 사유.
-- **카테고리별 RSS (`/category/[name]/rss.xml`)** 기각: scope 큼 + 일반 RSS 가 카테고리 다양성 보존. 별도 plan 후보.
+이 값은 항상 최초 동기화 시각인 것은 아니다.
+GitHub 커밋 조회값을 우선하며, 조회 범위와 실패 시 기본값은 [글 날짜 저장 규칙](../data-schema.md#posts)을 따른다.
+전체 GitHub 이력의 최초 커밋 시각을 보장하지 않는다.
 
-**Scope**: 본 ADR 결정은 plan027 한정. 글 수가 1년 100+ 도달 시 limit / pagination 재검토.
+## 한도와 기각한 대안
+
+- 도입 당시 하루 한 건 수준의 발행을 가정해 최근 50개를 선택했다.
+  이는 누락 없이 읽을 기간을 보장하는 값은 아니며 발행 빈도가 바뀌면 재검토한다.
+- 도입 당시 reader 호환성을 고려해 Atom 1.0 대신 RSS 2.0을 선택하고 self 링크를 함께 제공했다.
+- 전체 HTML 본문은 피드 크기와 본문 외부 소비 범위가 커져 제외하고 요약만 제공한다.
+- `pubDate=updatedAt`은 기존 글의 재발행처럼 보일 수 있어 기각했다.
+- 카테고리별 피드는 경로와 관리 범위가 늘어나므로 현재 범위에서 제외했다.

@@ -29,11 +29,11 @@ AI 에이전트가 설계 철학을 빠르게 추론하기 위한 컨텍스트.
 
 ## OG 이미지 & 공유
 
-- [ADR-007](./007-og-image-hybrid.md) — `next/og` 동적과 정적 fallback 하이브리드
+- [ADR-007](./007-og-image-hybrid.md) — 동적 OG와 정적 대체 이미지의 기본 정책. ADR-033이 글 전용 썸네일 우선을 확장
 - [ADR-008](./008-og-font-pretendard.md) — Pretendard subset WOFF 로컬 번들 (UI/OG 통일)
 - [ADR-009](./009-og-nodejs-runtime.md) — `ImageResponse` 런타임 = Node.js
 - [ADR-011](./011-og-catchall-api-route.md) — catch-all OG 이미지 = API Route 우회
-- [ADR-033](./033-post-thumbnail-fallback.md) — 글 전용 썸네일과 카테고리별 생성 이미지의 단계적 대체
+- [ADR-033](./033-post-thumbnail-fallback.md) — ADR-007을 확장하는 글 전용 썸네일 우선과 카테고리별 생성 이미지
 
 ## 도메인 & SEO 검색 노출
 
@@ -45,7 +45,7 @@ AI 에이전트가 설계 철학을 빠르게 추론하기 위한 컨텍스트.
 ## 보안 & 안정성
 
 - [ADR-015](./015-visit-tracking.md) — Visit tracking 경로 유효성과 middleware 분리
-- [ADR-016](./016-rate-limiting.md) — Rate limit middleware (1000/min/IP, RFC1918 우회, Googlebot|Bingbot|NaverBot|Yeti 예외)
+- [ADR-016](./016-rate-limiting.md) — 메모리 기반 요청 제한과 IP·UA 우회 조건의 운영 전제
 - [ADR-018](./018-db-migration-auto.md) — DB 마이그레이션 자동화 (컨테이너 부팅 시 drizzle migrator 실행)
 
 ## 디자인 시스템
@@ -57,7 +57,7 @@ AI 에이전트가 설계 철학을 빠르게 추론하기 위한 컨텍스트.
 
 - [ADR-019](./019-code-highlight.md) — 코드 블록 하이라이팅 (rehype-pretty-code, shiki dual theme)
 - [ADR-020](./020-markdown-unified-async.md) — 마크다운 변환 react-markdown → unified async (server component, plan014)
-- [ADR-021](./021-comment-design.md) — 댓글 디자인 라이브러리와 보안 정책 (rhf, zod, sonner / escapeHtml 단방향 / USER_FRIENDLY_ERRORS / og-palette 분리, plan022)
+- [ADR-021](./021-comment-design.md) — 댓글 폼, 오류 code 매핑, 번들 분리와 저장 이스케이프의 표시 한계
 - [ADR-026](./026-markdown-sanitize.md) — 원시 HTML을 HAST 단계에서 정제하고 필요한 속성만 허용
 - [ADR-027](./027-katex.md) — KaTeX 수식 렌더링 도입 (remark-math, rehype-katex output:"html", plan044)
 - [ADR-032](./032-glossary-sync-and-mentions.md) — 콘텐츠 용어집 동기화, 언급 페이지 사전 계산, sanitize 이후 요청별 HAST 변환 (plan054)
@@ -69,7 +69,7 @@ AI 에이전트가 설계 철학을 빠르게 추론하기 위한 컨텍스트.
 
 ## 메타 / 문서 구조
 
-- [ADR-031](./031-adr-file-split.md) — ADR 파일 분리 (단일 adr.md → docs/adr/NNN-slug.md, plan052)
+- [ADR-031](./031-adr-file-split.md) — ADR별 파일 분리와 공유 인덱스에 남는 병합 비용
 
 ## 개인 학습자료
 

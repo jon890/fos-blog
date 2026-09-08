@@ -1,100 +1,34 @@
-# 인기 글 목록 Page PRD
+# 인기 글 목록 페이지
 
 **Route:** `/posts/popular`
-**File:** `src/app/(blog)/posts/popular/page.tsx`
-**Updated:** 2026-08-05
+**진입점:** [인기 글 페이지](../../src/app/(blog)/posts/popular/page.tsx)
+**갱신일:** 2026-09-07
 
----
+## 목적과 조회
 
-## Purpose
+방문 기록이 있는 활성 글을 조회수 순으로 계속 탐색한다.
+홈의 인기 글 영역에서 진입하고 카드를 선택하면 글 상세로 이동한다.
 
-전체 글을 **방문수 순**으로 연속 탐색할 수 있는 전용 페이지. SSR로 첫 10개를 렌더하고, 이후 무한 스크롤로 추가 로드한다.
+- 첫 10개 경로를 서버에서 조회하고 이후 10개씩 추가 조회한다.
+- 정렬은 `visit_count DESC, page_path ASC`이며 offset을 사용한다.
+- 방문 기록이 없는 글은 목록에서 제외한다.
+- 경로에 대응하는 활성 글이 없으면 카드를 생략하므로 표시 수는 조회한 경로 수보다 적을 수 있다.
+- 추가 조회는 `/api/posts/popular`에서 수행한다.
+- 카드에는 조회수를 함께 표시하고 비교에 적합한 row 변형을 사용한다.
 
-`visit_stats` 에 등록된 글만 노출한다 (미방문 글은 목록에 없으며 의도적 동작).
+동점의 순서를 유지하는 이유와 offset 선택은 [ADR-002](../adr/002-pagination.md)에 있다.
 
----
+## 공통 목록 동작
 
-## Data
+로딩, 재시도, 종료 안내와 접근성은 [공통 글 목록 동작](../flow.md#글-목록의-공통-동작)을 따른다.
+최초 조회 실패도 빈 목록과 종료 상태로 전달된다.
+별도의 최초 조회 재시도 UI는 없으며 서버에 오류를 기록한다.
 
-| Source | Method | Returns |
-|---|---|---|
-| VisitRepository | `getPopularPostPathsOffset({ limit: 10, offset: 0 })` | 인기 경로 10개 + visitCount |
-| VisitRepository | `getPopularPostPathsTotal()` | `visit_stats` row 총수 (hasMore 계산) |
-| PostRepository | `getPostsByPaths(paths)` | 경로 대응 글 상세 |
+카드·대표 이미지 규칙은 [코드 아키텍처](../code-architecture.md#글-대표-이미지),
+목록 상태 처리는 [PostsInfiniteList](../../src/components/PostsInfiniteList.tsx)가 담당한다.
 
-**정렬**: `visit_count DESC, page_path ASC`로 2차 정렬해 페이지 간 안정성을 확보한다 ([ADR-002](../adr/002-pagination.md)).
+## 색인과 갱신
 
-**ISR:** `revalidate = 600` (10분, 방문수 변동 느림)
-**Static params:** 없음
-
-**에러 처리:** DB 에러 시 빈 배열 폴백과 BLG2 로깅
-
----
-
-## Components
-
-| Component | Role |
-|---|---|
-| `PostsListSubHero` (accent=`"popular"`) | 페이지 eyebrow + h1 + Flame accent + meta + divider (server, plan016) |
-| `PostsInfiniteList` (mode=`"popular"`) | 클라이언트 — IntersectionObserver + 수동 버튼 + 행 목록 + 끝 도달 UX |
-| `PostCard` | `variant="row"`로 제목·소개·분류·날짜·조회수 표시 |
-| `PostCardSkeleton` | 행형 로딩 스켈레톤 3개 |
-| `BackToTopButton` | 플로팅 + 인라인 공용 |
-
----
-
-## Interactions
-
-| Trigger | Action |
-|---|---|
-| 바닥 sentinel 가시화 | `fetch('/api/posts/popular?limit=10&offset=N')` |
-| "더 보기" 버튼 클릭 | 동일 fetch |
-| 추가 fetch 성공 | items append, offset 증가 |
-| 추가 fetch 실패 | 인라인 "재시도" 버튼 (동일 offset) |
-| `hasMore === false` | "더 이상 글이 없습니다." + "맨 위로" 버튼 |
-| 스크롤 > 300px | 플로팅 "맨 위로" 버튼 노출 |
-| PostCard 클릭 | `/posts/<path>` 이동 |
-
----
-
-## SEO
-
-- `export const metadata = { robots: { index: false, follow: true } }` ([ADR-005](../adr/005-list-page-noindex.md))
-- 제목: "인기 글 — FOS Study"
-- 설명: "개발 공부 기록 블로그의 방문수 기준 인기 글 목록입니다."
-
----
-
-## Layout
-
-```
-[Container max-w-[1180px]]
-  [PostsListSubHero eyebrow="INDEX · POPULAR" title="인기 글" meta="방문수 순" accent="popular"]
-   └ h1 우측 Flame 아이콘 (--color-cat-algorithm, hue 25 orange-red)
-[PostsInfiniteList mode="popular"]
-  ├ row PostCard × N (visitCount 강조, 고밀도 행 목록 유지)
-  ├ [스켈레톤 × 3 | 인라인 "더 보기" 버튼 | "재시도" 버튼 | 끝 문구 + 인라인 "맨 위로"]
-[플로팅 BackToTop 버튼 (스크롤 > 300px)]
-```
-
----
-
-## Edge Cases
-
-| 상황 | 처리 |
-|---|---|
-| `visit_stats` 비어 있음 (신규 배포 직후 등) | "아직 인기 글이 없습니다." (끝 도달 문구와 동일 처리) |
-| 총 인기 글 < 10 | SSR 렌더 후 즉시 `hasMore = false` 로 끝 UX |
-| `visitCount` 동점 다수 | `page_path ASC` 2차 정렬로 결정적 순서 보장 |
-
----
-
-## Related Files
-
-- `src/app/(blog)/posts/popular/page.tsx` (신규)
-- `src/app/api/posts/popular/route.ts` (신규)
-- `src/components/PostsInfiniteList.tsx` (공용, posts-latest 참조)
-- `src/components/PostCardSkeleton.tsx` (공용)
-- `src/components/BackToTopButton.tsx` (공용)
-- `src/infra/db/repositories/VisitRepository.ts` (메서드 추가)
-- `src/infra/db/repositories/PostRepository.ts` (기존 `getPostsByPaths` 재사용)
+`robots: { index: false, follow: true }`로 목록 자체의 색인을 제외한다.
+조회수 변동에 맞춰 `revalidate = 600`으로 갱신하고 별도 정적 경로 목록은 생성하지 않는다.
+색인 정책의 이유는 [ADR-005](../adr/005-list-page-noindex.md)에 있다.

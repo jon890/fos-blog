@@ -211,9 +211,9 @@ JSON 키 순서를 정렬하고 배열 순서를 유지한 본문을 UTF-8 SHA-2
 
 | 요청 | 주체 | 응답 |
 | --- | --- | --- |
-| `GET /materials` | 본인 | `{items:Material[],nextCursor:string|null}` |
+| `GET /materials` | 본인 | `{items:Material[],nextCursor:string\|null}` |
 | `GET /materials/{id}` | 본인 | `{material:Material}` |
-| `GET /candidates` | 서비스 | `{candidates:Candidate[],recentStudyTopicKeys:string[],nextCursor:string|null,historyVersion:number}` |
+| `GET /candidates` | 서비스 | `{candidates:Candidate[],recentStudyTopicKeys:string[],nextCursor:string\|null,historyVersion:number}` |
 
 자료 단건 조회는 query 없이 전체 Material을 반환하며 없는 ID는 `404`다.
 상세 패널과 상태 충돌 후 최신 state 확인은 이 단건 조회를 사용한다.
@@ -238,7 +238,7 @@ cursor는 권한 수단이 아니며 모든 페이지에서 인증한다. 다른
 | --- | --- |
 | `Material` | `id,contentKey,canonicalUrl,title,publishedAt,excerpt,tags,kind,sources,state,previouslyRecommended` |
 | `Material.sources[]` | `sourceKey,sourceName,category` |
-| `Material.state` | `starred:boolean,read:boolean,note:string,version:number,updatedAt:string|null` |
+| `Material.state` | `starred:boolean,read:boolean,note:string,version:number,updatedAt:string\|null` |
 | `Candidate` | `id:string,contentKey,canonicalUrl,sourceKey,sourceName,category,title,url,published,excerpt,kind,previouslyRecommended` |
 
 Candidate의 `id`는 contentKey이며 기존 candidateId 참조로 사용한다.

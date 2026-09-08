@@ -1,4 +1,4 @@
-# DESIGN.md — fos-blog 디자인 시스템
+# fos-blog 디자인 시스템
 
 **관련 ADR**: [ADR-029](./adr/029-design-md.md) (도입 결정) · [ADR-017](./adr/017-design-system.md) (디자인 시스템 톤) · [ADR-019](./adr/019-code-highlight.md) (코드 블록)
 
@@ -29,7 +29,7 @@ AI agent 가 "이 디자인처럼 페이지/컴포넌트를 만들어줘" 를 �
 ## 2. Color Palette & Roles
 
 모든 색은 oklch(브랜드·카테고리·semantic) 또는 hex(중립 배경·전경). dark/light 양쪽 정의.
-값 출처: `globals.css` `@theme` 블록 + `:root:not(.dark)` override.
+값 출처는 `globals.css`의 `@theme` 블록과 `:root:not(.dark)` 재정의다.
 
 ### Background / Foreground / Border (중립, hex)
 
@@ -47,21 +47,21 @@ AI agent 가 "이 디자인처럼 페이지/컴포넌트를 만들어줘" 를 �
 | 테두리 default | `--color-border-default` | `#27272a` | `#d4d4d8` |
 | 테두리 strong | `--color-border-strong` | `#3f3f46` | `#a1a1aa` |
 
-### Brand — cyan-leaning teal
+### Brand 색상
 
-`--color-brand-50` … `--color-brand-900` 9단계.
-PRIMARY 는 `--color-brand-400` = `oklch(0.78 0.13 195)`.
-hue 195 고정, lightness·chroma 만 단계별 변형.
+브랜드 색 단계와 각 값은 [globals.css](../src/app/globals.css)의 `--color-brand-*` 토큰을 따른다.
+기본 강조색은 `--color-brand-400`이며 단계별 lightness, chroma와 hue는 토큰에서 확인한다.
 
 brand-400 은 장식(보더·배경·caret·gradient)에서 dark/light 공통으로 쓴다.
 강조 텍스트는 `--color-brand-text` 로 분리한다.
 brand-400 은 밝은 청록이라 흰 배경에서 대비가 1.9:1 로 무너지기 때문이다(WCAG AA 미달).
 brand-text 의 dark 값은 brand-400 과 같고, light 값은 `oklch(0.5 0.11 195)` 로 내려 대비 5.5:1(AA 통과)을 확보한다.
 
-### Categories — 9 canonical
+### Categories 기준 색상
 
 `ai / algorithm / db / devops / java / js / react / next / system`.
-**hue 만 변형, chroma·lightness 통일** — dark `oklch(0.74 0.09 H)`, light `oklch(0.50 0.11 H)`.
+카테고리 색은 hue만 바꾸고 chroma와 lightness를 통일한다.
+dark는 `oklch(0.74 0.09 H)`, light는 `oklch(0.50 0.11 H)`를 사용한다.
 
 | 카테고리 | hue | 토큰 |
 |---|---|---|
@@ -125,13 +125,14 @@ hero 배경에만 사용. 본문·컴포넌트에는 쓰지 않는다.
 
 ## 4. Component Stylings
 
-base 컴포넌트는 `@base-ui/react` primitive + `cva` variants(`src/components/ui/`).
+base 컴포넌트는 `src/components/ui/`에서 `@base-ui/react` primitive와 `cva` variants를 조합한다.
 shadcn 토큰(`--primary`, `--border` 등)은 `@theme inline` 으로 매핑(`globals.css` 하단).
 
 ### Button (`ui/button.tsx`)
 
 기본: `rounded-lg` · `text-sm` · `font-medium` · `transition-all`.
-focus-visible 시 `ring-3 ring-ring/50` + border-ring. active 시 `translate-y-px`(reduced-motion 면제).
+focus-visible 시 `ring-3 ring-ring/50`과 `border-ring`을 적용한다.
+active 시 `translate-y-px`를 적용한다 (reduced-motion 면제).
 
 | variant | 용도 |
 |---|---|
@@ -151,8 +152,8 @@ focus-visible `ring-3 ring-ring/50`. invalid 시 destructive ring. disabled 시 
 
 ### Code Card (`.code-card`, `globals.css` + `CodeCard.tsx`)
 
-- 외곽: subtle border + `rounded-[8px]` + bg-subtle, `overflow:hidden`
-- head: filename + `.lang` 배지(brand tint) + copy 버튼, mono 메타 폰트
+- 외곽: subtle border, `rounded-[8px]`, bg-subtle과 `overflow:hidden`
+- head: filename, `.lang` 배지와 copy 버튼에 mono 메타 폰트 적용
 - body: mono 13px · line-height 1.7 · `overflow-x:auto`
 - line number: `[data-line-numbers]` 일 때만. 모바일(≤767px) 숨김
 - variants: 기본 / `diff`(semantic +/−) / `terminal`(첫 라인 `$` prompt)
@@ -206,7 +207,7 @@ focus-visible `ring-3 ring-ring/50`. invalid 시 destructive ring. disabled 시 
 ### Motion
 
 - duration: `--duration-instant` 75ms / `fast` 150ms / `default` 250ms / `slow` 400ms
-- easing: `--ease-out` (cubic-bezier(0.22,1,0.36,1)) 기본 / `--ease-spring` / `--ease-linear`
+- easing: 기본 `--ease-out`의 값은 `cubic-bezier(0.22,1,0.36,1)`이며 `--ease-spring`과 `--ease-linear`도 제공한다.
 
 ### 3계층 헤더 위계
 
@@ -263,7 +264,7 @@ light 는 순수 drop shadow. 정확한 값은 `globals.css`.
 주요 분기점은 Tailwind `md`(768px), `lg`(1024px), `xl`(1280px)이며 일부 화면은 `sm`(640px)을 사용한다.
 
 - 컨테이너는 `max-w-[1180px]` 안에서 `px-4` 로 모바일 좌우 여백 확보
-- 글 본문 inline code/긴 URL/한글은 `overflow-wrap: anywhere` + `word-break` 으로 가로 스크롤 사고 방지(375px 기준)
+- 글 본문의 inline code, 긴 URL과 한글은 `overflow-wrap: anywhere`와 `word-break`로 가로 스크롤을 방지한다 (375px 기준).
 - code-card 는 `overflow-x:auto` 로 긴 코드 가로 스크롤, 모바일에서 line number 숨김
 - 터치 타깃은 버튼 size 토큰(`h-8` 기본)으로 확보
 - hero mesh·caret 등 모션은 `prefers-reduced-motion: reduce` 에서 정지
@@ -277,7 +278,7 @@ AI agent 가 이 디자인으로 새 화면·컴포넌트를 만들 때 참조�
 ### 새 컴포넌트를 만들 때
 
 1. 색·spacing·radius·shadow·motion 은 **`globals.css` 토큰**을 쓴다. raw 값 금지
-2. base 컴포넌트는 `src/components/ui/`(base-ui + cva) 패턴을 따른다
+2. base 컴포넌트는 `src/components/ui/`의 base-ui와 cva 조합을 따른다.
 3. focus-visible ring·reduced-motion·dark/light 3가지를 항상 같이 처리
 4. 카테고리 색은 `category-meta.ts`의 `getCategoryColor()`를 사용한다
 5. 본문(prose) 스타일을 건드리면 `.prose` 규칙(`globals.css`)과 충돌하지 않는지 확인

@@ -1,13 +1,24 @@
-## ADR-007. OG 이미지 — `next/og` 동적 + 정적 fallback 하이브리드
+# ADR-007. 동적 OG 이미지와 정적 대체 이미지
 
-**Context**: `layout.openGraph.images` 미설정 → 공유 시 이미지 없음. `ArticleJsonLd.publisher.logo` 가 실존 안 하는 `/icon` URL → Rich Results 검증 실패.
+## 맥락
 
-**Decision**:
+공유 메타데이터에 이미지가 없었고, 구조화 데이터의 발행자 로고가 존재하지 않는 경로를 가리켰다.
+홈서버의 standalone 배포에서 콘텐츠별 공유 이미지를 제공하면서 생성 실패에도 대체 이미지가 필요했다.
 
-- **정적 fallback**: `public/og-default.png` (1200×630), `public/logo.png` (512×512) — `layout.tsx` 기본값 + `JsonLd` publisher.logo
-- **동적 생성**: `next/og` `ImageResponse` — 페이지마다 제목/발췌/카테고리 배지 렌더
-  - 단일 dynamic: `opengraph-image.tsx` (홈, categories)
-  - catch-all: `/api/og/{scope}/[...x]/route.tsx` (ADR-011)
-- **ISR**: `revalidate = 60` (양쪽 동등)
+## 결정
 
-**Why**: 공유 시 제목 노출로 CTR 극대화 + standalone 호환 + fallback 보험. 정적 1장(글마다 동일, 변별력 없음)/SSG pre-render(빌드 시간 + 글 수정 반영 지연) 기각. 공용 유틸 `src/lib/og.ts` 로 스타일/폰트/로고 embedding 중앙 관리.
+콘텐츠 제목과 요약을 담는 동적 OG 이미지와 정적 기본 이미지를 함께 사용한다.
+홈과 카테고리에는 동적 이미지를 제공하고, catch-all 경로는 [ADR-011](011-og-catchall-api-route.md)의 API Route 방식을 따른다.
+생성 코드와 자산 로딩은 공용 OG 모듈에서 관리한다.
+
+## 후속 확장
+
+[ADR-033](033-post-thumbnail-fallback.md)은 글 공유 이미지에 전용 썸네일 우선 규칙을 추가했다.
+전용 이미지가 없는 글의 동적 OG와 정적 기본 이미지 정책은 계속 유효하다.
+현재 선택 순서는 [글 대표 이미지](../code-architecture.md#글-대표-이미지)를 따른다.
+
+## 이유와 기각한 대안
+
+- 정적 이미지 한 장만 사용하면 글마다 제목과 맥락을 구분하기 어렵다.
+- 모든 이미지를 빌드 때 생성하면 빌드 비용과 글 수정 반영 지연이 커진다.
+- 동적 생성만 사용하면 생성 실패 때 공유 이미지가 사라지므로 정적 대체 이미지를 함께 둔다.

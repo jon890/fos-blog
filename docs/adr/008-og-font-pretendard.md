@@ -1,14 +1,25 @@
-## ADR-008. 동적 OG 폰트 — Pretendard subset WOFF 로컬 번들 (UI/OG 통일)
+# ADR-008. OG 한글 폰트를 로컬 Pretendard WOFF로 제공한다
 
-**Context**: `ImageResponse` (satori) 한글 렌더에 폰트 필수. CDN fetch 는 홈서버 네트워크 의존. plan021 에서 OG 디자인을 plan009 기반으로 갱신하면서 UI 폰트(ADR-017 — Pretendard) 와 통일 결정.
+## 맥락과 결정
 
-**Decision**: Pretendard Bold subset 을 `public/fonts/Pretendard-Bold-subset.woff` 로 번들 (~350KB, npm `pretendard@1.3.9` 의 `dist/web/static/woff-subset/Pretendard-Bold.subset.woff`). `src/lib/og.ts` `loadOgFont()` 가 `process.cwd()` 기반으로 로드, `ImageResponse.fonts: [{ name: "Pretendard", data, weight: 700, style: "normal" }]` 전달. 4개 라우트 (`api/og/posts/[...slug]`, `api/og/category/[...path]`, `app/opengraph-image`, `app/categories/opengraph-image`) 모두 동일.
+OG 이미지의 한글 표현을 [사이트 디자인](017-design-system.md)과 맞추고 홈서버의 외부 네트워크 의존을 줄인다.
+Pretendard Bold subset WOFF를 로컬 자산으로 제공한다.
+로딩 방식과 실제 자산 경로는 [OG 공용 모듈](../../src/lib/og.ts)을 따른다.
 
-**Why**:
-- **Pretendard 채택**: UI 폰트(ADR-017)와 통일 → OG 이미지의 한글 톤이 사이트 본문과 일치. plan009 디자인 시스템의 핵심 폰트.
-- **WOFF 채택 (plan021 검증)**: Pretendard TTF 가 npm 패키지 + jsdelivr CDN 모두 미존재 (woff/woff2 만 배포). satori 는 TTF/OTF/**WOFF** 지원, **WOFF2 만 미지원** — WOFF 는 직접 검증 시 정상 렌더. 이전 ADR 의 "woff 호환 불확실" 가정 폐기.
-- **subset 350KB**: Noto KR full 1.6MB 대비 서버 번들 부피 감소. Pretendard subset 은 KS X 1001 + 자주 쓰는 신조어 커버.
-- **외부 의존 0**: 홈서버 네트워크 차단 환경에서도 OG 동작 보장. Dockerfile `COPY public` 으로 함께 번들.
-- 기각: Google Fonts fetch (네트워크 의존), Noto Sans KR (UI 와 분리되어 톤 불일치), woff2 (satori 미지원).
+## 선택 이유
 
-**Scope 명시**: OG 이미지 생성 전용 (서버 사이드 satori). UI 렌더링 폰트는 [ADR-017](./017-design-system.md) 참조. 이번 ADR 갱신으로 두 ADR 의 폰트 패밀리가 일치.
+- Pretendard는 사이트의 한글 폰트와 같아 본문과 공유 이미지의 인상을 맞출 수 있다.
+- 도입 당시 WOFF를 실제 이미지 생성에 사용해 정상 렌더링을 확인했다.
+  WOFF2는 당시 satori가 지원하지 않아 기각했다.
+- 도입 당시 subset 약 350KB를 사용해 Noto Sans KR 전체 폰트 약 1.6MB보다 자산 크기를 줄였다.
+  subset은 전체 유니코드 글리프를 포함하지 않으므로 지원 범위 밖 문자에는 한계가 있다.
+- 로컬 자산을 배포에 포함하면 이미지 요청 중 폰트 CDN에 접근할 필요가 없다.
+
+## 기각한 대안과 범위
+
+Google Fonts를 요청마다 가져오는 방식은 외부 네트워크에 의존하므로 기각했다.
+Noto Sans KR는 본문 폰트와 달라 시각적 일관성이 낮아 기각했다.
+당시 Pretendard 배포본에서 TTF를 찾지 못해 실제 검증한 WOFF를 선택했다.
+
+이 결정은 서버의 OG 이미지 생성에 적용한다.
+UI 폰트 설정은 [디자인 문서](../design.md)가 소유하며, 이미지 생성 라이브러리를 바꾸면 폰트 형식 지원을 다시 검증한다.
