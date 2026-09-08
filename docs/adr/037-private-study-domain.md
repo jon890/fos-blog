@@ -2,6 +2,7 @@
 
 - **status**: `accepted`
 - **결정**: 학습자료는 기존 MySQL의 별도 study 테이블에 저장하고 공개 글 동기화·검색에 포함하지 않는다.
+- **구현 상태**: study 테이블과 소스·수집 cursor·자료 조회·개인 상태 API를 제공하며 추천·가져오기·화면은 후속 계획에서 구현한다.
   개인 상태의 소유자는 서버가 정한 `owner` 하나다.
   관리자 브라우저 세션과 career-os 서비스 Bearer는 서로 대체할 수 없는 주체로 판정한다.
   관리자 인증은 Better Auth의 GitHub OAuth를 사용하고 환경에 지정한 numeric ID 하나만 허용한다.
