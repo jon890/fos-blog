@@ -4,9 +4,14 @@ import { getAdminSession, type AdminSessionResult } from "@/lib/admin/session";
 
 export type StudyPrincipal =
   | { kind: "service" }
-  | { kind: "admin"; ownerKey: "owner" };
+  | { kind: "admin"; ownerKey: string };
 
 export type StudyAccess = "service" | "admin-read" | "admin-write" | "service-or-admin";
+
+export function studyOwnerKey(principal: StudyPrincipal): string {
+  if (principal.kind === "admin") return principal.ownerKey;
+  throw new StudyAuthError(403, "FORBIDDEN", "관리자 주체가 필요한 요청입니다.");
+}
 
 export class StudyAuthError extends Error {
   constructor(

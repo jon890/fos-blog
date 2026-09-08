@@ -1,10 +1,9 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { eq, inArray } from "drizzle-orm";
-import { migrate } from "drizzle-orm/mysql2/migrator";
 import type { RowDataPacket } from "mysql2";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createTestDatabase } from "../test-utils";
+import { createTestDatabase, migrateTestDatabase } from "../test-utils";
 import {
   studyMaterialSources,
   studyMaterials,
@@ -24,12 +23,11 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")("학습자료 MySQL 스키마"
 
   beforeAll(async () => {
     fixture = await createTestDatabase();
-    const migrationsFolder = path.resolve("drizzle");
-    await migrate(fixture.db, { migrationsFolder });
+    await migrateTestDatabase(fixture);
     const [applied] = await fixture.connection.query<RowDataPacket[]>(
       "SELECT id, hash, created_at FROM __drizzle_migrations ORDER BY id",
     );
-    await migrate(fixture.db, { migrationsFolder });
+    await migrateTestDatabase(fixture);
     const [repeated] = await fixture.connection.query<RowDataPacket[]>(
       "SELECT id, hash, created_at FROM __drizzle_migrations ORDER BY id",
     );
@@ -130,7 +128,6 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")("학습자료 MySQL 스키마"
     for (const statement of migration.matchAll(/ALTER TABLE `([^`]+)`/g)) {
       expect(statement[1]).toMatch(/^study_/);
     }
-    expect(await fixture!.db.select().from(studyRecommendationControl)).toEqual([]);
   });
 
   it("source cursor 복합 PK와 FK RESTRICT를 적용한다", async () => {

@@ -149,27 +149,50 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")("자료 서비스 MySQL", () =
   });
 
   it("LIKE 특수문자를 리터럴로 검색한다", async () => {
-    const percent = await listMaterials({ sourceKey: sourceKeys[0], q: "%" }, repository);
-    const underscore = await listMaterials({ sourceKey: sourceKeys[0], q: "_" }, repository);
-    const backslash = await listMaterials({ sourceKey: sourceKeys[0], q: "\\" }, repository);
+    const percent = await listMaterials({ sourceKey: sourceKeys[0], q: "%" }, "owner", repository);
+    const underscore = await listMaterials({ sourceKey: sourceKeys[0], q: "_" }, "owner", repository);
+    const backslash = await listMaterials({ sourceKey: sourceKeys[0], q: "\\" }, "owner", repository);
     expect(percent.items.map(({ contentKey }) => contentKey)).toEqual([contentKeys[0]]);
     expect(underscore.items.map(({ contentKey }) => contentKey)).toEqual([contentKeys[1]]);
     expect(backslash.items.map(({ contentKey }) => contentKey)).toEqual([contentKeys[2]]);
   });
 
   it("소스 다중 연결과 태그를 묶어서 읽고 미생성 상태와 null 날짜를 구분한다", async () => {
-    const multiple = await getMaterial(materialIds.get(contentKeys[0])!, repository);
+    const multiple = await getMaterial(materialIds.get(contentKeys[0])!, "owner", repository);
     expect(multiple.material.sources).toEqual([
       { sourceKey: sourceKeys[0], sourceName: "Primary source", category: "techBlog" },
       { sourceKey: sourceKeys[1], sourceName: "Secondary source", category: "ai" },
     ]);
     expect(multiple.material.tags).toEqual(["backend", "testing"]);
 
-    const withoutState = await getMaterial(materialIds.get(contentKeys[3])!, repository);
+    const withoutState = await getMaterial(materialIds.get(contentKeys[3])!, "owner", repository);
     expect(withoutState.material).toMatchObject({
       publishedAt: null,
       state: { starred: false, read: false, note: "", version: 0, updatedAt: null },
       previouslyRecommended: false,
+    });
+  });
+
+  it("검증된 ownerKey에 속한 개인 상태만 조회한다", async () => {
+    const id = materialIds.get(contentKeys[0])!;
+    await fixture!.db.insert(studyMaterialStates).values({
+      ownerKey: "another-owner",
+      materialId: id,
+      starred: true,
+      read: true,
+      note: "다른 소유자의 메모",
+      version: 1,
+      updatedAt: now,
+    });
+
+    const owner = await getMaterial(id, "owner", repository);
+    const anotherOwner = await getMaterial(id, "another-owner", repository);
+    expect(owner.material.state).toMatchObject({ starred: false, read: false, note: "", version: 0 });
+    expect(anotherOwner.material.state).toMatchObject({
+      starred: true,
+      read: true,
+      note: "다른 소유자의 메모",
+      version: 1,
     });
   });
 
@@ -178,12 +201,12 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")("자료 서비스 MySQL", () =
       sourceKey: sourceKeys[0],
       publishedFrom: "2026-09-08T00:00:00.000Z",
       publishedTo: "2026-09-09T00:00:00.000Z",
-    }, repository);
+    }, "owner", repository);
     expect(page.items.map(({ contentKey }) => contentKey)).toEqual([contentKeys[4]]);
   });
 
   it("첫 최대 ID를 cursor에 고정하고 다른 필터의 cursor를 거절한다", async () => {
-    const first = await listMaterials({ sourceKey: sourceKeys[0], limit: 2 }, repository);
+    const first = await listMaterials({ sourceKey: sourceKeys[0], limit: 2 }, "owner", repository);
     expect(first.nextCursor).not.toBeNull();
     await fixture!.db.insert(studyMaterials).values({
       contentKey: contentKeys[6], canonicalUrl: "https://example.com/material/new",
@@ -201,16 +224,16 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")("자료 서비스 MySQL", () =
 
     const second = await listMaterials({
       sourceKey: sourceKeys[0], limit: 100, cursor: first.nextCursor!,
-    }, repository);
+    }, "owner", repository);
     expect(second.items.map(({ contentKey }) => contentKey)).not.toContain(contentKeys[6]);
     await expect(listMaterials({
       sourceKey: sourceKeys[0], category: "techBlog", cursor: first.nextCursor!,
-    }, repository)).rejects.toMatchObject({ status: 400, code: "INVALID_REQUEST" });
+    }, "owner", repository)).rejects.toMatchObject({ status: 400, code: "INVALID_REQUEST" });
   });
 
   it("누적 추천 EXISTS를 DTO와 true/false 필터에 적용한다", async () => {
-    const recommended = await listMaterials({ sourceKey: sourceKeys[0], recommended: true }, repository);
-    const unrecommended = await listMaterials({ sourceKey: sourceKeys[0], recommended: false }, repository);
+    const recommended = await listMaterials({ sourceKey: sourceKeys[0], recommended: true }, "owner", repository);
+    const unrecommended = await listMaterials({ sourceKey: sourceKeys[0], recommended: false }, "owner", repository);
     expect(recommended.items.map(({ contentKey }) => contentKey)).toEqual([contentKeys[1]]);
     expect(unrecommended.items.map(({ contentKey }) => contentKey)).not.toContain(contentKeys[1]);
     expect(recommended.items[0]?.previouslyRecommended).toBe(true);
@@ -218,9 +241,9 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")("자료 서비스 MySQL", () =
   });
 
   it("미생성 상태를 false로 보고 starred/read boolean 필터를 적용한다", async () => {
-    const starred = await listMaterials({ sourceKey: sourceKeys[0], starred: true }, repository);
-    const unstarred = await listMaterials({ sourceKey: sourceKeys[0], starred: false }, repository);
-    const read = await listMaterials({ sourceKey: sourceKeys[0], read: true }, repository);
+    const starred = await listMaterials({ sourceKey: sourceKeys[0], starred: true }, "owner", repository);
+    const unstarred = await listMaterials({ sourceKey: sourceKeys[0], starred: false }, "owner", repository);
+    const read = await listMaterials({ sourceKey: sourceKeys[0], read: true }, "owner", repository);
     expect(starred.items.map(({ contentKey }) => contentKey)).toEqual([contentKeys[2]]);
     expect(unstarred.items.map(({ contentKey }) => contentKey)).not.toContain(contentKeys[2]);
     expect(read.items).toEqual([]);
@@ -229,39 +252,39 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")("자료 서비스 MySQL", () =
   it("최초 INSERT와 후속 UPDATE 경합에서 각각 한 번만 성공하고 메모를 병합하지 않는다", async () => {
     const id = materialIds.get(contentKeys[3])!;
     const inserted = await Promise.allSettled([
-      updateMaterialState(id, { expectedVersion: 0, note: "device-a" }, repository),
-      updateMaterialState(id, { expectedVersion: 0, note: "device-b" }, concurrentRepository),
+      updateMaterialState(id, { expectedVersion: 0, note: "device-a" }, "owner", repository),
+      updateMaterialState(id, { expectedVersion: 0, note: "device-b" }, "owner", concurrentRepository),
     ]);
     expect(inserted.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
     expect(inserted.find(({ status }) => status === "rejected")).toMatchObject({
       status: "rejected", reason: expect.objectContaining({ status: 409, code: "VERSION_CONFLICT" }),
     });
-    const afterInsert = await getMaterial(id, repository);
+    const afterInsert = await getMaterial(id, "owner", repository);
     expect(["device-a", "device-b"]).toContain(afterInsert.material.state.note);
     expect(afterInsert.material.state.version).toBe(1);
 
     const updated = await Promise.allSettled([
-      updateMaterialState(id, { expectedVersion: 1, note: "update-a" }, repository),
-      updateMaterialState(id, { expectedVersion: 1, note: "update-b" }, concurrentRepository),
+      updateMaterialState(id, { expectedVersion: 1, note: "update-a" }, "owner", repository),
+      updateMaterialState(id, { expectedVersion: 1, note: "update-b" }, "owner", concurrentRepository),
     ]);
     expect(updated.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
     expect(updated.find(({ status }) => status === "rejected")).toMatchObject({
       status: "rejected", reason: expect.objectContaining({ status: 409, code: "VERSION_CONFLICT" }),
     });
-    const afterUpdate = await getMaterial(id, repository);
+    const afterUpdate = await getMaterial(id, "owner", repository);
     expect(["update-a", "update-b"]).toContain(afterUpdate.material.state.note);
     expect(afterUpdate.material.state.version).toBe(2);
   });
 
   it("생략한 메모를 보존하고 단건 없음과 DB 장애를 구분한다", async () => {
     const id = materialIds.get(contentKeys[2])!;
-    const state = await updateMaterialState(id, { expectedVersion: 1, read: true }, repository);
+    const state = await updateMaterialState(id, { expectedVersion: 1, read: true }, "owner", repository);
     expect(state.state).toMatchObject({ read: true, note: "기존 메모", version: 2 });
-    await expect(getMaterial(0xffffffff, repository)).rejects.toMatchObject({ status: 404, code: "NOT_FOUND" });
+    await expect(getMaterial(0xffffffff, "owner", repository)).rejects.toMatchObject({ status: 404, code: "NOT_FOUND" });
 
     const failingRepository = {
       getMaterial: async () => { throw new Error("database unavailable"); },
     } as unknown as StudyRepository;
-    await expect(getMaterial(id, failingRepository)).rejects.toMatchObject({ status: 503, code: "UNAVAILABLE" });
+    await expect(getMaterial(id, "owner", failingRepository)).rejects.toMatchObject({ status: 503, code: "UNAVAILABLE" });
   });
 });

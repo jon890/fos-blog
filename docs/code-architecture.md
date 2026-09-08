@@ -19,8 +19,8 @@
 | `src/lib/admin/client.ts` | Better Auth React client. 로그인과 로그아웃만 호출 |
 | `src/infra/db/schema/auth.ts` | Better Auth user/session/account/verification 모델 |
 | `src/app/api/auth/[...all]/route.ts` | 허용한 Better Auth endpoint만 Next.js Handler로 전달 |
-| `src/lib/study/auth.ts` | 공통 관리자 세션 또는 별도 서비스 Bearer를 판정하고 API 권한 분리 |
-| `src/lib/study/http.ts` | 본문 크기, Origin, 권한, 오류 변환, 개인 응답 헤더 |
+| `src/lib/study/auth.ts` | 공통 관리자 세션 또는 별도 서비스 Bearer를 판정하고 API 권한과 브라우저 쓰기 Origin 분리 |
+| `src/lib/study/http.ts` | 본문 크기와 query 검증, 오류 변환, 개인 응답 헤더 |
 | `src/infra/db/schema/study.ts` | study 테이블과 FK, 인덱스, 타입 |
 | `src/infra/db/repositories/StudyRepository.ts` | 자료·소스·개인 상태 조회와 DB 쓰기, 트랜잭션 실행 인터페이스 |
 | `src/services/study/ingestion.ts` | cursor와 자료·영수증 원자적 저장 |
@@ -43,7 +43,8 @@
 입력과 반환 타입은 HTTP 문서의 해당 DTO를 사용하고 브라우저 DTO에 DB 인스턴스를 포함하지 않는다.
 서비스 입력 타입은 해당 요청 이름 뒤에 `Input`, 출력은 `Result`를 붙여 `contracts.ts`에 둔다.
 예를 들어 `ingestBatch(input: IngestBatchInput): Promise<IngestBatchResult>`는 배치 요청과 영수증을 대응시킨다.
-page와 Handler는 검증된 주체를 별도 인자로 전달하며 입력 payload에서 owner를 만들지 않는다.
+page와 Handler는 검증된 주체의 `ownerKey`를 서비스에 별도 인자로 전달하며 입력 payload에서 owner를 만들지 않는다.
+자료 서비스와 Repository는 이 값을 개인 상태와 누적 추천 조회 조건에 사용한다.
 여러 Repository나 트랜잭션 흐름을 Route Handler에 흩어 놓지 않는다.
 Repository 내부 트랜잭션의 DB 객체를 관련 쿼리에 전달하며 전역 연결로 빠져나가지 않는다.
 

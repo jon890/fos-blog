@@ -121,6 +121,7 @@ function toMaterial(record: StudyMaterialRecord): Material {
 
 export async function listMaterials(
   input: ListMaterialsInput,
+  ownerKey: string,
   repository?: StudyRepository,
 ): Promise<ListMaterialsResult> {
   try {
@@ -141,7 +142,7 @@ export async function listMaterials(
       recommended: input.recommended,
       publishedFrom: input.publishedFrom ? new Date(input.publishedFrom) : undefined,
       publishedTo: input.publishedTo ? new Date(input.publishedTo) : undefined,
-    });
+    }, ownerKey);
     const last = page.records.at(-1);
     return {
       items: page.records.map(toMaterial),
@@ -157,10 +158,11 @@ export async function listMaterials(
 
 export async function getMaterial(
   id: number,
+  ownerKey: string,
   repository?: StudyRepository,
 ): Promise<GetMaterialResult> {
   try {
-    const material = await repositoryOrDefault(repository).getMaterial(id);
+    const material = await repositoryOrDefault(repository).getMaterial(id, ownerKey);
     if (!material) throw new StudyServiceError(404, "NOT_FOUND", "자료를 찾을 수 없습니다.");
     return { material: toMaterial(material) };
   } catch (error) {
@@ -171,10 +173,11 @@ export async function getMaterial(
 export async function updateMaterialState(
   id: number,
   input: UpdateMaterialStateRequest,
+  ownerKey: string,
   repository?: StudyRepository,
 ): Promise<UpdateMaterialStateResult> {
   try {
-    const result = await repositoryOrDefault(repository).updateMaterialState(id, input);
+    const result = await repositoryOrDefault(repository).updateMaterialState(id, input, ownerKey);
     if (result.status === "not_found") {
       throw new StudyServiceError(404, "NOT_FOUND", "자료를 찾을 수 없습니다.");
     }

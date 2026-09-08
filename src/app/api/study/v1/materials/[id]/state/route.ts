@@ -1,4 +1,4 @@
-import { authorizeStudyRequest } from "@/lib/study/auth";
+import { authorizeStudyRequest, studyOwnerKey } from "@/lib/study/auth";
 import { updateMaterialStateRequestSchema } from "@/lib/study/contracts";
 import { methodNotAllowed, parseStudyJson, studyErrorResponse, studyJson, StudyHttpError } from "@/lib/study/http";
 import { updateMaterialState } from "@/services/study/materials";
@@ -14,10 +14,10 @@ function materialId(value: string): number {
 
 export async function PATCH(request: Request, context: Context): Promise<Response> {
   try {
-    await authorizeStudyRequest(request, "admin-write");
+    const principal = await authorizeStudyRequest(request, "admin-write");
     if (new URL(request.url).search) throw new StudyHttpError(400, "INVALID_REQUEST", "query를 사용할 수 없습니다.");
     const input = await parseStudyJson(request, updateMaterialStateRequestSchema);
-    return studyJson(await updateMaterialState(materialId((await context.params).id), input));
+    return studyJson(await updateMaterialState(materialId((await context.params).id), input, studyOwnerKey(principal)));
   } catch (error) {
     return studyErrorResponse(error);
   }

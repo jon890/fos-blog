@@ -1,13 +1,13 @@
-import { authorizeStudyRequest } from "@/lib/study/auth";
+import { authorizeStudyRequest, studyOwnerKey } from "@/lib/study/auth";
 import { listMaterialsQuerySchema } from "@/lib/study/contracts";
 import { methodNotAllowed, parseStudyQuery, studyErrorResponse, studyJson } from "@/lib/study/http";
 import { listMaterials } from "@/services/study/materials";
 
 export async function GET(request: Request): Promise<Response> {
   try {
-    await authorizeStudyRequest(request, "admin-read");
+    const principal = await authorizeStudyRequest(request, "admin-read");
     const query = parseStudyQuery(request.url, listMaterialsQuerySchema);
-    return studyJson(await listMaterials(query));
+    return studyJson(await listMaterials(query, studyOwnerKey(principal)));
   } catch (error) {
     return studyErrorResponse(error);
   }

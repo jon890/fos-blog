@@ -39,7 +39,7 @@ const jsonRequest = (path: string, method: string, body: unknown, headers: Heade
 
 describe("학습자료 Route 권한과 HTTP 계약", () => {
   beforeEach(() => {
-    vi.mocked(authorizeStudyRequest).mockResolvedValue({ kind: "service" });
+    vi.mocked(authorizeStudyRequest).mockResolvedValue({ kind: "admin", ownerKey: "owner" });
   });
 
   it("미지원 메서드는 405와 Allow를 반환한다", async () => {

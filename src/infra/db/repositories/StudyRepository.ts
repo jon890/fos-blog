@@ -39,8 +39,6 @@ import type {
 } from "@/lib/study/contracts";
 import { BaseRepository } from "./BaseRepository";
 
-const OWNER_KEY = "owner";
-
 type SourceValues = {
   sourceKey: string;
   title: string;
@@ -428,12 +426,12 @@ export class StudyRepository extends BaseRepository {
     return Number(rows[0]?.value ?? 0);
   }
 
-  async listMaterials(input: StudyMaterialPageRequest): Promise<StudyMaterialPage> {
+  async listMaterials(input: StudyMaterialPageRequest, ownerKey: string): Promise<StudyMaterialPage> {
     if (input.maximumId === 0) return { records: [], hasMore: false };
-    const conditions = this.materialConditions(input);
+    const conditions = this.materialConditions(input, ownerKey);
     const recommendationExists = sql<number>`EXISTS (
       SELECT 1 FROM ${studyRecommendedMaterials}
-      WHERE ${studyRecommendedMaterials.ownerKey} = ${OWNER_KEY}
+      WHERE ${studyRecommendedMaterials.ownerKey} = ${ownerKey}
         AND ${studyRecommendedMaterials.materialId} = ${studyMaterials.id}
     )`;
     const rows = await this.db
@@ -456,7 +454,7 @@ export class StudyRepository extends BaseRepository {
       .leftJoin(
         studyMaterialStates,
         and(
-          eq(studyMaterialStates.ownerKey, OWNER_KEY),
+          eq(studyMaterialStates.ownerKey, ownerKey),
           eq(studyMaterialStates.materialId, studyMaterials.id),
         ),
       )
@@ -491,14 +489,15 @@ export class StudyRepository extends BaseRepository {
     };
   }
 
-  async getMaterial(id: number): Promise<StudyMaterialRecord | null> {
-    const page = await this.listMaterials({ limit: 1, maximumId: id, lastId: id + 1 });
+  async getMaterial(id: number, ownerKey: string): Promise<StudyMaterialRecord | null> {
+    const page = await this.listMaterials({ limit: 1, maximumId: id, lastId: id + 1 }, ownerKey);
     return page.records.find((record) => record.id === id) ?? null;
   }
 
   async updateMaterialState(
     materialId: number,
     input: UpdateMaterialStateRequest,
+    ownerKey: string,
     now = new Date(),
   ): Promise<UpdateStudyMaterialStateResult> {
     return this.db.transaction(async (tx) => {
@@ -513,7 +512,7 @@ export class StudyRepository extends BaseRepository {
       if (nextVersion > 0xffffffff) return { status: "version_conflict" };
       if (input.expectedVersion === 0) {
         const state: StudyMaterialState = {
-          ownerKey: OWNER_KEY,
+          ownerKey,
           materialId,
           starred: input.starred ?? false,
           read: input.read ?? false,
@@ -542,7 +541,7 @@ export class StudyRepository extends BaseRepository {
         .set(values)
         .where(
           and(
-            eq(studyMaterialStates.ownerKey, OWNER_KEY),
+            eq(studyMaterialStates.ownerKey, ownerKey),
             eq(studyMaterialStates.materialId, materialId),
             eq(studyMaterialStates.version, input.expectedVersion),
           ),
@@ -554,7 +553,7 @@ export class StudyRepository extends BaseRepository {
         .from(studyMaterialStates)
         .where(
           and(
-            eq(studyMaterialStates.ownerKey, OWNER_KEY),
+            eq(studyMaterialStates.ownerKey, ownerKey),
             eq(studyMaterialStates.materialId, materialId),
           ),
         )
@@ -565,7 +564,7 @@ export class StudyRepository extends BaseRepository {
     });
   }
 
-  private materialConditions(input: StudyMaterialPageRequest): SQL[] {
+  private materialConditions(input: StudyMaterialPageRequest, ownerKey: string): SQL[] {
     const conditions: SQL[] = [lte(studyMaterials.id, input.maximumId)];
     if (input.lastId !== undefined) conditions.push(lt(studyMaterials.id, input.lastId));
     if (input.kind !== undefined) conditions.push(eq(studyMaterials.kind, input.kind));
@@ -606,7 +605,7 @@ export class StudyRepository extends BaseRepository {
         .from(studyRecommendedMaterials)
         .where(
           and(
-            eq(studyRecommendedMaterials.ownerKey, OWNER_KEY),
+            eq(studyRecommendedMaterials.ownerKey, ownerKey),
             eq(studyRecommendedMaterials.materialId, studyMaterials.id),
           ),
         );

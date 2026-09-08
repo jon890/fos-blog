@@ -51,6 +51,7 @@ sequenceDiagram
 | 401 | `UNAUTHENTICATED`, 인증 없거나 검증 실패 |
 | 403 | `FORBIDDEN`, 주체 권한 부족 또는 브라우저 쓰기 Origin 불일치 |
 | 404 | `NOT_FOUND`, 자료·소스·리포트 없음 |
+| 405 | `INVALID_REQUEST`, 허용 메서드는 `Allow` 헤더로 제공 |
 | 409 | `VERSION_CONFLICT`, `IDEMPOTENCY_CONFLICT`, `ALREADY_RECOMMENDED`, `RECENT_TOPIC_CONFLICT`, `IMPORT_CHANGED` |
 | 413 | `PAYLOAD_TOO_LARGE` |
 | 429 | `RATE_LIMITED`, `Retry-After` 초 제공 |

@@ -52,10 +52,10 @@ Better Auth 테이블은 아래 [관리자 인증 저장 계약](#관리자-인�
 | `study_material_sources` | `material_id`, `source_key`, `collected_at` | PK (material_id, source_key), 양쪽 FK, INDEX (source_key, material_id) |
 | `study_material_tags` | `material_id`, `tag VARCHAR(50)` | PK (material_id, tag), material FK. API 배열을 관계로 저장 |
 | `study_material_states` | `owner_key`, `material_id`, `starred BOOLEAN`, `read BOOLEAN`, `note TEXT`, `version`, `updated_at` | PK (owner_key, material_id), material FK. 최초 상태는 행 없이 API 기본값, 최초 수정 version 1 |
-| `study_recommendation_control` | `owner_key`, `history_version`, `latest_run_id INT?` | PK owner_key. 초기 행 owner/0/null, 모든 추천·가져오기 commit의 잠금 대상 |
+| `study_recommendation_control` | `owner_key`, `history_version`, `latest_run_id INT?` | PK owner_key, latest_run_id FK. 초기 행 owner/0/null, 모든 추천·가져오기 commit의 잠금 대상 |
 | `study_recommendation_runs` | `id`, `report_id`, `generated_at`, `committed_at`, `request_hash`, `history_version`, `origin VARCHAR(8)` | PK id, UNIQUE report_id. origin은 live/import, history_version은 해당 저장 영수증의 버전 |
-| `study_recommendation_topics` | `id`, `run_id`, `position`, `topic_key`, `title VARCHAR(300)`, `career_question VARCHAR(300)?` | PK id, run FK, UNIQUE (run_id, topic_key), UNIQUE (run_id, position) |
-| `study_recommendation_items` | `id`, `run_id`, `topic_id`, `position`, `material_id`, `title VARCHAR(500)`, `canonical_url`, `summary VARCHAR(300)?`, `reason VARCHAR(300)?`, `career_value VARCHAR(32)?` | PK id, run/topic/material FK, UNIQUE (run_id, material_id), UNIQUE (topic_id, position). topic의 run 일치 검증 |
+| `study_recommendation_topics` | `id`, `run_id`, `position`, `topic_key`, `title VARCHAR(300)`, `career_question VARCHAR(300)?` | PK id, run FK, UNIQUE (id, run_id), UNIQUE (run_id, topic_key), UNIQUE (run_id, position) |
+| `study_recommendation_items` | `id`, `run_id`, `topic_id`, `position`, `material_id`, `title VARCHAR(500)`, `canonical_url`, `summary VARCHAR(300)?`, `reason VARCHAR(300)?`, `career_value VARCHAR(32)?` | PK id, run/material FK, (topic_id, run_id) 복합 FK, UNIQUE (run_id, material_id), UNIQUE (topic_id, position). topic의 run 일치 검증 |
 | `study_recommended_materials` | `owner_key`, `material_id`, `first_run_id` | PK (owner_key, material_id), material/run FK. 과거 반복 추천과 별개인 누적 중복 판정 집합 |
 | `study_publications` | `id`, `run_id`, `channel`, `published_at`, `external_id`, `url?`, `request_hash` | PK id, run FK, UNIQUE (run_id, channel, external_id) |
 | `study_request_receipts` | `operation VARCHAR(16)`, `request_key`, `request_hash`, `response JSON`, `created_at` | PK (operation, request_key). operation은 ingestion/publication/import |
@@ -133,7 +133,7 @@ session 로그아웃은 해당 session 행 삭제로 철회한다. verification 
 
 ## 전체 스키마
 
-현재 인증 테이블 네 개를 포함해 13개 테이블이다.
+현재 인증 테이블 네 개와 study 테이블 13개를 포함해 모두 26개 테이블이다.
 스키마 소스는 `src/infra/db/schema/*.ts`다.
 
 ### `posts`
