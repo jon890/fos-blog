@@ -66,9 +66,8 @@ describe("관리자 페이지", () => {
     render(await ProtectedAdminLayout({ children: page }));
     expect(document.body.textContent).toContain("Fixture Admin");
     expect(screen.getByRole("link", { name: "공부 열기" }).getAttribute("href")).toBe("/admin/study");
-    for (const name of ["추천 이력 준비 중", "이력 가져오기 준비 중"]) {
-      expect(screen.getByRole("button", { name }).hasAttribute("disabled")).toBe(true);
-    }
+    expect(screen.getByRole("link", { name: "추천 이력 열기" }).getAttribute("href")).toBe("/admin/study/recommendations");
+    expect(screen.getByRole("link", { name: "이력 가져오기 열기" }).getAttribute("href")).toBe("/admin/study/imports");
     expect(screen.getByRole("button", { name: "로그아웃" })).toBeDefined();
     expect(document.querySelector("img, input, script")).toBeNull();
     expect(document.body.textContent).not.toContain("PRIVATE_");

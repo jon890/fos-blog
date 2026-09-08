@@ -2,8 +2,7 @@
 
 ## 학습자료 모듈
 
-**구현 범위:** 공통 관리자 인증과 study 스키마·Repository·소스·수집·자료·개인 상태·추천·게시·가져오기 API를 제공한다.
-관리자 공부 화면은 후속 plan062에서 구현한다.
+**구현 범위:** 공통 관리자 인증과 study 스키마·Repository·소스·수집·자료·개인 상태·추천·게시·가져오기 API, 관리자 공부 화면을 제공한다.
 인증, 저장·수집, 추천·가져오기, 공부 UI 순으로 구현한다.
 서비스 책임과 DTO는 [학습자료 API](./api/study-library.md), 테이블은
 [학습자료 저장 계약](./data-schema.md#학습자료-저장-계약)을 따른다.
@@ -34,9 +33,9 @@
 | `src/app/admin/login/page.tsx` | 로그인 시작과 실패 안내. 세션 필수 layout 밖에 배치 |
 | `src/app/admin/error.tsx` | 보호 layout·page의 장애 안내와 재시도. 오류 원문은 표시하지 않음 |
 | `src/app/admin/(protected)/layout.tsx` | 관리자 세션 확인, 제목과 로그아웃 |
-| `src/app/admin/(protected)/page.tsx` | 관리자 홈. 본인 계정 표시, 공부 화면 구현 전에는 비활성 메뉴와 준비 중 안내 |
+| `src/app/admin/(protected)/page.tsx` | 관리자 홈. 본인 계정 표시와 공부·추천 이력·이력 가져오기 링크 |
 | `src/app/admin/(protected)/study/` | 자료와 추천·가져오기 페이지 조합, loading/error 상태 |
-| `src/components/study/` | `StudyFilters`, `MaterialList`, `MaterialCard`, `MaterialStateEditor`, `RecommendationDetail`, `ImportPanel` |
+| `src/components/study/` | `StudyFilters`, `MaterialList`, `MaterialCard`, `MaterialStateEditor`, `RecommendationHistory`, `RecommendationReport`, `RecommendationDetail`, `ImportPanel` |
 | `src/components/admin/` | `AdminLoginButton`, `AdminNavigation`, `AdminSignOutButton` |
 
 읽기 메서드는 `listMaterials`, `getMaterial`, `listCandidates`, `listRecommendationRuns`, `getRecommendationRun`, `previewImport`다.
