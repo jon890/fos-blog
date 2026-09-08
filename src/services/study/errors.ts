@@ -5,7 +5,11 @@ export class StudyServiceError extends Error {
     public readonly status: 400 | 404 | 409 | 503,
     public readonly code: Extract<
       StudyErrorCode,
-      "INVALID_REQUEST" | "NOT_FOUND" | "VERSION_CONFLICT" | "UNAVAILABLE"
+      | "INVALID_REQUEST"
+      | "NOT_FOUND"
+      | "VERSION_CONFLICT"
+      | "IDEMPOTENCY_CONFLICT"
+      | "UNAVAILABLE"
     >,
     message: string,
     options?: ErrorOptions,

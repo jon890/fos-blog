@@ -25,6 +25,7 @@ export {
   type StudyMaterialPage,
   type StudyMaterialPageRequest,
   type StudyMaterialRecord,
+  type IngestStudyBatchResult,
 } from "./StudyRepository";
 export {
   GlossaryRepository,

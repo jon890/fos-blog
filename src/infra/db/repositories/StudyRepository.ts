@@ -20,6 +20,7 @@ import {
   studyMaterials,
   studyRecommendationControl,
   studyRecommendedMaterials,
+  studyRequestReceipts,
   studySourceCursors,
   studySources,
   type StudyMaterialState,
@@ -29,6 +30,8 @@ import {
 } from "../schema";
 import type {
   CursorMode,
+  IngestBatchInput,
+  IngestBatchResult,
   MaterialKind,
   SourceAdapter,
   SourceCategory,
@@ -103,6 +106,13 @@ export type StudyMaterialPage = {
 export type UpdateStudyMaterialStateResult =
   | { status: "success"; state: StudyMaterialState }
   | { status: "not_found" }
+  | { status: "version_conflict" };
+
+export type IngestStudyBatchResult =
+  | { status: "success"; response: IngestBatchResult }
+  | { status: "idempotency_conflict" }
+  | { status: "not_found" }
+  | { status: "source_disabled" }
   | { status: "version_conflict" };
 
 function affectedRows(result: unknown): number {
@@ -241,6 +251,176 @@ export class StudyRepository extends BaseRepository {
       )
       .limit(1);
     return { source, cursor: cursorRows[0] ?? null };
+  }
+
+  async getIngestionReceipt(
+    requestKey: string,
+  ): Promise<{ requestHash: string; response: Record<string, unknown> } | null> {
+    const rows = await this.db
+      .select({
+        requestHash: studyRequestReceipts.requestHash,
+        response: studyRequestReceipts.response,
+      })
+      .from(studyRequestReceipts)
+      .where(
+        and(
+          eq(studyRequestReceipts.operation, "ingestion"),
+          eq(studyRequestReceipts.requestKey, requestKey),
+        ),
+      )
+      .limit(1);
+    return rows[0] ?? null;
+  }
+
+  async ingestBatch(
+    input: IngestBatchInput,
+    requestHash: string,
+    now = new Date(),
+  ): Promise<IngestStudyBatchResult> {
+    try {
+      return await this.db.transaction(async (tx) => {
+        const lockedRows = await tx
+          .select({
+            enabled: studySources.enabled,
+            version: studySourceCursors.version,
+          })
+          .from(studySourceCursors)
+          .innerJoin(studySources, eq(studySources.sourceKey, studySourceCursors.sourceKey))
+          .where(
+            and(
+              eq(studySourceCursors.sourceKey, input.sourceKey),
+              eq(studySourceCursors.mode, input.mode),
+            ),
+          )
+          .limit(1)
+          .for("update");
+        const locked = lockedRows[0];
+        if (!locked) return { status: "not_found" };
+
+        const receiptRows = await tx
+          .select({
+            requestHash: studyRequestReceipts.requestHash,
+            response: studyRequestReceipts.response,
+          })
+          .from(studyRequestReceipts)
+          .where(
+            and(
+              eq(studyRequestReceipts.operation, "ingestion"),
+              eq(studyRequestReceipts.requestKey, input.idempotencyKey),
+            ),
+          )
+          .limit(1);
+        const receipt = receiptRows[0];
+        if (receipt) {
+          return receipt.requestHash === requestHash
+            ? { status: "success", response: receipt.response as IngestBatchResult }
+            : { status: "idempotency_conflict" };
+        }
+        if (!locked.enabled) return { status: "source_disabled" };
+        if (locked.version !== input.expectedCursorVersion || locked.version === 0xffffffff) {
+          return { status: "version_conflict" };
+        }
+
+        for (const item of [...input.items].sort((left, right) =>
+          left.contentKey < right.contentKey ? -1 : left.contentKey > right.contentKey ? 1 : 0)) {
+          const collectedAt = new Date(item.collectedAt);
+          let inserted = false;
+          try {
+            await tx.insert(studyMaterials).values({
+              contentKey: item.contentKey,
+              canonicalUrl: item.canonicalUrl,
+              url: item.url,
+              title: item.title,
+              published: item.published,
+              publishedAt: item.publishedAt === null ? null : new Date(item.publishedAt),
+              excerpt: item.excerpt,
+              kind: item.kind,
+              collectedAt,
+              createdAt: now,
+            });
+            inserted = true;
+          } catch (error) {
+            if (!isDuplicateKeyError(error)) throw error;
+          }
+
+          const materialRows = await tx
+            .select({ id: studyMaterials.id, collectedAt: studyMaterials.collectedAt })
+            .from(studyMaterials)
+            .where(eq(studyMaterials.contentKey, item.contentKey))
+            .limit(1)
+            .for("update");
+          const material = materialRows[0];
+          if (!material) throw new Error("수집 자료를 저장한 뒤 조회하지 못했습니다.");
+
+          const shouldReplaceMetadata = !inserted && collectedAt > material.collectedAt;
+          if (shouldReplaceMetadata) {
+            await tx
+              .update(studyMaterials)
+              .set({
+                canonicalUrl: item.canonicalUrl,
+                url: item.url,
+                title: item.title,
+                published: item.published,
+                publishedAt: item.publishedAt === null ? null : new Date(item.publishedAt),
+                excerpt: item.excerpt,
+                kind: item.kind,
+                collectedAt,
+              })
+              .where(eq(studyMaterials.id, material.id));
+            await tx.delete(studyMaterialTags).where(eq(studyMaterialTags.materialId, material.id));
+          }
+          if ((inserted || shouldReplaceMetadata) && item.tags.length > 0) {
+            await tx.insert(studyMaterialTags).values(
+              item.tags.map((tag) => ({ materialId: material.id, tag })),
+            );
+          }
+
+          await tx
+            .insert(studyMaterialSources)
+            .values({ materialId: material.id, sourceKey: input.sourceKey, collectedAt })
+            .onDuplicateKeyUpdate({
+              set: {
+                collectedAt: sql`GREATEST(${studyMaterialSources.collectedAt}, ${collectedAt})`,
+              },
+            });
+        }
+
+        const cursorVersion = locked.version + 1;
+        await tx
+          .update(studySourceCursors)
+          .set({
+            cursor: input.cursor as Record<string, unknown> | null,
+            version: cursorVersion,
+            updatedAt: now,
+          })
+          .where(
+            and(
+              eq(studySourceCursors.sourceKey, input.sourceKey),
+              eq(studySourceCursors.mode, input.mode),
+            ),
+          );
+        const response: IngestBatchResult = {
+          idempotencyKey: input.idempotencyKey,
+          acceptedCount: input.items.length,
+          cursorVersion,
+        };
+        await tx.insert(studyRequestReceipts).values({
+          operation: "ingestion",
+          requestKey: input.idempotencyKey,
+          requestHash,
+          response,
+          createdAt: now,
+        });
+        return { status: "success", response };
+      });
+    } catch (error) {
+      if (!isDuplicateKeyError(error)) throw error;
+      const receipt = await this.getIngestionReceipt(input.idempotencyKey);
+      if (!receipt) throw error;
+      return receipt.requestHash === requestHash
+        ? { status: "success", response: receipt.response as IngestBatchResult }
+        : { status: "idempotency_conflict" };
+    }
   }
 
   async getMaximumMaterialId(): Promise<number> {
