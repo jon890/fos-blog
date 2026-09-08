@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { StudyRepository } from "@/infra/db/repositories";
 import {
   studyMaterialSources,
@@ -135,6 +135,44 @@ describe("과거 이력 가져오기 입력", () => {
       previewHash: "a".repeat(64),
       expectedHistoryVersion: 0,
     }).success).toBe(true);
+  });
+});
+
+describe("과거 이력 commit deadlock 재시도", () => {
+  const input: ImportCommitRequest = {
+    ...payload("p64-import-deadlock", [
+      report("p64-import-deadlock", "2025-01-01T00:00:00.000Z", [item("import-deadlock")]),
+    ]),
+    previewHash: "a".repeat(64),
+    expectedHistoryVersion: 0,
+  };
+  const response = {
+    importKey: input.importKey,
+    counts: { reports: 1, items: 1, newMaterials: 1, repeatedContentKeys: 0, existingReports: 0 },
+    historyVersion: 1,
+  };
+
+  it("deadlock 1회 뒤 Repository commit 전체 호출을 다시 실행한다", async () => {
+    const repository = {
+      commitImport: vi.fn()
+        .mockRejectedValueOnce({ code: "ER_LOCK_DEADLOCK" })
+        .mockResolvedValueOnce({ status: "success" as const, response }),
+    } as unknown as StudyRepository;
+
+    await expect(commitImport(input, ownerKey, repository)).resolves.toEqual(response);
+    expect(repository.commitImport).toHaveBeenCalledTimes(2);
+  });
+
+  it("3회 연속 deadlock 뒤 UNAVAILABLE을 반환한다", async () => {
+    const repository = {
+      commitImport: vi.fn().mockRejectedValue({ cause: { sqlState: "40001" } }),
+    } as unknown as StudyRepository;
+
+    await expect(commitImport(input, ownerKey, repository)).rejects.toMatchObject({
+      status: 503,
+      code: "UNAVAILABLE",
+    });
+    expect(repository.commitImport).toHaveBeenCalledTimes(3);
   });
 });
 

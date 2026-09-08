@@ -23,6 +23,7 @@
 | `src/lib/study/http.ts` | 본문 크기와 query 검증, 오류 변환, 개인 응답 헤더 |
 | `src/infra/db/schema/study.ts` | study 테이블과 FK, 인덱스, 타입 |
 | `src/infra/db/repositories/StudyRepository.ts` | 자료·소스·개인 상태·추천·게시·가져오기 조회와 DB 쓰기, 트랜잭션 실행 인터페이스 |
+| `src/infra/db/repositories/StudyImportRepository.ts` | 가져오기 dry-run 조회와 commit 트랜잭션 구현. `StudyRepository`가 이 모듈에 위임 |
 | `src/services/study/ingestion.ts` | cursor와 자료·영수증 원자적 저장 |
 | `src/services/study/sources.ts` | 소스 전체 교체와 version 비교, cursor 두 행 초기화 |
 | `src/services/study/materials.ts` | 개인 자료 조회와 상태 갱신 조합 |
@@ -38,8 +39,8 @@
 | `src/components/study/` | `StudyFilters`, `MaterialList`, `MaterialCard`, `MaterialStateEditor`, `RecommendationDetail`, `ImportPanel` |
 | `src/components/admin/` | `AdminLoginButton`, `AdminNavigation`, `AdminSignOutButton` |
 
-읽기 메서드는 `listMaterials`, `getMaterial`, `listCandidates`, `listRecommendationRuns`, `getRecommendationRun`이다.
-쓰기 서비스는 `ingestBatch`, `saveRecommendationRun`, `recordPublication`, `previewImport`, `commitImport`다.
+읽기 메서드는 `listMaterials`, `getMaterial`, `listCandidates`, `listRecommendationRuns`, `getRecommendationRun`, `previewImport`다.
+쓰기 서비스는 `ingestBatch`, `saveRecommendationRun`, `recordPublication`, `commitImport`다.
 소스 서비스는 `putSource`, `listSources`, `getSourceCursor`, 개인 상태 서비스는 `updateMaterialState`다.
 입력과 반환 타입은 HTTP 문서의 해당 DTO를 사용하고 브라우저 DTO에 DB 인스턴스를 포함하지 않는다.
 서비스 입력 타입은 해당 요청 이름 뒤에 `Input`, 출력은 `Result`를 붙여 `contracts.ts`에 둔다.

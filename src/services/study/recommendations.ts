@@ -21,6 +21,7 @@ import {
   type SourceCategory,
 } from "@/lib/study/contracts";
 import { studyRequestHash } from "@/lib/study/request-hash";
+import { retryDeadlockedTransaction } from "./deadlock-retry";
 import { StudyServiceError, unavailable } from "./errors";
 
 const DEFAULT_LIMIT = 30;
@@ -204,10 +205,9 @@ export async function saveRecommendationRun(
   repository?: StudyRepository,
 ): Promise<CreateRecommendationRunResult> {
   try {
-    const result = await repositoryOrDefault(repository).saveRecommendationRun(
-      input,
-      ownerKey,
-      studyRequestHash(input),
+    const studyRepository = repositoryOrDefault(repository);
+    const result = await retryDeadlockedTransaction(() =>
+      studyRepository.saveRecommendationRun(input, ownerKey, studyRequestHash(input)),
     );
     if (result.status === "success") {
       return createRecommendationRunResponseSchema.parse(result.response);
@@ -302,10 +302,13 @@ export async function recordPublication(
       externalId: input.externalId,
       url: input.url,
     };
-    const result = await repositoryOrDefault(repository).recordPublication(
-      input,
-      studyRequestHash(input),
-      studyRequestHash(publication),
+    const studyRepository = repositoryOrDefault(repository);
+    const result = await retryDeadlockedTransaction(() =>
+      studyRepository.recordPublication(
+        input,
+        studyRequestHash(input),
+        studyRequestHash(publication),
+      ),
     );
     if (result.status === "success") return publicationResponseSchema.parse(result.response);
     if (result.status === "not_found") {

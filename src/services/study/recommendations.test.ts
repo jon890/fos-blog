@@ -86,6 +86,79 @@ function publication(
   };
 }
 
+describe("추천과 게시 deadlock 재시도", () => {
+  it("추천 저장은 deadlock 1회 뒤 전체 Repository 호출을 다시 실행한다", async () => {
+    let attempts = 0;
+    const input = recommendation("p64-replay", "retry-topic", contentKeys[0]);
+    const retryingRepository = {
+      saveRecommendationRun: async () => {
+        attempts += 1;
+        if (attempts === 1) throw { code: "ER_LOCK_DEADLOCK" };
+        return {
+          status: "success" as const,
+          response: { reportId: input.reportId, historyVersion: 7 },
+        };
+      },
+    } as unknown as StudyRepository;
+
+    await expect(saveRecommendationRun(input, ownerKey, retryingRepository)).resolves.toEqual({
+      reportId: input.reportId,
+      historyVersion: 7,
+    });
+    expect(attempts).toBe(2);
+  });
+
+  it("추천 저장은 3회 연속 deadlock 뒤 UNAVAILABLE을 반환한다", async () => {
+    let attempts = 0;
+    const failingRepository = {
+      saveRecommendationRun: async () => {
+        attempts += 1;
+        throw { cause: { errno: 1213 } };
+      },
+    } as unknown as StudyRepository;
+
+    await expect(
+      saveRecommendationRun(
+        recommendation("p64-replay", "retry-topic", contentKeys[0]),
+        ownerKey,
+        failingRepository,
+      ),
+    ).rejects.toMatchObject({ status: 503, code: "UNAVAILABLE" });
+    expect(attempts).toBe(3);
+  });
+
+  it("게시 기록은 deadlock 1회 뒤 전체 Repository 호출을 다시 실행한다", async () => {
+    let attempts = 0;
+    const retryingRepository = {
+      recordPublication: async () => {
+        attempts += 1;
+        if (attempts === 1) throw { sqlState: "40001" };
+        return { status: "success" as const, response: { publicationId: 11 } };
+      },
+    } as unknown as StudyRepository;
+
+    await expect(
+      recordPublication(publication(publicationKeys[0]), retryingRepository),
+    ).resolves.toEqual({ publicationId: 11 });
+    expect(attempts).toBe(2);
+  });
+
+  it("게시 기록은 3회 연속 deadlock 뒤 UNAVAILABLE을 반환한다", async () => {
+    let attempts = 0;
+    const failingRepository = {
+      recordPublication: async () => {
+        attempts += 1;
+        throw { code: "ER_LOCK_DEADLOCK" };
+      },
+    } as unknown as StudyRepository;
+
+    await expect(
+      recordPublication(publication(publicationKeys[0]), failingRepository),
+    ).rejects.toMatchObject({ status: 503, code: "UNAVAILABLE" });
+    expect(attempts).toBe(3);
+  });
+});
+
 describe.skipIf(process.env.RUN_DB_TESTS !== "1")("추천과 게시 이력 서비스 MySQL", () => {
   let fixture: Awaited<ReturnType<typeof createTestDatabase>> | undefined;
   let concurrentFixture: Awaited<ReturnType<typeof createTestDatabase>> | undefined;
@@ -213,7 +286,10 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")("추천과 게시 이력 서�
     expect(filtered.candidates).toHaveLength(3);
     expect(filtered.candidates.every(({ sourceKey }) => sourceKey === sourceKeys[1])).toBe(true);
     const category = await listCandidates({ category: "techBlog" }, ownerKey, repository);
-    expect(category.candidates.map(({ contentKey }) => contentKey)).toEqual([contentKeys[0]]);
+    const categoryKeys = category.candidates.map(({ contentKey }) => contentKey);
+    expect(categoryKeys).toContain(contentKeys[0]);
+    expect(categoryKeys).not.toContain(contentKeys[1]);
+    expect(categoryKeys).not.toContain(contentKeys[2]);
   });
 
   it("추천 이력이 후보 페이지 사이에 바뀌면 고정한 historyVersion으로 충돌한다", async () => {

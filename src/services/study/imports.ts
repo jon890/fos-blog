@@ -8,6 +8,7 @@ import {
   type ImportDryRunResult,
 } from "@/lib/study/contracts";
 import { StudyServiceError, unavailable } from "./errors";
+import { retryDeadlockedTransaction } from "./deadlock-retry";
 
 type ImportRepository = Pick<StudyRepository, "previewImport" | "commitImport">;
 
@@ -42,7 +43,10 @@ export async function commitImport(
   repository?: ImportRepository,
 ): Promise<ImportCommitResult> {
   try {
-    const result = await repositoryOrDefault(repository).commitImport(input, ownerKey);
+    const studyRepository = repositoryOrDefault(repository);
+    const result = await retryDeadlockedTransaction(() =>
+      studyRepository.commitImport(input, ownerKey),
+    );
     if (result.status === "success") return importCommitResponseSchema.parse(result.response);
     if (result.status === "invalid_request") {
       throw new StudyServiceError(400, "INVALID_REQUEST", result.message);
