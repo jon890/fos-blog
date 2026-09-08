@@ -64,10 +64,12 @@ export async function parseStudyJson<T>(request: Request, schema: ZodType<T>): P
 }
 
 export function parseStudyQuery<T>(url: string, schema: ZodType<T>): T {
-  const entries: Record<string, string> = {};
+  const entries: Record<string, string> = Object.create(null) as Record<string, string>;
   const search = new URL(url).searchParams;
   for (const [key, value] of search.entries()) {
-    if (key in entries) throw new StudyHttpError(400, "INVALID_REQUEST", "중복 query를 사용할 수 없습니다.");
+    if (Object.hasOwn(entries, key)) {
+      throw new StudyHttpError(400, "INVALID_REQUEST", "중복 query를 사용할 수 없습니다.");
+    }
     entries[key] = value;
   }
   const parsed = schema.safeParse(entries);

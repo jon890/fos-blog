@@ -52,7 +52,7 @@ Better Auth 테이블은 아래 [관리자 인증 저장 계약](#관리자-인�
 | `study_material_sources` | `material_id`, `source_key`, `collected_at` | PK (material_id, source_key), 양쪽 FK, INDEX (source_key, material_id) |
 | `study_material_tags` | `material_id`, `tag VARCHAR(50)` | PK (material_id, tag), material FK. API 배열을 관계로 저장 |
 | `study_material_states` | `owner_key`, `material_id`, `starred BOOLEAN`, `read BOOLEAN`, `note TEXT`, `version`, `updated_at` | PK (owner_key, material_id), material FK. 최초 상태는 행 없이 API 기본값, 최초 수정 version 1 |
-| `study_recommendation_control` | `owner_key`, `history_version`, `latest_run_id INT?` | PK owner_key, latest_run_id FK. 초기 행 owner/0/null, 모든 추천·가져오기 commit의 잠금 대상 |
+| `study_recommendation_control` | `owner_key`, `history_version`, `latest_run_id INT?` | PK owner_key, latest_run_id FK. 최초 사용 시 Repository가 owner/0/null 행을 멱등 생성하며 모든 추천·가져오기 commit의 잠금 대상으로 사용 |
 | `study_recommendation_runs` | `id`, `report_id`, `generated_at`, `committed_at`, `request_hash`, `history_version`, `origin VARCHAR(8)` | PK id, UNIQUE report_id. origin은 live/import, history_version은 해당 저장 영수증의 버전 |
 | `study_recommendation_topics` | `id`, `run_id`, `position`, `topic_key`, `title VARCHAR(300)`, `career_question VARCHAR(300)?` | PK id, run FK, UNIQUE (id, run_id), UNIQUE (run_id, topic_key), UNIQUE (run_id, position) |
 | `study_recommendation_items` | `id`, `run_id`, `topic_id`, `position`, `material_id`, `title VARCHAR(500)`, `canonical_url`, `summary VARCHAR(300)?`, `reason VARCHAR(300)?`, `career_value VARCHAR(32)?` | PK id, run/material FK, (topic_id, run_id) 복합 FK, UNIQUE (run_id, material_id), UNIQUE (topic_id, position). topic의 run 일치 검증 |

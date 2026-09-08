@@ -36,6 +36,9 @@ describe("학습자료 HTTP 공통 처리", () => {
     expect(parseStudyQuery("https://example.test?limit=3", schema)).toEqual({ limit: 3 });
     expect(() => parseStudyQuery("https://example.test?limit=3&limit=4", schema)).toThrow(StudyHttpError);
     expect(() => parseStudyQuery("https://example.test?extra=1", schema)).toThrow(StudyHttpError);
+    expect(() => parseStudyQuery("https://example.test?__proto__=1", schema)).toThrow(
+      "요청 query가 올바르지 않습니다.",
+    );
   });
 
   it.each([400, 401, 403, 404, 409, 413, 429, 503])("%i 응답에 개인 헤더를 적용한다", (status) => {

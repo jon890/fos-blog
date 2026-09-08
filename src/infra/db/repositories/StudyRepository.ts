@@ -490,8 +490,60 @@ export class StudyRepository extends BaseRepository {
   }
 
   async getMaterial(id: number, ownerKey: string): Promise<StudyMaterialRecord | null> {
-    const page = await this.listMaterials({ limit: 1, maximumId: id, lastId: id + 1 }, ownerKey);
-    return page.records.find((record) => record.id === id) ?? null;
+    const recommendationExists = sql<number>`EXISTS (
+      SELECT 1 FROM ${studyRecommendedMaterials}
+      WHERE ${studyRecommendedMaterials.ownerKey} = ${ownerKey}
+        AND ${studyRecommendedMaterials.materialId} = ${studyMaterials.id}
+    )`;
+    const rows = await this.db
+      .select({
+        id: studyMaterials.id,
+        contentKey: studyMaterials.contentKey,
+        canonicalUrl: studyMaterials.canonicalUrl,
+        title: studyMaterials.title,
+        publishedAt: studyMaterials.publishedAt,
+        excerpt: studyMaterials.excerpt,
+        kind: studyMaterials.kind,
+        starred: studyMaterialStates.starred,
+        read: studyMaterialStates.read,
+        note: studyMaterialStates.note,
+        stateVersion: studyMaterialStates.version,
+        stateUpdatedAt: studyMaterialStates.updatedAt,
+        previouslyRecommended: recommendationExists,
+      })
+      .from(studyMaterials)
+      .leftJoin(
+        studyMaterialStates,
+        and(
+          eq(studyMaterialStates.ownerKey, ownerKey),
+          eq(studyMaterialStates.materialId, studyMaterials.id),
+        ),
+      )
+      .where(eq(studyMaterials.id, id))
+      .limit(1);
+    const row = rows[0];
+    if (!row) return null;
+
+    const related = await this.getMaterialRelations([row.id]);
+    return {
+      id: row.id,
+      contentKey: row.contentKey,
+      canonicalUrl: row.canonicalUrl,
+      title: row.title,
+      publishedAt: row.publishedAt,
+      excerpt: row.excerpt,
+      kind: row.kind,
+      tags: related.tags.get(row.id) ?? [],
+      sources: related.sources.get(row.id) ?? [],
+      state: {
+        starred: row.starred ?? false,
+        read: row.read ?? false,
+        note: row.note ?? "",
+        version: row.stateVersion ?? 0,
+        updatedAt: row.stateUpdatedAt ?? null,
+      },
+      previouslyRecommended: Boolean(row.previouslyRecommended),
+    };
   }
 
   async updateMaterialState(
