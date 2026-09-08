@@ -14,7 +14,7 @@ export default async function AdminHomePage() {
       </section>
       <section aria-labelledby="admin-study-title" className="space-y-4">
         <h2 id="admin-study-title" className="text-xl font-semibold">공부</h2>
-        <p className="text-sm text-[var(--color-fg-secondary)]">공부 자료와 추천 이력, 이력 가져오기를 준비하고 있습니다.</p>
+        <p className="text-sm text-[var(--color-fg-secondary)]">공부 자료를 관리하고 추천 이력과 과거 이력을 확인할 수 있습니다.</p>
         <AdminNavigation />
       </section>
     </div>

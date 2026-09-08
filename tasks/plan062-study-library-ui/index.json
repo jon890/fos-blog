@@ -1,7 +1,7 @@
 {
   "name": "plan062-study-library-ui",
   "description": "PC·모바일 학습자료와 추천 이력·가져오기 화면",
-  "status": "pending",
+  "status": "completed",
   "created_at": "2026-09-07",
   "total_phases": 4,
   "current_phase": 1,

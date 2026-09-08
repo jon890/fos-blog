@@ -93,6 +93,10 @@ catch-all 라우트는 `-detail` 접미사를 쓴다.
 | `src/app/(blog)/tag/[name]/page.tsx` | `docs/pages/tag.md` |
 | `src/app/admin/login/page.tsx` | `docs/flow.md`, `docs/prd.md` |
 | `src/app/admin/(protected)/page.tsx` | `docs/flow.md`, `docs/prd.md` |
+| `src/app/admin/(protected)/study/page.tsx` | `docs/flow.md`, `docs/prd.md` |
+| `src/app/admin/(protected)/study/recommendations/page.tsx` | `docs/flow.md`, `docs/prd.md` |
+| `src/app/admin/(protected)/study/recommendations/[reportId]/page.tsx` | `docs/flow.md`, `docs/prd.md` |
+| `src/app/admin/(protected)/study/imports/page.tsx` | `docs/flow.md`, `docs/prd.md` |
 
 표가 라우트 집합과 어긋났는지 먼저 확인한다.
 개수 비교로는 라우트 추가와 문서 삭제가 상쇄돼 통과하므로 집합을 대조한다.

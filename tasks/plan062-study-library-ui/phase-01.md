@@ -48,8 +48,9 @@ aria-live와 키보드 초점을 사용하고 색상만으로 상태를 구분�
 
 ### 3. 컴포넌트 테스트
 
-`StudyFilters.test.tsx`, `MaterialCard.test.tsx`, `MaterialStateEditor.test.tsx`에 jsdom을 지정한다.
-빈 자료·발행일 null·필터 초기화·키보드 조작·메모 HTML 문자열을 검증한다.
+`StudyFilters.test.tsx`, `MaterialList.test.tsx`, `MaterialCard.test.tsx`, `MaterialStateEditor.test.tsx`에 jsdom을 지정한다.
+빈 자료와 누적 카드, 발행일 null, 필터 초기화, 키보드 조작, 메모 HTML 문자열을 검증한다.
+필터의 접기 요소와 MaterialList의 모바일 한 열·PC 확장 class를 검사하고 실제 viewport 배치는 phase 04 브라우저 검증에서 측정한다.
 저장 버튼 중복 클릭 차단, 409 뒤 초안 유지, 실패와 성공 상태 안내를 검사한다.
 
 ## 검증
@@ -61,7 +62,7 @@ DOM 테스트 파일은 `// @vitest-environment jsdom`을 선언한다.
 
 ```bash
 # cwd: 현재 구현 worktree의 저장소 root
-pnpm exec vitest run 'src/components/study/StudyFilters.test.tsx' 'src/components/study/MaterialCard.test.tsx' 'src/components/study/MaterialStateEditor.test.tsx'
+pnpm exec vitest run 'src/components/study/StudyFilters.test.tsx' 'src/components/study/MaterialList.test.tsx' 'src/components/study/MaterialCard.test.tsx' 'src/components/study/MaterialStateEditor.test.tsx'
 pnpm lint
 pnpm type-check
 pnpm test
@@ -78,6 +79,7 @@ git diff --check
 | `src/components/study/StudyFilters.tsx` | 신규 또는 기존 내용 확장 |
 | `src/components/study/StudyFilters.test.tsx` | 신규 또는 기존 내용 확장 |
 | `src/components/study/MaterialList.tsx` | 신규 또는 기존 내용 확장 |
+| `src/components/study/MaterialList.test.tsx` | 신규 또는 기존 내용 확장 |
 | `src/components/study/MaterialCard.tsx` | 신규 또는 기존 내용 확장 |
 | `src/components/study/MaterialCard.test.tsx` | 신규 또는 기존 내용 확장 |
 | `src/components/study/MaterialStateEditor.tsx` | 신규 또는 기존 내용 확장 |
