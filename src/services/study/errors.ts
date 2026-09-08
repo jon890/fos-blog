@@ -11,6 +11,7 @@ export class StudyServiceError extends Error {
       | "IDEMPOTENCY_CONFLICT"
       | "ALREADY_RECOMMENDED"
       | "RECENT_TOPIC_CONFLICT"
+      | "IMPORT_CHANGED"
       | "UNAVAILABLE"
     >,
     message: string,

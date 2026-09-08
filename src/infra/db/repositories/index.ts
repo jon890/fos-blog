@@ -35,6 +35,10 @@ export {
   type StudyRecommendationRunRecord,
 } from "./StudyRepository";
 export {
+  type CommitStudyImportResult,
+  type PreviewStudyImportResult,
+} from "./StudyImportRepository";
+export {
   GlossaryRepository,
   type GlossaryDefinition,
   type MatchableGlossaryTerm,

@@ -36,6 +36,8 @@ import type {
   CursorMode,
   CreateRecommendationRunInput,
   CreateRecommendationRunResult,
+  ImportCommitRequest,
+  ImportDryRunRequest,
   IngestBatchInput,
   IngestBatchResult,
   MaterialKind,
@@ -46,6 +48,12 @@ import type {
   UpdateMaterialStateRequest,
 } from "@/lib/study/contracts";
 import { BaseRepository } from "./BaseRepository";
+import {
+  commitStudyImport,
+  previewStudyImport,
+  type CommitStudyImportResult,
+  type PreviewStudyImportResult,
+} from "./StudyImportRepository";
 
 type SourceValues = {
   sourceKey: string;
@@ -238,6 +246,21 @@ function escapeLike(value: string): string {
 }
 
 export class StudyRepository extends BaseRepository {
+  async previewImport(
+    input: ImportDryRunRequest,
+    ownerKey: string,
+  ): Promise<PreviewStudyImportResult> {
+    return previewStudyImport(this.db, input, ownerKey);
+  }
+
+  async commitImport(
+    input: ImportCommitRequest,
+    ownerKey: string,
+    now = new Date(),
+  ): Promise<CommitStudyImportResult> {
+    return commitStudyImport(this.db, input, ownerKey, now);
+  }
+
   async ensureRecommendationControl(ownerKey: string): Promise<StudyRecommendationControl> {
     await this.db
       .insert(studyRecommendationControl)
