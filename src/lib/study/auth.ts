@@ -8,9 +8,10 @@ export type StudyPrincipal =
 
 export type StudyAccess = "service" | "admin-read" | "admin-write" | "service-or-admin";
 
+export const STUDY_OWNER_KEY = "owner";
+
 export function studyOwnerKey(principal: StudyPrincipal): string {
-  if (principal.kind === "admin") return principal.ownerKey;
-  throw new StudyAuthError(403, "FORBIDDEN", "관리자 주체가 필요한 요청입니다.");
+  return principal.kind === "admin" ? principal.ownerKey : STUDY_OWNER_KEY;
 }
 
 export class StudyAuthError extends Error {
@@ -91,5 +92,5 @@ export async function authorizeStudyRequest(
     }
   }
 
-  return { kind: "admin", ownerKey: "owner" };
+  return { kind: "admin", ownerKey: STUDY_OWNER_KEY };
 }

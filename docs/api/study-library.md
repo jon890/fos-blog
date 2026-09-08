@@ -1,7 +1,7 @@
 # 학습자료 HTTP 계약
 
-**구현 범위:** 공통 관리자 인증과 소스·수집 cursor·자료 조회·개인 상태 API를 제공한다.
-후속 plan064는 후보·추천·게시·가져오기 API를 이 계약대로 구현한다.
+**구현 범위:** 공통 관리자 인증과 소스·수집 cursor·자료·후보·추천·게시·가져오기 API를 제공한다.
+관리자 공부 화면은 후속 plan062에서 이 계약을 소비한다.
 자료 API 경로와 저장 흐름은 유지하며 인증은 공통 관리자 세션을 사용한다.
 GitHub 본인 계정과 Better Auth 도입이 승인되었고 서비스 Bearer 계약은 코디네이터가 확인했다.
 이 문서는 career-os와 fos-blog가 공유하는 HTTP 계약의 단일 소스다.
@@ -357,6 +357,7 @@ importKey 재전송은 동일 본문에 한해 원래 응답을 반환하며 다
 | 항목 | 전달받은 조건 |
 | --- | --- |
 | career-os 기준 | `origin/plan115-study-library-integration`, `7d25915`. URL 식별·기존 reports/entries 호환 유지 |
+| fos-blog 고정 fixture | `src/app/api/study/v1/__fixtures__/career-os-plan115.ts`. YouTube URL 식별과 기존 이력 변환, nullable 설명 필드 검증 |
 | Kurly | `sitemap-index.xml` 사용. `sitemap.xml`은 403 관측 |
 | Olive | `sitemap-index.xml`로 과거 자료 수집 |
 | Kakao | `sitemap.xml`의 urlset에서 posts 경로 필터 |

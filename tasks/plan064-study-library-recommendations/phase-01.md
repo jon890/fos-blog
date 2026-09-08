@@ -53,8 +53,6 @@ recordPublication은 reportId/channel/externalId 고유 키와 요청 멱등키�
 같은 reportId 같은 본문 재시도는 원래 historyVersion, 다른 본문은 409여야 한다.
 추천 중간 실패는 전체 rollback, 0건 추천과 과거 null 조회, source 필터와 historyVersion 페이지 충돌도 확인한다.
 게시 고유 키·멱등키 경합과 같은 기록 재전송, 실패 뒤 추천 이력 보존을 검증한다.
-추천 저장 후 `GET /materials?recommended=true`의 자료 목록과 `Material.previouslyRecommended`가 갱신되는지 회귀 검증한다.
-자료 필드와 필터 구현은 plan061 phase02의 책임이며 이 phase는 추천 저장과 조회의 연결을 검증한다.
 
 ## 검증
 

@@ -336,6 +336,49 @@ export const createRecommendationRunResponseSchema = z.strictObject({
   historyVersion: unsignedVersionSchema,
 });
 
+export const listRecommendationRunsQuerySchema = z.strictObject({
+  limit: z.coerce.number().int().positive().max(100).optional(),
+  cursor: z.string().min(1).optional(),
+});
+export const recommendationRunSummarySchema = z.strictObject({
+  reportId: studyIdentifierSchema,
+  generatedAt: utcDateTimeSchema,
+  topicCount: z.number().int().nonnegative(),
+});
+export const listRecommendationRunsResponseSchema = z.strictObject({
+  items: z.array(recommendationRunSummarySchema),
+  nextCursor: z.string().nullable(),
+});
+export const recommendationRunItemSchema = z.strictObject({
+  materialId: positiveSafeIntegerSchema,
+  contentKey: contentKeySchema,
+  title: nonBlankTextSchema(500),
+  canonicalUrl: httpsUrlSchema,
+  summary: nonBlankTextSchema(300).nullable(),
+  reason: nonBlankTextSchema(300).nullable(),
+  careerValue: careerValueSchema.nullable(),
+  state: materialStateSchema,
+});
+export const recommendationRunTopicSchema = z.strictObject({
+  topicKey: topicKeySchema,
+  title: nonBlankTextSchema(300),
+  careerQuestion: nonBlankTextSchema(300).nullable(),
+  items: z.array(recommendationRunItemSchema),
+});
+export const publicationRecordSchema = z.strictObject({
+  publicationId: positiveSafeIntegerSchema,
+  channel: textSchema(1, 128),
+  publishedAt: utcDateTimeSchema,
+  externalId: textSchema(1, 128),
+  url: httpsUrlSchema.nullable(),
+});
+export const getRecommendationRunResponseSchema = z.strictObject({
+  reportId: studyIdentifierSchema,
+  generatedAt: utcDateTimeSchema,
+  topics: z.array(recommendationRunTopicSchema),
+  publications: z.array(publicationRecordSchema),
+});
+
 export const publicationRequestSchema = z.strictObject({
   idempotencyKey: studyIdentifierSchema,
   reportId: studyIdentifierSchema,
@@ -455,5 +498,22 @@ export type Material = z.infer<typeof materialSchema>;
 export type Candidate = z.infer<typeof candidateSchema>;
 export type UpdateMaterialStateRequest = z.infer<typeof updateMaterialStateRequestSchema>;
 export type CreateRecommendationRunRequest = z.infer<typeof createRecommendationRunRequestSchema>;
+export type CreateRecommendationRunInput = CreateRecommendationRunRequest;
+export type CreateRecommendationRunResult = z.infer<typeof createRecommendationRunResponseSchema>;
+export type RecommendationRunSummary = z.infer<typeof recommendationRunSummarySchema>;
+export type ListRecommendationRunsResult = z.infer<typeof listRecommendationRunsResponseSchema>;
+export type RecommendationRunItem = z.infer<typeof recommendationRunItemSchema>;
+export type RecommendationRunTopic = z.infer<typeof recommendationRunTopicSchema>;
+export type PublicationRecord = z.infer<typeof publicationRecordSchema>;
+export type GetRecommendationRunResult = z.infer<typeof getRecommendationRunResponseSchema>;
+export type PublicationInput = z.infer<typeof publicationRequestSchema>;
+export type PublicationResult = z.infer<typeof publicationResponseSchema>;
+export type ImportItem = z.infer<typeof importItemSchema>;
+export type ImportTopic = z.infer<typeof importTopicSchema>;
+export type ImportReport = z.infer<typeof importReportSchema>;
 export type ImportDryRunRequest = z.infer<typeof importDryRunRequestSchema>;
 export type ImportCommitRequest = z.infer<typeof importCommitRequestSchema>;
+export type ImportCounts = z.infer<typeof importCountsSchema>;
+export type ImportWarning = z.infer<typeof importWarningSchema>;
+export type ImportDryRunResult = z.infer<typeof importDryRunResponseSchema>;
+export type ImportCommitResult = z.infer<typeof importCommitResponseSchema>;

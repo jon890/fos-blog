@@ -9,6 +9,9 @@ export class StudyServiceError extends Error {
       | "NOT_FOUND"
       | "VERSION_CONFLICT"
       | "IDEMPOTENCY_CONFLICT"
+      | "ALREADY_RECOMMENDED"
+      | "RECENT_TOPIC_CONFLICT"
+      | "IMPORT_CHANGED"
       | "UNAVAILABLE"
     >,
     message: string,

@@ -43,9 +43,18 @@ GET query와 DTO·opaque cursor·null·버전·멱등키를 HTTP 계약대로 �
 각 Handler에서 인증·본문 제한·오류 envelope를 동일하게 적용한다.
 브라우저 commit의 Origin과 previewHash 검증은 UI 확인 여부에 의존하지 않고 서버가 다시 처리한다.
 외부 URL fetch를 추가하지 않는다.
-소비 fixture는 career-os plan115의 URL identity 및 reports/entries 호환 기준과 대조하고 API 변경이 필요하면 코디네이터에게 먼저 알린다.
+`src/app/api/study/v1/__fixtures__/career-os-plan115.ts`에 career-os plan115의 소비 입력을 고정한다.
+fixture는 `https://youtu.be/dQw4w9WgXcQ?t=42`와 `https://www.youtube.com/watch?v=dQw4w9WgXcQ`가 같은 contentKey가 되는 URL identity, 옛 `reports[].entries[]`를 `ImportReport.topics[].items[]`로 옮긴 payload, nullable `summary`·`reason`·`careerValue`를 포함한다.
+HTTP 통합 테스트는 이 fixture가 후보의 문자열 id와 import DTO로 소비되는지 검증한다.
+API 변경이 필요하면 코디네이터에게 먼저 알린다.
 
-### 3. HTTP 통합 테스트
+### 3. 책임 문서 갱신
+
+`docs/prd.md`, `docs/flow.md`, `docs/api/study-library.md`, `docs/code-architecture.md`, `docs/data-schema.md`에서 추천·게시·가져오기 구현 범위와 후속 계획 문구를 실제 코드 상태에 맞춘다.
+`docs/adr/037-private-study-domain.md`는 결정 상태나 구현 결과가 달라졌을 때만 갱신하고, 이미 현재 결정을 정확히 설명하면 변경하지 않는다.
+별도 설명 문서를 만들지 않는다.
+
+### 4. HTTP 통합 테스트
 
 `src/app/api/study/v1/recommendation-routes.test.ts`에서 서비스 수집→후보→추천→게시 기록과 관리자 이력 조회를 연결한다.
 서비스 import commit 403, 브라우저 dry-run/commit 성공, 변경된 이력 IMPORT_CHANGED, 과거 null 상세 DTO를 검증한다.
@@ -67,6 +76,8 @@ pnpm type-check
 pnpm test
 pnpm build
 git diff --check
+~/.claude/scripts/korean-style-check.sh docs/prd.md docs/flow.md docs/api/study-library.md docs/code-architecture.md docs/data-schema.md docs/adr/037-private-study-domain.md
+python3 ~/.claude/scripts/check-readability.py docs/prd.md docs/flow.md docs/api/study-library.md docs/code-architecture.md docs/data-schema.md docs/adr/037-private-study-domain.md
 ```
 
 이 plan의 모든 phase 검증이 통과한 뒤에만 `index.json`의 status를 `completed`로 바꾼다.
@@ -80,4 +91,11 @@ git diff --check
 | `src/app/api/study/v1/recommendation-runs/` | 명시한 하위 파일 생성 또는 이동 |
 | `src/app/api/study/v1/publications/route.ts` | 신규 또는 기존 내용 확장 |
 | `src/app/api/study/v1/imports/` | 명시한 하위 파일 생성 또는 이동 |
+| `src/app/api/study/v1/__fixtures__/career-os-plan115.ts` | 소비 계약 fixture 신규 |
 | `src/app/api/study/v1/recommendation-routes.test.ts` | 신규 또는 기존 내용 확장 |
+| `docs/prd.md` | 구현 범위 갱신 |
+| `docs/flow.md` | 구현 흐름 갱신 |
+| `docs/api/study-library.md` | 구현 범위와 소비 fixture 근거 갱신 |
+| `docs/code-architecture.md` | 구현 모듈 상태 갱신 |
+| `docs/data-schema.md` | 추천·가져오기 서비스 구현 상태 갱신 |
+| `docs/adr/037-private-study-domain.md` | 결정 상태가 달라진 경우에만 갱신 |
