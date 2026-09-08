@@ -177,12 +177,13 @@ describe("StudyLibrary", () => {
     vi.stubGlobal("fetch", fetchMock);
     render(<StudyLibrary />);
     await screen.findByText("자료 1");
-    await userEvent.click(document.querySelector<HTMLInputElement>("#material-starred")!);
-    await userEvent.click(document.querySelector<HTMLInputElement>("#material-read")!);
+    const [starred, read] = screen.getAllByRole("checkbox");
+    await userEvent.click(starred);
+    await userEvent.click(read);
     await userEvent.click(screen.getByRole("button", { name: "상태와 메모 저장" }));
     await waitFor(() => expect(screen.getByRole("status").textContent).toContain("저장했습니다"));
     expect((screen.getByLabelText("메모") as HTMLTextAreaElement).value).toBe("서버 메모");
-    expect(document.querySelector<HTMLInputElement>("#material-starred")!.checked).toBe(true);
-    expect(document.querySelector<HTMLInputElement>("#material-read")!.checked).toBe(true);
+    expect((starred as HTMLInputElement).checked).toBe(true);
+    expect((read as HTMLInputElement).checked).toBe(true);
   });
 });

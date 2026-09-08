@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { MaterialState } from "@/lib/study/contracts";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,7 @@ function stateDescription(state: MaterialState): string {
 }
 
 export function MaterialStateEditor({ state, onSave }: Props) {
+  const fieldId = useId();
   const [draft, setDraft] = useState(state);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
@@ -76,12 +77,12 @@ export function MaterialStateEditor({ state, onSave }: Props) {
   return (
     <section aria-label="개인 상태 편집" className="space-y-3 border-t border-[var(--color-border-subtle)] pt-4">
       <div className="flex flex-wrap gap-x-5 gap-y-2">
-        <Label htmlFor="material-starred" className="cursor-pointer"><input id="material-starred" type="checkbox" checked={draft.starred} disabled={pending} onChange={(event) => setDraft((current) => ({ ...current, starred: event.target.checked }))} /> 즐겨찾기</Label>
-        <Label htmlFor="material-read" className="cursor-pointer"><input id="material-read" type="checkbox" checked={draft.read} disabled={pending} onChange={(event) => setDraft((current) => ({ ...current, read: event.target.checked }))} /> 읽음</Label>
+        <Label htmlFor={`${fieldId}-starred`} className="cursor-pointer"><input id={`${fieldId}-starred`} type="checkbox" checked={draft.starred} disabled={pending} onChange={(event) => setDraft((current) => ({ ...current, starred: event.target.checked }))} /> 즐겨찾기</Label>
+        <Label htmlFor={`${fieldId}-read`} className="cursor-pointer"><input id={`${fieldId}-read`} type="checkbox" checked={draft.read} disabled={pending} onChange={(event) => setDraft((current) => ({ ...current, read: event.target.checked }))} /> 읽음</Label>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="material-note">메모</Label>
-        <Textarea id="material-note" value={draft.note} maxLength={5000} disabled={pending} onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value }))} placeholder="일반 텍스트 메모를 남깁니다." />
+        <Label htmlFor={`${fieldId}-note`}>메모</Label>
+        <Textarea id={`${fieldId}-note`} value={draft.note} maxLength={5000} disabled={pending} onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value }))} placeholder="일반 텍스트 메모를 남깁니다." />
         <p className="text-xs text-[var(--color-fg-secondary)]">{draft.note.length}/5000</p>
       </div>
       <div className="flex flex-wrap items-center gap-3">

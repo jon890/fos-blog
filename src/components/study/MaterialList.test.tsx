@@ -35,5 +35,8 @@ describe("MaterialList", () => {
     expect(list.className).toContain("md:grid-cols-2");
     expect(screen.getByText("자료 1")).toBeTruthy();
     expect(screen.getByText("자료 2")).toBeTruthy();
+    const ids = [...document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input[id], textarea[id]")]
+      .map((element) => element.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });

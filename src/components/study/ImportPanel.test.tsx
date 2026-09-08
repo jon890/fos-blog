@@ -72,6 +72,23 @@ describe("ImportPanel", () => {
     expect(screen.queryByRole("button", { name: "가져오기 확정" })).toBeNull();
   });
 
+  it("미리보기 요청 중 파일을 바꾸면 이전 파일의 늦은 응답을 무시한다", async () => {
+    let resolvePreview: (value: ImportDryRunResult) => void = () => undefined;
+    const onDryRun = vi.fn().mockReturnValue(new Promise<ImportDryRunResult>((resolve) => {
+      resolvePreview = resolve;
+    }));
+    render(<ImportPanel onDryRun={onDryRun} onCommit={vi.fn()} />);
+    await choose(file("first.json", payload));
+    await userEvent.click(screen.getByRole("button", { name: "미리보기" }));
+
+    await choose(file("second.json", { ...payload, importKey: "legacy-2025" }));
+    resolvePreview(preview);
+
+    await waitFor(() => expect(onDryRun).toHaveBeenCalledTimes(1));
+    expect(screen.queryByLabelText("가져오기 미리보기")).toBeNull();
+    expect(screen.queryByRole("button", { name: "가져오기 확정" })).toBeNull();
+  });
+
   it("IMPORT_CHANGED와 401은 성공으로 바꾸지 않고 각각 새 미리보기와 로그인을 요구한다", async () => {
     let commitCount = 0;
     const fetchMock = vi.fn((path: string) => {

@@ -87,8 +87,10 @@ export function ImportPanel({ onDryRun = defaultDryRun, onCommit = defaultCommit
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isCommitting, setIsCommitting] = useState(false);
   const commitInFlight = useRef(false);
+  const selectionId = useRef(0);
 
   async function selectFile(file: File | undefined) {
+    const id = ++selectionId.current;
     setPayload(null);
     setPreview(null);
     setMessage("");
@@ -104,24 +106,30 @@ export function ImportPanel({ onDryRun = defaultDryRun, onCommit = defaultCommit
         setMessage("가져오기 파일 형식이 올바르지 않습니다. importKey와 reports만 포함한 정규화 JSON 파일을 선택해 주세요.");
         return;
       }
-      setPayload(parsed.data);
-      setMessage("파일을 선택했습니다. 저장 전 미리보기를 실행해 주세요.");
+      if (id === selectionId.current) {
+        setPayload(parsed.data);
+        setMessage("파일을 선택했습니다. 저장 전 미리보기를 실행해 주세요.");
+      }
     } catch {
-      setMessage("JSON 파일을 읽지 못했습니다. importKey와 reports만 포함한 정규화 JSON 파일을 선택해 주세요.");
+      if (id === selectionId.current) {
+        setMessage("JSON 파일을 읽지 못했습니다. importKey와 reports만 포함한 정규화 JSON 파일을 선택해 주세요.");
+      }
     }
   }
 
   async function previewImport() {
     if (!payload || isPreviewing) return;
+    const id = selectionId.current;
     setIsPreviewing(true);
     setPreview(null);
     setMessage("미리보기를 만들고 있습니다.");
     try {
       const result = await onDryRun(payload);
+      if (id !== selectionId.current) return;
       setPreview(result);
       setMessage("미리보기를 확인한 뒤 명시적으로 가져오기를 확정해 주세요.");
     } catch (error) {
-      setMessage(errorMessage(error));
+      if (id === selectionId.current) setMessage(errorMessage(error));
     } finally {
       setIsPreviewing(false);
     }
