@@ -20,9 +20,9 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
-export function RecommendationReport({ reportId }: { reportId: string }) {
-  const [report, setReport] = useState<GetRecommendationRunResult | null>(null);
-  const [loadState, setLoadState] = useState<LoadState>("loading");
+export function RecommendationReport({ reportId, initialReport }: { reportId: string; initialReport?: GetRecommendationRunResult }) {
+  const [report, setReport] = useState<GetRecommendationRunResult | null>(initialReport ?? null);
+  const [loadState, setLoadState] = useState<LoadState>(initialReport ? "ready" : "loading");
   const requestId = useRef(0);
 
   const load = useCallback(async () => {
@@ -48,8 +48,8 @@ export function RecommendationReport({ reportId }: { reportId: string }) {
   }, [reportId]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (!initialReport) void load();
+  }, [initialReport, load]);
 
   async function recoverLatestState(materialId: number): Promise<MaterialStateSaveResult> {
     const response = await fetch(`/api/study/v1/materials/${materialId}`);

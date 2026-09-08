@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getMaterialResponseSchema,
   listMaterialsResponseSchema,
@@ -13,6 +13,39 @@ import { type DesiredMaterialState, type MaterialStateSaveResult } from "./Mater
 import { StudyFilters, type StudyFiltersValue, type StudyFilterSource } from "./StudyFilters";
 
 type LoadFailure = "unauthenticated" | "failed";
+
+const booleanFilters = ["starred", "read", "recommended"] as const;
+
+function filtersFromSearch(search: string): StudyFiltersValue {
+  const params = new URLSearchParams(search);
+  const filters: StudyFiltersValue = {};
+  for (const key of ["q", "sourceKey", "publishedFrom", "publishedTo"] as const) {
+    const value = params.get(key);
+    if (value) filters[key] = value;
+  }
+  const category = params.get("category");
+  if (["techBlog", "geek", "ai", "video"].includes(category ?? "")) {
+    filters.category = category as StudyFiltersValue["category"];
+  }
+  const kind = params.get("kind");
+  if (["feed-article", "feed-video", "page-link", "page-video"].includes(kind ?? "")) {
+    filters.kind = kind as StudyFiltersValue["kind"];
+  }
+  for (const key of booleanFilters) {
+    const value = params.get(key);
+    if (value === "true" || value === "false") filters[key] = value === "true";
+  }
+  return filters;
+}
+
+function filterSearch(filters: StudyFiltersValue): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  }
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
 
 function koreanDateToUtc(value: string, includeFollowingDay: boolean): string {
   const [year, month, day] = value.split("-").map(Number);
@@ -51,7 +84,8 @@ function sourceItems(value: unknown): StudyFilterSource[] {
 }
 
 export function StudyLibrary() {
-  const [filters, setFilters] = useState<StudyFiltersValue>({});
+  const [filters, setFilters] = useState<StudyFiltersValue>(() =>
+    typeof window === "undefined" ? {} : filtersFromSearch(window.location.search));
   const [sources, setSources] = useState<StudyFilterSource[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -61,7 +95,7 @@ export function StudyLibrary() {
   const [moreFailure, setMoreFailure] = useState(false);
   const requestId = useRef(0);
 
-  async function loadMaterials(nextFilters: StudyFiltersValue, cursor: string | null, append: boolean) {
+  const loadMaterials = useCallback(async (nextFilters: StudyFiltersValue, cursor: string | null, append: boolean) => {
     const id = ++requestId.current;
     if (append) {
       setIsLoadingMore(true);
@@ -90,10 +124,13 @@ export function StudyLibrary() {
         else setIsLoading(false);
       }
     }
-  }
+  }, []);
 
   useEffect(() => {
-    void loadMaterials({}, null, false);
+    void loadMaterials(filters, null, false);
+  }, [filters, loadMaterials]);
+
+  useEffect(() => {
     void (async () => {
       try {
         const response = await fetch("/api/study/v1/sources");
@@ -105,12 +142,24 @@ export function StudyLibrary() {
     })();
   }, []);
 
+  useEffect(() => {
+    function restoreFilters() {
+      const restored = filtersFromSearch(window.location.search);
+      setFilters(restored);
+      setMaterials([]);
+      setNextCursor(null);
+      setMoreFailure(false);
+    }
+    window.addEventListener("popstate", restoreFilters);
+    return () => window.removeEventListener("popstate", restoreFilters);
+  }, []);
+
   function applyFilters(nextFilters: StudyFiltersValue) {
+    window.history.pushState(null, "", `${window.location.pathname}${filterSearch(nextFilters)}`);
     setFilters(nextFilters);
     setMaterials([]);
     setNextCursor(null);
     setMoreFailure(false);
-    void loadMaterials(nextFilters, null, false);
   }
 
   async function recoverLatestState(materialId: number): Promise<MaterialStateSaveResult> {

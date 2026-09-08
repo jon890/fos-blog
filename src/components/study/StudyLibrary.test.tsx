@@ -30,11 +30,33 @@ function list(items: ReturnType<typeof material>[], nextCursor: string | null = 
 
 afterEach(() => {
   cleanup();
+  window.history.replaceState(null, "", "/admin/study");
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
 describe("StudyLibrary", () => {
+  it("URL query에서 필터를 복원하고 적용·뒤로 가기에 맞춰 목록을 다시 조회한다", async () => {
+    window.history.replaceState(null, "", "/admin/study?q=initial&starred=true");
+    const fetchMock = vi.fn((input: string) => input === "/api/study/v1/sources"
+      ? Promise.resolve(sourceResponse())
+      : Promise.resolve(list([])));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<StudyLibrary />);
+
+    await waitFor(() => expect(fetchMock.mock.calls.some(([input]) => String(input).includes("q=initial") && String(input).includes("starred=true"))).toBe(true));
+    expect((screen.getByLabelText("검색") as HTMLInputElement).value).toBe("initial");
+
+    fireEvent.change(screen.getByLabelText("검색"), { target: { value: "changed" } });
+    fireEvent.submit(screen.getByRole("button", { name: "필터 적용" }).closest("form")!);
+    await waitFor(() => expect(window.location.search).toContain("q=changed"));
+
+    window.history.replaceState(null, "", "/admin/study?q=restored&read=false");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await waitFor(() => expect((screen.getByLabelText("검색") as HTMLInputElement).value).toBe("restored"));
+    expect(fetchMock.mock.calls.some(([input]) => String(input).includes("q=restored") && String(input).includes("read=false"))).toBe(true);
+  });
+
   it("빠르게 바꾼 필터의 최신 응답만 표시하고 한국 날짜 끝을 다음 날 UTC 반열린 구간으로 보낸다", async () => {
     const first = deferred();
     const latest = deferred();

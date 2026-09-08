@@ -4,8 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RecommendationHistory } from "@/components/study/RecommendationHistory";
 import { RecommendationReport } from "@/components/study/RecommendationReport";
 
-const { requireAdminPage } = vi.hoisted(() => ({ requireAdminPage: vi.fn() }));
+const { requireAdminPage, getRecommendationRun } = vi.hoisted(() => ({
+  requireAdminPage: vi.fn(),
+  getRecommendationRun: vi.fn(),
+}));
 vi.mock("@/lib/admin/session", () => ({ requireAdminPage }));
+vi.mock("@/services/study/recommendations", () => ({ getRecommendationRun }));
 
 import ImportHistoryPage from "./(protected)/study/imports/page";
 import RecommendationHistoryPage from "./(protected)/study/recommendations/page";
@@ -16,17 +20,22 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 beforeEach(() => {
   vi.clearAllMocks();
   requireAdminPage.mockResolvedValue({ user: { id: "LOCAL_FIXTURE", name: "Fixture" } });
+  getRecommendationRun.mockResolvedValue({
+    reportId: "report-2026",
+    generatedAt: "2026-09-08T00:00:00.000Z",
+    topics: [],
+    publications: [],
+  });
 });
 
 describe("관리자 학습자료 화면", () => {
   it("추천 목록, 상세와 가져오기 page에서 보호 layout과 별도로 현재 세션을 다시 확인한다", async () => {
-    vi.stubGlobal("fetch", vi.fn((url: string) => Promise.resolve(url.includes("report-2026")
-      ? new Response(JSON.stringify({ error: { code: "NOT_FOUND" } }), { status: 404 })
-      : new Response(JSON.stringify({ items: [], nextCursor: null }), { status: 200 }))));
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(
+      new Response(JSON.stringify({ items: [], nextCursor: null }), { status: 200 }))));
     render(await RecommendationHistoryPage());
     await screen.findByText("아직 추천 실행 이력이 없습니다.");
     render(await RecommendationReportPage({ params: Promise.resolve({ reportId: "report-2026" }) }));
-    await screen.findByText("추천 이력을 찾을 수 없습니다.");
+    await screen.findByText("이 추천 실행에는 선택된 주제가 없습니다.");
     render(await ImportHistoryPage());
     expect(screen.getByText("추천 이력 가져오기")).toBeTruthy();
     expect(requireAdminPage).toHaveBeenCalledTimes(3);
@@ -37,6 +46,13 @@ describe("관리자 학습자료 화면", () => {
     await expect(RecommendationHistoryPage()).rejects.toThrow("REDIRECT:/admin/login");
     await expect(RecommendationReportPage({ params: Promise.resolve({ reportId: "report-2026" }) })).rejects.toThrow("REDIRECT:/admin/login");
     await expect(ImportHistoryPage()).rejects.toThrow("REDIRECT:/admin/login");
+  });
+
+  it("없는 추천 상세 page는 HTTP 404 경로로 전환한다", async () => {
+    const { StudyServiceError } = await import("@/services/study/errors");
+    getRecommendationRun.mockRejectedValue(new StudyServiceError(404, "NOT_FOUND", "추천 이력을 찾을 수 없습니다."));
+    await expect(RecommendationReportPage({ params: Promise.resolve({ reportId: "missing-report" }) }))
+      .rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
   });
 
   it("관리자 메뉴의 모든 학습자료 화면을 링크로 제공한다", () => {
