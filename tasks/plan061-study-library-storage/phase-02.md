@@ -33,6 +33,8 @@ plan063-admin-github-auth가 완료되고 그 코드가 현재 브랜치에 포�
 ### 1. Repository와 서비스
 
 `StudyRepository.ts`와 기존 repositories/index.ts에 study 팩터리를 추가한다.
+추천 control을 처음 잠그기 전에 owner/0/null 행을 멱등 생성할 `ensureRecommendationControl("owner")`를 구현한다.
+이 메서드는 마이그레이션 seed를 대신하며 중복 호출과 생성 경합 뒤에도 행 하나만 유지한다.
 `src/services/study/sources.ts`는 putSource/listSources/getSourceCursor를 제공한다.
 소스 PUT은 필수 필드를 모두 받으며 최초 생성 0과 현재 version 비교, cursor 두 행의 원자 생성을 적용한다.
 `src/services/study/materials.ts`는 listMaterials/getMaterial/updateMaterialState를 제공한다.
@@ -51,6 +53,7 @@ Date는 ISO로 직렬화하고 미생성 state는 false/false/빈 note/version 0
 
 `StudyRepository.test.ts`, `sources.test.ts`, `materials.test.ts`에서 실제 MySQL을 사용한다.
 소스 최초 생성 경합과 오래된 버전, 개인 상태 첫 INSERT 및 UPDATE 동시 수정에서 한 번만 성공함을 확인한다.
+추천 control 멱등 생성과 생성 경합에서 owner/0/null 한 행만 남는지 검증한다.
 검색 특수문자, 소스 다중 연결, 날짜 null, keyset 첫 최대 ID와 필터 mismatch, 단건 404를 검증한다.
 누적 추천 fixture가 있는 자료와 없는 자료로 `previouslyRecommended` 및 `recommended=true/false` 필터를 실DB에서 검증한다.
 기존 메모가 다른 기기 입력으로 자동 병합·덮어쓰기되지 않는지 확인한다.

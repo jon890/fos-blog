@@ -1,5 +1,7 @@
 import { drizzle } from "drizzle-orm/mysql2";
+import { migrate } from "drizzle-orm/mysql2/migrator";
 import mysql from "mysql2/promise";
+import path from "node:path";
 import * as schema from "./schema";
 
 type TestDatabaseEnv = {
@@ -48,4 +50,15 @@ export async function createTestDatabase() {
   });
   const db = drizzle(connection, { schema, mode: "default", logger: false });
   return { connection, db };
+}
+
+export async function migrateTestDatabase(
+  fixture: Awaited<ReturnType<typeof createTestDatabase>>,
+): Promise<void> {
+  await fixture.connection.query("SELECT GET_LOCK('fos_blog_test_migrations', 30)");
+  try {
+    await migrate(fixture.db, { migrationsFolder: path.resolve("drizzle") });
+  } finally {
+    await fixture.connection.query("SELECT RELEASE_LOCK('fos_blog_test_migrations')");
+  }
 }

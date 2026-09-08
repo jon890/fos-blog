@@ -2,11 +2,13 @@
 
 ## 학습자료 모듈
 
-**구현 범위:** 공통 관리자 인증은 plan063이며 study 관련 모듈은 후속 계획이다.
+**구현 범위:** 공통 관리자 인증과 study 스키마·Repository·소스·수집·자료·개인 상태 API를 제공한다.
+추천·가져오기 서비스와 관리자 공부 화면은 후속 계획이다.
 인증, 저장·수집, 추천·가져오기, 공부 UI 순으로 구현한다.
 서비스 책임과 DTO는 [학습자료 API](./api/study-library.md), 테이블은
 [학습자료 저장 계약](./data-schema.md#학습자료-저장-계약)을 따른다.
-다음 표는 공통 관리자 구현 경로와 study 관련 생성 예정 경로를 함께 표시한다.
+다음 표는 공통 관리자와 study 구현 경로를 표시한다.
+추천·가져오기·화면 경로는 후속 구현 위치다.
 
 | 경로 | 책임 |
 | --- | --- |
@@ -17,8 +19,8 @@
 | `src/lib/admin/client.ts` | Better Auth React client. 로그인과 로그아웃만 호출 |
 | `src/infra/db/schema/auth.ts` | Better Auth user/session/account/verification 모델 |
 | `src/app/api/auth/[...all]/route.ts` | 허용한 Better Auth endpoint만 Next.js Handler로 전달 |
-| `src/lib/study/auth.ts` | 공통 관리자 세션 또는 별도 서비스 Bearer를 판정하고 API 권한 분리 |
-| `src/lib/study/http.ts` | 본문 크기, Origin, 권한, 오류 변환, 개인 응답 헤더 |
+| `src/lib/study/auth.ts` | 공통 관리자 세션 또는 별도 서비스 Bearer를 판정하고 API 권한과 브라우저 쓰기 Origin 분리 |
+| `src/lib/study/http.ts` | 본문 크기와 query 검증, 오류 변환, 개인 응답 헤더 |
 | `src/infra/db/schema/study.ts` | study 테이블과 FK, 인덱스, 타입 |
 | `src/infra/db/repositories/StudyRepository.ts` | 자료·소스·개인 상태 조회와 DB 쓰기, 트랜잭션 실행 인터페이스 |
 | `src/services/study/ingestion.ts` | cursor와 자료·영수증 원자적 저장 |
@@ -41,7 +43,8 @@
 입력과 반환 타입은 HTTP 문서의 해당 DTO를 사용하고 브라우저 DTO에 DB 인스턴스를 포함하지 않는다.
 서비스 입력 타입은 해당 요청 이름 뒤에 `Input`, 출력은 `Result`를 붙여 `contracts.ts`에 둔다.
 예를 들어 `ingestBatch(input: IngestBatchInput): Promise<IngestBatchResult>`는 배치 요청과 영수증을 대응시킨다.
-page와 Handler는 검증된 주체를 별도 인자로 전달하며 입력 payload에서 owner를 만들지 않는다.
+page와 Handler는 검증된 주체의 `ownerKey`를 서비스에 별도 인자로 전달하며 입력 payload에서 owner를 만들지 않는다.
+자료 서비스와 Repository는 이 값을 개인 상태와 누적 추천 조회 조건에 사용한다.
 여러 Repository나 트랜잭션 흐름을 Route Handler에 흩어 놓지 않는다.
 Repository 내부 트랜잭션의 DB 객체를 관련 쿼리에 전달하며 전역 연결로 빠져나가지 않는다.
 
@@ -171,12 +174,12 @@ Better Auth 1.7.3의 signOut은 DB 삭제 오류를 삼키므로 Route에서 세
 | `GITHUB_CLIENT_ID` | 관리자 OAuth App client ID |
 | `GITHUB_CLIENT_SECRET` | 관리자 OAuth App secret |
 | `ADMIN_GITHUB_USER_ID` | 허용할 GitHub numeric ID 문자열 하나 |
-| `STUDY_SERVICE_TOKEN` | plan061에서 추가할 career-os 전용 Bearer. 관리자 로그인에서 사용 금지 |
+| `STUDY_SERVICE_TOKEN` | career-os 전용 Bearer. 최소 32바이트 난수이며 관리자 로그인에서 사용 금지 |
 
 관리자 env는 서버 스키마에 선택 문자열로 선언하되 형식·완전성과 DB 설정은 인증 초기화 때 검증한다.
 아무 값도 없으면 공개 블로그는 계속 동작하고 관리자 기능은 설정 필요 안내, 인증 요청은 `503`이다.
 부분 설정이나 잘못된 값은 관리자 인증을 허용하지 않는다.
-study API는 plan061에서 구현하며 관리자 인증 설정 부재는 `503`, 서비스 토큰 부재는 `401`로 처리한다.
+study API는 관리자 인증 설정 부재를 `503`, 서비스 토큰 부재를 `401`로 처리한다.
 빌드가 인증 모듈 import만으로 운영 DB에 접속하지 않도록 초기화를 지연한다.
 `.env.example`에는 설명과 빈 자리만 두고 실제 계정·호스트·secret은 기록하지 않는다.
 

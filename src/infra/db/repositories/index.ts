@@ -7,6 +7,7 @@ import { GlossaryRepository } from "./GlossaryRepository";
 import { PostRepository } from "./PostRepository";
 import { SyncLogRepository } from "./SyncLogRepository";
 import { VisitRepository } from "./VisitRepository";
+import { StudyRepository } from "./StudyRepository";
 
 export { BaseRepository, type DbInstance } from "./BaseRepository";
 export { CategoryRepository } from "./CategoryRepository";
@@ -19,6 +20,13 @@ export {
 } from "./CommentRepository";
 export { VisitRepository } from "./VisitRepository";
 export { SyncLogRepository } from "./SyncLogRepository";
+export {
+  StudyRepository,
+  type StudyMaterialPage,
+  type StudyMaterialPageRequest,
+  type StudyMaterialRecord,
+  type IngestStudyBatchResult,
+} from "./StudyRepository";
 export {
   GlossaryRepository,
   type GlossaryDefinition,
@@ -39,5 +47,6 @@ export const getRepositories = cache(() => {
     visit: new VisitRepository(db),
     syncLog: new SyncLogRepository(db),
     glossary: new GlossaryRepository(db),
+    study: new StudyRepository(db),
   };
 });

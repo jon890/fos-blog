@@ -34,7 +34,8 @@ docs를 먼저 확정한 계획이므로 phase 실행 중 제품·인증·API �
 
 `src/infra/db/schema/study.ts`에 저장 문서의 13개 study 테이블을 만들고 index.ts에서 export한다.
 ID·버전·UTC DATETIME(3)·nullable·binary UNIQUE·FK RESTRICT와 추천 항목의 run/topic 일치를 보장한다.
-순환 관계인 control.latest_run_id는 nullable FK로 정의하고 초기 owner/0/null 행을 준비한다.
+순환 관계인 control.latest_run_id는 nullable FK로 정의한다.
+초기 owner/0/null 행은 생성 SQL을 수정하지 않고 phase-02의 `StudyRepository.ensureRecommendationControl("owner")`가 최초 control 사용 직전에 멱등 생성한다.
 source 생성 시 recent/archive cursor version 0 두 행을 만들 수 있도록 복합 PK를 둔다.
 `pnpm db:generate` 산출물에서 기존 테이블 삭제·변경이 없는지 확인하고 격리 MySQL에 적용한다.
 
@@ -50,6 +51,7 @@ YouTube ID 대소문자, 일반 URL의 의미 있는 query와 www 구분을 보�
 
 `src/infra/db/schema/study.test.ts`, `src/lib/study/contracts.test.ts`, `url-identity.test.ts`를 만든다.
 실DB migration 재실행·FK·동일 contentKey 중복·대소문자가 다른 YouTube 키 공존을 검증한다.
+마이그레이션만 적용한 상태에는 control seed 행이 없고 phase-02의 멱등 생성 전용임을 확인한다.
 tracking query 제거와 query sort, fragment·trailing slash, 비HTTPS 거절, 잘못된 전송 key/URL 불일치를 검증한다.
 선택값 생략과 null의 차이, 배열 중복·Unicode 길이·unknown field 오류를 확인한다.
 

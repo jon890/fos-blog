@@ -47,12 +47,19 @@ DB 원문 오류와 request body를 로그에 남기지 않는다.
 단건 Material과 Source DTO, 목록 cursor·버전 및 수집 영수증은 문서와 동일해야 한다.
 미지원 메서드는 405이며 study 인증 오류는 로그인 HTML로 이동시키지 않는다.
 
-### 3. HTTP 계약 테스트
+### 3. 기존 책임 문서 갱신
+
+기존 PRD, flow, API, code-architecture, data-schema와 ADR-037에서 이 plan의 구현 상태를 현재 코드에 맞춘다.
+자료·소스·수집·개인 상태와 study 스키마는 구현 범위로 표시하고 추천·가져오기·공부 UI는 후속 범위로 남긴다.
+별도 설명 문서를 추가하지 않고 기존 문서의 경로·명령·응답 계약을 대조한다.
+
+### 4. HTTP 계약 테스트
 
 `src/app/api/study/v1/storage-routes.test.ts`와 `src/lib/study/auth.test.ts`, `http.test.ts`를 만든다.
 익명 401, 잘못된 Bearer와 유효 cookie 동시 요청 401, 서비스의 상태 쓰기 403, 브라우저의 ingestion 403을 검증한다.
 실제 바이트 1 MiB 초과·위조 Content-Length·unknown field·Origin 불일치와 각 정상 DTO를 검증한다.
-429가 발생하는 공통 경로는 Retry-After를 유지하고 400·401·403·404·409·413·503에도 개인 응답 헤더를 적용한다.
+이 plan에서 `/api/study/v1` 전용 rate limit은 추가하지 않는다.
+공통 오류 응답 변환기에 429 상태와 `Retry-After`가 전달되면 값을 유지하는 단위 테스트를 작성하고 400·401·403·404·409·413·503에도 개인 응답 헤더를 적용한다.
 서비스가 소스 등록→cursor 조회→수집→같은 영수증 재조회까지 실행하는 HTTP 통합 테스트를 포함한다.
 
 ## 검증
@@ -70,6 +77,9 @@ pnpm type-check
 pnpm test
 pnpm build
 git diff --check
+# 수정한 책임 문서마다 한국어·가독성 검사를 실행한다.
+~/.claude/scripts/korean-style-check.sh docs/prd.md docs/flow.md docs/api/study-library.md docs/code-architecture.md docs/data-schema.md docs/adr/037-private-study-domain.md
+python3 ~/.claude/scripts/check-readability.py docs/prd.md docs/flow.md docs/api/study-library.md docs/code-architecture.md docs/data-schema.md docs/adr/037-private-study-domain.md
 ```
 
 이 plan의 모든 phase 검증이 통과한 뒤에만 `index.json`의 status를 `completed`로 바꾼다.
