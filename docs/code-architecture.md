@@ -2,13 +2,13 @@
 
 ## 학습자료 모듈
 
-**구현 범위:** 공통 관리자 인증과 study 스키마·Repository·소스·수집·자료·개인 상태 API를 제공한다.
-추천·가져오기 서비스와 관리자 공부 화면은 후속 계획이다.
+**구현 범위:** 공통 관리자 인증과 study 스키마·Repository·소스·수집·자료·개인 상태·추천·게시·가져오기 API를 제공한다.
+관리자 공부 화면은 후속 plan062에서 구현한다.
 인증, 저장·수집, 추천·가져오기, 공부 UI 순으로 구현한다.
 서비스 책임과 DTO는 [학습자료 API](./api/study-library.md), 테이블은
 [학습자료 저장 계약](./data-schema.md#학습자료-저장-계약)을 따른다.
 다음 표는 공통 관리자와 study 구현 경로를 표시한다.
-추천·가져오기·화면 경로는 후속 구현 위치다.
+화면 경로는 후속 구현 위치다.
 
 | 경로 | 책임 |
 | --- | --- |
@@ -22,13 +22,14 @@
 | `src/lib/study/auth.ts` | 공통 관리자 세션 또는 별도 서비스 Bearer를 판정하고 API 권한과 브라우저 쓰기 Origin 분리 |
 | `src/lib/study/http.ts` | 본문 크기와 query 검증, 오류 변환, 개인 응답 헤더 |
 | `src/infra/db/schema/study.ts` | study 테이블과 FK, 인덱스, 타입 |
-| `src/infra/db/repositories/StudyRepository.ts` | 자료·소스·개인 상태 조회와 DB 쓰기, 트랜잭션 실행 인터페이스 |
+| `src/infra/db/repositories/StudyRepository.ts` | 자료·소스·개인 상태·추천·게시·가져오기 조회와 DB 쓰기, 트랜잭션 실행 인터페이스 |
 | `src/services/study/ingestion.ts` | cursor와 자료·영수증 원자적 저장 |
 | `src/services/study/sources.ts` | 소스 전체 교체와 version 비교, cursor 두 행 초기화 |
 | `src/services/study/materials.ts` | 개인 자료 조회와 상태 갱신 조합 |
 | `src/services/study/recommendations.ts` | 후보 조회, 누적 중복 검증, 추천·게시 이력 |
 | `src/services/study/imports.ts` | dry-run과 commit 재검증, 과거 이력 보존 |
-| `src/app/api/study/v1/` | API 문서의 경로별 Route Handler. 인증·검증 후 서비스 호출 |
+| `src/app/api/study/v1/` | API 문서의 소스·자료·후보·추천·게시·가져오기 Route Handler. 인증·검증 후 서비스 호출 |
+| `src/app/api/study/v1/__fixtures__/career-os-plan115.ts` | career-os의 URL 식별과 기존 이력 변환 소비 계약 고정값 |
 | `src/app/admin/login/page.tsx` | 로그인 시작과 실패 안내. 세션 필수 layout 밖에 배치 |
 | `src/app/admin/error.tsx` | 보호 layout·page의 장애 안내와 재시도. 오류 원문은 표시하지 않음 |
 | `src/app/admin/(protected)/layout.tsx` | 관리자 세션 확인, 제목과 로그아웃 |
