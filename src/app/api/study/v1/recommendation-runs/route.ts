@@ -1,4 +1,4 @@
-import { authorizeStudyRequest } from "@/lib/study/auth";
+import { authorizeStudyRequest, STUDY_OWNER_KEY } from "@/lib/study/auth";
 import {
   createRecommendationRunRequestSchema,
   listRecommendationRunsQuerySchema,
@@ -12,8 +12,6 @@ import {
   StudyHttpError,
 } from "@/lib/study/http";
 import { listRecommendationRuns, saveRecommendationRun } from "@/services/study/recommendations";
-
-const OWNER_KEY = "owner";
 
 export async function GET(request: Request): Promise<Response> {
   try {
@@ -32,7 +30,7 @@ export async function POST(request: Request): Promise<Response> {
       throw new StudyHttpError(400, "INVALID_REQUEST", "query를 사용할 수 없습니다.");
     }
     const input = await parseStudyJson(request, createRecommendationRunRequestSchema);
-    return studyJson(await saveRecommendationRun(input, OWNER_KEY));
+    return studyJson(await saveRecommendationRun(input, STUDY_OWNER_KEY));
   } catch (error) {
     return studyErrorResponse(error);
   }

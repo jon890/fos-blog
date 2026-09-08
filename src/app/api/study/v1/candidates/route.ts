@@ -1,15 +1,13 @@
-import { authorizeStudyRequest } from "@/lib/study/auth";
+import { authorizeStudyRequest, STUDY_OWNER_KEY } from "@/lib/study/auth";
 import { listCandidatesQuerySchema } from "@/lib/study/contracts";
 import { methodNotAllowed, parseStudyQuery, studyErrorResponse, studyJson } from "@/lib/study/http";
 import { listCandidates } from "@/services/study/recommendations";
-
-const OWNER_KEY = "owner";
 
 export async function GET(request: Request): Promise<Response> {
   try {
     await authorizeStudyRequest(request, "service");
     const query = parseStudyQuery(request.url, listCandidatesQuerySchema);
-    return studyJson(await listCandidates(query, OWNER_KEY));
+    return studyJson(await listCandidates(query, STUDY_OWNER_KEY));
   } catch (error) {
     return studyErrorResponse(error);
   }

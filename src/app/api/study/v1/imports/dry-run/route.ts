@@ -1,17 +1,20 @@
-import { authorizeStudyRequest } from "@/lib/study/auth";
+import { authorizeStudyRequest, studyOwnerKey } from "@/lib/study/auth";
 import { importDryRunRequestSchema } from "@/lib/study/contracts";
 import { methodNotAllowed, parseStudyJson, studyErrorResponse, studyJson, StudyHttpError } from "@/lib/study/http";
 import { previewImport } from "@/services/study/imports";
 
-const OWNER_KEY = "owner";
-
 export async function POST(request: Request): Promise<Response> {
   try {
-    await authorizeStudyRequest(request, "service-or-admin");
+    const principal = await authorizeStudyRequest(request, "service-or-admin");
     if (new URL(request.url).search) {
       throw new StudyHttpError(400, "INVALID_REQUEST", "query를 사용할 수 없습니다.");
     }
-    return studyJson(await previewImport(await parseStudyJson(request, importDryRunRequestSchema), OWNER_KEY));
+    return studyJson(
+      await previewImport(
+        await parseStudyJson(request, importDryRunRequestSchema),
+        studyOwnerKey(principal),
+      ),
+    );
   } catch (error) {
     return studyErrorResponse(error);
   }

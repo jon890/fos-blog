@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { authorizeStudyRequest, StudyAuthError, type StudyAccess } from "./auth";
+import {
+  authorizeStudyRequest,
+  STUDY_OWNER_KEY,
+  StudyAuthError,
+  studyOwnerKey,
+  type StudyAccess,
+} from "./auth";
 
 const token = "service-test-token-that-is-at-least-32-bytes";
 const authenticated = async () => ({
@@ -12,6 +18,11 @@ function request(headers: HeadersInit = {}) {
 }
 
 describe("학습자료 API 인증", () => {
+  it("서비스와 관리자 주체를 같은 owner key로 변환한다", () => {
+    expect(studyOwnerKey({ kind: "service" })).toBe(STUDY_OWNER_KEY);
+    expect(studyOwnerKey({ kind: "admin", ownerKey: STUDY_OWNER_KEY })).toBe(STUDY_OWNER_KEY);
+  });
+
   it("유효한 Bearer를 서비스 주체로 판정한다", async () => {
     await expect(authorizeStudyRequest(request({ authorization: `Bearer ${token}` }), "service", {
       serviceToken: token,
@@ -40,7 +51,7 @@ describe("학습자료 API 인증", () => {
     await expect(authorizeStudyRequest(request({ origin: "https://blog.example.test" }), "admin-write", {
       siteOrigin: "https://blog.example.test",
       getSession: authenticated,
-    })).resolves.toEqual({ kind: "admin", ownerKey: "owner" });
+    })).resolves.toEqual({ kind: "admin", ownerKey: STUDY_OWNER_KEY });
     await expect(authorizeStudyRequest(request({ origin: "https://evil.example.test" }), "admin-write", {
       siteOrigin: "https://blog.example.test",
       getSession: authenticated,
