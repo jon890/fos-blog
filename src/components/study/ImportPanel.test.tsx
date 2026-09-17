@@ -2,15 +2,22 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ImportDryRunRequest, ImportDryRunResult } from "@/lib/study/contracts";
-import { studyContentKey } from "@/lib/study/url-identity";
+import type {
+  ImportCommitResult,
+  ImportDryRunRequest,
+  ImportDryRunResult,
+  StudyActionResult,
+} from "@/lib/study/contracts";
 import { ImportPanel } from "./ImportPanel";
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals(); });
 
+// studyContentKey("https://example.test/article") 의 값. Backend 가 URL 식별을 소유하므로 고정 값으로 둔다.
+const CONTENT_KEY = "url:e6b7ccaedbf110b1f23a0b27cd070f456bd08ebec74b536a9fb550da3fafdef6";
+
 const payload: ImportDryRunRequest = {
   importKey: "legacy-2024",
-  reports: [{ reportId: "legacy-report", generatedAt: "2024-01-01T00:00:00.000Z", topics: [{ topicKey: "backend-design", title: "백엔드 설계", careerQuestion: null, items: [{ contentKey: studyContentKey("https://example.test/article"), canonicalUrl: "https://example.test/article", sourceKey: "example", title: "자료", category: "techBlog", summary: null, reason: null, careerValue: null }] }] }],
+  reports: [{ reportId: "legacy-report", generatedAt: "2024-01-01T00:00:00.000Z", topics: [{ topicKey: "backend-design", title: "백엔드 설계", careerQuestion: null, items: [{ contentKey: CONTENT_KEY, canonicalUrl: "https://example.test/article", sourceKey: "example", title: "자료", category: "techBlog", summary: null, reason: null, careerValue: null }] }] }],
 };
 const preview: ImportDryRunResult = {
   previewHash: "a".repeat(64), historyVersion: 4,
@@ -18,12 +25,12 @@ const preview: ImportDryRunResult = {
   warnings: [{ code: "REPEATED_CONTENT", message: "과거 리포트에 같은 자료가 있습니다." }],
 };
 
-function file(name: string, value: unknown): File {
-  return new File([JSON.stringify(value)], name, { type: "application/json" });
+function ok<T>(data: T): StudyActionResult<T> {
+  return { status: "ok", data };
 }
 
-function json(value: unknown, status = 200): Response {
-  return new Response(JSON.stringify(value), { status, headers: { "Content-Type": "application/json" } });
+function file(name: string, value: unknown): File {
+  return new File([JSON.stringify(value)], name, { type: "application/json" });
 }
 
 async function choose(value: File) {
@@ -33,8 +40,8 @@ async function choose(value: File) {
 
 describe("ImportPanel", () => {
   it("키보드로 파일 선택 뒤 미리보기와 명시적 확정을 수행하며 payload와 preview 값을 함께 보낸다", async () => {
-    const onDryRun = vi.fn().mockResolvedValue(preview);
-    const onCommit = vi.fn().mockResolvedValue({ importKey: payload.importKey, counts: preview.counts, historyVersion: 5 });
+    const onDryRun = vi.fn().mockResolvedValue(ok(preview));
+    const onCommit = vi.fn().mockResolvedValue(ok({ importKey: payload.importKey, counts: preview.counts, historyVersion: 5 }));
     render(<ImportPanel onDryRun={onDryRun} onCommit={onCommit} />);
     await choose(file("history.json", payload));
     const user = userEvent.setup();
@@ -51,7 +58,7 @@ describe("ImportPanel", () => {
 
   it("잘못된 JSON과 1 MiB 초과 파일은 미리보기 없이 오류로 표시한다", async () => {
     const onDryRun = vi.fn();
-    render(<ImportPanel onDryRun={onDryRun} />);
+    render(<ImportPanel onDryRun={onDryRun} onCommit={vi.fn()} />);
     fireEvent.change(screen.getByLabelText("가져오기 JSON 파일"), { target: { files: [new File(["{"], "bad.json", { type: "application/json" })] } });
     await waitFor(() => expect(screen.getByRole("status").textContent).toContain("JSON 파일을 읽지 못했습니다"));
     expect(screen.getByRole("button", { name: "미리보기" }).hasAttribute("disabled")).toBe(true);
@@ -63,7 +70,7 @@ describe("ImportPanel", () => {
   });
 
   it("파일 변경은 stale preview를 폐기하고 새 미리보기가 있어야 확정할 수 있다", async () => {
-    render(<ImportPanel onDryRun={vi.fn().mockResolvedValue(preview)} onCommit={vi.fn()} />);
+    render(<ImportPanel onDryRun={vi.fn().mockResolvedValue(ok(preview))} onCommit={vi.fn()} />);
     await choose(file("first.json", payload));
     await userEvent.click(screen.getByRole("button", { name: "미리보기" }));
     await screen.findByLabelText("가져오기 미리보기");
@@ -73,8 +80,8 @@ describe("ImportPanel", () => {
   });
 
   it("미리보기 요청 중 파일을 바꾸면 이전 파일의 늦은 응답을 무시한다", async () => {
-    let resolvePreview: (value: ImportDryRunResult) => void = () => undefined;
-    const onDryRun = vi.fn().mockReturnValue(new Promise<ImportDryRunResult>((resolve) => {
+    let resolvePreview: (value: StudyActionResult<ImportDryRunResult>) => void = () => undefined;
+    const onDryRun = vi.fn().mockReturnValue(new Promise<StudyActionResult<ImportDryRunResult>>((resolve) => {
       resolvePreview = resolve;
     }));
     render(<ImportPanel onDryRun={onDryRun} onCommit={vi.fn()} />);
@@ -82,24 +89,22 @@ describe("ImportPanel", () => {
     await userEvent.click(screen.getByRole("button", { name: "미리보기" }));
 
     await choose(file("second.json", { ...payload, importKey: "legacy-2025" }));
-    resolvePreview(preview);
+    resolvePreview(ok(preview));
 
     await waitFor(() => expect(onDryRun).toHaveBeenCalledTimes(1));
     expect(screen.queryByLabelText("가져오기 미리보기")).toBeNull();
     expect(screen.queryByRole("button", { name: "가져오기 확정" })).toBeNull();
   });
 
-  it("IMPORT_CHANGED와 401은 성공으로 바꾸지 않고 각각 새 미리보기와 로그인을 요구한다", async () => {
+  it("이력 변경과 세션 만료는 성공으로 바꾸지 않고 각각 새 미리보기와 로그인을 요구한다", async () => {
     let commitCount = 0;
-    const fetchMock = vi.fn((path: string) => {
-      if (path === "/api/study/v1/imports/dry-run") return Promise.resolve(json(preview));
+    const onCommit = vi.fn(async (): Promise<StudyActionResult<ImportCommitResult>> => {
       commitCount += 1;
-      return Promise.resolve(commitCount === 1
-        ? json({ error: { code: "IMPORT_CHANGED", message: "이력이 변경되었습니다.", requestId: "request-1" } }, 409)
-        : json({ error: { code: "UNAUTHENTICATED", message: "로그인이 만료되었습니다.", requestId: "request-2" } }, 401));
+      return commitCount === 1
+        ? { status: "error", code: "import-changed", message: "미리보기 이후 이력이 변경되었습니다. 새 미리보기를 실행해 주세요." }
+        : { status: "error", code: "unauthenticated", message: "로그인이 만료되었습니다. 다시 로그인해 주세요." };
     });
-    vi.stubGlobal("fetch", fetchMock);
-    render(<ImportPanel />);
+    render(<ImportPanel onDryRun={vi.fn().mockResolvedValue(ok(preview))} onCommit={onCommit} />);
     await choose(file("history.json", payload));
     await userEvent.click(screen.getByRole("button", { name: "미리보기" }));
     await screen.findByRole("button", { name: "가져오기 확정" });
@@ -115,16 +120,27 @@ describe("ImportPanel", () => {
   });
 
   it("확정 중 중복 클릭은 commit을 한 번만 호출한다", async () => {
-    let resolve: (value: { importKey: string; counts: ImportDryRunResult["counts"]; historyVersion: number }) => void = () => undefined;
+    let resolve: (value: StudyActionResult<ImportCommitResult>) => void = () => undefined;
     const onCommit = vi.fn().mockReturnValue(new Promise((done) => { resolve = done; }));
-    render(<ImportPanel onDryRun={vi.fn().mockResolvedValue(preview)} onCommit={onCommit} />);
+    render(<ImportPanel onDryRun={vi.fn().mockResolvedValue(ok(preview))} onCommit={onCommit} />);
     await choose(file("history.json", payload));
     await userEvent.click(screen.getByRole("button", { name: "미리보기" }));
     await screen.findByRole("button", { name: "가져오기 확정" });
     fireEvent.click(screen.getByRole("button", { name: "가져오기 확정" }));
     fireEvent.click(screen.getByRole("button", { name: "가져오는 중…" }));
     expect(onCommit).toHaveBeenCalledTimes(1);
-    resolve({ importKey: payload.importKey, counts: preview.counts, historyVersion: 5 });
+    resolve(ok({ importKey: payload.importKey, counts: preview.counts, historyVersion: 5 }));
     await waitFor(() => expect(screen.getByRole("status").textContent).toContain("완료했습니다"));
+  });
+
+  it("브라우저에서 상대 API 경로를 호출하지 않는다", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const onDryRun = vi.fn().mockResolvedValue(ok(preview));
+    render(<ImportPanel onDryRun={onDryRun} onCommit={vi.fn()} />);
+    await choose(file("history.json", payload));
+    await userEvent.click(screen.getByRole("button", { name: "미리보기" }));
+    await screen.findByLabelText("가져오기 미리보기");
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

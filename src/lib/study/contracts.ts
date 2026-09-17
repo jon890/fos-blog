@@ -481,6 +481,47 @@ export const studyErrorResponseSchema = z.strictObject({
   }),
 });
 
+/** 관리자 화면이 자료 목록을 조회할 때 Server Action 에 넘기는 조건이다. */
+export type StudyMaterialQuery = {
+  limit?: number;
+  cursor?: string | null;
+  q?: string;
+  sourceKey?: string;
+  category?: z.infer<typeof sourceCategorySchema>;
+  kind?: z.infer<typeof materialKindSchema>;
+  starred?: boolean;
+  read?: boolean;
+  recommended?: boolean;
+  publishedFrom?: string;
+  publishedTo?: string;
+};
+
+/** 추천 이력 목록 조회 조건이다. */
+export type StudyRecommendationRunQuery = {
+  limit?: number;
+  cursor?: string | null;
+};
+
+/** 필터 목록이 쓰는 소스 요약이다. */
+export type StudySourceSummary = {
+  sourceKey: string;
+  sourceName: string;
+};
+
+/** 관리자 화면이 구분하는 Server Action 실패 종류다. */
+export type StudyActionErrorCode =
+  | "unauthenticated"
+  | "forbidden"
+  | "not-found"
+  | "conflict"
+  | "import-changed"
+  | "failed";
+
+/** Server Action 은 예외 대신 이 결과를 돌려준다. 브라우저로 내부 정보를 흘리지 않는다. */
+export type StudyActionResult<T> =
+  | { status: "ok"; data: T }
+  | { status: "error"; code: StudyActionErrorCode; message: string };
+
 export type SourceCategory = z.infer<typeof sourceCategorySchema>;
 export type SourceAdapter = z.infer<typeof sourceAdapterSchema>;
 export type CursorMode = z.infer<typeof cursorModeSchema>;

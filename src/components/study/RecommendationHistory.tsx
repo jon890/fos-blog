@@ -1,24 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  listRecommendationRunsResponseSchema,
-  type ListRecommendationRunsResult,
+import type {
+  ListRecommendationRunsResult,
+  StudyActionResult,
+  StudyRecommendationRunQuery,
 } from "@/lib/study/contracts";
 import { RecommendationList } from "./RecommendationList";
 
 type LoadFailure = "unauthenticated" | "failed";
 
-async function readRuns(url: string): Promise<ListRecommendationRunsResult> {
-  const response = await fetch(url);
-  if (response.status === 401) throw new Error("unauthenticated");
-  if (!response.ok) throw new Error("failed");
-  const parsed = listRecommendationRunsResponseSchema.safeParse(await response.json());
-  if (!parsed.success) throw new Error("failed");
-  return parsed.data;
-}
+type Props = {
+  listRuns: (
+    query: StudyRecommendationRunQuery,
+  ) => Promise<StudyActionResult<ListRecommendationRunsResult>>;
+};
 
-export function RecommendationHistory() {
+export function RecommendationHistory({ listRuns }: Props) {
   const [items, setItems] = useState<ListRecommendationRunsResult["items"]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,12 +36,11 @@ export function RecommendationHistory() {
     }
 
     try {
-      const params = new URLSearchParams({ limit: "30" });
-      if (cursor) params.set("cursor", cursor);
-      const result = await readRuns(`/api/study/v1/recommendation-runs?${params}`);
+      const result = await listRuns({ limit: 30, cursor });
+      if (result.status === "error") throw new Error(result.code);
       if (id !== requestId.current) return;
-      setItems((current) => append ? [...current, ...result.items] : result.items);
-      setNextCursor(result.nextCursor);
+      setItems((current) => append ? [...current, ...result.data.items] : result.data.items);
+      setNextCursor(result.data.nextCursor);
     } catch (error) {
       if (id !== requestId.current) return;
       if (append) setLoadMoreFailed(true);

@@ -1,6 +1,18 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
+const LOOPBACK_HOSTNAMES = ["localhost", "127.0.0.1", "[::1]"];
+
+/** HTTPS URL 하나. 개발과 테스트 편의를 위해 loopback HTTP만 함께 허용한다. */
+export const careerStudyBackendUrlSchema = z
+  .string()
+  .url()
+  .refine((value) => {
+    const url = new URL(value);
+    if (url.protocol === "https:") return true;
+    return url.protocol === "http:" && LOOPBACK_HOSTNAMES.includes(url.hostname);
+  }, "HTTPS URL이거나 loopback HTTP URL이어야 합니다.");
+
 export const env = createEnv({
   server: {
     // 필수 — 없으면 startup에서 throw
@@ -25,6 +37,10 @@ export const env = createEnv({
     GITHUB_CLIENT_SECRET: z.string().optional(),
     ADMIN_GITHUB_USER_ID: z.string().optional(),
     STUDY_SERVICE_TOKEN: z.string().optional(),
+    // career-os 학습자료 Backend. 운영은 HTTPS, 개발과 테스트는 loopback HTTP만 허용한다.
+    CAREER_STUDY_BACKEND_URL: careerStudyBackendUrlSchema.optional(),
+    // admin-gateway 권한 Bearer. 서버에서만 읽으며 브라우저로 내보내지 않는다.
+    CAREER_STUDY_BACKEND_TOKEN: z.string().min(32).optional(),
   },
   client: {
     // 선택 (기본값 있음)
@@ -50,6 +66,8 @@ export const env = createEnv({
     GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
     ADMIN_GITHUB_USER_ID: process.env.ADMIN_GITHUB_USER_ID,
     STUDY_SERVICE_TOKEN: process.env.STUDY_SERVICE_TOKEN,
+    CAREER_STUDY_BACKEND_URL: process.env.CAREER_STUDY_BACKEND_URL,
+    CAREER_STUDY_BACKEND_TOKEN: process.env.CAREER_STUDY_BACKEND_TOKEN,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NEXT_PUBLIC_GOOGLE_ADSENSE_ID: process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID,
     NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION:

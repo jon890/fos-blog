@@ -2,29 +2,20 @@
 
 import { useRef, useState } from "react";
 import {
-  importCommitResponseSchema,
   importDryRunRequestSchema,
-  importDryRunResponseSchema,
-  studyErrorResponseSchema,
   type ImportCommitRequest,
   type ImportCommitResult,
   type ImportDryRunRequest,
   type ImportDryRunResult,
+  type StudyActionErrorCode,
+  type StudyActionResult,
 } from "@/lib/study/contracts";
 
 const MAX_IMPORT_FILE_BYTES = 1024 * 1024;
 
-type ImportPanelErrorCode = "unauthenticated" | "import-changed" | "failed";
-
-class ImportPanelError extends Error {
-  constructor(readonly code: ImportPanelErrorCode, message: string) {
-    super(message);
-  }
-}
-
 type Props = {
-  onDryRun?: (payload: ImportDryRunRequest) => Promise<ImportDryRunResult>;
-  onCommit?: (payload: ImportCommitRequest) => Promise<ImportCommitResult>;
+  onDryRun: (payload: ImportDryRunRequest) => Promise<StudyActionResult<ImportDryRunResult>>;
+  onCommit: (payload: ImportCommitRequest) => Promise<StudyActionResult<ImportCommitResult>>;
 };
 
 function readFile(file: File): Promise<string> {
@@ -36,50 +27,24 @@ function readFile(file: File): Promise<string> {
   });
 }
 
-async function readResponse(response: Response): Promise<unknown> {
-  try {
-    return await response.json();
-  } catch {
-    throw new ImportPanelError("failed", "서버 응답을 읽지 못했습니다.");
+class ImportActionError extends Error {
+  constructor(readonly code: StudyActionErrorCode, message: string) {
+    super(message);
+    this.name = "ImportActionError";
   }
 }
 
-async function requestJson(path: string, body: unknown): Promise<unknown> {
-  let response: Response;
-  try {
-    response = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  } catch {
-    throw new ImportPanelError("failed", "서버에 연결하지 못했습니다.");
-  }
-  if (response.status === 401) throw new ImportPanelError("unauthenticated", "로그인이 만료되었습니다. 다시 로그인한 뒤 가져오기를 진행해 주세요.");
-  const value = await readResponse(response);
-  if (!response.ok) {
-    const error = studyErrorResponseSchema.safeParse(value);
-    if (error.success && error.data.error.code === "IMPORT_CHANGED") {
-      throw new ImportPanelError("import-changed", "미리보기 이후 이력이 변경되었습니다. 새 미리보기를 실행해 주세요.");
-    }
-    throw new ImportPanelError("failed", error.success ? error.data.error.message : "가져오기를 처리하지 못했습니다.");
-  }
-  return value;
-}
-
-async function defaultDryRun(payload: ImportDryRunRequest): Promise<ImportDryRunResult> {
-  const parsed = importDryRunResponseSchema.safeParse(await requestJson("/api/study/v1/imports/dry-run", payload));
-  if (!parsed.success) throw new ImportPanelError("failed", "미리보기 응답 형식이 올바르지 않습니다.");
-  return parsed.data;
-}
-
-async function defaultCommit(payload: ImportCommitRequest): Promise<ImportCommitResult> {
-  const parsed = importCommitResponseSchema.safeParse(await requestJson("/api/study/v1/imports/commit", payload));
-  if (!parsed.success) throw new ImportPanelError("failed", "가져오기 응답 형식이 올바르지 않습니다.");
-  return parsed.data;
+/** Server Action 실패를 예외로 바꿔 기존 화면 분기를 그대로 쓴다. */
+function unwrap<T>(result: StudyActionResult<T>): T {
+  if (result.status === "ok") return result.data;
+  throw new ImportActionError(result.code, result.message);
 }
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "가져오기를 처리하지 못했습니다.";
 }
 
-export function ImportPanel({ onDryRun = defaultDryRun, onCommit = defaultCommit }: Props) {
+export function ImportPanel({ onDryRun, onCommit }: Props) {
   const [payload, setPayload] = useState<ImportDryRunRequest | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [preview, setPreview] = useState<ImportDryRunResult | null>(null);
@@ -124,7 +89,7 @@ export function ImportPanel({ onDryRun = defaultDryRun, onCommit = defaultCommit
     setPreview(null);
     setMessage("미리보기를 만들고 있습니다.");
     try {
-      const result = await onDryRun(payload);
+      const result = unwrap(await onDryRun(payload));
       if (id !== selectionId.current) return;
       setPreview(result);
       setMessage("미리보기를 확인한 뒤 명시적으로 가져오기를 확정해 주세요.");
@@ -141,14 +106,12 @@ export function ImportPanel({ onDryRun = defaultDryRun, onCommit = defaultCommit
     setIsCommitting(true);
     setMessage("가져오기를 확정하고 있습니다.");
     try {
-      const result = await onCommit({ ...payload, previewHash: preview.previewHash, expectedHistoryVersion: preview.historyVersion });
+      const result = unwrap(await onCommit({ ...payload, previewHash: preview.previewHash, expectedHistoryVersion: preview.historyVersion }));
       setPreview(null);
       setMessage(`가져오기를 완료했습니다. 이력 버전 ${result.historyVersion}`);
     } catch (error) {
       if (
-        error instanceof ImportPanelError
-        ? error.code === "import-changed"
-        : typeof error === "object" && error !== null && "code" in error && error.code === "import-changed"
+        typeof error === "object" && error !== null && "code" in error && error.code === "import-changed"
       ) setPreview(null);
       setMessage(errorMessage(error));
     } finally {

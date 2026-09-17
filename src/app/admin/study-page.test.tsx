@@ -5,6 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const { requireAdminPage } = vi.hoisted(() => ({ requireAdminPage: vi.fn() }));
 vi.mock("@/lib/admin/session", () => ({ requireAdminPage }));
 vi.mock("@/components/study/StudyLibrary", () => ({ StudyLibrary: () => <p>자료 화면</p> }));
+vi.mock("./(protected)/study/actions", () => ({
+  listStudyMaterialsAction: vi.fn(),
+  listStudySourcesAction: vi.fn(),
+  getStudyMaterialAction: vi.fn(),
+  updateStudyMaterialStateAction: vi.fn(),
+}));
 
 import StudyPage from "./(protected)/study/page";
 

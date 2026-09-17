@@ -1,18 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  getMaterialResponseSchema,
-  listMaterialsResponseSchema,
-  listSourcesResponseSchema,
-  updateMaterialStateResponseSchema,
-  type Material,
+import type {
+  Material,
+  StudyActionResult,
+  StudyMaterialQuery,
+  StudySourceSummary,
 } from "@/lib/study/contracts";
 import { MaterialList } from "./MaterialList";
+import { saveMaterialStateWithRecovery, type MaterialStateActions } from "./material-state-actions";
 import { type DesiredMaterialState, type MaterialStateSaveResult } from "./MaterialStateEditor";
 import { StudyFilters, type StudyFiltersValue, type StudyFilterSource } from "./StudyFilters";
 
 type LoadFailure = "unauthenticated" | "failed";
+
+type StudyMaterialPage = { items: Material[]; nextCursor: string | null };
+
+type Props = MaterialStateActions & {
+  listMaterials: (query: StudyMaterialQuery) => Promise<StudyActionResult<StudyMaterialPage>>;
+  listSources: () => Promise<StudyActionResult<StudySourceSummary[]>>;
+};
 
 const booleanFilters = ["starred", "read", "recommended"] as const;
 
@@ -54,36 +61,22 @@ function koreanDateToUtc(value: string, includeFollowingDay: boolean): string {
   return new Date(`${koreanDate}T00:00:00+09:00`).toISOString();
 }
 
-function materialUrl(filters: StudyFiltersValue, cursor: string | null): string {
-  const params = new URLSearchParams({ limit: "30" });
-  if (cursor) params.set("cursor", cursor);
-  if (filters.q) params.set("q", filters.q);
-  if (filters.sourceKey) params.set("sourceKey", filters.sourceKey);
-  if (filters.category) params.set("category", filters.category);
-  if (filters.kind) params.set("kind", filters.kind);
-  if (filters.starred !== undefined) params.set("starred", String(filters.starred));
-  if (filters.read !== undefined) params.set("read", String(filters.read));
-  if (filters.recommended !== undefined) params.set("recommended", String(filters.recommended));
-  if (filters.publishedFrom) params.set("publishedFrom", koreanDateToUtc(filters.publishedFrom, false));
-  if (filters.publishedTo) params.set("publishedTo", koreanDateToUtc(filters.publishedTo, true));
-  return `/api/study/v1/materials?${params}`;
+function materialQuery(filters: StudyFiltersValue, cursor: string | null): StudyMaterialQuery {
+  const query: StudyMaterialQuery = { limit: 30 };
+  if (cursor) query.cursor = cursor;
+  if (filters.q) query.q = filters.q;
+  if (filters.sourceKey) query.sourceKey = filters.sourceKey;
+  if (filters.category) query.category = filters.category;
+  if (filters.kind) query.kind = filters.kind;
+  if (filters.starred !== undefined) query.starred = filters.starred;
+  if (filters.read !== undefined) query.read = filters.read;
+  if (filters.recommended !== undefined) query.recommended = filters.recommended;
+  if (filters.publishedFrom) query.publishedFrom = koreanDateToUtc(filters.publishedFrom, false);
+  if (filters.publishedTo) query.publishedTo = koreanDateToUtc(filters.publishedTo, true);
+  return query;
 }
 
-async function readJson(response: Response): Promise<unknown> {
-  try {
-    return await response.json();
-  } catch {
-    throw new Error("응답을 읽지 못했습니다.");
-  }
-}
-
-function sourceItems(value: unknown): StudyFilterSource[] {
-  const parsed = listSourcesResponseSchema.safeParse(value);
-  if (!parsed.success) throw new Error("소스 응답 형식이 올바르지 않습니다.");
-  return parsed.data.sources.map(({ sourceKey, title }) => ({ sourceKey, sourceName: title }));
-}
-
-export function StudyLibrary() {
+export function StudyLibrary({ listMaterials, listSources, getMaterial, saveMaterialState }: Props) {
   const [filters, setFilters] = useState<StudyFiltersValue>(() =>
     typeof window === "undefined" ? {} : filtersFromSearch(window.location.search));
   const [sources, setSources] = useState<StudyFilterSource[]>([]);
@@ -105,14 +98,11 @@ export function StudyLibrary() {
       setLoadFailure(null);
     }
     try {
-      const response = await fetch(materialUrl(nextFilters, cursor));
-      if (response.status === 401) throw new Error("unauthenticated");
-      if (!response.ok) throw new Error("failed");
-      const parsed = listMaterialsResponseSchema.safeParse(await readJson(response));
-      if (!parsed.success) throw new Error("failed");
+      const result = await listMaterials(materialQuery(nextFilters, cursor));
+      if (result.status === "error") throw new Error(result.code);
       if (id !== requestId.current) return;
-      setMaterials((current) => append ? [...current, ...parsed.data.items] : parsed.data.items);
-      setNextCursor(parsed.data.nextCursor);
+      setMaterials((current) => append ? [...current, ...result.data.items] : result.data.items);
+      setNextCursor(result.data.nextCursor);
     } catch (error) {
       if (id !== requestId.current) return;
       const failure: LoadFailure = error instanceof Error && error.message === "unauthenticated" ? "unauthenticated" : "failed";
@@ -124,7 +114,7 @@ export function StudyLibrary() {
         else setIsLoading(false);
       }
     }
-  }, []);
+  }, [listMaterials]);
 
   useEffect(() => {
     void loadMaterials(filters, null, false);
@@ -133,14 +123,13 @@ export function StudyLibrary() {
   useEffect(() => {
     void (async () => {
       try {
-        const response = await fetch("/api/study/v1/sources");
-        if (!response.ok) throw new Error("sources");
-        setSources(sourceItems(await readJson(response)));
+        const result = await listSources();
+        setSources(result.status === "ok" ? result.data : []);
       } catch {
         setSources([]);
       }
     })();
-  }, []);
+  }, [listSources]);
 
   useEffect(() => {
     function restoreFilters() {
@@ -162,37 +151,13 @@ export function StudyLibrary() {
     setMoreFailure(false);
   }
 
-  async function recoverLatestState(materialId: number): Promise<MaterialStateSaveResult> {
-    const response = await fetch(`/api/study/v1/materials/${materialId}`);
-    if (response.status === 401) return { status: "unauthenticated" };
-    if (!response.ok) throw new Error("최신 상태를 조회하지 못했습니다.");
-    const parsed = getMaterialResponseSchema.safeParse(await readJson(response));
-    if (!parsed.success) throw new Error("최신 상태 응답 형식이 올바르지 않습니다.");
-    return { status: "conflict", latestState: parsed.data.material.state };
-  }
-
   async function saveState(materialId: number, input: DesiredMaterialState): Promise<MaterialStateSaveResult> {
-    let response: Response;
-    try {
-      response = await fetch(`/api/study/v1/materials/${materialId}/state`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      });
-    } catch {
-      return recoverLatestState(materialId);
-    }
-    if (response.status === 401) return { status: "unauthenticated" };
-    if (response.status === 409) return recoverLatestState(materialId);
-    if (!response.ok) throw new Error("저장하지 못했습니다.");
-    try {
-      const parsed = updateMaterialStateResponseSchema.safeParse(await readJson(response));
-      if (!parsed.success) throw new Error("저장 응답 형식이 올바르지 않습니다.");
-      setMaterials((current) => current.map((material) => material.id === materialId ? { ...material, state: parsed.data.state } : material));
-      return { status: "saved", state: parsed.data.state };
-    } catch {
-      return recoverLatestState(materialId);
-    }
+    return saveMaterialStateWithRecovery(
+      { getMaterial, saveMaterialState },
+      materialId,
+      input,
+      (state) => setMaterials((current) => current.map((material) => material.id === materialId ? { ...material, state } : material)),
+    );
   }
 
   const hasFilters = Object.values(filters).some((value) => value !== undefined && value !== "");

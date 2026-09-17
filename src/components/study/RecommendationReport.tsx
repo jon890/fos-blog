@@ -1,26 +1,29 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  getMaterialResponseSchema,
-  getRecommendationRunResponseSchema,
-  updateMaterialStateResponseSchema,
-  type GetRecommendationRunResult,
+import type {
+  GetRecommendationRunResult,
+  StudyActionResult,
 } from "@/lib/study/contracts";
+import { saveMaterialStateWithRecovery, type MaterialStateActions } from "./material-state-actions";
 import { type DesiredMaterialState, type MaterialStateSaveResult } from "./MaterialStateEditor";
 import { RecommendationDetail } from "./RecommendationDetail";
 
 type LoadState = "loading" | "ready" | "missing" | "unauthenticated" | "failed";
 
-async function readJson(response: Response): Promise<unknown> {
-  try {
-    return await response.json();
-  } catch {
-    throw new Error("응답을 읽지 못했습니다.");
-  }
-}
+type Props = MaterialStateActions & {
+  reportId: string;
+  initialReport?: GetRecommendationRunResult;
+  getReport: (reportId: string) => Promise<StudyActionResult<GetRecommendationRunResult>>;
+};
 
-export function RecommendationReport({ reportId, initialReport }: { reportId: string; initialReport?: GetRecommendationRunResult }) {
+export function RecommendationReport({
+  reportId,
+  initialReport,
+  getReport,
+  getMaterial,
+  saveMaterialState,
+}: Props) {
   const [report, setReport] = useState<GetRecommendationRunResult | null>(initialReport ?? null);
   const [loadState, setLoadState] = useState<LoadState>(initialReport ? "ready" : "loading");
   const requestId = useRef(0);
@@ -29,65 +32,40 @@ export function RecommendationReport({ reportId, initialReport }: { reportId: st
     const id = ++requestId.current;
     setLoadState("loading");
     try {
-      const response = await fetch(`/api/study/v1/recommendation-runs/${encodeURIComponent(reportId)}`);
-      if (response.status === 404) {
-        if (id === requestId.current) setLoadState("missing");
+      const result = await getReport(reportId);
+      if (result.status === "error") {
+        if (id !== requestId.current) return;
+        if (result.code === "not-found") setLoadState("missing");
+        else if (result.code === "unauthenticated") setLoadState("unauthenticated");
+        else setLoadState("failed");
         return;
       }
-      if (response.status === 401) throw new Error("unauthenticated");
-      if (!response.ok) throw new Error("failed");
-      const parsed = getRecommendationRunResponseSchema.safeParse(await readJson(response));
-      if (!parsed.success) throw new Error("failed");
       if (id !== requestId.current) return;
-      setReport(parsed.data);
+      setReport(result.data);
       setLoadState("ready");
-    } catch (error) {
+    } catch {
       if (id !== requestId.current) return;
-      setLoadState(error instanceof Error && error.message === "unauthenticated" ? "unauthenticated" : "failed");
+      setLoadState("failed");
     }
-  }, [reportId]);
+  }, [getReport, reportId]);
 
   useEffect(() => {
     if (!initialReport) void load();
   }, [initialReport, load]);
 
-  async function recoverLatestState(materialId: number): Promise<MaterialStateSaveResult> {
-    const response = await fetch(`/api/study/v1/materials/${materialId}`);
-    if (response.status === 401) return { status: "unauthenticated" };
-    if (!response.ok) throw new Error("최신 상태를 조회하지 못했습니다.");
-    const parsed = getMaterialResponseSchema.safeParse(await readJson(response));
-    if (!parsed.success) throw new Error("최신 상태 응답 형식이 올바르지 않습니다.");
-    return { status: "conflict", latestState: parsed.data.material.state };
-  }
-
   async function saveState(materialId: number, input: DesiredMaterialState): Promise<MaterialStateSaveResult> {
-    let response: Response;
-    try {
-      response = await fetch(`/api/study/v1/materials/${materialId}/state`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      });
-    } catch {
-      return recoverLatestState(materialId);
-    }
-    if (response.status === 401) return { status: "unauthenticated" };
-    if (response.status === 409) return recoverLatestState(materialId);
-    if (!response.ok) throw new Error("저장하지 못했습니다.");
-    try {
-      const parsed = updateMaterialStateResponseSchema.safeParse(await readJson(response));
-      if (!parsed.success) throw new Error("저장 응답 형식이 올바르지 않습니다.");
-      setReport((current) => current && {
+    return saveMaterialStateWithRecovery(
+      { getMaterial, saveMaterialState },
+      materialId,
+      input,
+      (state) => setReport((current) => current && {
         ...current,
         topics: current.topics.map((topic) => ({
           ...topic,
-          items: topic.items.map((item) => item.materialId === materialId ? { ...item, state: parsed.data.state } : item),
+          items: topic.items.map((item) => item.materialId === materialId ? { ...item, state } : item),
         })),
-      });
-      return { status: "saved", state: parsed.data.state };
-    } catch {
-      return recoverLatestState(materialId);
-    }
+      }),
+    );
   }
 
   if (loadState === "loading") return <p role="status" className="rounded-lg border border-dashed border-[var(--color-border-default)] p-6 text-center text-[var(--color-fg-secondary)]">추천 이력을 불러오고 있습니다.</p>;
