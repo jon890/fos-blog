@@ -74,4 +74,5 @@ AI 에이전트가 설계 철학을 빠르게 추론하기 위한 컨텍스트.
 ## 개인 학습자료
 
 - [ADR-037](./037-private-study-domain.md): 공개 글과 개인 자료를 분리하고 관리자와 수집기 권한을 구분한다.
-- [ADR-038](./038-study-atomic-ingestion.md): 수집 cursor와 자료, 재시도 영수증을 원자적으로 저장한다.
+- [ADR-038](./038-study-atomic-ingestion.md): 수집 cursor와 자료, 재시도 영수증을 원자적으로 저장한다. ADR-039가 대체.
+- [ADR-039](./039-career-study-backend-ownership.md): 학습자료 저장 소유권을 career-os Backend로 옮기고 fos-blog는 서버 전용 client로 호출한다.

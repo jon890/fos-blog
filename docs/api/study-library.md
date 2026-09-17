@@ -1,31 +1,38 @@
 # 학습자료 HTTP 계약
 
-**구현 범위:** 공통 관리자 인증과 소스·수집 cursor·자료·후보·추천·게시·가져오기 API를 제공한다.
-관리자 공부 화면은 이 계약을 소비해 자료, 추천 이력, 가져오기를 제공한다.
-자료 API 경로와 저장 흐름은 유지하며 인증은 공통 관리자 세션을 사용한다.
-GitHub 본인 계정과 Better Auth 도입이 승인되었고 서비스 Bearer 계약은 코디네이터가 확인했다.
-이 문서는 career-os와 fos-blog가 공유하는 HTTP 계약의 단일 소스다.
-저장 제약은 [데이터 스키마](../data-schema.md#학습자료-저장-계약)에 둔다.
+**구현 범위:** 소스·수집 cursor·자료·후보·추천·게시·가져오기 14개 동작의 HTTP 계약이다.
+이 계약을 구현하는 쪽은 career-os Backend이고 fos-blog는 관리자 화면에서 소비한다.
+fos-blog는 이 API를 더 이상 제공하지 않으며 데이터도 저장하지 않는다.
+소유권을 옮긴 결정은 [ADR-039](../adr/039-career-study-backend-ownership.md)에 둔다.
+
+기본 경로, DTO, 상태 코드, 멱등 키, URL 정규화와 cursor 형식은 이전 전후로 같다.
+인증만 브라우저 세션과 단일 서비스 Bearer 대신 역할이 구분된 서버용 Bearer로 바뀌었다.
+
+career-os Backend가 14개 동작을 구현하고 자기 저장소에 계약 문서를 세우기 전까지는
+이 문서가 그 구현이 따라야 할 기준이다.
+Backend 문서가 생기면 DTO와 상태 코드의 단일 소스를 그쪽으로 옮기고
+여기에는 관리자 화면이 의존하는 호환 조건만 남긴다.
 
 ## 책임과 호출 흐름
 
 ```mermaid
 sequenceDiagram
-    participant C as career-os
-    participant F as fos-blog
-    participant D as MySQL
-    C->>F: 소스 설정 등록
-    C->>F: 현재 cursor 조회
-    C->>C: 최근 글 또는 과거 글 수집
-    C->>F: 자료 묶음과 다음 cursor 전송
-    F->>D: 자료와 cursor와 요청 영수증을 함께 commit
-    F-->>C: 저장 영수증
-    C->>F: 누적 후보와 추천 이력 조회
-    C->>C: 모델로 주제와 자료 선택
-    C->>F: 추천 리포트 저장
-    F->>D: 중복 검증 후 리포트 전체 commit
-    C->>C: 별도 채널에 게시
-    C->>F: 게시 결과 기록
+    participant P as career-os producer
+    participant B as career-os Backend
+    participant A as fos-blog Server Action
+    participant U as 관리자 브라우저
+    P->>B: 소스 설정 등록과 현재 cursor 조회
+    P->>P: 최근 글 또는 과거 글 수집
+    P->>B: 자료 묶음과 다음 cursor 전송
+    B-->>P: 저장 영수증
+    P->>B: 누적 후보와 추천 이력 조회
+    P->>P: 모델로 주제와 자료 선택
+    P->>B: 추천 리포트 저장과 게시 결과 기록
+    U->>A: 자료 조회, 상태 수정, 가져오기 확정
+    A->>A: 관리자 세션과 쓰기 Origin 확인
+    A->>B: admin-gateway Bearer로 호출
+    B-->>A: 계약 응답 또는 오류 envelope
+    A-->>U: 화면이 구분하는 결과
 ```
 
 ## 공통 규칙
@@ -59,16 +66,19 @@ sequenceDiagram
 
 ## 인증 계약
 
-사용자는 블로그 공통 관리자 로그인 후 공부 메뉴를 이용하는 방식을 선택했다.
-Cloudflare Access와 그 전제의 `jose` 도입안은 폐기한다.
-GitHub OAuth와 Better Auth를 채택한다. 설정과 검증 근거는 [관리자 인증 설정](../code-architecture.md#관리자-인증-허용-계정-판정)을 따른다.
+Backend는 브라우저 세션을 받지 않고 역할이 구분된 서버용 Bearer만 받는다.
+관리자 본인 확인은 fos-blog의 Better Auth가 계속 담당한다.
+설정과 검증 근거는 [관리자 인증 설정](../code-architecture.md#관리자-인증-허용-계정-판정),
 관리자 경로와 세션 흐름은 [관리자 흐름](../flow.md#관리자-로그인과-세션)을 따른다.
 
-| 주체 | 허용 |
-| --- | --- |
-| 본인 관리자 세션 | 소스 목록·자료·추천 조회, 개인 상태 수정, 가져오기 검토와 commit |
-| career-os 서비스 주체 | 소스 등록·조회, 자료 수집, 후보 조회, 추천 저장과 게시 이력 기록, 가져오기 dry-run |
-| 익명 또는 다른 사용자 | 개인 리소스 접근 불가 |
+| 역할 | 허용 | 거절 |
+| --- | --- | --- |
+| `producer` | 소스 등록·조회, cursor 조회, 자료 수집, 후보 조회, 추천 저장, 게시 이력 기록, 가져오기 dry-run | 개인 상태 수정과 가져오기 확정은 `403` |
+| `admin-gateway` | 소스 목록·자료·추천 조회, 개인 상태 수정, 가져오기 dry-run과 확정 | 자료 수집과 추천 생성은 `403` |
+| 인증 없음 | 없음 | 모든 요청이 `401` |
+
+두 token은 서로 다른 값이며 같은 값을 재사용하지 않는다.
+fos-blog 서버에는 `admin-gateway` token만 주입하고 producer token은 주입하지 않는다.
 
 관리자 세션은 요청마다 DB에서 유효기간과 철회 여부, GitHub 계정의 numeric ID와 현재 환경 allowlist를 확인한다.
 Better Auth의 `user.validateUserInfo`는 사용자 생성과 재로그인 시 numeric ID를 검사하고 계정연결은 거절한다.
@@ -77,19 +87,18 @@ Better Auth의 `user.validateUserInfo`는 사용자 생성과 재로그인 시 n
 브라우저 쿠키는 HttpOnly, Secure, SameSite=Lax를 사용하고 세션 토큰을 localStorage에 보관하지 않는다.
 세션 테이블은 [인증 저장 계약](../data-schema.md#관리자-인증-저장-계약), endpoint는 아래 공통 관리자 인증 API 절을 따른다.
 
-서비스는 `Authorization: Bearer <STUDY_SERVICE_TOKEN>`을 사용한다.
-토큰은 최소 32바이트 난수로 생성한 서버 비밀값이며 `SYNC_API_KEY`와 별개로 발급한다.
-환경 설정에 없으면 서비스 인증을 허용하지 않으며 브라우저 번들과 로그, 문서 예제에 실제 값을 넣지 않는다.
-비교는 동일 길이 해시의 상수 시간 비교로 처리하며 토큰 교체 시 career-os와 서버 설정을 함께 갱신한다.
-Bearer 헤더가 있으면 서비스 인증만 수행하며 실패를 세션 인증으로 우회하지 않는다.
-유효한 서비스 토큰도 관리자 화면, 개인 상태 쓰기와 가져오기 commit에는 `403`으로 거절한다.
-서비스 요청에는 브라우저 Origin 조건을 적용하지 않는다.
+두 역할 모두 `Authorization: Bearer <token>`을 사용한다.
+token은 최소 32바이트 난수로 생성한 서버 비밀값이며 fos-blog의 `SYNC_API_KEY`와 별개로 발급한다.
+비교는 동일 길이 해시의 상수 시간 비교로 처리하고, 교체할 때 양쪽 서버 설정을 함께 갱신한다.
+브라우저 번들과 로그, 문서 예제에 실제 값을 넣지 않는다.
+Backend 요청에는 브라우저 Origin 조건을 적용하지 않는다.
 
-페이지와 Route Handler가 각각 검증하며 Proxy 통과만으로 인증되었다고 간주하지 않는다.
-브라우저 쓰기는 설정한 사이트 Origin과 요청 `Origin`이 정확히 같아야 하며 없거나 다르면 `403`이다.
-API 인증 실패는 JSON `401`로 반환하고 로그인 HTML로 리디렉션하지 않는다.
+fos-blog는 이 token을 `CAREER_STUDY_BACKEND_TOKEN`으로 서버에서만 읽는다.
+브라우저는 Backend 주소와 token을 HTML, RSC payload, JavaScript bundle과 로그에서 볼 수 없다.
+관리자 세션 확인과 브라우저 쓰기 Origin 비교는 fos-blog Server Action이 수행하며,
+그 판정이 실패하면 Backend를 호출하지 않는다.
 관리자 페이지의 세션 만료는 로그인 화면으로 이동하며 작성 중 메모는 저장 성공으로 표시하지 않는다.
-세션과 서비스 인증 수단이 바뀌어도 아래 요청·응답 DTO와 멱등 키는 바뀌지 않는다.
+인증 수단이 바뀌어도 아래 요청·응답 DTO와 멱등 키는 바뀌지 않는다.
 
 ## 공통 관리자 인증 API
 
@@ -122,7 +131,7 @@ provider가 보낸 error_description 원문을 화면이나 로그로 전달하�
 
 인증 진입점과 관리자 응답에도 `private, no-store`, `noindex, nofollow`를 적용한다.
 Better Auth 자체 rate limit과 OAuth state·CSRF 검사를 비활성화하지 않는다.
-study API의 오류 envelope와 인증 라이브러리의 오류 응답은 별도 계약이다.
+Backend의 오류 envelope와 인증 라이브러리의 오류 응답은 별도 계약이다.
 
 ## 자료 URL 식별
 
@@ -352,16 +361,17 @@ importKey 재전송은 동일 본문에 한해 원래 응답을 반환하며 다
 ## 소비측 호환 기준
 
 코디네이터가 확인한 계약을 기록한 것이며 이번 작업자가 수집을 실행한 결과는 아니다.
-이 문서의 서비스 Bearer 계약을 career-os가 소비한다.
+아래 조건은 관리자 화면이 Backend 응답에 의존하는 부분이다.
 
 | 항목 | 전달받은 조건 |
 | --- | --- |
 | career-os 기준 | `origin/plan115-study-library-integration`, `7d25915`. URL 식별·기존 reports/entries 호환 유지 |
-| fos-blog 고정 fixture | `src/app/api/study/v1/__fixtures__/career-os-plan115.ts`. YouTube URL 식별과 기존 이력 변환, nullable 설명 필드 검증 |
+| fos-blog 고정 fixture | `src/lib/study/__fixtures__/career-os-plan115.ts`. YouTube URL 식별과 기존 이력 변환, nullable 설명 필드 검증 |
+| 소비측 검증 | `src/lib/study/backend-contract.test.ts`. 계약대로 응답하는 mock HTTP server로 Backend client 호환을 확인 |
 | Kurly | `sitemap-index.xml` 사용. `sitemap.xml`은 403 관측 |
 | Olive | `sitemap-index.xml`로 과거 자료 수집 |
 | Kakao | `sitemap.xml`의 urlset에서 posts 경로 필터 |
 | YouTube | 공개 channel ID에서 uploads playlist를 구하고 `playlistItems.list`의 maxResults 50과 pageToken 사용 |
 | YouTube API key 부재 | archive 미지원으로 알리고 RSS 최근 수집 유지. 실패를 빈 성공 배치로 보내지 않음 |
-| 소비 환경 | career-os의 `STUDY_LIBRARY_URL`과 `STUDY_SERVICE_TOKEN`. 실제 비밀값은 환경에서 주입 |
+| 소비 환경 | career-os producer의 `STUDY_LIBRARY_URL`과 producer token, fos-blog의 `CAREER_STUDY_BACKEND_URL`과 `CAREER_STUDY_BACKEND_TOKEN`. 실제 비밀값은 환경에서 주입 |
 | 옛 이력 | 날짜 필터의 null 구분 유지. 누락한 careerQuestion·summary·reason·careerValue는 null 보존 |

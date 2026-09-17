@@ -19,85 +19,27 @@ DB 스키마를 바꿀 때는 다음 순서를 따른다.
 
 ## 학습자료 저장 계약
 
-**구현 범위:** 관리자 인증 테이블 네 개와 study 테이블 13개, 추천·게시·가져오기 서비스와 관리자 공부 화면을 제공한다.
-Route Handler는 이 스키마의 원자 저장과 이력 조회 기능을 서비스 계층으로 호출한다.
-관리자 공부 화면은 HTTP 계약을 통해 자료와 이력을 조회하거나 개인 상태를 수정한다.
-HTTP 필드의 길이와 입력 검증은 [학습자료 API](./api/study-library.md)가 소유한다.
-기존 MySQL에 `study_` 테이블을 추가하고 `posts`, GitHub 동기화와 방문 통계는 연결하지 않는다.
+학습자료의 자료, 개인 상태, 추천과 게시 이력은 fos-blog가 저장하지 않는다.
+데이터 소유자는 career-os Backend이며 그 저장 계약은 career-os 저장소가 소유한다.
+소유권을 옮긴 결정과 근거는 [ADR-039](./adr/039-career-study-backend-ownership.md)에 둔다.
 
-### 타입과 소유자
+fos-blog는 관리자 화면에서 서버 전용 client로 그 Backend를 호출한다.
+호출 경계와 모듈 배치는 [학습자료 모듈](./code-architecture.md#학습자료-모듈),
+소비하는 DTO와 역할별 권한은 [학습자료 HTTP 계약](./api/study-library.md)을 따른다.
 
-ID는 `INT UNSIGNED AUTO_INCREMENT`, 버전과 순번은 `INT UNSIGNED`를 사용한다.
-증가 전 범위를 검사하며 초과를 순환이나 0으로 처리하지 않는다.
-시간은 UTC `DATETIME(3)`로 저장하고 API에서 UTC ISO 문자열로 변환한다.
-아래 표에서 `?`는 nullable이고 나머지 필드는 NOT NULL이다.
-길이 없는 키는 `VARCHAR(128)`, 해시는 `CHAR(64)`, URL은 `VARCHAR(2048)`다.
-식별자와 해시는 binary 비교를 적용하고 제목과 검색용 텍스트는 `utf8mb4`로 저장한다.
-같은 YouTube ID의 대소문자가 다른 경우 UNIQUE 제약에서도 구분해야 한다.
+관리자 세션은 계속 fos-blog MySQL을 사용한다.
+아래 [관리자 인증 저장 계약](#관리자-인증-저장-계약)이 그 네 테이블을 소유한다.
 
-소유자는 서버에 고정한 논리 키 `owner` 하나이며 브라우저 입력으로 받지 않는다.
-로그인 제공자의 고정 계정 ID는 이 소유자에 인증하는 설정값으로만 쓰므로 로그인 변경 시 자료를 이관하지 않는다.
-다중 사용자, 공개 여부 컬럼과 공개 조회는 이번 저장 모델에 추가하지 않는다.
-공통 관리자 로그인 뒤에 공부 화면을 제공하며 공개 자료 API는 이번 범위에 없다.
-일반 공개 범위가 별도로 바뀌면 실행 전에 이 절을 재검토한다.
-인증용 계정·세션 테이블은 study 테이블과 분리한다.
-Better Auth 테이블은 아래 [관리자 인증 저장 계약](#관리자-인증-저장-계약)을 따른다.
+### migration 이력
 
-### 테이블
+13개 `study_` 테이블을 만든 `drizzle/0012_tired_luminals.sql`과
+`drizzle/meta/0012_snapshot.json`은 적용 여부와 무관하게 이력으로 보존한다.
+제거는 과거 migration을 편집하지 않고 `drizzle/0013_drop_study_tables.sql`을 추가하는 방식으로 처리했다.
 
-| 테이블 | 필드 | 키와 제약 |
-| --- | --- | --- |
-| `study_sources` | `source_key`, `title VARCHAR(500)`, `category VARCHAR(16)`, `url?`, `feed_url?`, `adapter VARCHAR(16)`, `enabled BOOLEAN`, `version`, `updated_at` | PK source_key. API enum과 URL 조합 검증 적용 |
-| `study_source_cursors` | `source_key`, `mode VARCHAR(8)`, `cursor JSON?`, `version`, `updated_at` | PK (source_key, mode), source FK. recent/archive 행을 소스 생성과 함께 version 0으로 생성 |
-| `study_materials` | `id`, `content_key VARCHAR(191)`, `canonical_url`, `url`, `title VARCHAR(500)`, `published VARCHAR(128)`, `published_at?`, `excerpt TEXT?`, `kind VARCHAR(16)`, `collected_at`, `created_at` | PK id, UNIQUE content_key, INDEX (published_at, id). excerpt는 API 2000자 제한 |
-| `study_material_sources` | `material_id`, `source_key`, `collected_at` | PK (material_id, source_key), 양쪽 FK, INDEX (source_key, material_id) |
-| `study_material_tags` | `material_id`, `tag VARCHAR(50)` | PK (material_id, tag), material FK. API 배열을 관계로 저장 |
-| `study_material_states` | `owner_key`, `material_id`, `starred BOOLEAN`, `read BOOLEAN`, `note TEXT`, `version`, `updated_at` | PK (owner_key, material_id), material FK. 최초 상태는 행 없이 API 기본값, 최초 수정 version 1 |
-| `study_recommendation_control` | `owner_key`, `history_version`, `latest_run_id INT?` | PK owner_key, latest_run_id FK. 최초 사용 시 Repository가 owner/0/null 행을 멱등 생성하며 모든 추천·가져오기 commit의 잠금 대상으로 사용 |
-| `study_recommendation_runs` | `id`, `report_id`, `generated_at`, `committed_at`, `request_hash`, `history_version`, `origin VARCHAR(8)` | PK id, UNIQUE report_id. origin은 live/import, history_version은 해당 저장 영수증의 버전 |
-| `study_recommendation_topics` | `id`, `run_id`, `position`, `topic_key`, `title VARCHAR(300)`, `career_question VARCHAR(300)?` | PK id, run FK, UNIQUE (id, run_id), UNIQUE (run_id, topic_key), UNIQUE (run_id, position) |
-| `study_recommendation_items` | `id`, `run_id`, `topic_id`, `position`, `material_id`, `title VARCHAR(500)`, `canonical_url`, `summary VARCHAR(300)?`, `reason VARCHAR(300)?`, `career_value VARCHAR(32)?` | PK id, run/material FK, (topic_id, run_id) 복합 FK, UNIQUE (run_id, material_id), UNIQUE (topic_id, position). topic의 run 일치 검증 |
-| `study_recommended_materials` | `owner_key`, `material_id`, `first_run_id` | PK (owner_key, material_id), material/run FK. 과거 반복 추천과 별개인 누적 중복 판정 집합 |
-| `study_publications` | `id`, `run_id`, `channel`, `published_at`, `external_id`, `url?`, `request_hash` | PK id, run FK, UNIQUE (run_id, channel, external_id) |
-| `study_request_receipts` | `operation VARCHAR(16)`, `request_key`, `request_hash`, `response JSON`, `created_at` | PK (operation, request_key). operation은 ingestion/publication/import |
-
-추천 항목의 title과 canonical_url은 추천 당시 값을 보존한다.
-가져오기 자료의 url은 canonicalUrl이며 `collected_at`과 `created_at`은 서버 가져오기 시각이다.
-이 시각을 원문 발행일로 사용하지 않는다.
-기존 자료는 가져오기로 갱신하지 않고 소스 연결만 없는 경우 추가한다.
-신규 수집은 API의 collectedAt 비교로 메타와 태그를 함께 갱신한다.
-소스 연결의 collected_at은 그 소스의 가장 큰 수집 시각을 유지한다.
-모든 추천 항목의 nullable 설명 필드는 과거 이력 보존을 위한 것이며 신규 추천 입력에서는 필수다.
-
-### 원자성과 재시도
-
-| 쓰기 | 같은 트랜잭션에서 처리할 범위 | 동시 요청과 실패 |
-| --- | --- | --- |
-| 소스 등록 | 소스 버전 비교, 소스와 최초 cursor 두 행 생성 | 생성 경합은 UNIQUE로 직렬화하고 오래된 version은 409 |
-| 자료 수집 | 영수증 재조회, cursor 잠금·버전 비교, 자료·태그·소스 연결, cursor 증가, 영수증 | 동일 영수증 재전송은 버전 검사를 생략, 잠금 뒤에도 재조회. 자료 키 오름차순으로 처리 |
-| 개인 상태 | (owner, material) 조건부 갱신 또는 최초 INSERT | 최초 생성 경합은 UNIQUE 위반을 409로 변환. 메모 자동 병합 없음 |
-| 신규 추천 | control 잠금, reportId 재조회, 누적 중복·직전 주제 검사, run/topic/item/snapshot, 누적 집합, 최신 포인터·버전 | 동일 reportId 재시도는 원래 버전 반환. 빈 topics도 실행 이력과 최신 포인터를 갱신 |
-| 게시 기록 | 영수증, 게시 고유 키 검증, publication 저장 | 같은 고유 키의 다른 본문은 409. 외부 발송은 하지 않음 |
-| 이력 가져오기 | control 잠금, 영수증·미리보기 버전 검사, 새 자료·소스 연결·과거 이력·누적 집합·영수증 | 전체 rollback. 과거 반복 자료는 이력 행을 보존하고 누적 집합만 합침 |
-
-각 잠금 재획득 뒤 멱등 키를 재조회한다. 영수증은 현재 계획에서 만료·삭제하지 않는다.
-DB deadlock은 트랜잭션 전체를 rollback하고 최대 2회 재시도한 뒤 `503 UNAVAILABLE`로 반환한다.
-오래된 버전과 검증 오류는 자동 재시도하지 않는다.
-DB를 사용할 수 없으면 빈 개인 목록이나 성공 영수증으로 대체하지 않는다.
-
-### 삭제와 마이그레이션
-
-삭제 API와 보존기간 자동 삭제는 제공하지 않으며 FK는 모두 `RESTRICT`다.
-소스 비활성화는 이미 수집한 자료와 개인 상태, 추천 이력을 보존한다.
-운영자가 삭제할 필요가 생기면 별도 승인과 삭제 순서 설계가 필요하다.
-
-구현 시 스키마 단일 소스 `src/infra/db/schema/study.ts`와 export를 먼저 작성한다.
-[공통 마이그레이션 절차](#스키마-변경과-마이그레이션)에 따라 FK, 대소문자 UNIQUE, 재실행과 rollback을 검증한다.
-기존 테이블의 데이터·인덱스 변경과 운영 DB 적용은 이 설계 작업에 포함하지 않는다.
-
-**관련:** [prd.md](./prd.md) · [adr/README.md](./adr/README.md)
-
----
+그 migration은 13개 테이블만 지운다.
+외래 키가 모두 `RESTRICT`라서 생성 도구가 낸 이름 순서로는 `study_materials`에서 오류 3730으로 멈춘다.
+자식 테이블부터 지우는 순서를 명시했고, 재실행 멱등과 비 study 테이블 유지는
+`src/infra/db/study-removal.test.ts`가 격리 MySQL에서 검증한다.
 
 ## 관리자 인증 저장 계약
 
@@ -122,11 +64,9 @@ email은 권한 근거가 아니며 Better Auth 기본 모델 호환을 위해 �
 GitHub ID를 환경 설정에서 DB 사용자 PK로 복사하거나 숫자 자동 증가로 치환하지 않는다.
 
 계정 삭제 기능은 노출하지 않는다. 향후 인증 사용자 행을 삭제하면 session과 account만 cascade한다.
-study 소유자 `owner`에는 auth FK를 두지 않아 로그인 계정 설정 변경으로 자료를 지우지 않는다.
 비밀번호 로그인은 꺼 두므로 password는 null이며 OAuth token은 필요한 인증 처리 외에 사용하거나 응답하지 않는다.
 session 로그아웃은 해당 session 행 삭제로 철회한다. verification 만료와 소비는 Better Auth가 처리한다.
 공통 DB parameter 로그를 끄고 인증 logger에도 토큰과 프로필 원문을 전달하지 않는다.
-이 네 테이블에는 앞선 study 테이블의 `INT` ID와 FK `RESTRICT` 규칙을 적용하지 않는다.
 
 기존 Drizzle 마이그레이션 체계로 생성·적용하며 Better Auth의 직접 DB migrate는 사용하지 않는다.
 [공통 마이그레이션 절차](#스키마-변경과-마이그레이션)에 따라 재실행, FK와 세션 철회를 검증한다.
@@ -134,7 +74,7 @@ session 로그아웃은 해당 session 행 삭제로 철회한다. verification 
 
 ## 전체 스키마
 
-현재 인증 테이블 네 개와 study 테이블 13개를 포함해 모두 26개 테이블이다.
+현재 인증 테이블 네 개를 포함해 모두 13개 테이블이다.
 스키마 소스는 `src/infra/db/schema/*.ts`다.
 
 ### `posts`

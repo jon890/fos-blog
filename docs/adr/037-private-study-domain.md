@@ -2,6 +2,9 @@
 
 - **status**: `accepted`
 - **결정**: 학습자료는 기존 MySQL의 별도 study 테이블에 저장하고 공개 글 동기화·검색에 포함하지 않는다.
+- **대체된 부분**: 저장 위치 결정은 [ADR-039](./039-career-study-backend-ownership.md)가 대체한다.
+  학습자료는 fos-blog의 study 테이블이 아니라 career-os Backend가 소유한다.
+  공개 글과 분리한다는 결정, 소유자 `owner` 하나와 주체 구분은 그대로 유효하다.
 - **소유자와 권한**: 개인 상태의 소유자는 서버가 정한 `owner` 하나다.
   관리자 브라우저 세션과 career-os 서비스 Bearer는 서로 대체할 수 없는 주체로 판정한다.
   관리자 인증은 Better Auth의 GitHub OAuth를 사용하고 환경에 지정한 numeric ID 하나만 허용한다.

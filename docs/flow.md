@@ -2,10 +2,14 @@
 
 ## 학습자료 관리 흐름
 
-**구현 범위:** 공통 관리자 로그인과 자료 저장·소스·수집 cursor·개인 상태·추천·게시·가져오기 API, 관리자 공부 화면 흐름을 제공한다.
+**구현 범위:** 공통 관리자 로그인과 관리자 공부 화면 흐름을 제공한다.
+자료, 개인 상태, 추천과 가져오기는 career-os Backend를 서버에서 호출해 처리한다.
 GitHub 본인 계정과 Better Auth를 사용한다.
-본인 전용 UI와 career-os의 수집·추천 역할을 기준으로 작성했다.
-요청 스키마는 [학습자료 API](./api/study-library.md)를 따른다.
+소비하는 요청 스키마는 [학습자료 HTTP 계약](./api/study-library.md)을 따른다.
+
+브라우저는 Backend 주소와 token을 알지 못한다.
+화면의 모든 학습자료 호출은 Next.js Server Action을 거치며, 그 action이 관리자 세션을 확인한 뒤
+`admin-gateway` Bearer로 Backend를 호출한다.
 
 ```mermaid
 flowchart TD
@@ -13,8 +17,10 @@ flowchart TD
     B -->|없음 또는 만료| C[로그인 화면]
     B -->|다른 계정| X[접근 불가 안내]
     B -->|성공| D[자료 목록과 검색·필터]
-    D --> E{조회 결과}
-    E -->|DB 오류| F[조회 실패와 재시도]
+    D --> S[Server Action이 세션 확인]
+    S --> T[Backend client가 admin-gateway Bearer로 호출]
+    T --> E{조회 결과}
+    E -->|Backend 장애·timeout| F[조회 실패와 재시도]
     E -->|0건| G[자료 없음 또는 검색 결과 없음]
     E -->|자료 있음| H[원문 링크·즐겨찾기·읽음·메모]
     H --> I[원하는 최종 상태와 버전 전송]
@@ -34,13 +40,36 @@ flowchart TD
     R -->|입력 오류| O
 ```
 
+### Server Action과 Backend 호출
+
+| 단계 | 하는 일 | 실패 |
+| --- | --- | --- |
+| Server Action 진입 | `getAdminSession`으로 세션과 허용 GitHub 계정을 확인 | 익명은 재로그인 안내, 다른 계정은 권한 없음, 세션 장애는 일시 실패 |
+| 쓰기 동작의 Origin 확인 | 설정한 사이트 Origin과 요청 `Origin` 비교 | 다르거나 없으면 권한 없음 |
+| Backend 호출 | base URL에 기존 상대 경로를 붙이고 `admin-gateway` Bearer와 timeout 지정 | 연결 실패와 timeout은 일시 실패 |
+| 응답 검증 | 기존 DTO 스키마로 응답을 검사 | JSON 파싱 실패와 계약 불일치는 일시 실패 |
+
+Backend 오류 code는 화면이 구분하는 결과로 좁혀 전달한다.
+
+| Backend | 화면 결과 |
+| --- | --- |
+| 401 `UNAUTHENTICATED` | 재로그인 안내 |
+| 403 `FORBIDDEN` | 권한 없음 안내 |
+| 404 `NOT_FOUND` | 없는 자료와 없는 리포트 안내 |
+| 409 `VERSION_CONFLICT` | 최신 상태 조회와 편집 초안 유지 |
+| 409 `IMPORT_CHANGED` | 미리보기 폐기와 새 미리보기 요구 |
+| 429 `RATE_LIMITED`, 503 `UNAVAILABLE`, timeout | 일시 실패 안내와 재시도 |
+
+Backend 설정이 없는 환경에서는 Backend를 호출하지 않고 일시 실패로 처리한다.
+Backend의 내부 메시지와 요청 URL, Bearer token은 브라우저로 전달하지 않는다.
+
 ### 화면과 상태
 
 | 경로 | 정보와 조작 | 실패·빈 상태 |
 | --- | --- | --- |
 | `/admin/login` | 관리자 로그인 버튼과 로그인 실패 안내 | 취소·인증 제공자 장애·허용하지 않은 계정을 구분하고 재시도 제공 |
 | `/admin` | 본인 계정, 공부 메뉴, 로그아웃 | 세션 없음은 로그인 이동, 세션 조회 장애는 오류 표시 |
-| `/admin/study` | 자료 제목, 소스, 발행일, 종류, 태그, 추천 여부와 개인 상태. 검색, 소스·분류·종류·날짜·즐겨찾기·읽음·추천 필터, 더 보기 | 첫 목록 없음과 검색 결과 없음 구분. DB 오류는 재시도. null 발행일은 발행일 정보 없음 |
+| `/admin/study` | 자료 제목, 소스, 발행일, 종류, 태그, 추천 여부와 개인 상태. 검색, 소스·분류·종류·날짜·즐겨찾기·읽음·추천 필터, 더 보기 | 첫 목록 없음과 검색 결과 없음 구분. Backend 장애는 재시도. null 발행일은 발행일 정보 없음 |
 | `/admin/study/recommendations` | 생성일과 주제 수의 추천 목록, 더 보기 | 추천 없음과 조회 실패 구분 |
 | `/admin/study/recommendations/[reportId]` | 주제, 업무 질문, 추천 당시 제목·요약·이유·분류, 현재 개인 상태, 게시 기록 | 없는 리포트는 404. 과거 null 설명은 기존 이력에 설명 없음 |
 | `/admin/study/imports` | 정규화 JSON 파일 선택, dry-run 결과 개수·경고, 가져오기 확정 버튼 | JSON·크기 오류는 저장하지 않음. 이력 변경 시 새 dry-run 필수 |
@@ -53,16 +82,16 @@ flowchart TD
 
 상태 저장은 자료별 한 요청만 허용하고 성공 전에는 저장 완료로 표시하지 않는다.
 메모는 일반 텍스트 입력과 명시적인 저장 버튼을 사용한다.
-409와 응답 유실 후에는 `GET /materials/{id}`로 최신 상태를 읽고 편집 초안을 함께 보존하며 자동 덮어쓰지 않는다.
+409와 응답 유실 후에는 자료 단건 조회 action으로 최신 상태를 읽고 편집 초안을 함께 보존하며 자동 덮어쓰지 않는다.
 저장 중 버튼은 비활성화하고 결과는 `aria-live`로 알린다.
 조회 중 skeleton과 더 보기 버튼을 제공하고 오류 후 같은 cursor로 재시도한다.
 개인 데이터는 localStorage, analytics, 광고와 공개 검색에 넣지 않는다.
 
 가져오기는 본인이 `/admin/study/imports`에 정규화 JSON을 선택하는 명시적 경로로 제공한다.
 선택 파일은 `{importKey,reports}` payload 자체이며 career-os가 별도로 저장한 dry-run 응답 파일은 받지 않는다.
-브라우저는 서버가 검증한 previewHash와 historyVersion을 보관한 뒤 같은 payload로 commit한다.
+브라우저는 Backend가 검증한 previewHash와 historyVersion을 보관한 뒤 같은 payload로 commit한다.
 사용자가 파일을 바꾸면 이전 미리보기와 확정 가능 상태를 폐기한다.
-서비스 주체는 dry-run까지만 허용하며 본인의 확인 없이 commit하지 않는다.
+`producer` 주체는 dry-run까지만 허용하며 본인의 확인 없이 commit하지 않는다.
 
 ### 관리자 로그인과 세션
 

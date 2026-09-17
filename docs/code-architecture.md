@@ -2,34 +2,24 @@
 
 ## 학습자료 모듈
 
-**구현 범위:** 공통 관리자 인증과 study 스키마·Repository·소스·수집·자료·개인 상태·추천·게시·가져오기 API, 관리자 공부 화면을 제공한다.
-인증, 저장·수집, 추천·가져오기, 공부 UI 순으로 구현한다.
-서비스 책임과 DTO는 [학습자료 API](./api/study-library.md), 테이블은
-[학습자료 저장 계약](./data-schema.md#학습자료-저장-계약)을 따른다.
+**구현 범위:** 공통 관리자 인증과 관리자 공부 화면을 제공하고, 학습자료는 career-os Backend를 서버에서 호출해 읽고 쓴다.
+자료, 개인 상태, 추천과 게시 이력의 저장은 fos-blog에 없다. 소유권 결정은
+[ADR-039](./adr/039-career-study-backend-ownership.md)에 둔다.
+소비하는 DTO와 역할별 권한은 [학습자료 HTTP 계약](./api/study-library.md)을 따른다.
 다음 표는 공통 관리자와 study 구현 경로를 표시한다.
-화면 경로는 후속 구현 위치다.
 
 | 경로 | 책임 |
 | --- | --- |
-| `src/lib/study/contracts.ts` | Zod 입력 스키마, 브라우저와 서버에서 쓰는 DTO·enum |
-| `src/lib/study/url-identity.ts` | career-os와 같은 URL 정규화와 contentKey 계산, 고정 fixture 검증 |
+| `src/lib/study/contracts.ts` | 관리자 화면이 쓰는 DTO·enum, 가져오기 요청 스키마와 오류 스키마 |
 | `src/lib/admin/auth.ts` | Better Auth 설정과 GitHub numeric ID 검증 |
 | `src/lib/admin/session.ts` | DB 세션과 현재 허용 GitHub 계정 재검증, page/API용 판정 |
 | `src/lib/admin/client.ts` | Better Auth React client. 로그인과 로그아웃만 호출 |
 | `src/infra/db/schema/auth.ts` | Better Auth user/session/account/verification 모델 |
 | `src/app/api/auth/[...all]/route.ts` | 허용한 Better Auth endpoint만 Next.js Handler로 전달 |
-| `src/lib/study/auth.ts` | 공통 관리자 세션 또는 별도 서비스 Bearer를 판정하고 API 권한과 브라우저 쓰기 Origin 분리 |
-| `src/lib/study/http.ts` | 본문 크기와 query 검증, 오류 변환, 개인 응답 헤더 |
-| `src/infra/db/schema/study.ts` | study 테이블과 FK, 인덱스, 타입 |
-| `src/infra/db/repositories/StudyRepository.ts` | 자료·소스·개인 상태·추천·게시·가져오기 조회와 DB 쓰기, 트랜잭션 실행 인터페이스 |
-| `src/infra/db/repositories/StudyImportRepository.ts` | 가져오기 dry-run 조회와 commit 트랜잭션 구현. `StudyRepository`가 이 모듈에 위임 |
-| `src/services/study/ingestion.ts` | cursor와 자료·영수증 원자적 저장 |
-| `src/services/study/sources.ts` | 소스 전체 교체와 version 비교, cursor 두 행 초기화 |
-| `src/services/study/materials.ts` | 개인 자료 조회와 상태 갱신 조합 |
-| `src/services/study/recommendations.ts` | 후보 조회, 누적 중복 검증, 추천·게시 이력 |
-| `src/services/study/imports.ts` | dry-run과 commit 재검증, 과거 이력 보존 |
-| `src/app/api/study/v1/` | API 문서의 소스·자료·후보·추천·게시·가져오기 Route Handler. 인증·검증 후 서비스 호출 |
-| `src/app/api/study/v1/__fixtures__/career-os-plan115.ts` | career-os의 URL 식별과 기존 이력 변환 소비 계약 고정값 |
+| `src/lib/study/backend-client.ts` | career-os Backend 호출. base URL 결합, Bearer 부착, timeout, 오류 code 전달과 응답 Zod 검증 |
+| `src/app/admin/(protected)/study/actions.ts` | 관리자 세션과 쓰기 Origin을 확인한 뒤 Backend client를 호출하는 Server Action |
+| `src/components/study/material-state-actions.ts` | 버전 충돌과 응답 유실을 최신 상태 조회로 복구하는 공통 처리 |
+| `src/lib/study/__fixtures__/career-os-plan115.ts` | career-os의 URL 식별과 기존 이력 변환 소비 계약 고정값 |
 | `src/app/admin/login/page.tsx` | 로그인 시작과 실패 안내. 세션 필수 layout 밖에 배치 |
 | `src/app/admin/error.tsx` | 보호 layout·page의 장애 안내와 재시도. 오류 원문은 표시하지 않음 |
 | `src/app/admin/(protected)/layout.tsx` | 관리자 세션 확인, 제목과 로그아웃 |
@@ -38,23 +28,29 @@
 | `src/components/study/` | `StudyFilters`, `MaterialList`, `MaterialCard`, `MaterialStateEditor`, `RecommendationHistory`, `RecommendationReport`, `RecommendationDetail`, `ImportPanel` |
 | `src/components/admin/` | `AdminLoginButton`, `AdminNavigation`, `AdminSignOutButton` |
 
-읽기 메서드는 `listMaterials`, `getMaterial`, `listCandidates`, `listRecommendationRuns`, `getRecommendationRun`, `previewImport`다.
-쓰기 서비스는 `ingestBatch`, `saveRecommendationRun`, `recordPublication`, `commitImport`다.
-소스 서비스는 `putSource`, `listSources`, `getSourceCursor`, 개인 상태 서비스는 `updateMaterialState`다.
-입력과 반환 타입은 HTTP 문서의 해당 DTO를 사용하고 브라우저 DTO에 DB 인스턴스를 포함하지 않는다.
-서비스 입력 타입은 해당 요청 이름 뒤에 `Input`, 출력은 `Result`를 붙여 `contracts.ts`에 둔다.
-예를 들어 `ingestBatch(input: IngestBatchInput): Promise<IngestBatchResult>`는 배치 요청과 영수증을 대응시킨다.
-page와 Handler는 검증된 주체의 `ownerKey`를 서비스에 별도 인자로 전달하며 입력 payload에서 owner를 만들지 않는다.
-자료 서비스와 Repository는 이 값을 개인 상태와 누적 추천 조회 조건에 사용한다.
-여러 Repository나 트랜잭션 흐름을 Route Handler에 흩어 놓지 않는다.
-Repository 내부 트랜잭션의 DB 객체를 관련 쿼리에 전달하며 전역 연결로 빠져나가지 않는다.
+### 의존 방향
 
-`getRepositories()`에 `study`를 추가하되 `React.cache()`의 요청 내 재사용만 유지한다.
-개인 자료에는 `unstable_cache`와 ISR을 사용하지 않는다.
-공개 검색 API는 개인 자료를 합치지 않으며 `posts.isActive` 정책도 바꾸지 않는다.
-서버 로그에는 operation, requestId, 성공 여부와 개수만 기록한다.
-DB 공용 연결의 개발 SQL parameter 로그는 개인 값 노출을 막도록 끈다.
-오류 응답과 로그에 토큰·메모·본문·DB 연결 문자열을 넣지 않는다.
+의존 방향은 `page → Server Action → Backend client → career-os Backend`다.
+
+- client component 는 Backend client 를 직접 import 하지 않고 page 가 넘긴 Server Action 만 호출한다.
+- Server Action 은 `getAdminSession` 으로 세션과 허용 계정을 확인한 뒤에만 Backend client 를 부른다.
+  쓰기 동작은 설정한 사이트 Origin 과 요청 `Origin` 이 같은지 함께 확인한다.
+- Backend client 는 `CAREER_STUDY_BACKEND_URL` 과 `CAREER_STUDY_BACKEND_TOKEN` 을 서버에서만 읽는다.
+  브라우저에서 import 되면 모듈 평가 단계에서 예외를 던진다.
+
+Backend client 의 읽기 함수는 `listStudyMaterials`, `getStudyMaterial`, `listStudySources`,
+`listStudyRecommendationRuns`, `getStudyRecommendationRun` 이고
+쓰기 함수는 `updateStudyMaterialState`, `dryRunStudyImport`, `commitStudyImport` 다.
+Server Action 은 같은 이름 뒤에 `Action` 을 붙인다.
+
+Server Action 은 예외 대신 `StudyActionResult` 를 돌려준다.
+`unauthenticated`, `forbidden`, `not-found`, `conflict`, `import-changed`, `failed` 여섯 가지만 구분하며
+Backend 의 내부 메시지를 그대로 브라우저로 넘기지 않는다.
+
+개인 자료에는 `unstable_cache` 와 ISR 을 사용하지 않고 Backend 요청에 `no-store` 를 지정한다.
+공개 검색 API 는 개인 자료를 합치지 않으며 `posts.isActive` 정책도 바꾸지 않는다.
+서버 로그에는 동작 이름, HTTP 상태와 오류 code 만 기록한다.
+요청 URL, Bearer token, 메모와 가져오기 본문은 로그에 넣지 않는다.
 
 ### 공개 레이아웃 분리
 
@@ -175,12 +171,13 @@ Better Auth 1.7.3의 signOut은 DB 삭제 오류를 삼키므로 Route에서 세
 | `GITHUB_CLIENT_ID` | 관리자 OAuth App client ID |
 | `GITHUB_CLIENT_SECRET` | 관리자 OAuth App secret |
 | `ADMIN_GITHUB_USER_ID` | 허용할 GitHub numeric ID 문자열 하나 |
-| `STUDY_SERVICE_TOKEN` | career-os 전용 Bearer. 최소 32바이트 난수이며 관리자 로그인에서 사용 금지 |
+| `CAREER_STUDY_BACKEND_URL` | career-os Backend base URL. 운영은 HTTPS, 개발과 테스트는 loopback HTTP만 허용 |
+| `CAREER_STUDY_BACKEND_TOKEN` | `admin-gateway` 권한 Bearer. 최소 32바이트 난수이며 producer token과 다른 값을 사용 |
 
 관리자 env는 서버 스키마에 선택 문자열로 선언하되 형식·완전성과 DB 설정은 인증 초기화 때 검증한다.
 아무 값도 없으면 공개 블로그는 계속 동작하고 관리자 기능은 설정 필요 안내, 인증 요청은 `503`이다.
 부분 설정이나 잘못된 값은 관리자 인증을 허용하지 않는다.
-study API는 관리자 인증 설정 부재를 `503`, 서비스 토큰 부재를 `401`로 처리한다.
+Backend 설정이 없으면 관리자 화면의 학습자료 조회와 쓰기를 `503`으로 처리한다.
 빌드가 인증 모듈 import만으로 운영 DB에 접속하지 않도록 초기화를 지연한다.
 `.env.example`에는 설명과 빈 자리만 두고 실제 계정·호스트·secret은 기록하지 않는다.
 
