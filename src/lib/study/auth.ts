@@ -1,6 +1,9 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { env } from "@/env";
 import { getAdminSession, type AdminSessionResult } from "@/lib/admin/session";
+import logger from "@/lib/logger";
+
+const log = logger.child({ module: "study/auth" });
 
 export type StudyPrincipal =
   | { kind: "service" }
@@ -29,7 +32,38 @@ type StudyAuthDependencies = {
   serviceToken?: string;
   siteOrigin?: string;
   getSession?: (headers: Headers) => Promise<AdminSessionResult>;
+  recordAccess?: (entry: StudyAccessRecord) => void;
 };
+
+/** 기존 endpoint 사용 여부를 판정하는 근거다. 비밀값과 요청 내용은 담지 않는다. */
+export type StudyAccessRecord = {
+  method: string;
+  path: string;
+  principal: StudyPrincipal["kind"];
+};
+
+function defaultRecordAccess(entry: StudyAccessRecord): void {
+  log.info(entry, "학습자료 endpoint 접근");
+}
+
+/**
+ * 14개 route 가 모두 거치는 단일 지점이다.
+ * 성공한 요청의 method, 경로와 주체 종류만 남기고 token, query, 메모와 본문은 남기지 않는다.
+ */
+function recordStudyAccess(
+  request: Request,
+  principal: StudyPrincipal,
+  record: ((entry: StudyAccessRecord) => void) | undefined,
+): StudyPrincipal {
+  let path = "";
+  try {
+    path = new URL(request.url).pathname;
+  } catch {
+    path = "";
+  }
+  (record ?? defaultRecordAccess)({ method: request.method, path, principal: principal.kind });
+  return principal;
+}
 
 function tokenMatches(provided: string, configured: string): boolean {
   const providedHash = createHash("sha256").update(provided).digest();
@@ -57,7 +91,7 @@ export async function authorizeStudyRequest(
     if (access !== "service" && access !== "service-or-admin") {
       throw new StudyAuthError(403, "FORBIDDEN", "서비스 주체가 사용할 수 없는 요청입니다.");
     }
-    return { kind: "service" };
+    return recordStudyAccess(request, { kind: "service" }, dependencies.recordAccess);
   }
 
   const session = await (dependencies.getSession ?? getAdminSession)(request.headers);
@@ -92,5 +126,5 @@ export async function authorizeStudyRequest(
     }
   }
 
-  return { kind: "admin", ownerKey: STUDY_OWNER_KEY };
+  return recordStudyAccess(request, { kind: "admin", ownerKey: STUDY_OWNER_KEY }, dependencies.recordAccess);
 }

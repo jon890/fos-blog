@@ -13,8 +13,8 @@ const authenticated = async () => ({
   data: { user: { id: "user", name: "관리자" }, session: { id: "session", expiresAt: new Date() } },
 });
 
-function request(headers: HeadersInit = {}) {
-  return new Request("https://blog.example.test/api/study/v1/materials", { headers });
+function request(headers: HeadersInit = {}, init: RequestInit = {}) {
+  return new Request("https://blog.example.test/api/study/v1/materials", { headers, ...init });
 }
 
 describe("학습자료 API 인증", () => {
@@ -71,5 +71,54 @@ describe("학습자료 API 인증", () => {
     await expect(authorizeStudyRequest(request(), "admin-read", {
       getSession: async () => ({ status: "unavailable", reason: "database" }),
     })).rejects.toMatchObject({ status: 503, code: "UNAVAILABLE" });
+  });
+});
+
+describe("학습자료 endpoint 접근 기록", () => {
+  it("서비스와 관리자 주체의 성공 요청을 method, 경로와 주체 종류로 남긴다", async () => {
+    const recordAccess = vi.fn();
+    await authorizeStudyRequest(request({ authorization: `Bearer ${token}` }), "service", {
+      serviceToken: token,
+      recordAccess,
+    });
+    expect(recordAccess).toHaveBeenCalledWith({
+      method: "GET",
+      path: "/api/study/v1/materials",
+      principal: "service",
+    });
+
+    recordAccess.mockClear();
+    await authorizeStudyRequest(request({ origin: "https://blog.example.test" }, { method: "PATCH" }), "admin-write", {
+      siteOrigin: "https://blog.example.test",
+      getSession: authenticated,
+      recordAccess,
+    });
+    expect(recordAccess).toHaveBeenCalledWith({
+      method: "PATCH",
+      path: "/api/study/v1/materials",
+      principal: "admin",
+    });
+  });
+
+  it("기록에 token, query 와 요청 본문을 담지 않는다", async () => {
+    const recordAccess = vi.fn();
+    const withSecrets = new Request("https://blog.example.test/api/study/v1/materials?q=%EB%A9%94%EB%AA%A8", {
+      method: "PATCH",
+      headers: { origin: "https://blog.example.test", authorization: `Bearer ${token}` },
+    });
+    await authorizeStudyRequest(withSecrets, "service-or-admin", { serviceToken: token, recordAccess });
+    const entry = recordAccess.mock.calls[0][0] as Record<string, unknown>;
+    expect(Object.keys(entry).sort()).toEqual(["method", "path", "principal"]);
+    expect(JSON.stringify(entry)).not.toContain(token);
+    expect(String(entry.path)).not.toContain("q=");
+  });
+
+  it("거절한 요청은 접근으로 기록하지 않는다", async () => {
+    const recordAccess = vi.fn();
+    await expect(authorizeStudyRequest(request({ authorization: "Bearer wrong" }), "service", {
+      serviceToken: token,
+      recordAccess,
+    })).rejects.toBeInstanceOf(StudyAuthError);
+    expect(recordAccess).not.toHaveBeenCalled();
   });
 });
