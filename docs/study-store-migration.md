@@ -20,16 +20,20 @@
 
 ## 현재 진행 상태
 
-fos-blog 저장소 안에서 할 수 있는 구현은 끝났고 운영 단계는 시작하지 않았다.
+fos-blog 저장소 안에서 할 수 있는 구현은 끝났고, 운영 단계는 DB 제거만 수행했다.
 
 | 단계 | 상태 |
 | --- | --- |
 | 1. career-os Backend의 14개 HTTP 동작과 역할별 인증 | 시작하지 않음 |
 | 2. fos-blog의 서버 전용 client와 Server Action 전환 | branch 구현 완료 |
-| 3. 사전 점검 판정과 단일 writer 호출 전환 | 시작하지 않음 |
-| 4. (조건부) snapshot 이관과 행 검증, 관찰 | 3단계 판정 전이라 결정하지 않음 |
-| 5. 로컬 API, 서비스, Repository와 13개 테이블 제거 | branch 구현 완료. 배포하지 않음 |
+| 3. 사전 점검 판정과 단일 writer 호출 전환 | 사전 점검은 2026-09-18에 수행. 호출 전환은 시작하지 않음 |
+| 4. (조건부) snapshot 이관과 행 검증, 관찰 | 빈 상태 판정이라 해당 없음 |
+| 5. 로컬 API, 서비스, Repository와 13개 테이블 제거 | branch 구현 완료. 운영 DB의 13개 테이블은 제거함. image는 배포하지 않음 |
 | 6. 책임 문서와 회귀 검증 | branch 구현 완료 |
+
+3단계의 사전 점검과 5단계의 DB 제거는 순서를 바꿔 수행했다.
+운영 DB의 13개 테이블이 행 0이고 한 번도 쓰인 적이 없어 되돌릴 대상이 없었기 때문이다.
+그 근거는 `tasks/plan065-career-study-store-migration/production-db-removal-record.md`가 소유한다.
 
 2단계와 5단계는 서로 다른 image다.
 2단계 image는 로컬 `/api/study/v1`과 study 테이블이 살아 있는 커밋에서 빌드해야 하고,
@@ -42,11 +46,11 @@ branch의 커밋 순서가 그 경계를 나눈다.
    현재 fos-blog의 소비측 검증은 계약대로 응답하는 mock HTTP server로만 수행했다.
 2. 운영 환경에 `CAREER_STUDY_BACKEND_URL`과 `admin-gateway` token을 주입한다.
    producer token은 별도 값으로 career-os에 주입한다.
-3. cutover 직전 사전 점검으로 13개 테이블과 `0012_tired_luminals` 적용 여부, 기존 endpoint 접근 내역을 판정한다.
-4. 호출 주소를 전환하고 권한 경계와 rollback 경로를 확인한다.
-5. 그 결과를 확인한 뒤에야 5단계 제거 image를 배포한다.
+3. 호출 주소를 전환하고 권한 경계와 rollback 경로를 확인한다.
+4. 그 결과를 확인한 뒤에야 5단계 제거 image를 배포한다.
 
-운영 Backend 검증 전에는 main에 merge하지 않고 기존 운영 API와 DB를 지우지 않는다.
+3번 항목의 사전 점검은 2026-09-18에 끝났고 빈 상태로 판정했다.
+운영 Backend 검증 전에는 기존 운영 API를 지우지 않는다.
 
 ## 조사 결론
 
@@ -54,11 +58,18 @@ career-os의 작은 HTTP Backend가 학습자료 수집, 개인 상태, 추천�
 fos-blog는 관리자 화면과 Better Auth를 유지하되, 로컬 MySQL과 `/api/study/v1` 대신 서버에서 새 Backend를 호출한다.
 브라우저에는 Backend 주소와 토큰을 노출하지 않고 Next.js Server Action이 관리자 세션을 확인한 뒤 요청을 전달한다.
 
-현재 worktree에는 13개 `study_` 테이블의 스키마와 API 구현이 모두 있지만,
-2026-09-17에 이 worktree의 공유 `.env`가 가리키는 DB를 읽기 전용 트랜잭션으로 조회한 결과 테이블은 모두 없었고
-`0012_tired_luminals`도 `__drizzle_migrations`에 적용되지 않았다.
-따라서 조사 시점에 fos-blog에서 옮길 운영 행은 없다.
-이 결과는 배포 직전 상태를 보장하지 않으므로 cutover 직전에 같은 조회를 다시 수행한다.
+2026-09-17 조사는 이 worktree의 공유 `.env`가 가리키는 DB를 읽기 전용 트랜잭션으로 조회했고
+13개 테이블이 모두 없으며 `0012_tired_luminals`도 적용되지 않았다고 기록했다.
+그 주소인 `127.0.0.1:13307`은 개발용 로컬 MySQL 컨테이너이고 운영 DB가 아니다.
+
+2026-09-18에 홈서버 `bifos-db` 컨테이너의 `fos_blog_db`를 같은 방식으로 조회한 결과는 달랐다.
+13개 테이블이 모두 있었고 `0012_tired_luminals`도 적용돼 있었다.
+다만 13개 모두 행이 0이고 auto increment 다음 값이 1이어서, 만들어진 뒤 한 번도 쓰이지 않았다.
+따라서 옮길 운영 행은 없다.
+
+이 판정에 따라 같은 날 `0013_drop_study_tables`를 운영 DB에 적용해 13개 테이블을 제거했다.
+근거와 backup 위치는 `tasks/plan065-career-study-store-migration/production-db-removal-record.md`가 소유한다.
+운영 DB를 조회할 때는 공유 `.env`가 아니라 홈서버 `bifos-db`를 대상으로 삼는다.
 
 이전은 dual-write 없이 단일 writer를 바꾸는 방식으로 진행한다.
 career-os의 수집과 추천 실행, fos-blog 관리자 쓰기를 잠시 중지한 뒤 호출 주소를 새 Backend로 바꾸고 쓰기를 재개한다.
@@ -109,9 +120,11 @@ API가 준비되지 않은 상태에서 2단계 image를 배포하면 관리자 
 - 테스트, 환경 변수, Docker 부팅 migration, 배포 설정과 책임 문서
 - 공유 `.env`가 가리키는 DB의 테이블 존재 여부, 행 수와 migration 적용 여부
 
-조사에서는 DB, migration, 컨테이너와 외부 서비스를 변경하지 않았다.
+2026-09-17 조사에서는 DB, migration, 컨테이너와 외부 서비스를 변경하지 않았다.
 DB 조회는 자격증명을 출력하지 않고 `SET SESSION TRANSACTION READ ONLY`와 일관된 snapshot을 사용했다.
-테이블이 없어서 행 수는 0이 아니라 `해당 없음`으로 판정했다.
+그 조사가 본 DB는 개발용 로컬 MySQL이었고 테이블이 없어 행 수를 `해당 없음`으로 판정했다.
+
+운영 DB를 대상으로 한 2026-09-18 실행은 같은 읽기 전용 조회 방식을 쓰고 그 뒤에 migration을 적용했다.
 
 ## 현재 구현 영향
 
@@ -207,21 +220,21 @@ fos-blog에 서버 전용 HTTP client와 Server Action을 추가한다.
 초기 이전에서는 필드와 키를 유지해 API와 이관 검증을 단순하게 만들고,
 새 Backend 안에서 별도 최적화가 필요하면 cutover 뒤 독립 migration으로 다룬다.
 
-| 테이블 | 데이터 소유권과 역할 | 모델 판정 | fos-blog 최종 처리 | 2026-09-17 운영 확인 |
+| 테이블 | 데이터 소유권과 역할 | 모델 판정 | fos-blog 최종 처리 | 2026-09-18 운영 실행 |
 | --- | --- | --- | --- | --- |
-| `study_sources` | Backend가 소스 설정과 version 소유 | 재사용 | 자식 이관과 검증 뒤 drop | 테이블 없음 |
-| `study_source_cursors` | Backend가 소스와 mode별 수집 진도 소유 | 재사용 | 수집 중지 snapshot 뒤 drop | 테이블 없음 |
-| `study_materials` | Backend가 URL 식별 자료와 수집 시각 소유 | 재사용 | ID와 contentKey 보존 이관 뒤 drop | 테이블 없음 |
-| `study_material_sources` | Backend가 자료와 소스의 다대다 연결 소유 | 재사용 | 양쪽 부모 검증 뒤 drop | 테이블 없음 |
-| `study_material_tags` | Backend가 자료 태그 소유 | 재사용 | materialId 검증 뒤 drop | 테이블 없음 |
-| `study_material_states` | Backend가 본인 즐겨찾기, 읽음, 메모와 version 소유 | 재사용 | admin 화면 cutover 뒤 drop | 테이블 없음 |
-| `study_recommendation_control` | Backend가 이력 version, 최신 run과 직렬화 잠금 소유 | 재사용 | run과 version 검증 뒤 drop | 테이블 없음 |
-| `study_recommendation_runs` | Backend가 리포트 영수증과 commit 순서 소유 | 재사용 | reportId와 ID 보존 이관 뒤 drop | 테이블 없음 |
-| `study_recommendation_topics` | Backend가 run별 주제 snapshot과 순서 소유 | 재사용 | run FK 검증 뒤 drop | 테이블 없음 |
-| `study_recommendation_items` | Backend가 추천 당시 자료 snapshot과 순서 소유 | 재사용 | run, topic, material FK 검증 뒤 drop | 테이블 없음 |
-| `study_recommended_materials` | Backend가 누적 추천 중복 집합 소유 | 재사용 | 누적 집합 비교 뒤 drop | 테이블 없음 |
-| `study_publications` | Backend가 외부 게시 성공 이력 소유 | 재사용 | run별 이력 비교 뒤 drop | 테이블 없음 |
-| `study_request_receipts` | Backend가 ingestion, publication, import 멱등 영수증 소유 | 재사용 | hash와 응답 JSON 보존 뒤 drop | 테이블 없음 |
+| `study_sources` | Backend가 소스 설정과 version 소유 | 재사용 | 자식 이관과 검증 뒤 drop | 행 0으로 확인한 뒤 drop 완료 |
+| `study_source_cursors` | Backend가 소스와 mode별 수집 진도 소유 | 재사용 | 수집 중지 snapshot 뒤 drop | 행 0으로 확인한 뒤 drop 완료 |
+| `study_materials` | Backend가 URL 식별 자료와 수집 시각 소유 | 재사용 | ID와 contentKey 보존 이관 뒤 drop | 행 0으로 확인한 뒤 drop 완료 |
+| `study_material_sources` | Backend가 자료와 소스의 다대다 연결 소유 | 재사용 | 양쪽 부모 검증 뒤 drop | 행 0으로 확인한 뒤 drop 완료 |
+| `study_material_tags` | Backend가 자료 태그 소유 | 재사용 | materialId 검증 뒤 drop | 행 0으로 확인한 뒤 drop 완료 |
+| `study_material_states` | Backend가 본인 즐겨찾기, 읽음, 메모와 version 소유 | 재사용 | admin 화면 cutover 뒤 drop | 행 0으로 확인한 뒤 drop 완료 |
+| `study_recommendation_control` | Backend가 이력 version, 최신 run과 직렬화 잠금 소유 | 재사용 | run과 version 검증 뒤 drop | 행 0으로 확인한 뒤 drop 완료 |
+| `study_recommendation_runs` | Backend가 리포트 영수증과 commit 순서 소유 | 재사용 | reportId와 ID 보존 이관 뒤 drop | 행 0으로 확인한 뒤 drop 완료 |
+| `study_recommendation_topics` | Backend가 run별 주제 snapshot과 순서 소유 | 재사용 | run FK 검증 뒤 drop | 행 0으로 확인한 뒤 drop 완료 |
+| `study_recommendation_items` | Backend가 추천 당시 자료 snapshot과 순서 소유 | 재사용 | run, topic, material FK 검증 뒤 drop | 행 0으로 확인한 뒤 drop 완료 |
+| `study_recommended_materials` | Backend가 누적 추천 중복 집합 소유 | 재사용 | 누적 집합 비교 뒤 drop | 행 0으로 확인한 뒤 drop 완료 |
+| `study_publications` | Backend가 외부 게시 성공 이력 소유 | 재사용 | run별 이력 비교 뒤 drop | 행 0으로 확인한 뒤 drop 완료 |
+| `study_request_receipts` | Backend가 ingestion, publication, import 멱등 영수증 소유 | 재사용 | hash와 응답 JSON 보존 뒤 drop | 행 0으로 확인한 뒤 drop 완료 |
 
 `owner_key`는 현재 한 명만 사용해도 초기 이관에서 유지한다.
 이를 없애면 상태와 추천 제어 키를 동시에 바꾸고 rollback 변환도 추가해야 하므로 cutover 변경에 포함하지 않는다.
