@@ -29,15 +29,20 @@ describe("관리자 공통 레이아웃", () => {
     expect(metadata.twitter).toEqual({ images: [] });
   });
 
-  it("관리자·인증·자료 경로의 404와 오류에도 개인 캐시·색인 금지 헤더를 지정한다", async () => {
+  it("관리자와 인증 경로의 404와 오류에도 개인 캐시·색인 금지 헤더를 지정한다", async () => {
     const rules = await nextConfig.headers?.();
 
-    for (const source of ["/admin/:path*", "/api/auth/:path*", "/api/study/:path*"]) {
+    for (const source of ["/admin/:path*", "/api/auth/:path*"]) {
       expect(rules?.find((rule) => rule.source === source)?.headers).toEqual([
         { key: "Cache-Control", value: "private, no-store" },
         { key: "X-Robots-Tag", value: "noindex, nofollow" },
       ]);
     }
     expect(rules?.some((rule) => rule.source === "/:path*")).toBe(false);
+  });
+
+  it("제거한 학습자료 API 경로에는 헤더 설정을 남기지 않는다", async () => {
+    const rules = await nextConfig.headers?.();
+    expect(rules?.some((rule) => rule.source.startsWith("/api/study"))).toBe(false);
   });
 });

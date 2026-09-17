@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { canonicalizeStudyUrl, studyContentKey } from "./url-identity";
 
 const unicodeLength = (value: string) => [...value].length;
 const textSchema = (minimum: number, maximum: number) =>
@@ -29,7 +28,6 @@ export const httpsUrlSchema = textSchema(1, 2048)
 
 export const sourceCategorySchema = z.enum(["techBlog", "geek", "ai", "video"]);
 export const sourceAdapterSchema = z.enum(["feed", "page", "youtube"]);
-export const cursorModeSchema = z.enum(["recent", "archive"]);
 export const materialKindSchema = z.enum([
   "feed-article",
   "feed-video",
@@ -42,8 +40,6 @@ export const careerValueSchema = z.enum([
   "engineering-judgment",
   "product-business",
 ]);
-export const recommendationOriginSchema = z.enum(["live", "import"]);
-export const requestOperationSchema = z.enum(["ingestion", "publication", "import"]);
 export const studyErrorCodeSchema = z.enum([
   "INVALID_REQUEST",
   "UNAUTHENTICATED",
@@ -90,107 +86,12 @@ export const sourceSchema = z
     version: unsignedVersionSchema,
   })
   .superRefine(validateSourceUrlCombination);
-export const putSourceRequestSchema = z
-  .strictObject({
-    title: sourceShape.title,
-    category: sourceShape.category,
-    url: sourceShape.url,
-    feedUrl: sourceShape.feedUrl,
-    adapter: sourceShape.adapter,
-    enabled: sourceShape.enabled,
-    expectedVersion: unsignedVersionSchema,
-  })
-  .superRefine(validateSourceUrlCombination);
-export const putSourceResponseSchema = z
-  .strictObject({
-    source: sourceSchema,
-    version: unsignedVersionSchema,
-  })
-  .refine((response) => response.source.version === response.version, {
-    path: ["version"],
-    message: "응답 version은 source.version과 같아야 합니다.",
-  });
 export const listSourcesResponseSchema = z.strictObject({ sources: z.array(sourceSchema) });
 
-const cursorObjectSchema = z.json().superRefine((value, ctx) => {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    ctx.addIssue({ code: "custom", message: "cursor는 JSON 객체여야 합니다." });
-    return;
-  }
-  if (new TextEncoder().encode(JSON.stringify(value)).byteLength > 64 * 1024) {
-    ctx.addIssue({ code: "custom", message: "cursor는 64 KiB 이하여야 합니다." });
-  }
-});
-export const studyCursorSchema = cursorObjectSchema.nullable();
-export const sourceCursorResponseSchema = z.strictObject({
-  sourceKey: studyIdentifierSchema,
-  mode: cursorModeSchema,
-  cursor: studyCursorSchema,
-  version: unsignedVersionSchema,
-});
-
-const ingestionMaterialShape = {
-  contentKey: contentKeySchema,
-  canonicalUrl: httpsUrlSchema,
-  url: httpsUrlSchema,
-  title: nonBlankTextSchema(500),
-  published: textSchema(0, 128),
-  publishedAt: utcDateTimeSchema.nullable(),
-  excerpt: textSchema(0, 2000).nullable(),
-  kind: materialKindSchema,
-  tags: z.array(nonBlankTextSchema(50)).max(20),
-  collectedAt: utcDateTimeSchema,
-};
-
-function validateUrlIdentity(
-  value: { contentKey: string; canonicalUrl: string; url: string },
-  ctx: z.RefinementCtx,
-) {
-  let canonicalUrl: string;
-  let contentKey: string;
-  try {
-    canonicalUrl = canonicalizeStudyUrl(value.url);
-    contentKey = studyContentKey(value.url);
-  } catch {
-    ctx.addIssue({ code: "custom", path: ["url"], message: "유효한 HTTPS 자료 URL이어야 합니다." });
-    return;
-  }
-  if (value.canonicalUrl !== canonicalUrl) {
-    ctx.addIssue({ code: "custom", path: ["canonicalUrl"], message: "정규 URL이 원본 URL과 일치하지 않습니다." });
-  }
-  if (value.contentKey !== contentKey) {
-    ctx.addIssue({ code: "custom", path: ["contentKey"], message: "자료 키가 원본 URL과 일치하지 않습니다." });
-  }
-}
-
-export const ingestionMaterialSchema = z
-  .strictObject(ingestionMaterialShape)
-  .superRefine((item, ctx) => {
-    validateUrlIdentity(item, ctx);
-    if (!uniqueArray(item.tags)) {
-      ctx.addIssue({ code: "custom", path: ["tags"], message: "tags 항목은 중복될 수 없습니다." });
-    }
-  });
-export const ingestionRequestSchema = z
-  .strictObject({
-    sourceKey: studyIdentifierSchema,
-    mode: cursorModeSchema,
-    items: z.array(ingestionMaterialSchema).max(100),
-    cursor: studyCursorSchema,
-    expectedCursorVersion: unsignedVersionSchema,
-    idempotencyKey: studyIdentifierSchema,
-  })
-  .superRefine((batch, ctx) => {
-    const keys = batch.items.map((item) => item.contentKey);
-    if (!uniqueArray(keys)) {
-      ctx.addIssue({ code: "custom", path: ["items"], message: "items의 contentKey는 중복될 수 없습니다." });
-    }
-  });
-export const ingestionResponseSchema = z.strictObject({
-  idempotencyKey: studyIdentifierSchema,
-  acceptedCount: z.number().int().nonnegative().max(100),
-  cursorVersion: unsignedVersionSchema,
-});
+const topicKeySchema = textSchema(1, 128).regex(
+  /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+  "topicKey는 소문자 영문·숫자와 하이픈 구분자를 사용해야 합니다.",
+);
 
 export const materialStateSchema = z.strictObject({
   starred: z.boolean(),
@@ -217,72 +118,11 @@ export const materialSchema = z.strictObject({
   state: materialStateSchema,
   previouslyRecommended: z.boolean(),
 });
-export const candidateSchema = z
-  .strictObject({
-    id: contentKeySchema,
-    contentKey: contentKeySchema,
-    canonicalUrl: httpsUrlSchema,
-    sourceKey: studyIdentifierSchema,
-    sourceName: nonBlankTextSchema(500),
-    category: sourceCategorySchema,
-    title: nonBlankTextSchema(500),
-    url: httpsUrlSchema,
-    published: textSchema(0, 128),
-    excerpt: textSchema(0, 2000).optional(),
-    kind: materialKindSchema,
-    previouslyRecommended: z.boolean(),
-  })
-  .refine((candidate) => candidate.id === candidate.contentKey, {
-    path: ["id"],
-    message: "Candidate.id는 contentKey와 같아야 합니다.",
-  });
 export const listMaterialsResponseSchema = z.strictObject({
   items: z.array(materialSchema),
   nextCursor: z.string().nullable(),
 });
 export const getMaterialResponseSchema = z.strictObject({ material: materialSchema });
-export const listCandidatesResponseSchema = z.strictObject({
-  candidates: z.array(candidateSchema),
-  recentStudyTopicKeys: z.array(textSchema(1, 128)),
-  nextCursor: z.string().nullable(),
-  historyVersion: unsignedVersionSchema,
-});
-
-const listQueryShape = {
-  limit: z.coerce.number().int().positive().max(100).optional(),
-  cursor: z.string().min(1).optional(),
-  sourceKey: studyIdentifierSchema.optional(),
-  category: sourceCategorySchema.optional(),
-  kind: materialKindSchema.optional(),
-  publishedFrom: utcDateTimeSchema.optional(),
-  publishedTo: utcDateTimeSchema.optional(),
-};
-function validateDateRange(
-  query: { publishedFrom?: string; publishedTo?: string },
-  ctx: z.RefinementCtx,
-) {
-  if (
-    query.publishedFrom !== undefined &&
-    query.publishedTo !== undefined &&
-    Date.parse(query.publishedFrom) >= Date.parse(query.publishedTo)
-  ) {
-    ctx.addIssue({ code: "custom", path: ["publishedTo"], message: "publishedTo는 publishedFrom보다 뒤여야 합니다." });
-  }
-}
-const booleanQuerySchema = z.enum(["true", "false"]).transform((value) => value === "true");
-export const listMaterialsQuerySchema = z
-  .strictObject({
-    ...listQueryShape,
-    q: textSchema(0, 200).optional(),
-    starred: booleanQuerySchema.optional(),
-    read: booleanQuerySchema.optional(),
-    recommended: booleanQuerySchema.optional(),
-  })
-  .superRefine(validateDateRange);
-export const listCandidatesQuerySchema = z
-  .strictObject(listQueryShape)
-  .superRefine(validateDateRange);
-
 export const updateMaterialStateRequestSchema = z
   .strictObject({
     expectedVersion: unsignedVersionSchema,
@@ -296,50 +136,6 @@ export const updateMaterialStateRequestSchema = z
   );
 export const updateMaterialStateResponseSchema = z.strictObject({ state: materialStateSchema });
 
-const recommendationItemSchema = z.strictObject({
-  contentKey: contentKeySchema,
-  summary: nonBlankTextSchema(300),
-  reason: nonBlankTextSchema(300),
-  careerValue: careerValueSchema,
-});
-const topicKeySchema = textSchema(1, 128).regex(
-  /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-  "topicKey는 소문자 영문·숫자와 하이픈 구분자를 사용해야 합니다.",
-);
-export const recommendationTopicSchema = z.strictObject({
-  topicKey: topicKeySchema,
-  title: nonBlankTextSchema(300),
-  careerQuestion: nonBlankTextSchema(300),
-  items: z.array(recommendationItemSchema).min(1).max(100),
-});
-export const createRecommendationRunRequestSchema = z
-  .strictObject({
-    reportId: studyIdentifierSchema,
-    generatedAt: utcDateTimeSchema,
-    topics: z.array(recommendationTopicSchema).max(20),
-  })
-  .superRefine((run, ctx) => {
-    const topicKeys = run.topics.map((topic) => topic.topicKey);
-    const contentKeys = run.topics.flatMap((topic) => topic.items.map((item) => item.contentKey));
-    if (!uniqueArray(topicKeys)) {
-      ctx.addIssue({ code: "custom", path: ["topics"], message: "topicKey는 리포트 안에서 중복될 수 없습니다." });
-    }
-    if (!uniqueArray(contentKeys)) {
-      ctx.addIssue({ code: "custom", path: ["topics"], message: "contentKey는 리포트 안에서 중복될 수 없습니다." });
-    }
-    if (contentKeys.length > 100) {
-      ctx.addIssue({ code: "custom", path: ["topics"], message: "리포트 자료는 최대 100개입니다." });
-    }
-  });
-export const createRecommendationRunResponseSchema = z.strictObject({
-  reportId: studyIdentifierSchema,
-  historyVersion: unsignedVersionSchema,
-});
-
-export const listRecommendationRunsQuerySchema = z.strictObject({
-  limit: z.coerce.number().int().positive().max(100).optional(),
-  cursor: z.string().min(1).optional(),
-});
 export const recommendationRunSummarySchema = z.strictObject({
   reportId: studyIdentifierSchema,
   generatedAt: utcDateTimeSchema,
@@ -379,30 +175,17 @@ export const getRecommendationRunResponseSchema = z.strictObject({
   publications: z.array(publicationRecordSchema),
 });
 
-export const publicationRequestSchema = z.strictObject({
-  idempotencyKey: studyIdentifierSchema,
-  reportId: studyIdentifierSchema,
-  channel: textSchema(1, 128),
-  publishedAt: utcDateTimeSchema,
-  externalId: textSchema(1, 128),
-  url: httpsUrlSchema.nullable(),
+// URL 정규화와 자료 키 계산은 Backend 가 소유한다. 화면은 형식만 확인한다.
+export const importItemSchema = z.strictObject({
+  contentKey: contentKeySchema,
+  canonicalUrl: httpsUrlSchema,
+  sourceKey: studyIdentifierSchema,
+  title: nonBlankTextSchema(500),
+  category: sourceCategorySchema,
+  summary: nonBlankTextSchema(300).nullable(),
+  reason: nonBlankTextSchema(300).nullable(),
+  careerValue: careerValueSchema.nullable(),
 });
-export const publicationResponseSchema = z.strictObject({ publicationId: positiveSafeIntegerSchema });
-
-export const importItemSchema = z
-  .strictObject({
-    contentKey: contentKeySchema,
-    canonicalUrl: httpsUrlSchema,
-    sourceKey: studyIdentifierSchema,
-    title: nonBlankTextSchema(500),
-    category: sourceCategorySchema,
-    summary: nonBlankTextSchema(300).nullable(),
-    reason: nonBlankTextSchema(300).nullable(),
-    careerValue: careerValueSchema.nullable(),
-  })
-  .superRefine((item, ctx) => {
-    validateUrlIdentity({ ...item, url: item.canonicalUrl }, ctx);
-  });
 export const importTopicSchema = z.strictObject({
   topicKey: topicKeySchema,
   title: nonBlankTextSchema(300),
@@ -524,31 +307,19 @@ export type StudyActionResult<T> =
 
 export type SourceCategory = z.infer<typeof sourceCategorySchema>;
 export type SourceAdapter = z.infer<typeof sourceAdapterSchema>;
-export type CursorMode = z.infer<typeof cursorModeSchema>;
 export type MaterialKind = z.infer<typeof materialKindSchema>;
 export type CareerValue = z.infer<typeof careerValueSchema>;
 export type StudyErrorCode = z.infer<typeof studyErrorCodeSchema>;
 export type Source = z.infer<typeof sourceSchema>;
-export type PutSourceRequest = z.infer<typeof putSourceRequestSchema>;
-export type IngestionMaterial = z.infer<typeof ingestionMaterialSchema>;
-export type IngestionRequest = z.infer<typeof ingestionRequestSchema>;
-export type IngestBatchInput = IngestionRequest;
-export type IngestBatchResult = z.infer<typeof ingestionResponseSchema>;
 export type MaterialState = z.infer<typeof materialStateSchema>;
 export type Material = z.infer<typeof materialSchema>;
-export type Candidate = z.infer<typeof candidateSchema>;
 export type UpdateMaterialStateRequest = z.infer<typeof updateMaterialStateRequestSchema>;
-export type CreateRecommendationRunRequest = z.infer<typeof createRecommendationRunRequestSchema>;
-export type CreateRecommendationRunInput = CreateRecommendationRunRequest;
-export type CreateRecommendationRunResult = z.infer<typeof createRecommendationRunResponseSchema>;
 export type RecommendationRunSummary = z.infer<typeof recommendationRunSummarySchema>;
 export type ListRecommendationRunsResult = z.infer<typeof listRecommendationRunsResponseSchema>;
 export type RecommendationRunItem = z.infer<typeof recommendationRunItemSchema>;
 export type RecommendationRunTopic = z.infer<typeof recommendationRunTopicSchema>;
 export type PublicationRecord = z.infer<typeof publicationRecordSchema>;
 export type GetRecommendationRunResult = z.infer<typeof getRecommendationRunResponseSchema>;
-export type PublicationInput = z.infer<typeof publicationRequestSchema>;
-export type PublicationResult = z.infer<typeof publicationResponseSchema>;
 export type ImportItem = z.infer<typeof importItemSchema>;
 export type ImportTopic = z.infer<typeof importTopicSchema>;
 export type ImportReport = z.infer<typeof importReportSchema>;

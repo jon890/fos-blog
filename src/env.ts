@@ -36,7 +36,6 @@ export const env = createEnv({
     GITHUB_CLIENT_ID: z.string().optional(),
     GITHUB_CLIENT_SECRET: z.string().optional(),
     ADMIN_GITHUB_USER_ID: z.string().optional(),
-    STUDY_SERVICE_TOKEN: z.string().optional(),
     // career-os 학습자료 Backend. 운영은 HTTPS, 개발과 테스트는 loopback HTTP만 허용한다.
     CAREER_STUDY_BACKEND_URL: careerStudyBackendUrlSchema.optional(),
     // admin-gateway 권한 Bearer. 서버에서만 읽으며 브라우저로 내보내지 않는다.
@@ -65,7 +64,6 @@ export const env = createEnv({
     GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
     GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
     ADMIN_GITHUB_USER_ID: process.env.ADMIN_GITHUB_USER_ID,
-    STUDY_SERVICE_TOKEN: process.env.STUDY_SERVICE_TOKEN,
     CAREER_STUDY_BACKEND_URL: process.env.CAREER_STUDY_BACKEND_URL,
     CAREER_STUDY_BACKEND_TOKEN: process.env.CAREER_STUDY_BACKEND_TOKEN,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
