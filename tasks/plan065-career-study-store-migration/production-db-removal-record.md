@@ -62,8 +62,8 @@ auto increment 다음 값이 1이라는 것은 생성 이후 단 한 행도 넣�
 
 ## 이전 조사 기록과의 차이
 
-`docs/study-store-migration.md`는 2026-09-17 조사에서 13개 테이블이 모두 없고
-`0012_tired_luminals`도 적용되지 않았다고 적었다.
+이전 기준 문서였던 `docs/study-store-migration.md`는 2026-09-17 조사에서
+13개 테이블이 모두 없고 `0012_tired_luminals`도 적용되지 않았다고 적었다.
 그 조사는 worktree의 공유 `.env`가 가리키는 DB를 대상으로 삼았는데,
 그 주소인 `127.0.0.1:13307`은 홈서버가 아니라 개발용 로컬 MySQL 컨테이너다.
 
@@ -75,7 +75,10 @@ auto increment 다음 값이 1이라는 것은 생성 이후 단 한 행도 넣�
 
 ## backup
 
-migration을 적용하기 전에 `fos_blog_db` 전체를 논리 backup으로 만들었다.
+13개 테이블이 모두 행 0이라 backup을 생략해도 된다는 승인이 있었다.
+그래도 `fos_blog_db` 전체를 논리 backup으로 만들었다.
+migration을 되돌릴 근거가 생기고, 적용 전 스키마를 나중에 대조할 수 있기 때문이다.
+실제로 아래 「posts FULLTEXT 색인 누락」의 인과 판정은 이 backup을 근거로 삼았다.
 
 | 항목 | 값 |
 | --- | --- |
@@ -130,7 +133,12 @@ drizzle migrator가 journal을 읽어 미적용 migration만 적용하고 `__dri
 적용 직전에 13개 테이블의 행 수를 한 번 더 세어 모두 0인 것을 확인했다.
 
 출력은 `[migrate] applying migrations`와 `[migrate] migrations applied` 두 줄이었다.
-기록된 시각은 2026-09-18 08:24:01 이다.
+적용 시각은 2026-09-18 08:52 로, backup을 만든 08:50 직후이고 행 수를 마지막으로 센 08:52:32 직후다.
+
+`__drizzle_migrations.created_at`에 들어간 `1789687441808`은 적용 시각이 아니다.
+drizzle migrator는 journal의 `when` 값을 그대로 넣는데, 그 값은 migration 파일을 만든 시각이다.
+이 값은 2026-09-18 08:24:01.808 이고 파일을 만든 커밋 `922568a`의 08:28:39 보다 4분 이르다.
+`__drizzle_migrations`만 보고 적용 시각을 읽으면 실제보다 28분 이른 값을 얻는다.
 
 ## 적용 결과
 
@@ -190,15 +198,44 @@ drizzle migrator가 journal을 읽어 미적용 migration만 적용하고 `__dri
 | `sync_logs` | 1,310 |
 | `auth_account` | 1 |
 
-## 이번 작업과 무관한 기존 문제
+## posts FULLTEXT 색인 누락
+
+### 증상
 
 `/api/search` 를 호출하면 `posts` 의 FULLTEXT 색인을 찾지 못한다는 경고가 남는다.
-애플리케이션이 `LIKE` 검색으로 대체 처리해 응답은 200 이다.
+로그 수준은 40이고 메시지는 `FULLTEXT search failed, falling back to LIKE search` 다.
 
-이것은 이번 migration이 만든 문제가 아니다.
-적용 전에 만든 backup의 `CREATE TABLE posts` 에도 FULLTEXT 색인이 없다.
-`0013_drop_study_tables.sql` 은 `posts` 를 건드리지 않는다.
+### 이번 작업과의 인과 판정
 
+이번 migration이 만든 문제가 아니다.
+근거는 넷이다.
+
+| 근거 | 내용 |
+| --- | --- |
+| migration 본문 | `0013_drop_study_tables.sql` 은 `DROP TABLE study_*` 13개뿐이고 `posts` 를 건드리지 않는다 |
+| 적용 전 스키마 | 적용 전에 만든 backup의 `CREATE TABLE posts` 에 FULLTEXT 색인이 없다 |
+| 적용 후 스키마 | 지금 `posts` 의 색인은 `PRIMARY`, `posts_path_unique`, `category_idx`, `slug_idx`, `series_idx` 다. 적용 전 backup의 다섯 개와 이름과 순서가 같다 |
+| 저장소 정의 | `src/infra/db/schema/`와 `drizzle/`의 모든 `.sql`에 `FULLTEXT` 라는 문자열이 없다 |
+
+네 번째 근거가 결정적이다.
+이 색인을 만드는 migration이 애초에 없어서 운영 DB에 한 번도 존재한 적이 없다.
+검색 코드가 `MATCH ... AGAINST` 를 먼저 시도하고 실패하면 `LIKE` 로 넘어가는 구조라 그동안 드러나지 않았다.
+
+### 발생 시각
+
+컨테이너 로그 전체에서 이 경고는 한 번 나왔고 시각은 2026-09-17 23:53:18Z 다.
+그 한 번은 이번 검증에서 내가 `/api/search?q=java` 를 호출한 것이다.
+컨테이너가 시작한 2026-09-17 07:38 이후로 검색을 부른 요청이 그것뿐이었다.
+
+즉 이 경고가 처음 보인 것이 migration 직후인 이유는 검색을 그때 처음 불렀기 때문이다.
+migration이 색인을 지워서가 아니다.
+
+### 대체 처리 동작
+
+`LIKE` 검색으로 대체 처리가 동작하고 `/api/search?q=java` 응답은 200 이다.
+오류 수준 로그는 남지 않는다.
+
+이번 작업의 범위가 아니므로 고치지 않았다.
 별도 작업으로 다루어야 한다.
 
 ## 남은 조건

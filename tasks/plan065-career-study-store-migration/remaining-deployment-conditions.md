@@ -6,8 +6,9 @@ fos-blog 저장소 안에서 할 수 있는 구현은 끝났다.
 홈서버 DB의 13개 `study_` 테이블 제거는 2026-09-18에 끝났다.
 사전 점검, backup, migration 적용과 검증 기록은 `production-db-removal-record.md`가 소유한다.
 
-절차와 판정 방법은 `docs/study-store-migration.md`가 소유한다.
-이 파일은 그 문서를 읽어야 하는 이유와 확인할 항목만 적는다.
+이전 기준 문서였던 `docs/study-store-migration.md`는 지웠다.
+결정과 근거는 `docs/adr/039-career-study-backend-ownership.md`가, 계약은 `docs/api/study-library.md`가 소유한다.
+남은 절차는 이 파일이 소유한다.
 
 ## career-os Backend
 
@@ -51,8 +52,32 @@ Docker 컨테이너는 `node migrate.js && node server.js`로 서버보다 먼�
 2단계 image를 운영에 배포한 적이 없어, 사용 여부는 로그 대신 테이블 상태로 판정했다.
 13개 테이블의 행이 0이고 auto increment 다음 값이 1이어서 쓰기가 한 번도 없었다.
 
-운영 DB에서 13개 테이블을 이미 지웠으므로 호출 전환 뒤의 rollback은 주소 복귀만으로 끝나지 않는다.
+### 호출 전환 전에 확인할 것
+
+빈 상태로 판정했으므로 행 수와 key hash 비교는 하지 않는다.
+아래 다섯 가지는 판정과 무관하게 확인한다.
+
+| 확인할 것 |
+| --- |
+| 같은 fixture로 fos-blog 기존 API와 새 Backend의 정상 응답과 오류 code가 같다 |
+| 관리자 자료 조회, 상태 수정, 추천 상세와 가져오기 미리보기 및 확정이 Server Action을 통해 동작한다 |
+| career-os의 소스 조회, 빈 수집, 후보 조회, 빈 추천 run과 게시 영수증이 동작한다 |
+| producer token으로 개인 상태 수정과 가져오기 확정이 403이다 |
+| admin-gateway token으로 수집과 추천 생성이 403이다 |
+
+확인이 끝나면 career-os의 `STUDY_LIBRARY_URL`과 fos-blog의 `CAREER_STUDY_BACKEND_URL`을 새 Backend로 바꾼다.
+
+### rollback
+
+자료 손실, 계약 불일치, 권한 오류 또는 계속되는 5xx가 생기면 새 쓰기를 먼저 중지한다.
+
+운영 DB에서 13개 테이블을 이미 지웠으므로 rollback은 주소 복귀만으로 끝나지 않는다.
 fos-blog 저장으로 되돌리려면 backup을 복원해야 한다.
+복원 경로와 명령은 `production-db-removal-record.md`가 소유한다.
+
+Backend에 cutover 이후의 새 행이 있으면 그것을 먼저 추출해 복원한 fos-blog 저장에 반영한다.
+dual-write는 rollback 수단으로 쓰지 않는다.
+양쪽에 동시에 쓴 결과를 합치는 대신 쓰기를 멈추고 한쪽 snapshot을 다른 쪽에 반영한다.
 
 ## 이 branch가 검증한 것
 
