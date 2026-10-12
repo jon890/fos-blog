@@ -249,6 +249,7 @@ code, kbd, samp, pre {
   background: color-mix(in oklab, var(--callout-accent) 18%, var(--color-bg-base));
   border-radius: 0 var(--radius-default) var(--radius-default) 0;
 }
+/* 레이아웃과 타이포 토큰(display, font, size, letter-spacing, margin)은 .prose blockquote::before 에서 상속하고, 여기서는 라벨 문구와 색만 바꾼다. */
 .prose blockquote.callout::before {
   content: attr(data-callout);
   text-transform: uppercase;
