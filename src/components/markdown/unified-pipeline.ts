@@ -11,6 +11,7 @@ import rehypePrettyCode from "rehype-pretty-code";
 import rehypeSanitize from "rehype-sanitize";
 import type { Root as HastRoot } from "hast";
 import { PRETTY_CODE_OPTIONS } from "./pretty-code-options";
+import { rehypeGithubAlert } from "./rehype-github-alert";
 import { sanitizeSchema } from "./sanitize-schema";
 
 // unified().use()... 의 실제 반환 타입을 그대로 캡처 (Processor 제네릭 파라미터 수동 지정 회피)
@@ -21,6 +22,7 @@ async function buildProcessor() {
     .use(remarkMath)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
+    .use(rehypeGithubAlert) // sanitize 전에 callout class 를 부여 (sanitize-schema 가 blockquote class 허용)
     .use(rehypeKatex, { output: "html" }) // throwOnError: rehype-katex 7.x 가 내부 기본값 false 로 고정 (Options 타입에서 Omit)
     .use(rehypeSlug)
     .use(rehypePrettyCode, PRETTY_CODE_OPTIONS)

@@ -221,14 +221,20 @@ export function createMarkdownComponents(
         </a>
       );
     },
-    blockquote: ({ children, ...props }) => (
-      <blockquote
-        className="my-4 pl-4 border-l-4 border-blue-500 bg-gray-50 dark:bg-gray-900 py-2 italic"
-        {...props}
-      >
-        {children}
-      </blockquote>
-    ),
+    blockquote: ({ children, ...props }) => {
+      // callout(GitHub alert)은 globals.css 의 .callout 규칙이 스타일을 소유한다.
+      if ("data-callout" in props) {
+        return <blockquote {...props}>{children}</blockquote>;
+      }
+      return (
+        <blockquote
+          className="my-4 pl-4 border-l-4 border-blue-500 bg-gray-50 dark:bg-gray-900 py-2 italic"
+          {...props}
+        >
+          {children}
+        </blockquote>
+      );
+    },
     table: ({ children, ...props }) => (
       <div className="prose-table-wrapper my-4 -mx-4 overflow-x-auto md:mx-0">
         <table

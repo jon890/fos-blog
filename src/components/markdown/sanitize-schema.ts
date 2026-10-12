@@ -73,6 +73,12 @@ export const sanitizeSchema: Schema = {
       "className",
       "data-rehype-pretty-code-fragment",
     ],
+    // GitHub alert callout (rehype-github-alert)
+    blockquote: [
+      ...(defaultSchema.attributes?.blockquote ?? []),
+      "className",
+      "data-callout",
+    ],
     // heading id (rehype-slug)
     h1: [...(defaultSchema.attributes?.h1 ?? []), "id"],
     h2: [...(defaultSchema.attributes?.h2 ?? []), "id"],
