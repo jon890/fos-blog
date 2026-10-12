@@ -240,6 +240,32 @@ code, kbd, samp, pre {
   color: var(--color-brand-text);
   margin-bottom: 8px;
 }
+/* GitHub alert callout (`> [!TIP]` 등) — 종류별 accent 로 왼쪽 선·라벨·옅은 배경을 정한다.
+ * 라벨(10px)이 본문 크기 미만이라 라벨 색은 callout 배경 위에서 WCAG AA 4.5:1 을 넘겨야 한다.
+ * dark 기본값, light override 는 :root:not(.dark) (brand-text 와 같은 규칙). */
+.prose blockquote.callout {
+  --callout-accent: var(--color-brand-text);
+  border-left-color: var(--callout-accent);
+  background: color-mix(in oklab, var(--callout-accent) 10%, var(--color-bg-base));
+  border-radius: 0 var(--radius-default) var(--radius-default) 0;
+}
+.prose blockquote.callout::before {
+  content: attr(data-callout);
+  text-transform: uppercase;
+  color: var(--callout-accent);
+}
+.prose blockquote.callout > :first-child { margin-top: 0; }
+.prose blockquote.callout > :last-child { margin-bottom: 0; }
+.prose blockquote.callout-note { --callout-accent: oklch(0.78 0.11 250); }
+.prose blockquote.callout-tip { --callout-accent: oklch(0.8 0.15 150); }
+.prose blockquote.callout-important { --callout-accent: oklch(0.78 0.13 295); }
+.prose blockquote.callout-warning { --callout-accent: oklch(0.82 0.13 80); }
+.prose blockquote.callout-caution { --callout-accent: oklch(0.75 0.16 25); }
+:root:not(.dark) .prose blockquote.callout-note { --callout-accent: oklch(0.48 0.15 250); }
+:root:not(.dark) .prose blockquote.callout-tip { --callout-accent: oklch(0.45 0.12 150); }
+:root:not(.dark) .prose blockquote.callout-important { --callout-accent: oklch(0.48 0.17 295); }
+:root:not(.dark) .prose blockquote.callout-warning { --callout-accent: oklch(0.47 0.1 70); }
+:root:not(.dark) .prose blockquote.callout-caution { --callout-accent: oklch(0.5 0.17 25); }
 /* inline code — token 단위 wrap 보존 (plan035 #136).
  * `word-break: keep-all` 로 식별자 (`EXPLAIN`, `created_at`) 가 글자 단위로 깨지지 않게.
  * `overflow-wrap: anywhere` 는 viewport 보다 긴 단일 token (200+ chars hash 등) fallback.
