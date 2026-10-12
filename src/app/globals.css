@@ -246,7 +246,7 @@ code, kbd, samp, pre {
 .prose blockquote.callout {
   --callout-accent: var(--color-brand-text);
   border-left-color: var(--callout-accent);
-  background: color-mix(in oklab, var(--callout-accent) 10%, var(--color-bg-base));
+  background: color-mix(in oklab, var(--callout-accent) 18%, var(--color-bg-base));
   border-radius: 0 var(--radius-default) var(--radius-default) 0;
 }
 .prose blockquote.callout::before {
@@ -266,6 +266,7 @@ code, kbd, samp, pre {
 :root:not(.dark) .prose blockquote.callout-important { --callout-accent: oklch(0.48 0.17 295); }
 :root:not(.dark) .prose blockquote.callout-warning { --callout-accent: oklch(0.47 0.1 70); }
 :root:not(.dark) .prose blockquote.callout-caution { --callout-accent: oklch(0.5 0.17 25); }
+:root:not(.dark) .prose blockquote.callout { background: color-mix(in oklab, var(--callout-accent) 10%, var(--color-bg-base)); }
 /* inline code — token 단위 wrap 보존 (plan035 #136).
  * `word-break: keep-all` 로 식별자 (`EXPLAIN`, `created_at`) 가 글자 단위로 깨지지 않게.
  * `overflow-wrap: anywhere` 는 viewport 보다 긴 단일 token (200+ chars hash 등) fallback.
