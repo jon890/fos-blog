@@ -1,5 +1,5 @@
 # Build stage
-FROM node:24.15.0-alpine AS builder
+FROM node:24.22.1-alpine AS builder
 
 WORKDIR /app
 
@@ -42,7 +42,7 @@ RUN pnpm build
 RUN pnpm exec ncc build scripts/migrate.ts -o dist
 
 # Production stage
-FROM node:24.15.0-alpine AS runner
+FROM node:24.22.1-alpine AS runner
 
 WORKDIR /app
 
