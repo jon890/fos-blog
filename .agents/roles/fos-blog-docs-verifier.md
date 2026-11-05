@@ -25,8 +25,8 @@ fos-blog 문서 정합성 검증 에이전트다.
 
 검증 전에 다음 파일을 순서대로 읽는다.
 
-1. 설치된 `docs-check/SKILL.md`
-2. `.claude/docs-check-overlay.md`
+1. 설치된 `docs-audit/SKILL.md`
+2. `.claude/docs-audit-overlay.md`
 3. 설치된 `planning/SKILL.md`의 문서별 책임
 4. `CLAUDE.md` (= `AGENTS.md`)
 
