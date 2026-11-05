@@ -1,6 +1,6 @@
-# fos-blog docs-check 오버레이
+# fos-blog docs-audit 오버레이
 
-공용 `docs-check`에 fos-blog의 문서 범위와 코드 대조 기준을 주입한다.
+공용 `docs-audit`에 fos-blog의 문서 범위와 코드 대조 기준을 주입한다.
 문서별 책임은 설치된 `planning` 스킬을 따른다.
 이 파일은 fos-blog의 검사 범위와 코드 대조 기준만 추가한다.
 
@@ -21,7 +21,7 @@ ADR 본문은 `docs/adr/[0-9]*.md`, 인덱스는 `docs/adr/README.md`다.
 
 ## 정적 검사 실행
 
-설치된 `docs-check/scripts/static_check.py`에 ADR 디렉터리 `docs/adr`와 검사 범위를 넘긴다.
+설치된 `docs-audit/scripts/static_check.py`에 ADR 디렉터리 `docs/adr`와 검사 범위를 넘긴다.
 전체 제품 문서 감사는 `docs`와 `README.md`를 각각 범위로 실행한다.
 변경 범위 감사는 해당 파일이나 디렉터리를 전달하고, 검사 파일 수가 0이면 통과로 보지 않는다.
 
@@ -105,7 +105,7 @@ catch-all 라우트는 `-detail` 접미사를 쓴다.
 set -eu
 set -o pipefail
 ROUTES=$(find src/app -name 'page.tsx' -type f | sort)
-TABLE=$(grep -E '^\| `src/app/' .claude/docs-check-overlay.md | cut -d'`' -f2 | sort -u)
+TABLE=$(grep -E '^\| `src/app/' .claude/docs-audit-overlay.md | cut -d'`' -f2 | sort -u)
 diff <(printf '%s\n' "$ROUTES") <(printf '%s\n' "$TABLE")
 ```
 
