@@ -21,7 +21,7 @@ ADR 본문은 `docs/adr/[0-9]*.md`, 인덱스는 `docs/adr/README.md`다.
 
 ## 정적 검사 실행
 
-설치된 `docs-audit/scripts/static_check.py`에 ADR 디렉터리 `docs/adr`와 검사 범위를 넘긴다.
+설치된 `docs-audit/scripts/static_check.ts`에 ADR 디렉터리 `docs/adr`와 검사 범위를 넘긴다.
 전체 제품 문서 감사는 `docs`와 `README.md`를 각각 범위로 실행한다.
 변경 범위 감사는 해당 파일이나 디렉터리를 전달하고, 검사 파일 수가 0이면 통과로 보지 않는다.
 
