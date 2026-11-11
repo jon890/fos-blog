@@ -1,7 +1,7 @@
 # fos-blog docs-audit 오버레이
 
 공용 `docs-audit`에 fos-blog의 문서 범위와 코드 대조 기준을 주입한다.
-문서별 책임은 설치된 `planning` 스킬을 따른다.
+문서별 책임은 설치된 `plan` 스킬을 따른다.
 이 파일은 fos-blog의 검사 범위와 코드 대조 기준만 추가한다.
 
 ## 검사 범위
