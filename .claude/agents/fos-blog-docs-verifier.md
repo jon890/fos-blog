@@ -11,5 +11,5 @@ disallowedTools: Write, Edit
 
 - `Write`와 `Edit`는 frontmatter의 `disallowedTools`가 막는다.
   `Bash`는 열려 있으므로 리다이렉트나 `sed -i`로도 파일을 바꾸지 않는다.
-- build-with-teams에서 호출됐다면 결과를 `SendMessage({to: "team-lead"})`로 보낸다.
+- implementation에서 호출됐다면 결과를 `SendMessage({to: "team-lead"})`로 보낸다.
   독립 실행이라면 일반 최종 응답으로 보고한다.

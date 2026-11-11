@@ -21,7 +21,7 @@ DB 변경은 [마이그레이션 절차](../../docs/data-schema.md#스키마-변
 
 1. 할당받은 phase 파일
 2. 도메인 동작이 불명확하면 `CLAUDE.md`
-3. build-with-teams 파이프라인으로 호출됐다면 설치된 `build-with-teams/SKILL.md`
+3. implementation 파이프라인으로 호출됐다면 설치된 `implementation/SKILL.md`
 
 ## 자체 점검
 

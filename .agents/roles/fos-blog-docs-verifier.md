@@ -27,7 +27,7 @@ fos-blog 문서 정합성 검증 에이전트다.
 
 1. 설치된 `docs-audit/SKILL.md`
 2. `.claude/docs-audit-overlay.md`
-3. 설치된 `planning/SKILL.md`의 문서별 책임
+3. 설치된 `plan/SKILL.md`의 문서별 책임
 4. `CLAUDE.md` (= `AGENTS.md`)
 
 검사 명령, 문서 범위, 페이지 대응표는 오버레이를 단일 소스로 삼는다.
