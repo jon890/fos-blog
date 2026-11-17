@@ -85,14 +85,14 @@ categories OG 특수파일을 route group 안으로 옮기면 Next.js가 공개 
 
 2026-09-07 npm registry의 latest와 배포 tarball의 타입·실행 코드를 확인했다.
 아래 버전을 구현 기준으로 고정하고 실행 시 lockfile의 실제 해석 버전을 함께 검사한다.
-2026-11-17 의존성 보안 갱신에서 Better Auth 최신 1.x 패치와 필요한 전이 의존성 보정이 승인됐다.
+2026-11-17 의존성 보안 갱신에서 Better Auth 최신 1.x 패치, 직접 의존성 범위 내 갱신, 필요한 전이 의존성 보정이 승인됐다.
 
 | 대상 | 확인 결과와 선택 |
 | --- | --- |
 | `better-auth` | `1.7.25`로 고정. 1.7.7의 critical Magic Link 및 OAuth Proxy 수정과 이후 1.7.x 수정 포함 |
 | `@better-auth/core`, `@better-auth/drizzle-adapter` | Better Auth `1.7.25`가 선택한 호환 버전 사용. 별도 직접 의존성 추가 불필요 |
-| `drizzle-orm` | 선언 `^0.45.2`, lockfile `0.45.2`. 인증 peer `^0.45.2`를 충족하도록 상향 |
-| `drizzle-kit` | 현재 `^0.31.8`, 인증 peer `>=0.31.4` 충족. 변경 불필요 |
+| `drizzle-orm` | 선언 `^0.45.4`, lockfile `0.45.4`. Better Auth 1.7.25 인증 peer `^0.45.2` 충족 |
+| `drizzle-kit` | 선언 `^0.31.11`, lockfile `0.31.11`. 인증 peer `>=0.31.4` 충족 |
 | Next.js, React, mysql2 | 현재 16·19·3 버전 계열이 인증 peer 범위를 충족 |
 | 전이 의존성 | Better Auth의 jose 등은 허용된 패키지 설치에 수반된다. 별도 Cloudflare Access나 직접 jose 인증 구현은 하지 않음 |
 
