@@ -5,3 +5,8 @@ allowBuilds:
   msw: false
   sharp: true
   unrs-resolver: true
+
+# Vitest가 사용하는 Vite와 Tailwind 플러그인의 같은 메이저 보안 패치.
+overrides:
+  "vite@8": 8.1.7
+  "postcss-selector-parser@6": 6.1.6

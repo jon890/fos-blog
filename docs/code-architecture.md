@@ -85,12 +85,12 @@ categories OG 특수파일을 route group 안으로 옮기면 Next.js가 공개 
 
 2026-09-07 npm registry의 latest와 배포 tarball의 타입·실행 코드를 확인했다.
 아래 버전을 구현 기준으로 고정하고 실행 시 lockfile의 실제 해석 버전을 함께 검사한다.
-2026-09-07 사용자 승인은 Better Auth와 필요한 Drizzle 호환 patch를 포함한다.
+2026-11-17 의존성 보안 갱신에서 Better Auth 최신 1.x 패치와 필요한 전이 의존성 보정이 승인됐다.
 
 | 대상 | 확인 결과와 선택 |
 | --- | --- |
-| `better-auth` | latest `1.7.3`. 이 버전을 직접 의존성으로 추가 |
-| `@better-auth/core`, `@better-auth/drizzle-adapter` | Better Auth가 `1.7.3`을 의존. 별도 직접 의존성 추가 불필요 |
+| `better-auth` | `1.7.25`로 고정. 1.7.7의 critical Magic Link 및 OAuth Proxy 수정과 이후 1.7.x 수정 포함 |
+| `@better-auth/core`, `@better-auth/drizzle-adapter` | Better Auth `1.7.25`가 선택한 호환 버전 사용. 별도 직접 의존성 추가 불필요 |
 | `drizzle-orm` | 선언 `^0.45.2`, lockfile `0.45.2`. 인증 peer `^0.45.2`를 충족하도록 상향 |
 | `drizzle-kit` | 현재 `^0.31.8`, 인증 peer `>=0.31.4` 충족. 변경 불필요 |
 | Next.js, React, mysql2 | 현재 16·19·3 버전 계열이 인증 peer 범위를 충족 |
@@ -99,13 +99,13 @@ categories OG 특수파일을 route group 안으로 옮기면 Next.js가 공개 
 공식 [Drizzle adapter](https://better-auth.com/docs/adapters/drizzle)는 MySQL provider와 schema 매핑을 지원한다.
 `better-auth/adapters/drizzle`에서 가져온 `drizzleAdapter`에 기존 DB와 `provider: "mysql"`을 전달한다.
 adapter의 `transaction: true`를 명시하고 동일 연결의 MySQL 트랜잭션 지원을 실제 DB 테스트로 증명한다.
-`@better-auth/drizzle-adapter@1.7.3`의 `dist/index.d.mts`에서 이 옵션의 기본값이 false임을 확인했다.
+`@better-auth/drizzle-adapter@1.7.25`의 `dist/index.d.mts`에서 이 옵션의 기본값이 false임을 확인했다.
 직접 OAuth·세션을 구현하는 대안은 state·쿠키·철회를 직접 유지해야 하므로 기각했다.
 Auth.js는 가능하지만 승인된 Better Auth와 중복 도입하지 않는다.
 의존성 변경은 `package.json`과 `pnpm-lock.yaml`에 함께 반영했다.
 
-타입 확인은 `@better-auth/core@1.7.3`의 `dist/types/init-options.d.mts`를 사용했다.
-실행 경로는 `better-auth@1.7.3`의 다음 파일에서 확인했다.
+타입 확인은 `@better-auth/core@1.7.25`의 `dist/types/init-options.d.mts`를 사용했다.
+실행 경로는 `better-auth@1.7.25`의 다음 파일에서 확인했다.
 
 | 파일 | 검증한 동작 |
 | --- | --- |
@@ -114,10 +114,8 @@ Auth.js는 가능하지만 승인된 Better Auth와 중복 도입하지 않는�
 | `dist/api/routes/callback.mjs` | 명시적 연결 callback에서도 link-account 검사 |
 | `dist/utils/validate-user-info.mjs` | error 객체와 예외를 거절로 처리 |
 
-재현 명령은 `npm view better-auth@1.7.3 peerDependencies dependencies --json`과
-`npm view @better-auth/drizzle-adapter@1.7.3 peerDependencies --json`이다.
-배포 타입 원문은 [npm core tarball](https://registry.npmjs.org/@better-auth/core/-/core-1.7.3.tgz),
-실행 코드는 [npm Better Auth tarball](https://registry.npmjs.org/better-auth/-/better-auth-1.7.3.tgz)로 재확인한다.
+재현 명령은 `pnpm view better-auth@1.7.25 peerDependencies dependencies --json` 및 `pnpm view @better-auth/drizzle-adapter@1.7.25 peerDependencies --json`이다.
+설치된 패키지의 타입과 실행 파일, 아래 인증 Route 실DB 테스트로 계약을 확인한다.
 
 ### 관리자 인증: 허용 계정 판정
 
@@ -159,7 +157,7 @@ DB 장애는 세션 없음으로 처리하지 않고 page 오류 또는 API `503
 허용 계정 설정이 바뀌거나 account 행이 사라지면 기존 세션도 다음 요청에서 `403`으로 거절한다.
 
 로그아웃은 현재 session을 서버에서 철회하고 쿠키를 삭제한다.
-Better Auth 1.7.3의 signOut은 DB 삭제 오류를 삼키므로 Route에서 세션 삭제를 먼저 확정한 뒤 라이브러리로 쿠키를 정리한다.
+Route에서 세션 삭제를 먼저 확정한 뒤 라이브러리로 쿠키를 정리한다. Better Auth 1.7.25에서도 이 DB 삭제 오류 처리를 실제 인증 Route 테스트로 검증한다.
 이 순서는 DB 장애를 성공으로 표시하지 않기 위한 것이며 실제 MySQL의 삭제 실패 테스트로 검증한다.
 다른 기기의 세션을 끊으려면 후속 운영 작업에서 해당 세션을 철회한다. 이번 UI에는 세션 관리 화면을 추가하지 않는다.
 설정 변경의 적용 시점은 새 환경으로 재시작한 인스턴스다. 변경 전 프로세스에 새 env가 자동 전파된다고 가정하지 않는다.
