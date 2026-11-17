@@ -56,7 +56,7 @@ async function handle(request: Request): Promise<Response> {
       forwarded.headers.set("content-type", "application/json");
       forwarded.headers.delete("content-length");
     } else if (url.pathname === "/api/auth/sign-out") {
-      // Better Auth 1.7.3 signOut은 DB 삭제 오류를 삼킨다. 먼저 삭제를 확정해
+      // better-auth@1.7.25 dist/api/routes/sign-out.mjs의 signOut은 DB 세션 행을 지우지 않는다. 먼저 삭제를 확정해
       // 실패 시 성공 응답이나 쿠키 삭제 없이 재시도할 수 있게 한다.
       const current = await auth.api.getSession({ headers: request.headers, query: { disableCookieCache: true } });
       if (current) await db.delete(authSession).where(eq(authSession.id, current.session.id));
