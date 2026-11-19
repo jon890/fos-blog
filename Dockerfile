@@ -46,8 +46,13 @@ FROM node:24.22.3-alpine AS runner
 
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@10.34.5 --activate
+# The standalone server and migration bundle only need Node.js at runtime.
+RUN rm -rf /usr/local/lib/node_modules/npm \
+    /usr/local/lib/node_modules/corepack \
+    /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
+    /usr/local/bin/pnpm /usr/local/bin/pnpx \
+    /usr/local/bin/yarn /usr/local/bin/yarnpkg \
+    /root/.cache/node/corepack /root/.npm
 
 # Set production environment
 ENV NODE_ENV=production
